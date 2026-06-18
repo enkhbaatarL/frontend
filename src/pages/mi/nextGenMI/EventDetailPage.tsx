@@ -18,6 +18,11 @@ import NextGenMIDetailHeader, {
   type NextGenMIDetailHeaderSection,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
+import {
+  findEventDesignAvailability,
+  isEventDesignOccupiedByOther,
+  normalizeEventScenarioDesignStatus,
+} from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventDetailAiInsightsSection from '@/pages/mi/nextGenMI/components/event/EventDetailAiInsightsSection'
 import EventDetailDriverTreeScoreboardSection from '@/pages/mi/nextGenMI/components/event/EventDetailDriverTreeScoreboardSection'
 import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/event/EventDetailImpactAnalysisSection'
@@ -27,6 +32,7 @@ import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
+import useAuthStore from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
@@ -64,9 +70,6 @@ const EVENT_DETAIL_HEADER_SECTIONS: NextGenMIDetailHeaderSection[] = EVENT_DETAI
   id: SECTION_SCROLL_IDS[tab.key],
   label: tab.label,
 }))
-
-const SCENARIO_DESIGN_CREATED_TOOLTIP =
-  '새로 설계하려면 기존 시나리오 그룹을 먼저 삭제해야 합니다. 삭제는 시나리오 그룹 상세에서 가능합니다.'
 
 const renderEventDetailHeaderTabActions = ({
   pageTitle,
@@ -171,6 +174,8 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const state = location.state as NextGenMIEventDetailLocationState | null
   const { showSnackbar } = useSnackbar()
   const { onShow } = useDialog()
+  const currentUserNo = useAuthStore((authState) => authState.user?.userNo)
+  const eventIdNumber = eventId !== undefined && Number.isFinite(Number(eventId)) ? Number(eventId) : null
 
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
@@ -194,6 +199,20 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     queryKey: ['nextGenMIEventDetail', eventId],
     queryFn: () => nextGenMIEventService.getEventDetail(eventId!),
     enabled: !!eventId,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const creatingEventIds = useMemo(
+    () => (eventIdNumber !== null && detail?.scenarioDesignStatus === 'creating' ? [eventIdNumber] : []),
+    [detail?.scenarioDesignStatus, eventIdNumber],
+  )
+
+  const { data: designAvailabilityData } = useQuery({
+    queryKey: ['nextGenMIEventDesignAvailability', 'eventDetail', eventIdNumber],
+    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: creatingEventIds }),
+    enabled: creatingEventIds.length > 0,
+    refetchInterval: 5000,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -260,13 +279,33 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
   const relatedEventScenario = detail?.relatedEventScenario
-  const hasScenarioGroup = relatedEventScenario?.scenarioGroupId !== undefined && relatedEventScenario?.scenarioGroupId !== null
-  const isScenarioDesignCreated = detail?.scenarioDesignStatus === 'created' || hasScenarioGroup
+  const designAvailability = useMemo(
+    () => findEventDesignAvailability(designAvailabilityData, eventIdNumber),
+    [designAvailabilityData, eventIdNumber],
+  )
+  const scenarioDesignStatus = normalizeEventScenarioDesignStatus(designAvailability?.scenarioDesignStatus) ?? detail?.scenarioDesignStatus
+  const hasRelatedScenarioGroup = relatedEventScenario?.scenarioGroupId !== undefined && relatedEventScenario.scenarioGroupId !== null
+  const isScenarioDesignCreated = scenarioDesignStatus === 'created' || hasRelatedScenarioGroup
   const scenarioDesignDisabled = detailLoading || isScenarioDesignCreated
-  const scenarioDesignDisabledTooltipTitle = isScenarioDesignCreated ? SCENARIO_DESIGN_CREATED_TOOLTIP : undefined
-  const handleScenarioDesignClick = useCallback(() => {
+  const scenarioDesignDisabledTooltipTitle = isScenarioDesignCreated
+    ? '새로 설계하려면 기존 시나리오 그룹을 먼저 삭제해야 합니다. 삭제는 시나리오 그룹 상세에서 가능합니다.'
+    : undefined
+  const handleScenarioDesignClick = useCallback(async () => {
     if (!eventId) return
-    if (detail?.scenarioDesignStatus === 'creating') {
+    if (isScenarioDesignCreated) return
+
+    let currentDesignAvailability = designAvailability
+    if (scenarioDesignStatus === 'creating' && !currentDesignAvailability && eventIdNumber !== null) {
+      currentDesignAvailability = findEventDesignAvailability(
+        await nextGenMIEventService.getEventDesignAvailability({ eventIds: [eventIdNumber] }).catch(() => undefined),
+        eventIdNumber,
+      )
+    }
+
+    if (
+      scenarioDesignStatus === 'creating' &&
+      isEventDesignOccupiedByOther(currentDesignAvailability ?? { scenarioDesignStatus }, currentUserNo)
+    ) {
       onShow({
         title: '시나리오 설계를 시작할 수 없습니다',
         width: 450,
@@ -274,12 +313,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
       })
       return
     }
-    if (isScenarioDesignCreated) return
 
     navigate(getNextGenMIEventDesignPath(eventId), {
       state: { eventName: title },
     })
-  }, [detail?.scenarioDesignStatus, eventId, isScenarioDesignCreated, navigate, onShow, title])
+  }, [currentUserNo, designAvailability, eventId, eventIdNumber, isScenarioDesignCreated, navigate, onShow, scenarioDesignStatus, title])
 
   const eventDetailHeaderTabActions = useMemo(
     () =>

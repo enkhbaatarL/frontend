@@ -1,46 +1,62 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded'
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import { Dialog, DialogActions, DialogContent, Divider, Stack, Typography } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
+import { Divider, Stack, Typography } from '@mui/material'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
-
-import MIBaseButton from '@/components/common/button/MIBaseButton'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import { nextGenMIIsEventNoiseSignal } from '@/pages/mi/nextGenMI/components/common/nextGenMIClassificationChip'
 import NextGenMIDetailHeader, {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
-import EventDetailAiInsightsSection from '@/pages/mi/nextGenMI/components/event/EventDetailAiInsightsSection'
-import EventDetailDriverTreeScoreboardSection from '@/pages/mi/nextGenMI/components/event/EventDetailDriverTreeScoreboardSection'
-import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/event/EventDetailImpactAnalysisSection'
-import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
-import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
-import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
-import ScenarioDesignCriteriaStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignCriteriaStep'
 import {
-  createInitialScenarioDesignRows,
-  createScenarioDesignGeneratedBranchDefaults,
+  findEventDesignAvailability,
+  isEventDesignOccupiedByOther,
+  isOwnEventDesignAvailability,
+  normalizeEventScenarioDesignStatus,
+} from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
+import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
+import ScenarioDesignCriteriaStep, {
+  type ScenarioDesignReviewErrorItem,
+} from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignCriteriaStep'
+import {
+  ScenarioDesignConfirmDialog,
+  type ScenarioDesignConfirmDialogContent,
+  ScenarioDesignReviewFailedDialog,
+} from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignDialogs'
+import {
+  createScenarioDesignColumns,
+  createScenarioDesignEditTable,
+  createScenarioDesignRow,
+  createScenarioDesignTemplateColumns,
+  getScenarioDesignDimensionSelectedValue,
+  getScenarioDesignRowId,
   isScenarioDesignRequiredColumn,
-  SCENARIO_DESIGN_COLUMNS,
-  SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS,
   SCENARIO_DESIGN_MAX_ROW_COUNT,
   SCENARIO_DESIGN_SELECT_COMMON_ACTIONS,
-  type ScenarioDesignBaseEventTabKey,
-  type ScenarioDesignColumnKey,
+  sortScenarioDesignColumns,
+  updateScenarioDesignRowDimension,
+  updateScenarioDesignRowScenarioName,
+  type ScenarioDesignColumn,
   type ScenarioDesignConfirmType,
   type ScenarioDesignLocationState,
-  type ScenarioDesignRow,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
 import ScenarioDesignOneViewStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOneViewStep'
 import ScenarioDesignProgressStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignProgressStep'
-import { getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { scrollNextGenMILayoutToTop } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
+import nextGenMIScenarioDesignService, {
+  type DesignConfirmSignpost,
+  type DesignScenarioRow,
+  type ScenarioDesignState,
+  type ScenarioDesignStageValue,
+  type ScenarioDesignStreamEventData,
+  type ScenarioDesignStreamEventType,
+} from '@/service/mi/nextGenMI/scenarioDesign'
+import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
+import useAuthStore from '@/store/useAuthStore'
 
 type ScenarioDesignHeaderContent = {
   backLabel: string
@@ -87,235 +103,127 @@ const ScenarioDesignHeaderView = () => {
   )
 }
 
-const getScenarioDesignConfirmContent = (
-  type: ScenarioDesignConfirmType,
-): { title: string; description?: string; confirmLabel: string; confirmBgColor: string } => {
-  if (type === 'criteriaReset') {
-    return {
-      title: '모든 수정 항목을 기본값으로 초기화하시겠습니까?',
-      confirmLabel: '초기화',
-      confirmBgColor: 'contentIcon.Error',
-    }
+const assertUnhandledScenarioDesignConfirmType = (type: never): never => {
+  throw new Error(`Unhandled scenario design confirm type: ${type}`)
+}
+
+const getScenarioDesignConfirmContent = (type: ScenarioDesignConfirmType): ScenarioDesignConfirmDialogContent => {
+  switch (type) {
+    case 'cancel':
+      return {
+        title: '시나리오 설계를 취소하시겠습니까?',
+        confirmLabel: '확인',
+        confirmBgColor: 'contentIcon.ActivePrimary',
+      }
+    case 'reviewComplete':
+      return {
+        title: '시나리오 검토를 완료하시겠습니까?',
+        description: '검토한 시나리오 기준이 반영되며, 다음 단계에서 시나리오 그룹 정보를 확인하고 생성할 수 있습니다.',
+        confirmLabel: '검토 완료',
+        confirmBgColor: 'contentIcon.ActivePrimary',
+      }
+    case 'reviewCompleteWithWarning':
+      return {
+        title: '확인 필요한 항목이 있습니다',
+        description: '일부 검토 항목이 권장 기준을 충족하지 않습니다. 테이블 하단의 경고 내용을 확인한 후 다음 단계로 진행해 주세요.',
+        confirmLabel: '계속 진행',
+        confirmBgColor: 'contentIcon.ActivePrimary',
+      }
   }
 
-  if (type === 'cancel') {
-    return {
-      title: '시나리오 설계를 취소하시겠습니까?',
-      confirmLabel: '확인',
-      confirmBgColor: 'contentIcon.ActivePrimary',
-    }
-  }
+  return assertUnhandledScenarioDesignConfirmType(type)
+}
 
-  if (type === 'deleteRow') {
-    return {
-      title: '시나리오를 삭제하시겠습니까?',
-      confirmLabel: '삭제',
-      confirmBgColor: 'contentIcon.Error',
-    }
-  }
+const normalizeScenarioDesignStage = (stage?: ScenarioDesignStageValue) => stage?.toLowerCase()
 
-  if (type === 'deleteCriteriaColumn') {
-    return {
-      title: '분기항목을 삭제하시겠습니까?',
-      confirmLabel: '삭제',
-      confirmBgColor: 'contentIcon.Error',
-    }
-  }
+const getScenarioDesignActiveTable = (state?: ScenarioDesignState | null) => state?.step2?.table ?? state?.step1 ?? null
 
-  if (type === 'reviewComplete') {
-    return {
-      title: '시나리오 검토를 완료하시겠습니까?',
-      description: '검토한 시나리오 기준이 반영되며, 다음 단계에서 시나리오 그룹 정보를 확인하고 생성할 수 있습니다.',
-      confirmLabel: '검토 완료',
-      confirmBgColor: 'contentIcon.ActivePrimary',
-    }
-  }
+const isScenarioDesignStreamEventType = (event?: string): event is ScenarioDesignStreamEventType =>
+  event === 'connected' || event === 'generation' || event === 'validation' || event === 'signposts'
 
-  return {
-    title: '변경사항을 검토하시겠습니까?',
-    confirmLabel: '검토',
-    confirmBgColor: 'contentIcon.ActivePrimary',
+const parseScenarioDesignStreamEventData = (data?: string): ScenarioDesignStreamEventData | null => {
+  if (!data) return null
+
+  try {
+    const parsed = JSON.parse(data) as ScenarioDesignStreamEventData
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
   }
 }
 
-const ScenarioDesignConfirmDialog = ({
-  type,
-  onClose,
-  onConfirm,
-}: {
-  type: ScenarioDesignConfirmType | null
-  onClose: () => void
-  onConfirm: (type: ScenarioDesignConfirmType) => void
-}) => {
-  if (!type) return null
-
-  const content = getScenarioDesignConfirmContent(type)
-
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      slotProps={{
-        paper: {
-          sx: {
-            width: '450px',
-            maxWidth: 'calc(100vw - 48px)',
-            border: '1px solid',
-            borderColor: 'contentBorder.Normal',
-            borderRadius: '12px',
-            boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
-            margin: 0,
-            overflow: 'hidden',
-          },
-        },
-      }}
-    >
-      <DialogContent
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          gap: content.description ? '20px' : 0,
-          padding: '20px 20px 30px',
-          '&:last-of-type': {
-            paddingBottom: '30px',
-          },
-        }}
-      >
-        <Stack direction="row" alignItems="center" width="100%" minWidth={0}>
-          <Typography variant="body1" fontSize="16px" fontWeight={700} color="contentText.Normal" lineHeight={1.4} flex={1} noWrap>
-            {content.title}
-          </Typography>
-          <MIBaseButton
-            aria-label="닫기"
-            variant="text"
-            onClick={onClose}
-            sx={{
-              height: '32px',
-              padding: '6px',
-            }}
-          >
-            <CloseRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Enabled' }} />
-          </MIBaseButton>
-        </Stack>
-        {content.description && (
-          <Typography variant="body2R14" color="contentText.Normal" lineHeight={1.4}>
-            {content.description}
-          </Typography>
-        )}
-      </DialogContent>
-      <DialogActions
-        disableSpacing
-        sx={{
-          padding: '30px 20px 20px',
-          gap: '10px',
-        }}
-      >
-        <MIBaseButton
-          variant="outlined"
-          onClick={onClose}
-          sx={{
-            height: '34px',
-            borderRadius: '4px',
-          }}
-        >
-          취소
-        </MIBaseButton>
-        <MIBaseButton
-          variant="contained"
-          onClick={() => onConfirm(type)}
-          labelColor="contentText.White"
-          sx={{
-            height: '34px',
-            borderRadius: '4px',
-            backgroundColor: content.confirmBgColor,
-            '&:hover:not(:disabled)': {
-              backgroundColor: content.confirmBgColor,
-            },
-          }}
-        >
-          {content.confirmLabel}
-        </MIBaseButton>
-      </DialogActions>
-    </Dialog>
-  )
+type ScenarioDesignCriteriaValidation = {
+  dimensionValueErrorMessages: Map<number, Map<string, string>>
+  errorItems: ScenarioDesignReviewErrorItem[]
 }
 
-const ScenarioDesignReviewFailedDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
-  <Dialog
-    open={open}
-    onClose={onClose}
-    slotProps={{
-      paper: {
-        sx: {
-          width: '450px',
-          maxWidth: 'calc(100vw - 48px)',
-          border: '1px solid',
-          borderColor: 'contentBorder.Normal',
-          borderRadius: '12px',
-          boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
-          margin: 0,
-          overflow: 'hidden',
-        },
-      },
-    }}
-  >
-    <DialogContent
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'stretch',
-        gap: '20px',
-        padding: '20px 20px 0px',
-      }}
-    >
-      <Stack direction="row" alignItems="center" width="100%" minWidth={0}>
-        <Typography variant="body1" fontSize="16px" fontWeight={700} color="contentText.Normal" lineHeight={1.4} flex={1} noWrap>
-          변경사항을 검토하지 못했습니다
-        </Typography>
-        <MIBaseButton
-          aria-label="닫기"
-          variant="text"
-          onClick={onClose}
-          sx={{
-            height: '32px',
-            padding: '6px',
-          }}
-        >
-          <CloseRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Enabled' }} />
-        </MIBaseButton>
-      </Stack>
-      <Typography variant="body2R14" color="contentText.Normal" lineHeight={1.4}>
-        입력한 변경사항은 유지됩니다. 잠시 후 다시 시도해 주세요.
-      </Typography>
-    </DialogContent>
-    <DialogActions
-      disableSpacing
-      sx={{
-        padding: '30px 20px 20px',
-        gap: '10px',
-        justifyContent: 'flex-end',
-      }}
-    >
-      <MIBaseButton
-        variant="contained"
-        onClick={onClose}
-        labelColor="contentText.White"
-        sx={{
-          height: '34px',
-          padding: '7px 16px',
-          borderRadius: '4px',
-          backgroundColor: 'contentIcon.ActivePrimary',
-          '&:hover:not(:disabled)': {
-            backgroundColor: 'contentIcon.ActivePrimary',
-          },
-        }}
-      >
-        확인
-      </MIBaseButton>
-    </DialogActions>
-  </Dialog>
-)
+const SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM: ScenarioDesignReviewErrorItem = {
+  label: '필수 입력값 누락',
+  message: '비어 있는 필수 항목에 값을 입력해 주세요.',
+  severity: 'error',
+  actionLabel: '수정 필요',
+}
+
+const SCENARIO_DESIGN_NEW_BRANCH_REVIEW_ITEM: ScenarioDesignReviewErrorItem = {
+  label: '신규 분기 항목 기준값',
+  message: '새로 추가한 분기 항목의 기준값이 ‘Agent 자동 설정’인지 확인해 주세요.',
+  severity: 'warning',
+  actionLabel: '확인 후 수정 권장',
+}
+
+const createScenarioDesignReviewFallbackErrorItem = (message: string): ScenarioDesignReviewErrorItem => ({
+  label: '검토 결과',
+  message,
+  severity: 'error',
+  actionLabel: '수정 필요',
+})
+
+const hasScenarioDesignRequiredReviewItem = (items: ScenarioDesignReviewErrorItem[]) =>
+  items.some((item) => item.label === SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM.label)
+
+const hasBlockingScenarioDesignReviewItem = (items: ScenarioDesignReviewErrorItem[]) =>
+  items.some((item) => (item.severity ?? 'error') === 'error')
+
+const hasWarningScenarioDesignReviewItem = (items: ScenarioDesignReviewErrorItem[]) => items.some((item) => item.severity === 'warning')
+
+const validateScenarioDesignCriteriaValues = (
+  columns: ScenarioDesignColumn[],
+  rows: DesignScenarioRow[],
+  agentColumnKeys: Set<string>,
+): ScenarioDesignCriteriaValidation => {
+  const dimensionValueErrorMessages = new Map<number, Map<string, string>>()
+  const errorItems: ScenarioDesignReviewErrorItem[] = []
+  let hasMissingRequiredValue = false
+  let hasNewBranchValueWarning = false
+
+  columns.forEach((column) => {
+    rows.forEach((row, index) => {
+      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+
+      if (isScenarioDesignRequiredColumn(column) && selectedValue === '') {
+        hasMissingRequiredValue = true
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        const rowErrorMessages = dimensionValueErrorMessages.get(rowId) ?? new Map<string, string>()
+        rowErrorMessages.set(column.key, SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM.message)
+        dimensionValueErrorMessages.set(rowId, rowErrorMessages)
+      }
+
+      if (agentColumnKeys.has(column.key) && selectedValue !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value) {
+        hasNewBranchValueWarning = true
+      }
+    })
+  })
+
+  if (hasMissingRequiredValue) {
+    errorItems.push(SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM)
+  }
+
+  if (hasNewBranchValueWarning) {
+    errorItems.push(SCENARIO_DESIGN_NEW_BRANCH_REVIEW_ITEM)
+  }
+
+  return { dimensionValueErrorMessages, errorItems }
+}
 
 const ScenarioDesignPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -324,29 +232,45 @@ const ScenarioDesignPage = () => {
   const { showSnackbar } = useSnackbar()
   const { setStickyHeader } = useStickyHeader()
   const state = location.state as ScenarioDesignLocationState | null
-  const [rows, setRows] = useState<ScenarioDesignRow[]>(() => createInitialScenarioDesignRows())
+  const currentUserNo = useAuthStore((authState) => authState.user?.userNo)
+  const eventIdNumber = id !== undefined && Number.isFinite(Number(id)) ? Number(id) : null
+  const [scenarioGroupId, setScenarioGroupId] = useState<number | null>(null)
+  const [rows, setRows] = useState<DesignScenarioRow[]>([])
+  const [initialRows, setInitialRows] = useState<DesignScenarioRow[]>([])
+  const [visibleScenarioDesignColumns, setVisibleScenarioDesignColumns] = useState<ScenarioDesignColumn[]>([])
+  const [initialScenarioDesignColumns, setInitialScenarioDesignColumns] = useState<ScenarioDesignColumn[]>([])
+  const [agentScenarioDesignColumnKeys, setAgentScenarioDesignColumnKeys] = useState<Set<string>>(() => new Set())
   const [reviewed, setReviewed] = useState(false)
   const [reviewPending, setReviewPending] = useState(false)
+  const [reviewMinimumLoadingComplete, setReviewMinimumLoadingComplete] = useState(false)
   const [reviewCompletedVisible, setReviewCompletedVisible] = useState(false)
+  const [signpostPending, setSignpostPending] = useState(false)
+  const [scenarioGroupCreatePending, setScenarioGroupCreatePending] = useState(false)
   const [currentStep, setCurrentStep] = useState<'criteria' | 'oneView'>('criteria')
-  const [hiddenScenarioDesignColumnKeys, setHiddenScenarioDesignColumnKeys] = useState<ScenarioDesignColumnKey[]>(() => [
-    ...SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS,
-  ])
-  const [addCriteriaMenuOpen, setAddCriteriaMenuOpen] = useState(false)
-  const [selectedAddCriteriaColumnKeys, setSelectedAddCriteriaColumnKeys] = useState<ScenarioDesignColumnKey[]>([])
-  const [baseEventExpanded, setBaseEventExpanded] = useState(false)
-  const [selectedBaseEventTab, setSelectedBaseEventTab] = useState<ScenarioDesignBaseEventTabKey>('ai')
-  const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
-  const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
+  const [oneViewDefaultKey, setOneViewDefaultKey] = useState(0)
   const [confirmType, setConfirmType] = useState<ScenarioDesignConfirmType | null>(null)
   const [reviewFailedDialogOpen, setReviewFailedDialogOpen] = useState(false)
-  const [deleteRowId, setDeleteRowId] = useState<number | null>(null)
-  const [deleteCriteriaColumnKey, setDeleteCriteriaColumnKey] = useState<ScenarioDesignColumnKey | null>(null)
-  const criteriaTableScrollRef = useRef<HTMLDivElement | null>(null)
-  const shouldScrollCriteriaTableToEndRef = useRef(false)
+  const [reviewErrorItems, setReviewErrorItems] = useState<ScenarioDesignReviewErrorItem[]>([])
   const confirmedScenarioDesignLeaveRef = useRef(false)
   const initialScenarioDesignHistoryIndexRef = useRef<number | null>(null)
-  const reviewCompleteTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
+  const scenarioDesignStartRequestedRef = useRef(false)
+  const scenarioGroupIdRef = useRef<number | null>(null)
+  const preserveScenarioDesignGroupRef = useRef(false)
+  const deleteScenarioDesignGroupRequestedRef = useRef(false)
+  const scenarioDesignStateRefreshInFlightRef = useRef(false)
+  const scenarioDesignStateRefreshQueuedRef = useRef(false)
+  const signpostStreamReceivedRef = useRef(false)
+  const lastSyncedScenarioDesignStateUpdatedAtRef = useRef(0)
+  const reviewStartedScenarioDesignUpdatedAtRef = useRef(0)
+  const reviewValidationStreamStageRef = useRef<string | null>(null)
+  const pendingFrontendReviewItemsRef = useRef<ScenarioDesignReviewErrorItem[] | null>(null)
+  const pendingScenarioDesignReviewItemsRef = useRef<ScenarioDesignReviewErrorItem[]>([])
+  const submittedCriteriaDraftRef = useRef<{
+    columns: ScenarioDesignColumn[]
+    rows: DesignScenarioRow[]
+    agentColumnKeys: Set<string>
+  } | null>(null)
+  const reviewMinimumLoadingTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
   const reviewCompletedVisibleTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
 
   const { data: detail, isLoading } = useQuery({
@@ -357,18 +281,70 @@ const ScenarioDesignPage = () => {
     gcTime: 0,
   })
 
-  const { data: recordsData, isLoading: recordsLoading } = useQuery({
-    queryKey: ['nextGenMIScenarioDesignEventRecords', id, recordsPagination.page, recordsPagination.size],
-    queryFn: () => nextGenMIEventService.getEventRecords(id!, recordsPagination),
-    enabled: Boolean(id) && baseEventExpanded && selectedBaseEventTab === 'records',
+  const { data: designAvailabilityData, isLoading: designAvailabilityLoading } = useQuery({
+    queryKey: ['nextGenMIEventDesignAvailability', eventIdNumber],
+    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: eventIdNumber === null ? [] : [eventIdNumber] }),
+    enabled: eventIdNumber !== null && scenarioGroupId === null,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
-  const { data: outlooksData, isLoading: outlooksLoading } = useQuery({
-    queryKey: ['nextGenMIScenarioDesignEventOutlooks', id, outlooksPagination.page, outlooksPagination.size],
-    queryFn: () => nextGenMIEventService.getEventOutlooks(id!, outlooksPagination),
-    enabled: Boolean(id) && baseEventExpanded && selectedBaseEventTab === 'outlook',
+  const startScenarioDesignMutation = useMutation({
+    mutationFn: (miEventId: number) => nextGenMIScenarioDesignService.startScenarioDesign({ miEventId }),
+    onSuccess: (data) => {
+      if (data.scenarioGroupId !== undefined) setScenarioGroupId(data.scenarioGroupId)
+    },
+  })
+  const { mutate: startScenarioDesign } = startScenarioDesignMutation
+
+  const createScenarioSignpostsMutation = useMutation({
+    mutationFn: () => {
+      if (scenarioGroupId === null) throw new Error('Scenario group is not ready')
+      return nextGenMIScenarioDesignService.createScenarioSignposts(scenarioGroupId, {
+        table: createScenarioDesignEditTable(visibleScenarioDesignColumns, rows),
+      })
+    },
+  })
+
+  const validateScenarioDesignMutation = useMutation({
+    mutationFn: (table: ReturnType<typeof createScenarioDesignEditTable>) => {
+      if (scenarioGroupId === null) throw new Error('Scenario group is not ready')
+      return nextGenMIScenarioDesignService.validateScenarioDesign(scenarioGroupId, { table })
+    },
+  })
+
+  const confirmScenarioDesignMutation = useMutation({
+    mutationFn: (payload: Parameters<typeof nextGenMIScenarioDesignService.confirmScenarioDesign>[1]) => {
+      if (scenarioGroupId === null) throw new Error('Scenario group is not ready')
+      return nextGenMIScenarioDesignService.confirmScenarioDesign(scenarioGroupId, payload)
+    },
+  })
+
+  const resetScenarioDesignMutation = useMutation({
+    mutationFn: () => {
+      if (scenarioGroupId === null) throw new Error('Scenario group is not ready')
+      return nextGenMIScenarioDesignService.resetScenarioDesign(scenarioGroupId)
+    },
+  })
+
+  const {
+    data: scenarioDesignState,
+    dataUpdatedAt: scenarioDesignStateUpdatedAt,
+    isFetching: scenarioDesignStateFetching,
+    isLoading: scenarioDesignStateLoading,
+    refetch: refetchScenarioDesignState,
+  } = useQuery({
+    queryKey: ['nextGenMIScenarioDesignState', scenarioGroupId],
+    queryFn: () => nextGenMIScenarioDesignService.getScenarioDesign(scenarioGroupId!),
+    enabled: scenarioGroupId !== null,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const { data: scenarioDimensionTemplate } = useQuery({
+    queryKey: ['nextGenMIScenarioDesignDimensionTemplates', scenarioGroupId],
+    queryFn: () => nextGenMIScenarioDesignService.getScenarioDimensionTemplates(scenarioGroupId!),
+    enabled: scenarioGroupId !== null,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -379,6 +355,66 @@ const ScenarioDesignPage = () => {
   const createdAtLabel = formatNextGenMIDateTimeYmdHm(detail?.createdAt)
   const eventTypeLabel = detail?.impactAnalysis?.eventTypeLv1Label ?? detail?.impactAnalysis?.eventTypeLv1 ?? '-'
   const eventDetailPath = id ? `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(id)}` : getNextGenMITabPath('events')
+  const scenarioDimensionTemplates = useMemo(() => scenarioDimensionTemplate?.dimensions ?? [], [scenarioDimensionTemplate?.dimensions])
+  const hiddenScenarioDesignColumns = useMemo(
+    () => createScenarioDesignTemplateColumns(scenarioDimensionTemplates, visibleScenarioDesignColumns),
+    [scenarioDimensionTemplates, visibleScenarioDesignColumns],
+  )
+  const scenarioDesignActiveTable = useMemo(() => getScenarioDesignActiveTable(scenarioDesignState), [scenarioDesignState])
+  const scenarioDesignActiveTableRowCount = scenarioDesignActiveTable?.scenarios?.length ?? 0
+  const scenarioDesignStage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
+  const scenarioDesignWaitingForInitialTable = scenarioGroupId !== null && currentStep === 'criteria' && scenarioDesignActiveTable === null
+  const scenarioDesignWaitingForInitialRows =
+    scenarioGroupId !== null &&
+    currentStep === 'criteria' &&
+    rows.length === 0 &&
+    (scenarioDesignStateFetching || scenarioDesignStage === 'ready' || scenarioDesignActiveTableRowCount > 0)
+  const scenarioDesignLoading =
+    isLoading ||
+    designAvailabilityLoading ||
+    startScenarioDesignMutation.isPending ||
+    scenarioDesignStateLoading ||
+    resetScenarioDesignMutation.isPending ||
+    scenarioDesignWaitingForInitialTable ||
+    scenarioDesignWaitingForInitialRows ||
+    signpostPending
+  const scenarioNameErrorMessages = useMemo(() => {
+    const scenarioNameSet = new Set<string>()
+    const errorMessages = new Map<number, string>()
+
+    rows.forEach((row, index) => {
+      const rowId = getScenarioDesignRowId(row, index + 1)
+      const scenarioName = (row.scenarioName ?? '').trim()
+      if (!scenarioName) {
+        errorMessages.set(rowId, '시나리오명을 입력해 주세요.')
+        return
+      }
+
+      if (scenarioNameSet.has(scenarioName)) {
+        errorMessages.set(rowId, '중복된 시나리오명은 사용할 수 없습니다.')
+        return
+      }
+
+      scenarioNameSet.add(scenarioName)
+    })
+
+    return errorMessages
+  }, [rows])
+  const criteriaValidation = useMemo(
+    () => validateScenarioDesignCriteriaValues(visibleScenarioDesignColumns, rows, agentScenarioDesignColumnKeys),
+    [agentScenarioDesignColumnKeys, rows, visibleScenarioDesignColumns],
+  )
+  const requestDeleteScenarioDesignGroup = useCallback(() => {
+    const targetScenarioGroupId = scenarioGroupIdRef.current
+    if (targetScenarioGroupId === null || preserveScenarioDesignGroupRef.current || deleteScenarioDesignGroupRequestedRef.current) return
+
+    deleteScenarioDesignGroupRequestedRef.current = true
+    void nextGenMIScenarioGroupService.deleteScenarioGroup(targetScenarioGroupId).catch(() => undefined)
+  }, [])
+  useEffect(() => {
+    scenarioGroupIdRef.current = scenarioGroupId
+  }, [scenarioGroupId])
+  useEffect(() => () => requestDeleteScenarioDesignGroup(), [requestDeleteScenarioDesignGroup])
   const handleBackToEvent = useCallback(() => {
     navigate(eventDetailPath, { state: { eventName: eventTitle } })
   }, [eventDetailPath, eventTitle, navigate])
@@ -392,6 +428,7 @@ const ScenarioDesignPage = () => {
   }, [])
   const handleLeaveScenarioDesign = useCallback(() => {
     confirmedScenarioDesignLeaveRef.current = true
+    requestDeleteScenarioDesignGroup()
 
     const currentState = globalThis.history.state as { scenarioDesignLeaveGuard?: unknown } | null
     if (initialScenarioDesignHistoryIndexRef.current !== null && initialScenarioDesignHistoryIndexRef.current > 0) {
@@ -400,59 +437,353 @@ const ScenarioDesignPage = () => {
     }
 
     navigate(eventDetailPath, { state: { eventName: eventTitle } })
-  }, [eventDetailPath, eventTitle, navigate])
+  }, [eventDetailPath, eventTitle, navigate, requestDeleteScenarioDesignGroup])
   const handleCancelScenarioDesignRequest = useCallback(() => {
     setConfirmType('cancel')
   }, [])
-  const clearScenarioDesignReviewTimeouts = useCallback(() => {
-    if (reviewCompleteTimeoutRef.current) {
-      globalThis.clearTimeout(reviewCompleteTimeoutRef.current)
-      reviewCompleteTimeoutRef.current = null
-    }
-
+  const clearScenarioDesignReviewCompletedTimeout = useCallback(() => {
     if (reviewCompletedVisibleTimeoutRef.current) {
       globalThis.clearTimeout(reviewCompletedVisibleTimeoutRef.current)
       reviewCompletedVisibleTimeoutRef.current = null
     }
   }, [])
-  const resetScenarioDesignReviewState = useCallback(() => {
-    clearScenarioDesignReviewTimeouts()
-    setReviewPending(false)
-    setReviewCompletedVisible(false)
-    setReviewFailedDialogOpen(false)
-    setReviewed(false)
-    setCurrentStep('criteria')
-  }, [clearScenarioDesignReviewTimeouts])
-  const startScenarioDesignReview = useCallback(
-    (canCompleteReview: boolean) => {
-      clearScenarioDesignReviewTimeouts()
-      setReviewPending(true)
+  const clearScenarioDesignReviewMinimumLoadingTimeout = useCallback(() => {
+    if (reviewMinimumLoadingTimeoutRef.current) {
+      globalThis.clearTimeout(reviewMinimumLoadingTimeoutRef.current)
+      reviewMinimumLoadingTimeoutRef.current = null
+    }
+  }, [])
+  const startScenarioDesignReviewMinimumLoading = useCallback(() => {
+    clearScenarioDesignReviewMinimumLoadingTimeout()
+    setReviewMinimumLoadingComplete(false)
+    reviewMinimumLoadingTimeoutRef.current = globalThis.setTimeout(() => {
+      reviewMinimumLoadingTimeoutRef.current = null
+      setReviewMinimumLoadingComplete(true)
+    }, 1000)
+  }, [clearScenarioDesignReviewMinimumLoadingTimeout])
+  const resetScenarioDesignReviewState = useCallback(
+    (options?: { keepErrorItems?: boolean }) => {
+      clearScenarioDesignReviewCompletedTimeout()
+      clearScenarioDesignReviewMinimumLoadingTimeout()
+      setReviewPending(false)
+      setReviewMinimumLoadingComplete(false)
       setReviewCompletedVisible(false)
       setReviewFailedDialogOpen(false)
+      submittedCriteriaDraftRef.current = null
+      reviewStartedScenarioDesignUpdatedAtRef.current = 0
+      reviewValidationStreamStageRef.current = null
+      signpostStreamReceivedRef.current = false
+      pendingFrontendReviewItemsRef.current = null
+      pendingScenarioDesignReviewItemsRef.current = []
+      if (!options?.keepErrorItems) setReviewErrorItems([])
+      setReviewed(false)
+      setCurrentStep('criteria')
+    },
+    [clearScenarioDesignReviewCompletedTimeout, clearScenarioDesignReviewMinimumLoadingTimeout],
+  )
+  const refreshScenarioDesignStateFromStream = useCallback(() => {
+    const refetchOnce = () => {
+      if (scenarioDesignStateRefreshInFlightRef.current) {
+        scenarioDesignStateRefreshQueuedRef.current = true
+        return
+      }
 
-      reviewCompleteTimeoutRef.current = globalThis.setTimeout(() => {
-        reviewCompleteTimeoutRef.current = null
-        setReviewPending(false)
+      scenarioDesignStateRefreshInFlightRef.current = true
+      void refetchScenarioDesignState().finally(() => {
+        scenarioDesignStateRefreshInFlightRef.current = false
+        if (!scenarioDesignStateRefreshQueuedRef.current) return
+
+        scenarioDesignStateRefreshQueuedRef.current = false
+        refetchOnce()
+      })
+    }
+
+    refetchOnce()
+  }, [refetchScenarioDesignState])
+  const startScenarioDesignReview = useCallback(async () => {
+    if (scenarioGroupId === null) return
+
+    const nextReviewErrorItems = [...criteriaValidation.errorItems]
+    const scenarioNameErrors = Array.from(scenarioNameErrorMessages.values())
+    const hasMissingScenarioName = scenarioNameErrors.some((message) => message.includes('입력'))
+    const hasDuplicateScenarioName = scenarioNameErrors.some((message) => message.includes('중복'))
+
+    if (hasMissingScenarioName && !hasScenarioDesignRequiredReviewItem(nextReviewErrorItems)) {
+      nextReviewErrorItems.unshift({
+        ...SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM,
+      })
+    }
+    if (hasDuplicateScenarioName) {
+      nextReviewErrorItems.push(createScenarioDesignReviewFallbackErrorItem('중복된 시나리오명은 사용할 수 없습니다.'))
+    }
+    clearScenarioDesignReviewCompletedTimeout()
+    clearScenarioDesignReviewMinimumLoadingTimeout()
+    setReviewPending(false)
+    setReviewMinimumLoadingComplete(false)
+    setReviewCompletedVisible(false)
+    setReviewFailedDialogOpen(false)
+    reviewStartedScenarioDesignUpdatedAtRef.current = scenarioDesignStateUpdatedAt
+    reviewValidationStreamStageRef.current = null
+    const frontendBlockingReviewItems = nextReviewErrorItems.filter((item) => (item.severity ?? 'error') === 'error')
+    const frontendWarningReviewItems = nextReviewErrorItems.filter((item) => item.severity === 'warning')
+
+    pendingFrontendReviewItemsRef.current = null
+    pendingScenarioDesignReviewItemsRef.current = frontendWarningReviewItems
+
+    setReviewErrorItems([])
+    setReviewed(false)
+    submittedCriteriaDraftRef.current = {
+      columns: visibleScenarioDesignColumns,
+      rows,
+      agentColumnKeys: new Set(agentScenarioDesignColumnKeys),
+    }
+
+    setReviewPending(true)
+    startScenarioDesignReviewMinimumLoading()
+
+    if (frontendBlockingReviewItems.length > 0) {
+      pendingFrontendReviewItemsRef.current = nextReviewErrorItems
+      return
+    }
+
+    try {
+      await validateScenarioDesignMutation.mutateAsync(createScenarioDesignEditTable(visibleScenarioDesignColumns, rows))
+    } catch {
+      clearScenarioDesignReviewMinimumLoadingTimeout()
+      submittedCriteriaDraftRef.current = null
+      reviewStartedScenarioDesignUpdatedAtRef.current = 0
+      reviewValidationStreamStageRef.current = null
+      pendingFrontendReviewItemsRef.current = null
+      setReviewPending(false)
+      setReviewMinimumLoadingComplete(false)
+      setReviewed(false)
+      showSnackbar('변경사항 검토를 요청하지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+    }
+  }, [
+    clearScenarioDesignReviewMinimumLoadingTimeout,
+    clearScenarioDesignReviewCompletedTimeout,
+    agentScenarioDesignColumnKeys,
+    criteriaValidation.errorItems,
+    rows,
+    scenarioGroupId,
+    scenarioDesignStateUpdatedAt,
+    scenarioNameErrorMessages,
+    showSnackbar,
+    startScenarioDesignReviewMinimumLoading,
+    validateScenarioDesignMutation,
+    visibleScenarioDesignColumns,
+  ])
+
+  useEffect(
+    () => () => {
+      clearScenarioDesignReviewCompletedTimeout()
+      clearScenarioDesignReviewMinimumLoadingTimeout()
+    },
+    [clearScenarioDesignReviewCompletedTimeout, clearScenarioDesignReviewMinimumLoadingTimeout],
+  )
+
+  useEffect(() => {
+    const availability = findEventDesignAvailability(designAvailabilityData, eventIdNumber)
+    if (
+      eventIdNumber === null ||
+      scenarioGroupId !== null ||
+      scenarioDesignStartRequestedRef.current ||
+      designAvailabilityLoading ||
+      designAvailabilityData === undefined
+    ) {
+      return
+    }
+
+    if (availability) {
+      const status = normalizeEventScenarioDesignStatus(availability.scenarioDesignStatus)
+      if (status === 'created' && availability.scenarioGroupId !== undefined && availability.scenarioGroupId !== null) {
+        confirmedScenarioDesignLeaveRef.current = true
+        navigate(getNextGenMIScenarioGroupDetailPath(availability.scenarioGroupId), { replace: true })
+        return
+      }
+
+      if (
+        status === 'creating' &&
+        availability.scenarioGroupId !== undefined &&
+        availability.scenarioGroupId !== null &&
+        isOwnEventDesignAvailability(availability, currentUserNo)
+      ) {
+        setScenarioGroupId(availability.scenarioGroupId)
+        return
+      }
+
+      if (isEventDesignOccupiedByOther(availability, currentUserNo)) {
+        confirmedScenarioDesignLeaveRef.current = true
+        showSnackbar('다른 사용자가 현재 시나리오 설계를 진행 중입니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+        navigate(eventDetailPath, { replace: true, state: { eventName: eventTitle } })
+        return
+      }
+    }
+
+    scenarioDesignStartRequestedRef.current = true
+    startScenarioDesign(eventIdNumber)
+  }, [
+    currentUserNo,
+    designAvailabilityData,
+    designAvailabilityLoading,
+    eventDetailPath,
+    eventIdNumber,
+    eventTitle,
+    navigate,
+    scenarioGroupId,
+    showSnackbar,
+    startScenarioDesign,
+  ])
+
+  useEffect(() => {
+    if (scenarioGroupId === null) {
+      return undefined
+    }
+
+    const controller = new AbortController()
+
+    void nextGenMIScenarioDesignService
+      .streamScenarioDesign(
+        scenarioGroupId,
+        ({ event, data }) => {
+          if (!isScenarioDesignStreamEventType(event) || event === 'connected') return
+
+          const streamData = parseScenarioDesignStreamEventData(data)
+          if (streamData?.scenarioGroupId !== undefined && streamData.scenarioGroupId !== scenarioGroupId) return
+
+          if (event === 'validation') reviewValidationStreamStageRef.current = normalizeScenarioDesignStage(streamData?.stage) ?? null
+          if (event === 'signposts') signpostStreamReceivedRef.current = true
+          refreshScenarioDesignStateFromStream()
+        },
+        controller.signal,
+      )
+      .catch(() => undefined)
+
+    return () => {
+      controller.abort()
+    }
+  }, [refreshScenarioDesignStateFromStream, scenarioGroupId])
+
+  useEffect(() => {
+    const activeTable = scenarioDesignActiveTable
+    if (!activeTable) return
+
+    const stage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
+    const validationResult = scenarioDesignState?.validation?.isValid
+    const hasValidationResult = validationResult === true || validationResult === false
+    const reviewValidationResultReady =
+      !reviewPending ||
+      (reviewMinimumLoadingComplete &&
+        pendingFrontendReviewItemsRef.current === null &&
+        scenarioDesignStateUpdatedAt > reviewStartedScenarioDesignUpdatedAtRef.current &&
+        (hasValidationResult || reviewValidationStreamStageRef.current === 'scenario_validated' || stage === 'scenario_validated'))
+    const validationPassed =
+      reviewValidationResultReady && (validationResult === true || (!hasValidationResult && stage === 'scenario_validated'))
+    const validationFailed = reviewValidationResultReady && validationResult === false
+    const submittedCriteriaDraft = submittedCriteriaDraftRef.current
+    const hasOneViewTable = scenarioDesignState?.step2?.table !== undefined && scenarioDesignState.step2.table !== null
+    const shouldUseSubmittedCriteriaDraft = !hasOneViewTable && submittedCriteriaDraft !== null && (reviewPending || reviewed)
+    const shouldSyncScenarioDesignTable =
+      shouldUseSubmittedCriteriaDraft || scenarioDesignStateUpdatedAt > lastSyncedScenarioDesignStateUpdatedAtRef.current
+    const serverColumns = createScenarioDesignColumns(activeTable.dimensionColumns, scenarioDimensionTemplates)
+    const serverRows = activeTable.scenarios ?? []
+    const nextColumns = shouldUseSubmittedCriteriaDraft ? submittedCriteriaDraft.columns : serverColumns
+    const nextRows = shouldUseSubmittedCriteriaDraft ? submittedCriteriaDraft.rows : serverRows
+
+    if (shouldSyncScenarioDesignTable) {
+      setVisibleScenarioDesignColumns(nextColumns)
+      setRows(nextRows)
+      setAgentScenarioDesignColumnKeys(shouldUseSubmittedCriteriaDraft ? new Set(submittedCriteriaDraft.agentColumnKeys) : new Set())
+      if (!shouldUseSubmittedCriteriaDraft || validationPassed) {
+        setInitialScenarioDesignColumns(nextColumns)
+        setInitialRows(nextRows)
+      }
+      if (scenarioDesignStateUpdatedAt > lastSyncedScenarioDesignStateUpdatedAtRef.current) {
+        lastSyncedScenarioDesignStateUpdatedAtRef.current = scenarioDesignStateUpdatedAt
+      }
+    }
+    if (validationPassed || stage === 'signpost_created' || stage === 'completed') setReviewed(true)
+
+    if (stage === 'signpost_created' || stage === 'completed') {
+      submittedCriteriaDraftRef.current = null
+      setCurrentStep('oneView')
+    }
+
+    if (reviewPending && (validationPassed || validationFailed)) {
+      setReviewPending(false)
+      setReviewMinimumLoadingComplete(false)
+      reviewStartedScenarioDesignUpdatedAtRef.current = 0
+      reviewValidationStreamStageRef.current = null
+
+      if (validationPassed) {
         setReviewed(true)
-
-        if (!canCompleteReview) {
-          setReviewFailedDialogOpen(true)
-          return
-        }
-
+        setReviewErrorItems(pendingScenarioDesignReviewItemsRef.current.filter((item) => item.severity === 'warning'))
+        pendingScenarioDesignReviewItemsRef.current = []
         setReviewCompletedVisible(true)
         showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
-
         reviewCompletedVisibleTimeoutRef.current = globalThis.setTimeout(() => {
           reviewCompletedVisibleTimeoutRef.current = null
           setReviewCompletedVisible(false)
         }, 1000)
-      }, 1000)
-    },
-    [clearScenarioDesignReviewTimeouts, showSnackbar],
-  )
+      } else {
+        setReviewed(true)
+        setReviewErrorItems([
+          ...pendingScenarioDesignReviewItemsRef.current,
+          {
+            ...createScenarioDesignReviewFallbackErrorItem(
+              scenarioDesignState?.validation?.reason?.trim() || '검토 기준을 충족하지 않는 항목이 있습니다.',
+            ),
+          },
+        ])
+        pendingScenarioDesignReviewItemsRef.current = []
+        setReviewFailedDialogOpen(true)
+      }
+    }
 
-  useEffect(() => clearScenarioDesignReviewTimeouts, [clearScenarioDesignReviewTimeouts])
+    if (signpostPending && scenarioDesignState?.step2) {
+      if (signpostStreamReceivedRef.current) {
+        signpostStreamReceivedRef.current = false
+        setOneViewDefaultKey((currentKey) => currentKey + 1)
+      }
+      setSignpostPending(false)
+      setCurrentStep('oneView')
+      scrollNextGenMILayoutToTop()
+    }
+  }, [
+    reviewPending,
+    reviewed,
+    scenarioDesignActiveTable,
+    scenarioDesignState,
+    scenarioDesignStateUpdatedAt,
+    scenarioDimensionTemplates,
+    reviewMinimumLoadingComplete,
+    showSnackbar,
+    signpostPending,
+  ])
+
+  useEffect(() => {
+    const frontendReviewItems = pendingFrontendReviewItemsRef.current
+    if (!reviewPending || !reviewMinimumLoadingComplete || frontendReviewItems === null) return
+
+    const hasBlockingReviewItem = hasBlockingScenarioDesignReviewItem(frontendReviewItems)
+
+    pendingFrontendReviewItemsRef.current = null
+    reviewStartedScenarioDesignUpdatedAtRef.current = 0
+    reviewValidationStreamStageRef.current = null
+    setReviewPending(false)
+    setReviewMinimumLoadingComplete(false)
+    setReviewed(true)
+    setReviewErrorItems(frontendReviewItems)
+
+    if (!hasBlockingReviewItem) {
+      setReviewCompletedVisible(true)
+      showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
+      reviewCompletedVisibleTimeoutRef.current = globalThis.setTimeout(() => {
+        reviewCompletedVisibleTimeoutRef.current = null
+        setReviewCompletedVisible(false)
+      }, 1000)
+    }
+  }, [reviewMinimumLoadingComplete, reviewPending, showSnackbar])
 
   useEffect(() => {
     const currentState = globalThis.history.state as { idx?: unknown; scenarioDesignLeaveGuard?: unknown } | null
@@ -472,110 +803,33 @@ const ScenarioDesignPage = () => {
     return () => globalThis.removeEventListener('popstate', handlePopState)
   }, [pushScenarioDesignHistoryGuard])
 
-  const handleBaseEventToggle = useCallback(() => {
-    setBaseEventExpanded((expanded) => !expanded)
-  }, [])
-
   const designRationale = detail?.scenarioSuggestReason?.trim() ?? ''
   const showDesignRationale = isLoading || Boolean(designRationale)
-
-  const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
-    const impactAnalysis = detail?.impactAnalysis
-    return [
-      {
-        title: '카테고리',
-        content: impactAnalysis?.eventTypeLv1Label || impactAnalysis?.eventTypeLv1 || '-',
-        description: impactAnalysis?.eventTypeLv2Label || impactAnalysis?.eventTypeLv2 || '\u00a0',
-      },
-      {
-        title: '출처',
-        content: impactAnalysis?.sources?.filter(Boolean).join(', ') || '-',
-        description: '\u00a0',
-      },
-    ]
-  }, [detail?.impactAnalysis])
-
-  const aiBullets = useMemo(() => {
-    const keySummaries = detail?.aiInsights?.keySummaries ?? []
-    if (keySummaries.length > 0) return keySummaries
-    if (isLoading) return []
-    return ['요약 데이터가 없습니다.']
-  }, [detail?.aiInsights?.keySummaries, isLoading])
-
-  const aiDetailedAnalysis = detail?.aiInsights?.detailedAnalysis ?? (isLoading ? '' : '상세 분석 데이터가 없습니다.')
-  const impactTableRows = useMemo(() => detail?.impactAnalysis?.indexImpacts ?? [], [detail?.impactAnalysis?.indexImpacts])
-  const impactNarrative = detail?.impactAnalysis?.analysisText ?? ''
-  const recordRows = useMemo(() => recordsData?.detail ?? [], [recordsData?.detail])
-  const outlookRows = useMemo(() => outlooksData?.detail ?? [], [outlooksData?.detail])
-  const visibleScenarioDesignColumns = useMemo(
-    () => SCENARIO_DESIGN_COLUMNS.filter((column) => !hiddenScenarioDesignColumnKeys.includes(column.key)),
-    [hiddenScenarioDesignColumnKeys],
-  )
-  const hiddenScenarioDesignColumns = useMemo(
-    () => SCENARIO_DESIGN_COLUMNS.filter((column) => hiddenScenarioDesignColumnKeys.includes(column.key)),
-    [hiddenScenarioDesignColumnKeys],
-  )
-  const criteriaResetDisabled = useMemo(() => {
-    const initialRows = createInitialScenarioDesignRows()
-    if (rows.length !== initialRows.length) return false
-    if (
-      hiddenScenarioDesignColumnKeys.length !== SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS.length ||
-      hiddenScenarioDesignColumnKeys.some((key) => !SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS.includes(key))
-    ) {
-      return false
-    }
-
-    return rows.every((row, index) => {
-      const initialRow = initialRows[index]
-      return (
-        initialRow !== undefined &&
-        row.id === initialRow.id &&
-        row.scenarioName === initialRow.scenarioName &&
-        row.recommended === initialRow.recommended &&
-        SCENARIO_DESIGN_COLUMNS.every((column) => row[column.key] === initialRow[column.key])
-      )
-    })
-  }, [hiddenScenarioDesignColumnKeys, rows])
-  const scenarioNameErrorMessages = useMemo(() => {
-    const scenarioNameSet = new Set<string>()
-    const errorMessages = new Map<number, string>()
-
-    rows.forEach((row) => {
-      const scenarioName = row.scenarioName.trim()
-      if (!scenarioName) {
-        errorMessages.set(row.id, '시나리오명을 입력해 주세요.')
-        return
-      }
-
-      if (scenarioNameSet.has(scenarioName)) {
-        errorMessages.set(row.id, '중복된 시나리오명은 사용할 수 없습니다.')
-        return
-      }
-
-      scenarioNameSet.add(scenarioName)
-    })
-
-    return errorMessages
-  }, [rows])
-  const canCompleteScenarioDesignReview = useMemo(
+  const criteriaResetDisabled = useMemo(
     () =>
-      scenarioNameErrorMessages.size === 0 &&
-      rows.every((row) =>
-        visibleScenarioDesignColumns.every((column) => row[column.key] !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value),
-      ),
-    [rows, scenarioNameErrorMessages, visibleScenarioDesignColumns],
+      JSON.stringify(rows) === JSON.stringify(initialRows) &&
+      JSON.stringify(visibleScenarioDesignColumns) === JSON.stringify(initialScenarioDesignColumns),
+    [initialRows, initialScenarioDesignColumns, rows, visibleScenarioDesignColumns],
+  )
+  const canCompleteScenarioDesignReview = useMemo(
+    () => !hasBlockingScenarioDesignReviewItem(reviewErrorItems) && scenarioNameErrorMessages.size === 0 && reviewed,
+    [reviewErrorItems, reviewed, scenarioNameErrorMessages.size],
   )
   const handleRowValueChange = useCallback(
-    (rowId: number, key: keyof ScenarioDesignRow, value: string) => {
-      setRows((currentRows) => currentRows.map((row) => (row.id === rowId ? { ...row, [key]: value } : row)))
-      if (reviewed && !canCompleteScenarioDesignReview && !reviewPending && !reviewCompletedVisible) {
-        setReviewFailedDialogOpen(false)
-        return
-      }
+    (rowId: number, key: string, value: string) => {
+      setRows((currentRows) =>
+        currentRows.map((row, index) => {
+          if (getScenarioDesignRowId(row, index + 1) !== rowId) return row
+          if (key === 'scenarioName') return updateScenarioDesignRowScenarioName(row, value)
 
-      resetScenarioDesignReviewState()
+          const column = visibleScenarioDesignColumns.find((item) => item.key === key)
+          return column ? updateScenarioDesignRowDimension(row, column, value) : row
+        }),
+      )
+
+      resetScenarioDesignReviewState({ keepErrorItems: true })
     },
-    [canCompleteScenarioDesignReview, resetScenarioDesignReviewState, reviewCompletedVisible, reviewed, reviewPending],
+    [resetScenarioDesignReviewState, visibleScenarioDesignColumns],
   )
 
   const handleAddRow = useCallback(() => {
@@ -584,169 +838,213 @@ const ScenarioDesignPage = () => {
 
       return [
         ...currentRows,
-        {
-          id: Math.max(0, ...currentRows.map((row) => row.id)) + 1,
-          scenarioName: '',
-          period: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-          transportDisruption: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-          supplyIntensity: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-          supplyRecovery: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-          branchItem: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-          ...createScenarioDesignGeneratedBranchDefaults(),
-        },
+        createScenarioDesignRow(
+          Math.max(0, ...currentRows.map((row) => row.displayOrder ?? 0)) + 1,
+          visibleScenarioDesignColumns,
+          agentScenarioDesignColumnKeys,
+        ),
       ]
     })
-    resetScenarioDesignReviewState()
-  }, [resetScenarioDesignReviewState])
+    resetScenarioDesignReviewState({ keepErrorItems: true })
+  }, [agentScenarioDesignColumnKeys, resetScenarioDesignReviewState, visibleScenarioDesignColumns])
 
   const handleDeleteCriteriaColumn = useCallback(
-    (key: ScenarioDesignColumnKey) => {
-      if (isScenarioDesignRequiredColumn(key)) return
-      setHiddenScenarioDesignColumnKeys((currentKeys) => (currentKeys.includes(key) ? currentKeys : [...currentKeys, key]))
-      resetScenarioDesignReviewState()
+    (key: string) => {
+      const column = visibleScenarioDesignColumns.find((item) => item.key === key)
+      if (!column || isScenarioDesignRequiredColumn(column)) return
+
+      setVisibleScenarioDesignColumns((currentColumns) => currentColumns.filter((item) => item.key !== key))
+      setAgentScenarioDesignColumnKeys((currentKeys) => {
+        const nextKeys = new Set(currentKeys)
+        nextKeys.delete(key)
+        return nextKeys
+      })
+      setRows((currentRows) =>
+        currentRows.map((row) => ({
+          ...row,
+          dimensions: row.dimensions?.filter((dimension) => dimension.key !== key) ?? [],
+        })),
+      )
+      resetScenarioDesignReviewState({ keepErrorItems: true })
+    },
+    [resetScenarioDesignReviewState, visibleScenarioDesignColumns],
+  )
+
+  const handleAddCriteriaColumns = useCallback(
+    (selectedColumns: ScenarioDesignColumn[]) => {
+      if (selectedColumns.length === 0) return
+
+      const selectedColumnKeys = selectedColumns.map((column) => column.key)
+
+      setVisibleScenarioDesignColumns((currentColumns) =>
+        sortScenarioDesignColumns([
+          ...currentColumns,
+          ...selectedColumns.filter((column) => !currentColumns.some((currentColumn) => currentColumn.key === column.key)),
+        ]),
+      )
+      setAgentScenarioDesignColumnKeys((currentKeys) => new Set([...currentKeys, ...selectedColumnKeys]))
+      setRows((currentRows) =>
+        currentRows.map((row) =>
+          selectedColumns.reduce(
+            (nextRow, column) => updateScenarioDesignRowDimension(nextRow, column, SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value),
+            row,
+          ),
+        ),
+      )
+      resetScenarioDesignReviewState({ keepErrorItems: true })
     },
     [resetScenarioDesignReviewState],
   )
-
-  const handleDeleteCriteriaColumnRequest = useCallback((key: ScenarioDesignColumnKey) => {
-    setDeleteRowId(null)
-    setDeleteCriteriaColumnKey(key)
-    setConfirmType('deleteCriteriaColumn')
-  }, [])
-
-  const handleAddCriteriaMenuClose = useCallback(() => {
-    setAddCriteriaMenuOpen(false)
-    setSelectedAddCriteriaColumnKeys([])
-  }, [])
-
-  const handleAddCriteriaMenuOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open) {
-        handleAddCriteriaMenuClose()
-        return
-      }
-
-      if (hiddenScenarioDesignColumns.length === 0) {
-        showSnackbar('추가 가능한 분기 기준이 없습니다.', { variant: 'info' })
-        return
-      }
-
-      setSelectedAddCriteriaColumnKeys([])
-      setAddCriteriaMenuOpen(true)
-    },
-    [handleAddCriteriaMenuClose, hiddenScenarioDesignColumns.length, showSnackbar],
-  )
-
-  const handleToggleAddCriteriaColumn = useCallback((key: ScenarioDesignColumnKey) => {
-    setSelectedAddCriteriaColumnKeys((currentKeys) =>
-      currentKeys.includes(key) ? currentKeys.filter((currentKey) => currentKey !== key) : [...currentKeys, key],
-    )
-  }, [])
-
-  const handleAddSelectedCriteria = useCallback(() => {
-    if (selectedAddCriteriaColumnKeys.length === 0) return
-
-    shouldScrollCriteriaTableToEndRef.current = true
-    setHiddenScenarioDesignColumnKeys((currentKeys) => currentKeys.filter((key) => !selectedAddCriteriaColumnKeys.includes(key)))
-    setAddCriteriaMenuOpen(false)
-    setSelectedAddCriteriaColumnKeys([])
-    resetScenarioDesignReviewState()
-  }, [resetScenarioDesignReviewState, selectedAddCriteriaColumnKeys])
 
   const handleDeleteRow = useCallback(
     (rowId: number) => {
-      setRows((currentRows) => (currentRows.length <= 1 ? currentRows : currentRows.filter((row) => row.id !== rowId)))
-      resetScenarioDesignReviewState()
+      setRows((currentRows) =>
+        currentRows.length <= 1 ? currentRows : currentRows.filter((row, index) => getScenarioDesignRowId(row, index + 1) !== rowId),
+      )
+      resetScenarioDesignReviewState({ keepErrorItems: true })
     },
     [resetScenarioDesignReviewState],
   )
 
-  const handleDeleteRowRequest = useCallback((rowId: number) => {
-    setDeleteCriteriaColumnKey(null)
-    setDeleteRowId(rowId)
-    setConfirmType('deleteRow')
-  }, [])
-
   const handleResetCriteriaStep = useCallback(() => {
-    shouldScrollCriteriaTableToEndRef.current = false
-    setRows(createInitialScenarioDesignRows())
-    setHiddenScenarioDesignColumnKeys([...SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS])
-    setAddCriteriaMenuOpen(false)
-    setSelectedAddCriteriaColumnKeys([])
+    if (scenarioGroupId === null) return
+
     resetScenarioDesignReviewState()
-    showSnackbar('모든 항목이 기본값으로 초기화되었습니다.', { variant: 'success' })
-  }, [resetScenarioDesignReviewState, showSnackbar])
+    resetScenarioDesignMutation.mutate(undefined, {
+      onSuccess: async (resetState) => {
+        const resetTable = getScenarioDesignActiveTable(resetState)
+        if (resetTable) {
+          const nextColumns = createScenarioDesignColumns(resetTable.dimensionColumns, scenarioDimensionTemplates)
+          const nextRows = resetTable.scenarios ?? []
+
+          setVisibleScenarioDesignColumns(nextColumns)
+          setInitialScenarioDesignColumns(nextColumns)
+          setRows(nextRows)
+          setInitialRows(nextRows)
+          setAgentScenarioDesignColumnKeys(new Set())
+        } else {
+          setRows(initialRows)
+          setVisibleScenarioDesignColumns(initialScenarioDesignColumns)
+          setAgentScenarioDesignColumnKeys(new Set())
+        }
+
+        await refetchScenarioDesignState()
+        showSnackbar('모든 항목이 기본값으로 초기화되었습니다.', { variant: 'success' })
+      },
+    })
+  }, [
+    initialRows,
+    initialScenarioDesignColumns,
+    refetchScenarioDesignState,
+    resetScenarioDesignMutation,
+    resetScenarioDesignReviewState,
+    scenarioGroupId,
+    scenarioDimensionTemplates,
+    showSnackbar,
+  ])
 
   const handleConfirmClose = useCallback(() => {
     setConfirmType(null)
-    setDeleteRowId(null)
-    setDeleteCriteriaColumnKey(null)
   }, [])
+
+  const handleCreateScenarioSignposts = useCallback(async () => {
+    if (scenarioGroupId === null) return
+
+    signpostStreamReceivedRef.current = false
+    setSignpostPending(true)
+    setCurrentStep('oneView')
+    scrollNextGenMILayoutToTop()
+
+    try {
+      await createScenarioSignpostsMutation.mutateAsync()
+    } catch {
+      setSignpostPending(false)
+      setCurrentStep('criteria')
+      showSnackbar('시나리오 One-view 생성을 요청하지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+    }
+  }, [createScenarioSignpostsMutation, scenarioGroupId, showSnackbar])
 
   const handleConfirm = useCallback(
     (type: ScenarioDesignConfirmType) => {
       setConfirmType(null)
-
-      if (type === 'criteriaReset') {
-        handleResetCriteriaStep()
-        return
-      }
 
       if (type === 'cancel') {
         handleLeaveScenarioDesign()
         return
       }
 
-      if (type === 'deleteRow') {
-        if (deleteRowId !== null) {
-          handleDeleteRow(deleteRowId)
-          showSnackbar('시나리오가 삭제되었습니다.', { variant: 'success' })
-        }
-        setDeleteRowId(null)
-        return
-      }
-
-      if (type === 'deleteCriteriaColumn') {
-        if (deleteCriteriaColumnKey !== null) {
-          handleDeleteCriteriaColumn(deleteCriteriaColumnKey)
-        }
-        setDeleteCriteriaColumnKey(null)
-        return
-      }
-
-      if (type === 'reviewComplete') {
+      if (type === 'reviewComplete' || type === 'reviewCompleteWithWarning') {
         if (!reviewed || !canCompleteScenarioDesignReview) return
-        setCurrentStep('oneView')
-        scrollNextGenMILayoutToTop()
-        return
+        void handleCreateScenarioSignposts()
       }
-
-      startScenarioDesignReview(canCompleteScenarioDesignReview)
     },
-    [
-      deleteCriteriaColumnKey,
-      deleteRowId,
-      canCompleteScenarioDesignReview,
-      handleDeleteCriteriaColumn,
-      handleDeleteRow,
-      handleLeaveScenarioDesign,
-      handleResetCriteriaStep,
-      reviewed,
-      showSnackbar,
-      startScenarioDesignReview,
-    ],
+    [canCompleteScenarioDesignReview, handleCreateScenarioSignposts, handleLeaveScenarioDesign, reviewed],
   )
 
   const handleComplete = useCallback(() => {
     if (!reviewed || !canCompleteScenarioDesignReview) return
-    setConfirmType('reviewComplete')
-  }, [canCompleteScenarioDesignReview, reviewed])
+    setConfirmType(hasWarningScenarioDesignReviewItem(reviewErrorItems) ? 'reviewCompleteWithWarning' : 'reviewComplete')
+  }, [canCompleteScenarioDesignReview, reviewErrorItems, reviewed])
 
-  const handleCreateScenarioGroup = useCallback(() => {
-    confirmedScenarioDesignLeaveRef.current = true
-    showSnackbar('시나리오 그룹이 생성되었습니다.', { variant: 'success' })
-    navigate(getNextGenMITabPath('scenarios'))
-  }, [navigate, showSnackbar])
+  const handleCreateScenarioGroup = useCallback(
+    async (value: {
+      scenarioGroupName: string
+      scenarioGroupSummary: string
+      scenarioGroupDescription: string
+      scenarioNarratives: Array<{ rowId: number; narrative: string }>
+      scenarioPossibilities: Array<{ rowId: number; possibility: number }>
+      scenarioSignposts: Array<{ rowId: number; signposts: DesignConfirmSignpost[] }>
+    }) => {
+      const editTable = createScenarioDesignEditTable(visibleScenarioDesignColumns, rows)
+      const narrativeMap = new Map(value.scenarioNarratives.map((item) => [item.rowId, item.narrative]))
+      const possibilityMap = new Map(value.scenarioPossibilities.map((item) => [item.rowId, item.possibility]))
+      const signpostMap = new Map(value.scenarioSignposts.map((item) => [item.rowId, item.signposts]))
+      const minimumLoadingPromise = new Promise<void>((resolve) => {
+        globalThis.setTimeout(resolve, 1000)
+      })
+
+      setScenarioGroupCreatePending(true)
+      try {
+        const response = await confirmScenarioDesignMutation.mutateAsync({
+          scenarioGroup: {
+            title: value.scenarioGroupName,
+            summary: value.scenarioGroupSummary,
+            description: value.scenarioGroupDescription,
+          },
+          table: {
+            dimensionColumns: editTable.dimensionColumns,
+            scenarios: rows.map((row, index) => {
+              const rowId = getScenarioDesignRowId(row, index + 1)
+              const editRow = editTable.scenarios?.[index]
+
+              return {
+                scenarioId: row.scenarioId ?? null,
+                displayOrder: row.displayOrder ?? index + 1,
+                scenarioName: row.scenarioName ?? '',
+                baseCase: row.baseCase ?? false,
+                dimensions: editRow?.dimensions ?? [],
+                probability: possibilityMap.get(rowId) ?? 0,
+                narrative: narrativeMap.get(rowId) ?? '',
+                signposts: signpostMap.get(rowId) ?? [],
+              }
+            }),
+          },
+        })
+
+        await minimumLoadingPromise
+        setScenarioGroupCreatePending(false)
+        preserveScenarioDesignGroupRef.current = true
+        confirmedScenarioDesignLeaveRef.current = true
+        showSnackbar('시나리오 그룹이 생성되었습니다.', { variant: 'success' })
+        navigate(getNextGenMIScenarioGroupDetailPath(response.scenarioGroupId ?? scenarioGroupId ?? ''), { replace: true })
+      } catch {
+        await minimumLoadingPromise
+        setScenarioGroupCreatePending(false)
+        showSnackbar('시나리오 그룹 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+      }
+    },
+    [confirmScenarioDesignMutation, navigate, rows, scenarioGroupId, showSnackbar, visibleScenarioDesignColumns],
+  )
 
   const headerTitleSlot = useMemo(
     () => (
@@ -783,70 +1081,96 @@ const ScenarioDesignPage = () => {
 
   const headerRightAction = useMemo(() => <NextGenMIUserFeedback pageTitle="Scenario Design" />, [])
 
-  const baseEventDetailContent = useMemo<ReactNode>(() => {
-    if (selectedBaseEventTab === 'impact') {
-      return (
-        <EventDetailImpactAnalysisSection
-          tableRows={impactTableRows}
-          kpiItems={impactKpiPair}
-          narrative={impactNarrative}
-          loading={isLoading}
-          isNoiseEvent={nextGenMIIsEventNoiseSignal(detail?.signalType)}
-          compact
-        />
-      )
-    }
+  const criteriaStepProps = useMemo(
+    () => ({
+      criteria: {
+        rows,
+        initialRows,
+        initialScenarioDesignColumns,
+        visibleScenarioDesignColumns,
+        hiddenScenarioDesignColumns,
+        agentScenarioDesignColumnKeys,
+        scenarioNameErrorMessages,
+        dimensionValueErrorMessages: criteriaValidation.dimensionValueErrorMessages,
+        onRowValueChange: handleRowValueChange,
+        onDeleteRow: handleDeleteRow,
+        onDeleteCriteriaColumn: handleDeleteCriteriaColumn,
+        onAddCriteriaColumns: handleAddCriteriaColumns,
+        onAddRow: handleAddRow,
+      },
+      baseEvent: {
+        eventId: id,
+        detail,
+        title: eventTitle,
+        isSuggested: isScenarioSuggested,
+        createdAtLabel,
+        typeLabel: eventTypeLabel,
+        onEventClick: handleBackToEvent,
+      },
+      rationale: {
+        visible: showDesignRationale,
+        text: designRationale,
+      },
+      isLoading: scenarioDesignLoading,
+      review: {
+        reviewed,
+        pending: reviewPending || validateScenarioDesignMutation.isPending,
+        completedVisible: reviewCompletedVisible,
+        canComplete: canCompleteScenarioDesignReview,
+        errorItems: reviewErrorItems,
+        onConfirm: startScenarioDesignReview,
+        onComplete: handleComplete,
+      },
+      actions: {
+        onCancel: handleCancelScenarioDesignRequest,
+        onReset: handleResetCriteriaStep,
+        resetDisabled: criteriaResetDisabled || resetScenarioDesignMutation.isPending,
+      },
+    }),
+    [
+      agentScenarioDesignColumnKeys,
+      canCompleteScenarioDesignReview,
+      createdAtLabel,
+      criteriaValidation.dimensionValueErrorMessages,
+      criteriaResetDisabled,
+      detail,
+      designRationale,
+      eventTitle,
+      eventTypeLabel,
+      handleAddCriteriaColumns,
+      handleAddRow,
+      handleBackToEvent,
+      handleCancelScenarioDesignRequest,
+      handleComplete,
+      handleDeleteCriteriaColumn,
+      handleDeleteRow,
+      handleResetCriteriaStep,
+      handleRowValueChange,
+      hiddenScenarioDesignColumns,
+      id,
+      initialRows,
+      initialScenarioDesignColumns,
+      isScenarioSuggested,
+      resetScenarioDesignMutation.isPending,
+      reviewed,
+      reviewCompletedVisible,
+      reviewErrorItems,
+      reviewPending,
+      rows,
+      scenarioDesignLoading,
+      scenarioNameErrorMessages,
+      showDesignRationale,
+      startScenarioDesignReview,
+      validateScenarioDesignMutation.isPending,
+      visibleScenarioDesignColumns,
+    ],
+  )
 
-    if (selectedBaseEventTab === 'driverTree') {
-      return (
-        <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={isLoading} compact />
-      )
-    }
-
-    if (selectedBaseEventTab === 'outlook') {
-      return (
-        <EventDetailInstitutionalOutlookTable
-          rows={outlookRows}
-          serverPagination={outlooksData}
-          onServerPageChange={(page) => setOutlooksPagination((pagination) => ({ ...pagination, page }))}
-          onServerSizeChange={(size) => setOutlooksPagination({ size, page: 1 })}
-          loading={outlooksLoading}
-          compact
-        />
-      )
-    }
-
-    if (selectedBaseEventTab === 'records') {
-      return (
-        <EventDetailMiRecordsTable
-          rows={recordRows}
-          serverPagination={recordsData}
-          onServerPageChange={(page) => setRecordsPagination((pagination) => ({ ...pagination, page }))}
-          onServerSizeChange={(size) => setRecordsPagination({ size, page: 1 })}
-          loading={recordsLoading}
-          compact
-        />
-      )
-    }
-
-    return <EventDetailAiInsightsSection bullets={aiBullets} detailedAnalysis={aiDetailedAnalysis} loading={isLoading} compact />
-  }, [
-    aiBullets,
-    aiDetailedAnalysis,
-    detail?.driverTreeScoreboard,
-    detail?.signalType,
-    impactKpiPair,
-    impactNarrative,
-    impactTableRows,
-    isLoading,
-    outlookRows,
-    outlooksData,
-    outlooksLoading,
-    recordRows,
-    recordsData,
-    recordsLoading,
-    selectedBaseEventTab,
-  ])
+  const confirmContent = useMemo(() => (confirmType ? getScenarioDesignConfirmContent(confirmType) : null), [confirmType])
+  const handleConfirmSubmit = useCallback(() => {
+    if (!confirmType) return
+    handleConfirm(confirmType)
+  }, [confirmType, handleConfirm])
 
   useLayoutEffect(() => {
     publishScenarioDesignHeaderContent({
@@ -858,20 +1182,6 @@ const ScenarioDesignPage = () => {
       rightAction: headerRightAction,
     })
   }, [handleCancelScenarioDesignRequest, headerRightAction, headerSectionSlot, headerTitleSlot])
-
-  useLayoutEffect(() => {
-    if (!shouldScrollCriteriaTableToEndRef.current) return undefined
-
-    shouldScrollCriteriaTableToEndRef.current = false
-    const scrollEl = criteriaTableScrollRef.current
-    if (!scrollEl) return undefined
-
-    const frame = globalThis.requestAnimationFrame(() => {
-      scrollEl.scrollTo({ left: Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth), behavior: 'smooth' })
-    })
-
-    return () => globalThis.cancelAnimationFrame(frame)
-  }, [visibleScenarioDesignColumns.length])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioDesignHeaderView />, {
@@ -890,56 +1200,27 @@ const ScenarioDesignPage = () => {
       <Stack maxWidth="1380px" margin="auto" padding="12px 12px 0px" position="relative" sx={{ overflowX: 'hidden' }}>
         {currentStep === 'oneView' ? (
           <ScenarioDesignOneViewStep
+            key={oneViewDefaultKey}
             rows={rows}
             columns={visibleScenarioDesignColumns}
-            narrative=""
-            loading={isLoading}
-            onCancel={() => setConfirmType('cancel')}
+            groupName={scenarioDesignState?.step2?.groupName ?? ''}
+            groupSummary={scenarioDesignState?.step2?.summary ?? ''}
+            groupDescription={scenarioDesignState?.step2?.description ?? ''}
+            loading={scenarioDesignLoading}
+            creatingScenarioGroup={scenarioGroupCreatePending || confirmScenarioDesignMutation.isPending}
+            onCancel={handleCancelScenarioDesignRequest}
             onCreate={handleCreateScenarioGroup}
           />
         ) : (
-          <ScenarioDesignCriteriaStep
-            rows={rows}
-            visibleScenarioDesignColumns={visibleScenarioDesignColumns}
-            hiddenScenarioDesignColumns={hiddenScenarioDesignColumns}
-            scenarioNameErrorMessages={scenarioNameErrorMessages}
-            reviewed={reviewed}
-            reviewPending={reviewPending}
-            reviewCompletedVisible={reviewCompletedVisible}
-            canCompleteScenarioDesignReview={canCompleteScenarioDesignReview}
-            criteriaTableScrollRef={criteriaTableScrollRef}
-            addCriteriaMenuOpen={addCriteriaMenuOpen}
-            selectedAddCriteriaColumnKeys={selectedAddCriteriaColumnKeys}
-            eventTitle={eventTitle}
-            isLoading={isLoading}
-            isScenarioSuggested={isScenarioSuggested}
-            createdAtLabel={createdAtLabel}
-            eventTypeLabel={eventTypeLabel}
-            baseEventExpanded={baseEventExpanded}
-            selectedBaseEventTab={selectedBaseEventTab}
-            baseEventDetailContent={baseEventDetailContent}
-            showDesignRationale={showDesignRationale}
-            designRationale={designRationale}
-            onEventClick={handleBackToEvent}
-            onBaseEventToggle={handleBaseEventToggle}
-            onBaseEventTabChange={setSelectedBaseEventTab}
-            onRowValueChange={handleRowValueChange}
-            onDeleteRowRequest={handleDeleteRowRequest}
-            onDeleteCriteriaColumn={handleDeleteCriteriaColumnRequest}
-            onAddCriteriaMenuOpenChange={handleAddCriteriaMenuOpenChange}
-            onToggleAddCriteriaColumn={handleToggleAddCriteriaColumn}
-            onAddCriteriaMenuClose={handleAddCriteriaMenuClose}
-            onAddSelectedCriteria={handleAddSelectedCriteria}
-            onAddRow={handleAddRow}
-            resetDisabled={criteriaResetDisabled}
-            onReset={() => setConfirmType('criteriaReset')}
-            onCancel={handleCancelScenarioDesignRequest}
-            onReview={() => setConfirmType('review')}
-            onComplete={handleComplete}
-          />
+          <ScenarioDesignCriteriaStep {...criteriaStepProps} />
         )}
       </Stack>
-      <ScenarioDesignConfirmDialog type={confirmType} onClose={handleConfirmClose} onConfirm={handleConfirm} />
+      <ScenarioDesignConfirmDialog
+        open={confirmType !== null}
+        content={confirmContent}
+        onClose={handleConfirmClose}
+        onConfirm={handleConfirmSubmit}
+      />
       <ScenarioDesignReviewFailedDialog open={reviewFailedDialogOpen} onClose={() => setReviewFailedDialogOpen(false)} />
     </>
   )

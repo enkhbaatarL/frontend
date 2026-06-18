@@ -41,6 +41,7 @@ interface ScenarioGroupGraphViewProps {
   height?: number
   defaultIndexName?: NextGenMIIndexName
   headingSlot?: ReactNode
+  chartBackgroundColor?: string
 }
 
 const ScenarioGroupGraphView = ({
@@ -49,12 +50,13 @@ const ScenarioGroupGraphView = ({
   height = 480,
   defaultIndexName = 'JKM',
   headingSlot,
+  chartBackgroundColor = 'commonColor.White',
 }: ScenarioGroupGraphViewProps) => {
   const [indexName, setIndexName] = useState<NextGenMIIndexName>(defaultIndexName)
   const [periodUnit, setPeriodUnit] = useState<ScenarioGroupGraphPeriodUnit>('monthly')
   const [filter, setFilter] = useState<ScenarioGroupGraphFilter>({ showNonExecuted: true, showDiscarded: false })
   const [visibilityMap, setVisibilityMap] = useState<Map<string, boolean>>(new Map())
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  const [hoveredKeys, setHoveredKeys] = useState<string[] | null>(null)
   const chartWrapperRef = useRef<HTMLDivElement | null>(null)
   const realizedDefaultAppliedRef = useRef(false)
   const executionPopupRef = useRef<ScenarioModelExecutionPopupRef>(null)
@@ -72,7 +74,7 @@ const ScenarioGroupGraphView = ({
 
   useEffect(() => {
     setVisibilityMap(new Map())
-    setHoveredKey(null)
+    setHoveredKeys(null)
   }, [graphData])
 
   useEffect(() => {
@@ -169,7 +171,7 @@ const ScenarioGroupGraphView = ({
                   />
                 </Stack>
               </Stack>
-              <Box width="100%" height={`${height}px`} borderRadius="10px" bgcolor={hasChart ? 'commonColor.White' : 'gray.5'}>
+              <Box width="100%" height={`${height}px`} borderRadius="10px" bgcolor={hasChart ? chartBackgroundColor : 'gray.5'}>
                 {graphQuery.isLoading ? (
                   <Skeleton variant="rounded" width="100%" height="100%" sx={{ borderRadius: '10px' }} />
                 ) : hasChart && render ? (
@@ -178,10 +180,11 @@ const ScenarioGroupGraphView = ({
                     height={height}
                     charts={render.charts}
                     chartVisibilityMap={visibilityMap}
-                    hoveredChartKey={hoveredKey}
+                    hoveredChartKey={hoveredKeys}
                     chartColorMap={render.chartColorMap}
                     crosshairDateFormat={render.periodUnit === 'yearly' ? 'YYYY' : 'YYYY-MM'}
                     currentMarkerGranularity={render.periodUnit === 'yearly' ? 'YEAR' : 'MONTH'}
+                    zoomButtonBackgroundColor={chartBackgroundColor}
                     disableIntroAnimation
                     spanGaps
                   />
@@ -209,11 +212,11 @@ const ScenarioGroupGraphView = ({
                   baseItems={render.baseLegend}
                   scenarioItems={render.scenarioLegend}
                   visibilityMap={visibilityMap}
-                  hoveredKey={hoveredKey}
+                  hoveredKey={hoveredKeys}
                   filter={filter}
                   onToggle={handleToggle}
                   onFilterChange={setFilter}
-                  onHover={setHoveredKey}
+                  onHover={setHoveredKeys}
                   onExecute={handleExecute}
                   executingScenarioIds={executingScenarioIds}
                 />

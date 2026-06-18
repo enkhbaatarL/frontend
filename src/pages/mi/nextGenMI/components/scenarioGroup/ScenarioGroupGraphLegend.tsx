@@ -17,11 +17,11 @@ interface ScenarioGroupGraphLegendProps {
   baseItems: ScenarioGroupGraphLegendItem[]
   scenarioItems: ScenarioGroupGraphLegendItem[]
   visibilityMap: Map<string, boolean>
-  hoveredKey: string | null
+  hoveredKey: string[] | null
   filter: ScenarioGroupGraphFilter
   onToggle: (toggleKeys: string[]) => void
   onFilterChange: (filter: ScenarioGroupGraphFilter) => void
-  onHover: (visibilityKey: string | null) => void
+  onHover: (visibilityKeys: string[] | null) => void
   onExecute: (scenarioId: number) => void
   executingScenarioIds: Set<number>
 }
@@ -179,6 +179,7 @@ const ScenarioGroupGraphLegend = ({
 }: ScenarioGroupGraphLegendProps) => {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null)
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null)
+  const [hoveredAction, setHoveredAction] = useState<string | null>(null)
 
   const renderItems = (items: ScenarioGroupGraphLegendItem[]) =>
     items.map((item) => {
@@ -188,6 +189,7 @@ const ScenarioGroupGraphLegend = ({
       const isHovered = hoveredRow === item.visibilityKey
       const showEye = interactive && (hoveredIcon === item.visibilityKey || isHidden)
       const executing = isNonExecuted && item.scenarioId !== undefined && executingScenarioIds.has(item.scenarioId)
+      const showExecuteButton = isNonExecuted && hoveredAction === item.visibilityKey && !executing
 
       return (
         <Stack
@@ -200,7 +202,7 @@ const ScenarioGroupGraphLegend = ({
           minWidth={0}
           onMouseEnter={() => {
             setHoveredRow(item.visibilityKey)
-            if (interactive && !isHidden) onHover(item.visibilityKey)
+            if (interactive && !isHidden) onHover(item.toggleKeys)
           }}
           onMouseLeave={() => {
             setHoveredRow(null)
@@ -235,8 +237,8 @@ const ScenarioGroupGraphLegend = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '26px',
-                  height: '26px',
+                  width: '24px',
+                  height: '24px',
                   padding: 0,
                   border: 'none',
                   backgroundColor: 'transparent',
@@ -261,10 +263,14 @@ const ScenarioGroupGraphLegend = ({
           {isNonExecuted ? (
             executing ? (
               <ExecutingBadge />
-            ) : isHovered ? (
-              <ExecuteButton onClick={() => item.scenarioId !== undefined && onExecute(item.scenarioId)} />
             ) : (
-              <StatusBadge label="미실행" tone="nonExecuted" />
+              <Stack flexShrink={0} onMouseEnter={() => setHoveredAction(item.visibilityKey)} onMouseLeave={() => setHoveredAction(null)}>
+                {showExecuteButton ? (
+                  <ExecuteButton onClick={() => item.scenarioId !== undefined && onExecute(item.scenarioId)} />
+                ) : (
+                  <StatusBadge label="미실행" tone="nonExecuted" />
+                )}
+              </Stack>
             )
           ) : (
             item.statusLabel && <StatusBadge label={item.statusLabel} tone={item.realized ? 'realized' : 'discarded'} />

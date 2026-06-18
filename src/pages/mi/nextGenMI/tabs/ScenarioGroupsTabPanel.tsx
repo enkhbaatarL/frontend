@@ -213,6 +213,7 @@ const ScenarioGroupsTabPanel = () => {
           loading={groupQuery.isLoading}
           skeletonRowCount={pagination.size}
           emptyMessage="조건에 맞는 시나리오 그룹이 없습니다."
+          chartBackgroundColor="transparent"
         />
       ) : (
         <Box mt={2}>

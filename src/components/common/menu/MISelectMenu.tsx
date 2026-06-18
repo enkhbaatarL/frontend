@@ -276,7 +276,9 @@ const MISelectMenu = <T,>({
         onClick={() => (itemDisabled ? null : handleToggle(value))}
         borderRadius="10px"
         height={selectionIconPosition === 'left' ? '36px' : undefined}
-        boxSizing={selectionIconPosition === 'left' ? 'border-box' : undefined}
+        width="100%"
+        minWidth={0}
+        boxSizing="border-box"
         sx={{
           padding: `8px ${suffix ? '8px' : '12px'} 8px ${hasLeftSelectionIcon ? '6px' : icon ? '8px' : '12px'}`,
           backgroundColor:
@@ -292,6 +294,7 @@ const MISelectMenu = <T,>({
             backgroundColor: itemDisabled ? 'transparent' : selectionIconPosition === 'left' ? 'contentBG.Active' : 'gray.10',
           },
           textWrap: 'nowrap',
+          overflow: 'hidden',
         }}
       >
         <Stack
@@ -299,19 +302,34 @@ const MISelectMenu = <T,>({
           alignItems="center"
           justifyContent="space-between"
           width="100%"
-          minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
+          minWidth={0}
           gap={selectionIconPosition === 'left' ? '8px' : '12px'}
           component="div"
+          overflow="hidden"
         >
-          <MIBaseButtonLabel
-            prefix={prefix}
-            suffix={suffix}
-            color={labelColor}
+          {prefix && (
+            <Box component="span" display="inline-flex" alignItems="center" flexShrink={0} minWidth={0}>
+              {prefix}
+            </Box>
+          )}
+          <Typography
+            component="span"
             variant="body2M14"
-            textAlign={selectionIconPosition === 'left' ? 'left' : undefined}
+            color={labelColor}
+            flex={1}
+            minWidth={0}
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
+            textAlign="left"
           >
             {label}
-          </MIBaseButtonLabel>
+          </Typography>
+          {suffix && (
+            <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" flexShrink={0}>
+              {suffix}
+            </Box>
+          )}
         </Stack>
       </Box>
     )
@@ -401,15 +419,17 @@ const MISelectMenu = <T,>({
         <Typography
           variant="body2SB14"
           color={disabled ? 'contentText.Disabled' : open ? 'contentText.Black' : 'contentText.Normal'}
+          flex={1}
+          minWidth={0}
           noWrap
         >
           {externalTextLabel !== undefined ? externalTextLabel : selectedItems.label}
         </Typography>
         {!hideChevron &&
           (open ? (
-            <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+            <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled', flexShrink: 0 }} />
           ) : (
-            <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+            <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled', flexShrink: 0 }} />
           ))}
       </Stack>
     </Stack>

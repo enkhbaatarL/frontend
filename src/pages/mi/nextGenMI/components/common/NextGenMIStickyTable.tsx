@@ -22,6 +22,7 @@ export type NextGenMIStickyTableColumn<T> = {
   getRowSpan?: (params: { row: T; rowIndex: number; column: NextGenMIStickyTableColumn<T> }) => number
   cellSx?: SxProps<Theme>
   headerCellSx?: SxProps<Theme>
+  headerContentSx?: SxProps<Theme>
 }
 
 type NextGenMIStickyTableProps<T> = {
@@ -522,6 +523,7 @@ const NextGenMIStickyTable = <T,>({
               width: 'fit-content',
               maxWidth: '100%',
             },
+            ...toSxArray(column.headerContentSx),
           ]}
         >
           {column.headerName}

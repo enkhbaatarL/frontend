@@ -68,6 +68,8 @@ const NextGenMIUserFeedback = ({ pageTitle }: NextGenMIUserFeedbackProps) => {
         sx: { width: '600px', overflow: 'hidden' },
       }}
       sx={{
+        width: '36px',
+        minWidth: '36px',
         height: '36px',
         padding: '11px',
         color: 'contentIcon.Enabled',

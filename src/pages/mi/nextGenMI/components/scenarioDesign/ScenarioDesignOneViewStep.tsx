@@ -18,6 +18,9 @@ import {
   useState,
 } from 'react'
 
+import type { DesignConfirmSignpost, DesignScenarioRow, ScenarioSignpostStrength } from '@/service/mi/nextGenMI/scenarioDesign'
+
+import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIChip from '@/components/common/chip/MIChip'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
@@ -28,71 +31,76 @@ import useSnackbar from '@/hooks/useSnackbar'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import {
   getScenarioDesignColumnDisplayValue,
-  SCENARIO_DESIGN_REVIEW_DEFAULT_NARRATIVE,
+  getScenarioDesignRowId,
   type ScenarioDesignColumn,
-  type ScenarioDesignRow,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
 
-const SCENARIO_DESIGN_REVIEW_DEFAULT_GROUP_NAME = 'Agent에 의해 시나리오 그룹명이 생성'
-const SCENARIO_DESIGN_REVIEW_DEFAULT_SIGNPOST_LABEL = '호르무즈 동향 건별 협의 재개 보도 지속'
 const SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH = 400
 const SCENARIO_DESIGN_REVIEW_CARD_MIN_WIDTH = 320
 const SCENARIO_DESIGN_REVIEW_CARD_MAX_WIDTH = 720
 const SCENARIO_DESIGN_REVIEW_SPLITTER_WIDTH = 12
 
-type ScenarioDesignReviewSignpostImpact = 'veryHigh' | 'high' | 'medium' | 'low' | 'veryLow'
-
 type ScenarioDesignReviewCreateValue = {
   scenarioGroupName: string
+  scenarioGroupSummary: string
   scenarioGroupDescription: string
   scenarioNarratives: Array<{ rowId: number; narrative: string }>
   scenarioPossibilities: Array<{ rowId: number; possibility: number }>
+  scenarioSignposts: Array<{ rowId: number; signposts: DesignConfirmSignpost[] }>
 }
 
-const scenarioDesignReviewSignpostImpactItems: Array<{ value: ScenarioDesignReviewSignpostImpact; label: string }> = [
-  { value: 'veryHigh', label: '매우 높음' },
-  { value: 'high', label: '높음' },
+const scenarioDesignReviewSignpostImpactItems: Array<{ value: ScenarioSignpostStrength; label: string }> = [
+  { value: 'verystrong', label: '매우 높음' },
+  { value: 'strong', label: '높음' },
   { value: 'medium', label: '중간' },
-  { value: 'low', label: '낮음' },
-  { value: 'veryLow', label: '매우 낮음' },
+  { value: 'weak', label: '낮음' },
+  { value: 'veryweak', label: '매우 낮음' },
 ]
 
-const createScenarioDesignReviewInitialPossibilities = (rows: ScenarioDesignRow[]) => {
+const createScenarioDesignReviewInitialPossibilities = (rows: DesignScenarioRow[]) => {
   const nextPossibilities: Record<number, string> = {}
-  if (rows.length === 0) return nextPossibilities
 
-  const recommendedRow = rows.length > 1 ? rows.find((row) => row.recommended) : undefined
-  const remainingRows = recommendedRow ? rows.filter((row) => row.id !== recommendedRow.id) : rows
-  const remainingTotal = recommendedRow ? 70 : 100
-  const basePossibility = Math.floor(remainingTotal / remainingRows.length)
-  const remainder = remainingTotal % remainingRows.length
-
-  remainingRows.forEach((row, index) => {
-    nextPossibilities[row.id] = String(basePossibility + (index < remainder ? 1 : 0))
+  rows.forEach((row, index) => {
+    nextPossibilities[getScenarioDesignRowId(row, index + 1)] = String(row.probability ?? 0)
   })
-
-  if (recommendedRow) {
-    nextPossibilities[recommendedRow.id] = '30'
-  }
 
   return nextPossibilities
 }
 
-const createScenarioDesignReviewInitialNarratives = (rows: ScenarioDesignRow[], narrative: string) => {
+const createScenarioDesignReviewInitialNarratives = (rows: DesignScenarioRow[]) => {
   const nextNarratives: Record<number, string> = {}
 
-  rows.forEach((row) => {
-    nextNarratives[row.id] = narrative
+  rows.forEach((row, index) => {
+    nextNarratives[getScenarioDesignRowId(row, index + 1)] = row.narrative ?? ''
   })
 
   return nextNarratives
 }
 
-const createScenarioDesignReviewCardWidths = (rows: ScenarioDesignRow[], currentWidths: Record<number, number> = {}) => {
+const createScenarioDesignReviewInitialSignposts = (rows: DesignScenarioRow[]) => {
+  const nextSignposts: Record<number, DesignConfirmSignpost[]> = {}
+
+  rows.forEach((row, rowIndex) => {
+    nextSignposts[getScenarioDesignRowId(row, rowIndex + 1)] = (row.signposts ?? []).map((signpost, index) => ({
+      signpostId: signpost.signpostId ?? null,
+      label: signpost.label ?? '',
+      direction: signpost.direction ?? 'sup',
+      rationale: signpost.rationale ?? '',
+      strength: signpost.strength ?? 'medium',
+      displayOrder: signpost.displayOrder ?? index + 1,
+      used: true,
+    }))
+  })
+
+  return nextSignposts
+}
+
+const createScenarioDesignReviewCardWidths = (rows: DesignScenarioRow[], currentWidths: Record<number, number> = {}) => {
   const nextWidths: Record<number, number> = {}
 
-  rows.forEach((row) => {
-    nextWidths[row.id] = currentWidths[row.id] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH
+  rows.forEach((row, index) => {
+    const rowId = getScenarioDesignRowId(row, index + 1)
+    nextWidths[rowId] = currentWidths[rowId] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH
   })
 
   return nextWidths
@@ -101,15 +109,19 @@ const createScenarioDesignReviewCardWidths = (rows: ScenarioDesignRow[], current
 const getScenarioDesignReviewCardWidthChangeCapacity = (width: number, direction: number) =>
   direction > 0 ? SCENARIO_DESIGN_REVIEW_CARD_MAX_WIDTH - width : width - SCENARIO_DESIGN_REVIEW_CARD_MIN_WIDTH
 
-const getScenarioDesignReviewCardWidthChangeCapacityTotal = (rows: ScenarioDesignRow[], widths: Record<number, number>, change: number) => {
+const getScenarioDesignReviewCardWidthChangeCapacityTotal = (rows: DesignScenarioRow[], widths: Record<number, number>, change: number) => {
   const direction = Math.sign(change)
   if (direction === 0) return 0
 
-  return rows.reduce((total, row) => total + Math.max(getScenarioDesignReviewCardWidthChangeCapacity(widths[row.id], direction), 0), 0)
+  return rows.reduce(
+    (total, row, index) =>
+      total + Math.max(getScenarioDesignReviewCardWidthChangeCapacity(widths[getScenarioDesignRowId(row, index + 1)], direction), 0),
+    0,
+  )
 }
 
 const applyScenarioDesignReviewCardWidthChange = (
-  rows: ScenarioDesignRow[],
+  rows: DesignScenarioRow[],
   sourceWidths: Record<number, number>,
   targetWidths: Record<number, number>,
   change: number,
@@ -119,24 +131,28 @@ const applyScenarioDesignReviewCardWidthChange = (
 
   let remainingChange = Math.abs(change)
   let adjustableRows = rows
-    .map((row) => ({
+    .map((row, index) => ({
       row,
-      capacity: Math.max(getScenarioDesignReviewCardWidthChangeCapacity(sourceWidths[row.id], direction), 0),
+      rowId: getScenarioDesignRowId(row, index + 1),
+      capacity: Math.max(
+        getScenarioDesignReviewCardWidthChangeCapacity(sourceWidths[getScenarioDesignRowId(row, index + 1)], direction),
+        0,
+      ),
     }))
     .filter(({ capacity }) => capacity > 0)
 
   while (remainingChange > 0.0001 && adjustableRows.length > 0) {
     const changePerRow = remainingChange / adjustableRows.length
-    const nextAdjustableRows: Array<{ row: ScenarioDesignRow; capacity: number }> = []
+    const nextAdjustableRows: Array<{ row: DesignScenarioRow; rowId: number; capacity: number }> = []
 
-    adjustableRows.forEach(({ row, capacity }) => {
+    adjustableRows.forEach(({ row, rowId, capacity }) => {
       const appliedChange = Math.min(changePerRow, capacity)
-      targetWidths[row.id] += direction * appliedChange
+      targetWidths[rowId] += direction * appliedChange
       remainingChange -= appliedChange
 
       const nextCapacity = capacity - appliedChange
       if (nextCapacity > 0.0001) {
-        nextAdjustableRows.push({ row, capacity: nextCapacity })
+        nextAdjustableRows.push({ row, rowId, capacity: nextCapacity })
       }
     })
 
@@ -144,19 +160,20 @@ const applyScenarioDesignReviewCardWidthChange = (
   }
 }
 
-const roundScenarioDesignReviewCardWidths = (rows: ScenarioDesignRow[], widths: Record<number, number>, targetTotal: number) => {
+const roundScenarioDesignReviewCardWidths = (rows: DesignScenarioRow[], widths: Record<number, number>, targetTotal: number) => {
   let assignedTotal = 0
 
   rows.forEach((row, index) => {
-    const width = index === rows.length - 1 ? Math.round((targetTotal - assignedTotal) * 100) / 100 : Math.round(widths[row.id] * 100) / 100
+    const rowId = getScenarioDesignRowId(row, index + 1)
+    const width = index === rows.length - 1 ? Math.round((targetTotal - assignedTotal) * 100) / 100 : Math.round(widths[rowId] * 100) / 100
 
-    widths[row.id] = width
+    widths[rowId] = width
     assignedTotal += width
   })
 }
 
 const getScenarioDesignReviewResizedCardWidths = (
-  rows: ScenarioDesignRow[],
+  rows: DesignScenarioRow[],
   widths: Record<number, number>,
   splitterIndex: number,
   delta: number,
@@ -182,12 +199,12 @@ const getScenarioDesignReviewResizedCardWidths = (
   roundScenarioDesignReviewCardWidths(
     leftRows,
     nextWidths,
-    leftRows.reduce((total, row) => total + widths[row.id], constrainedDelta),
+    leftRows.reduce((total, row, index) => total + widths[getScenarioDesignRowId(row, index + 1)], constrainedDelta),
   )
   roundScenarioDesignReviewCardWidths(
     rightRows,
     nextWidths,
-    rightRows.reduce((total, row) => total + widths[row.id], -constrainedDelta),
+    rightRows.reduce((total, row, index) => total + widths[getScenarioDesignRowId(row, index + 1)], -constrainedDelta),
   )
 
   return nextWidths
@@ -732,7 +749,7 @@ const ScenarioDesignReviewTextSection = ({
         </Typography>
         {modified && <ScenarioDesignReviewModifiedBadge />}
       </Stack>
-      <ScenarioDesignReviewResetButton disabled={!modified} onClick={onReset} />
+      <ScenarioDesignReviewResetButton disabled={loading || !modified} onClick={onReset} />
     </Stack>
     <ScenarioDesignReviewParagraphField
       ariaLabel={title}
@@ -898,6 +915,33 @@ const ScenarioDesignReviewPossibilityWarning = () => (
   </Stack>
 )
 
+const ScenarioDesignReviewLoadingOverlay = ({ visible, message }: { visible: boolean; message: string }) => (
+  <Stack
+    position="absolute"
+    top={0}
+    right={0}
+    bottom={0}
+    left={0}
+    gap="10px"
+    alignItems="center"
+    justifyContent="center"
+    zIndex={8}
+    aria-live="polite"
+    sx={{
+      backgroundColor: 'rgba(255, 255, 255, 0.72)',
+      opacity: visible ? 1 : 0,
+      visibility: visible ? 'visible' : 'hidden',
+      transition: 'opacity 160ms ease, visibility 160ms ease',
+      pointerEvents: visible ? 'auto' : 'none',
+    }}
+  >
+    <MIAgentSpinner size={40} tone="gray" />
+    <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} noWrap>
+      {message}
+    </Typography>
+  </Stack>
+)
+
 const ScenarioDesignReviewResetConfirmDialog = ({
   open,
   onClose,
@@ -995,14 +1039,14 @@ const ScenarioDesignReviewSignpostSelectBox = ({
   disabled,
   onChange,
 }: {
-  value: ScenarioDesignReviewSignpostImpact
+  value: ScenarioSignpostStrength
   disabled?: boolean
-  onChange: (value: ScenarioDesignReviewSignpostImpact) => void
+  onChange: (value: ScenarioSignpostStrength) => void
 }) => {
   const selectedItem = scenarioDesignReviewSignpostImpactItems.find((item) => item.value === value)
 
   return (
-    <MISelectMenu<ScenarioDesignReviewSignpostImpact>
+    <MISelectMenu<ScenarioSignpostStrength>
       selected={value}
       onSelected={onChange}
       items={scenarioDesignReviewSignpostImpactItems}
@@ -1108,44 +1152,54 @@ const ScenarioDesignReviewUnusedBadge = () => (
 const ScenarioDesignReviewSignpost = ({
   rowId,
   index,
-  initialDisabled,
-  initialLabel = 'Signpost',
+  signpost,
   resetKey,
   rowResetKey,
   onModifiedChange,
+  onValueChange,
 }: {
   rowId: number
   index: number
-  initialDisabled?: boolean
-  initialLabel?: string
+  signpost: DesignConfirmSignpost
   resetKey: number
   rowResetKey: number
   onModifiedChange?: (rowId: number, index: number, modified: boolean) => void
+  onValueChange: (rowId: number, index: number, value: DesignConfirmSignpost) => void
 }) => {
+  const initialEnabled = signpost.used !== false
+  const initialLabel = signpost.label?.trim() || 'Signpost'
+  const initialImpact = signpost.strength ?? 'medium'
   const [menuOpen, setMenuOpen] = useState(false)
-  const [enabled, setEnabled] = useState(!initialDisabled)
+  const [enabled, setEnabled] = useState(initialEnabled)
   const [label, setLabel] = useState(initialLabel)
-  const [impact, setImpact] = useState<ScenarioDesignReviewSignpostImpact>('high')
+  const [impact, setImpact] = useState<ScenarioSignpostStrength>(initialImpact)
   const [draftEnabled, setDraftEnabled] = useState(enabled)
   const [draftLabel, setDraftLabel] = useState(label)
-  const [draftImpact, setDraftImpact] = useState<ScenarioDesignReviewSignpostImpact>(impact)
+  const [draftImpact, setDraftImpact] = useState<ScenarioSignpostStrength>(impact)
   const impactLabel = scenarioDesignReviewSignpostImpactItems.find((item) => item.value === impact)?.label ?? '높음'
   const displayLabel = label.trim() || 'Signpost'
   const draftChanged = draftEnabled !== enabled || draftLabel !== label || draftImpact !== impact
   const applyDisabled = !draftChanged || (draftEnabled && draftLabel.trim().length === 0)
 
   useEffect(() => {
-    const nextEnabled = !initialDisabled
-
     setMenuOpen(false)
-    setEnabled(nextEnabled)
+    setEnabled(initialEnabled)
     setLabel(initialLabel)
-    setImpact('high')
-    setDraftEnabled(nextEnabled)
+    setImpact(initialImpact)
+    setDraftEnabled(initialEnabled)
     setDraftLabel(initialLabel)
-    setDraftImpact('high')
+    setDraftImpact(initialImpact)
     onModifiedChange?.(rowId, index, false)
-  }, [index, initialDisabled, initialLabel, onModifiedChange, resetKey, rowId, rowResetKey])
+    onValueChange(rowId, index, {
+      signpostId: signpost.signpostId ?? null,
+      label: initialLabel,
+      direction: signpost.direction ?? 'sup',
+      rationale: signpost.rationale ?? '',
+      strength: initialImpact,
+      displayOrder: signpost.displayOrder ?? index + 1,
+      used: initialEnabled,
+    })
+  }, [index, initialEnabled, initialImpact, initialLabel, onModifiedChange, onValueChange, resetKey, rowId, rowResetKey, signpost])
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
@@ -1170,7 +1224,16 @@ const ScenarioDesignReviewSignpost = ({
     setEnabled(draftEnabled)
     setLabel(nextLabel)
     setImpact(draftImpact)
-    onModifiedChange?.(rowId, index, draftEnabled !== !initialDisabled || nextLabel !== initialLabel || draftImpact !== 'high')
+    onModifiedChange?.(rowId, index, draftEnabled !== initialEnabled || nextLabel !== initialLabel || draftImpact !== initialImpact)
+    onValueChange(rowId, index, {
+      signpostId: signpost.signpostId ?? null,
+      label: nextLabel,
+      direction: signpost.direction ?? 'sup',
+      rationale: signpost.rationale ?? '',
+      strength: draftImpact,
+      displayOrder: signpost.displayOrder ?? index + 1,
+      used: draftEnabled,
+    })
     setMenuOpen(false)
   }
 
@@ -1334,8 +1397,10 @@ const ScenarioDesignReviewSignpost = ({
 }
 
 const ScenarioDesignReviewScenarioCard = ({
+  rowId,
   row,
   columns,
+  signposts,
   narrative,
   cardWidth,
   showSplitter,
@@ -1358,10 +1423,13 @@ const ScenarioDesignReviewScenarioCard = ({
   onPossibilityChange,
   onPossibilityReset,
   onSignpostModifiedChange,
+  onSignpostValueChange,
   onSignpostReset,
 }: {
-  row: ScenarioDesignRow
+  rowId: number
+  row: DesignScenarioRow
   columns: ScenarioDesignColumn[]
+  signposts: DesignConfirmSignpost[]
   narrative: string
   cardWidth: number
   showSplitter?: boolean
@@ -1384,6 +1452,7 @@ const ScenarioDesignReviewScenarioCard = ({
   onPossibilityChange: (value: string) => void
   onPossibilityReset: () => void
   onSignpostModifiedChange: (rowId: number, index: number, modified: boolean) => void
+  onSignpostValueChange: (rowId: number, index: number, value: DesignConfirmSignpost) => void
   onSignpostReset: () => void
 }) => (
   <Stack
@@ -1413,7 +1482,7 @@ const ScenarioDesignReviewScenarioCard = ({
       <Stack gap="6px" padding="6px 8px 12px" minHeight="95px">
         <Stack direction="row" alignItems="center" gap="4px">
           <MIChip label="시나리오" color="gray" size="h20" disableHover sx={{ padding: '2px 6px', borderRadius: '8px' }} />
-          {row.recommended && (
+          {row.baseCase && (
             <MIChip
               label="BC"
               color="purple"
@@ -1441,7 +1510,7 @@ const ScenarioDesignReviewScenarioCard = ({
             WebkitBoxOrient: 'vertical',
           }}
         >
-          {row.scenarioName}
+          {row.scenarioName ?? ''}
         </Typography>
       </Stack>
       <Divider />
@@ -1476,7 +1545,7 @@ const ScenarioDesignReviewScenarioCard = ({
             <ScenarioDesignReviewCriteriaCard
               key={column.key}
               label={column.label}
-              value={getScenarioDesignColumnDisplayValue(column.key, row[column.key])}
+              value={getScenarioDesignColumnDisplayValue(column, row)}
               fullWidth={columns.length % 2 === 1 && index === columns.length - 1}
             />
           ))}
@@ -1503,18 +1572,24 @@ const ScenarioDesignReviewScenarioCard = ({
           onReset={onSignpostReset}
         />
         <Stack gap="8px">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <ScenarioDesignReviewSignpost
-              key={index}
-              rowId={row.id}
-              index={index}
-              initialDisabled={index === 5 || (row.recommended === true && index === 1)}
-              initialLabel={index === 0 ? SCENARIO_DESIGN_REVIEW_DEFAULT_SIGNPOST_LABEL : undefined}
-              resetKey={resetKey}
-              rowResetKey={signpostResetKey}
-              onModifiedChange={onSignpostModifiedChange}
-            />
-          ))}
+          {signposts.length === 0 ? (
+            <Typography variant="body2M14" color="contentText.Subtext" lineHeight={1.5} padding="10px 12px">
+              Signpost 데이터가 없습니다.
+            </Typography>
+          ) : (
+            signposts.map((signpost, index) => (
+              <ScenarioDesignReviewSignpost
+                key={signpost.signpostId ?? signpost.displayOrder ?? index}
+                rowId={rowId}
+                index={index}
+                signpost={signpost}
+                resetKey={resetKey}
+                rowResetKey={signpostResetKey}
+                onModifiedChange={onSignpostModifiedChange}
+                onValueChange={onSignpostValueChange}
+              />
+            ))
+          )}
         </Stack>
       </Stack>
     </Stack>
@@ -1570,28 +1645,95 @@ const ScenarioDesignReviewScenarioCard = ({
   </Stack>
 )
 
+const ScenarioDesignReviewScenarioCardSkeleton = ({ cardWidth, showSplitter }: { cardWidth: number; showSplitter?: boolean }) => (
+  <Stack
+    width={`calc(var(--scenario-design-card-width) + ${showSplitter ? SCENARIO_DESIGN_REVIEW_SPLITTER_WIDTH : 0}px)`}
+    flex={`0 0 calc(var(--scenario-design-card-width) + ${showSplitter ? SCENARIO_DESIGN_REVIEW_SPLITTER_WIDTH : 0}px)`}
+    minWidth={0}
+    style={{ '--scenario-design-card-width': `${cardWidth}px` } as CSSProperties}
+  >
+    <Stack
+      width="var(--scenario-design-card-width)"
+      flex="0 0 var(--scenario-design-card-width)"
+      bgcolor="commonColor.White"
+      border="1px solid"
+      borderColor="contentBorder.Normal"
+      borderRadius="10px"
+      padding="12px"
+      boxSizing="border-box"
+    >
+      <Stack gap="8px" padding="6px 8px 12px" minHeight="95px">
+        <Skeleton variant="rounded" width="72px" height="20px" />
+        <Skeleton variant="rounded" width="82%" height="24px" />
+        <Skeleton variant="rounded" width="64%" height="18px" />
+      </Stack>
+      <Divider />
+
+      <Stack gap="10px" padding="24px 0">
+        <Skeleton variant="rounded" width="128px" height="22px" />
+        <Skeleton variant="rounded" width="100%" height="194px" sx={{ borderRadius: '10px' }} />
+      </Stack>
+      <Divider />
+
+      <Stack gap="10px" padding="24px 0">
+        <Skeleton variant="rounded" width="128px" height="22px" />
+        <Stack display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap="8px">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={`criteriaSkeleton${index}`} variant="rounded" height="72px" sx={{ borderRadius: '10px' }} />
+          ))}
+        </Stack>
+      </Stack>
+      <Divider />
+
+      <Stack gap="10px" padding="24px 0">
+        <Skeleton variant="rounded" width="112px" height="22px" />
+        <Skeleton variant="rounded" width="120px" height="36px" />
+      </Stack>
+      <Divider />
+
+      <Stack gap="10px" padding="24px 0 0">
+        <Skeleton variant="rounded" width="96px" height="22px" />
+        <Skeleton variant="rounded" width="100%" height="56px" sx={{ borderRadius: '10px' }} />
+        <Skeleton variant="rounded" width="100%" height="56px" sx={{ borderRadius: '10px' }} />
+      </Stack>
+    </Stack>
+  </Stack>
+)
+
 type ScenarioDesignOneViewStepProps = {
-  rows: ScenarioDesignRow[]
+  rows: DesignScenarioRow[]
   columns: ScenarioDesignColumn[]
-  narrative: string
+  groupName: string
+  groupSummary: string
+  groupDescription: string
   loading: boolean
+  creatingScenarioGroup?: boolean
   onCancel: () => void
   onCreate: (value: ScenarioDesignReviewCreateValue) => void
 }
 
-const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel, onCreate }: ScenarioDesignOneViewStepProps) => {
+const ScenarioDesignOneViewStep = ({
+  rows,
+  columns,
+  groupName,
+  groupSummary,
+  groupDescription,
+  loading,
+  creatingScenarioGroup = false,
+  onCancel,
+  onCreate,
+}: ScenarioDesignOneViewStepProps) => {
   const { showSnackbar } = useSnackbar()
-  const reviewNarrative = narrative || SCENARIO_DESIGN_REVIEW_DEFAULT_NARRATIVE
   const defaultScenarioPossibilities = useMemo(() => createScenarioDesignReviewInitialPossibilities(rows), [rows])
-  const defaultScenarioNarratives = useMemo(
-    () => createScenarioDesignReviewInitialNarratives(rows, reviewNarrative),
-    [reviewNarrative, rows],
-  )
-  const previousReviewNarrativeRef = useRef(reviewNarrative)
-  const [scenarioGroupName, setScenarioGroupName] = useState(SCENARIO_DESIGN_REVIEW_DEFAULT_GROUP_NAME)
-  const [scenarioGroupDescription, setScenarioGroupDescription] = useState(reviewNarrative)
+  const defaultScenarioNarratives = useMemo(() => createScenarioDesignReviewInitialNarratives(rows), [rows])
+  const defaultScenarioSignposts = useMemo(() => createScenarioDesignReviewInitialSignposts(rows), [rows])
+  const previousGroupNameRef = useRef(groupName)
+  const previousGroupDescriptionRef = useRef(groupDescription)
+  const [scenarioGroupName, setScenarioGroupName] = useState(groupName)
+  const [scenarioGroupDescription, setScenarioGroupDescription] = useState(groupDescription)
   const [scenarioNarratives, setScenarioNarratives] = useState<Record<number, string>>(() => defaultScenarioNarratives)
   const [scenarioPossibilities, setScenarioPossibilities] = useState<Record<number, string>>(() => defaultScenarioPossibilities)
+  const [scenarioSignposts, setScenarioSignposts] = useState<Record<number, DesignConfirmSignpost[]>>(() => defaultScenarioSignposts)
   const [possibilityErrorRowId, setPossibilityErrorRowId] = useState<number | null>(null)
   const [touchedFieldNames, setTouchedFieldNames] = useState<Partial<Record<'scenarioGroupName' | 'scenarioGroupDescription', boolean>>>({})
   const [touchedScenarioNarrativeRows, setTouchedScenarioNarrativeRows] = useState<Record<number, boolean>>({})
@@ -1615,22 +1757,29 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
   const scenarioReviewScrollLayoutStateRef = useRef(scenarioReviewScrollLayoutState)
   const [isScenarioReviewScrollHovered, setIsScenarioReviewScrollHovered] = useState(false)
   const [isScenarioReviewScrollbarDragging, setIsScenarioReviewScrollbarDragging] = useState(false)
-  const scenarioGroupNameModified = scenarioGroupName !== SCENARIO_DESIGN_REVIEW_DEFAULT_GROUP_NAME
-  const scenarioGroupDescriptionModified = scenarioGroupDescription !== reviewNarrative
+  const scenarioGroupNameModified = scenarioGroupName !== groupName
+  const scenarioGroupDescriptionModified = scenarioGroupDescription !== groupDescription
   const scenarioReviewResetDisabled = useMemo(
     () =>
       !scenarioGroupNameModified &&
       !scenarioGroupDescriptionModified &&
-      rows.every((row) => (scenarioNarratives[row.id] ?? reviewNarrative) === (defaultScenarioNarratives[row.id] ?? reviewNarrative)) &&
-      rows.every((row) => (scenarioPossibilities[row.id] ?? '0') === (defaultScenarioPossibilities[row.id] ?? '0')) &&
+      rows.every((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        return (scenarioNarratives[rowId] ?? '') === (defaultScenarioNarratives[rowId] ?? '')
+      }) &&
+      rows.every((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        return (scenarioPossibilities[rowId] ?? '0') === (defaultScenarioPossibilities[rowId] ?? '0')
+      }) &&
       rows.every(
-        (row) => (scenarioCardWidths[row.id] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH) === SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH,
+        (row, index) =>
+          (scenarioCardWidths[getScenarioDesignRowId(row, index + 1)] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH) ===
+          SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH,
       ) &&
       !Object.values(signpostModifiedRows).some((modifiedRows) => Object.values(modifiedRows).some(Boolean)),
     [
       defaultScenarioNarratives,
       defaultScenarioPossibilities,
-      reviewNarrative,
       rows,
       scenarioCardWidths,
       scenarioGroupDescriptionModified,
@@ -1651,15 +1800,20 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
     [scenarioGroupDescription, scenarioGroupName],
   )
   const canCreateScenarioNarratives = useMemo(
-    () => rows.every((row) => (scenarioNarratives[row.id] ?? reviewNarrative).trim().length > 0),
-    [reviewNarrative, rows, scenarioNarratives],
+    () => rows.every((row, index) => (scenarioNarratives[getScenarioDesignRowId(row, index + 1)] ?? '').trim().length > 0),
+    [rows, scenarioNarratives],
   )
   const hasScenarioNarrativeError = useMemo(
-    () => rows.some((row) => touchedScenarioNarrativeRows[row.id] && (scenarioNarratives[row.id] ?? reviewNarrative).trim().length === 0),
-    [reviewNarrative, rows, scenarioNarratives, touchedScenarioNarrativeRows],
+    () =>
+      rows.some((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        return touchedScenarioNarrativeRows[rowId] && (scenarioNarratives[rowId] ?? '').trim().length === 0
+      }),
+    [rows, scenarioNarratives, touchedScenarioNarrativeRows],
   )
   const possibilityTotal = useMemo(() => getScenarioDesignReviewPossibilityTotal(scenarioPossibilities), [scenarioPossibilities])
   const canCreateScenarioPossibilities = possibilityTotal === 100 && possibilityErrorRowId === null
+  const interactionDisabled = loading || creatingScenarioGroup
 
   useEffect(
     () => () => {
@@ -1672,38 +1826,56 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
   )
 
   useEffect(() => {
-    const previousReviewNarrative = previousReviewNarrativeRef.current
+    const previousGroupName = previousGroupNameRef.current
+    const previousGroupDescription = previousGroupDescriptionRef.current
 
+    setScenarioGroupName((currentName) => {
+      if (currentName !== previousGroupName) return currentName
+      return groupName
+    })
     setScenarioGroupDescription((currentDescription) => {
-      if (currentDescription !== previousReviewNarrative) return currentDescription
-      return reviewNarrative
+      if (currentDescription !== previousGroupDescription) return currentDescription
+      return groupDescription
     })
     setScenarioNarratives((currentNarratives) => {
       const nextNarratives: Record<number, string> = {}
 
-      rows.forEach((row) => {
-        const currentNarrative = currentNarratives[row.id]
-        nextNarratives[row.id] =
-          currentNarrative === undefined || currentNarrative === previousReviewNarrative ? reviewNarrative : currentNarrative
+      rows.forEach((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        const currentNarrative = currentNarratives[rowId]
+        const defaultNarrative = defaultScenarioNarratives[rowId] ?? ''
+        nextNarratives[rowId] = currentNarrative === undefined ? defaultNarrative : currentNarrative
       })
 
       return nextNarratives
     })
-    previousReviewNarrativeRef.current = reviewNarrative
-  }, [reviewNarrative, rows])
+    setScenarioSignposts((currentSignposts) => {
+      const nextSignposts: Record<number, DesignConfirmSignpost[]> = {}
+
+      rows.forEach((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        nextSignposts[rowId] = currentSignposts[rowId] ?? defaultScenarioSignposts[rowId] ?? []
+      })
+
+      return nextSignposts
+    })
+    previousGroupNameRef.current = groupName
+    previousGroupDescriptionRef.current = groupDescription
+  }, [defaultScenarioNarratives, defaultScenarioSignposts, groupDescription, groupName, rows])
 
   useEffect(() => {
     setScenarioPossibilities((currentPossibilities) => {
       const nextPossibilities: Record<number, string> = {}
-      rows.forEach((row) => {
-        nextPossibilities[row.id] = currentPossibilities[row.id] ?? defaultScenarioPossibilities[row.id] ?? '0'
+      rows.forEach((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        nextPossibilities[rowId] = currentPossibilities[rowId] ?? defaultScenarioPossibilities[rowId] ?? '0'
       })
       return nextPossibilities
     })
 
     setPossibilityErrorRowId(null)
     setTouchedScenarioNarrativeRows((currentRows) => {
-      const rowIds = new Set(rows.map((row) => row.id))
+      const rowIds = new Set(rows.map((row, index) => getScenarioDesignRowId(row, index + 1)))
       const nextRows: Record<number, boolean> = {}
 
       Object.entries(currentRows).forEach(([rowId, touched]) => {
@@ -1717,7 +1889,7 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
     setSignpostModifiedRows({})
     setScenarioCardWidths((currentWidths) => createScenarioDesignReviewCardWidths(rows, currentWidths))
     setActiveScenarioCardSplitterIndex(null)
-    const rowIds = new Set(rows.map((row) => row.id))
+    const rowIds = new Set(rows.map((row, index) => getScenarioDesignRowId(row, index + 1)))
     Object.keys(scenarioCardRefs.current).forEach((rowId) => {
       const numericRowId = Number(rowId)
       if (!rowIds.has(numericRowId)) delete scenarioCardRefs.current[numericRowId]
@@ -1776,7 +1948,7 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
       el.removeEventListener('scroll', scheduleSync)
       resizeObserver.disconnect()
     }
-  }, [columns.length, rows.length])
+  }, [columns.length, loading, rows.length])
 
   const handlePossibilityChange = (rowId: number, value: string) => {
     if (!/^\d{0,3}$/.test(value)) return
@@ -1812,7 +1984,7 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
   const handleScenarioNarrativeReset = (rowId: number) => {
     setScenarioNarratives((currentNarratives) => ({
       ...currentNarratives,
-      [rowId]: defaultScenarioNarratives[rowId] ?? reviewNarrative,
+      [rowId]: defaultScenarioNarratives[rowId] ?? '',
     }))
     setTouchedScenarioNarrativeRows((currentRows) => ({
       ...currentRows,
@@ -1919,8 +2091,25 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
     })
   }, [])
 
+  const handleSignpostValueChange = useCallback((rowId: number, index: number, value: DesignConfirmSignpost) => {
+    setScenarioSignposts((currentRows) => {
+      const nextRows = { ...currentRows }
+      const nextSignposts = [...(nextRows[rowId] ?? [])]
+
+      if (JSON.stringify(nextSignposts[index]) === JSON.stringify(value)) return currentRows
+
+      nextSignposts[index] = value
+      nextRows[rowId] = nextSignposts
+      return nextRows
+    })
+  }, [])
+
   const handleSignpostReset = (rowId: number) => {
     setSignpostResetKeys((currentKeys) => ({ ...currentKeys, [rowId]: (currentKeys[rowId] ?? 0) + 1 }))
+    setScenarioSignposts((currentRows) => ({
+      ...currentRows,
+      [rowId]: defaultScenarioSignposts[rowId] ?? [],
+    }))
     setSignpostModifiedRows((currentRows) => {
       if (!currentRows[rowId]) return currentRows
 
@@ -1959,10 +2148,11 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
   }
 
   const handleReset = () => {
-    setScenarioGroupName(SCENARIO_DESIGN_REVIEW_DEFAULT_GROUP_NAME)
-    setScenarioGroupDescription(reviewNarrative)
+    setScenarioGroupName(groupName)
+    setScenarioGroupDescription(groupDescription)
     setScenarioNarratives(defaultScenarioNarratives)
     setScenarioPossibilities(defaultScenarioPossibilities)
+    setScenarioSignposts(defaultScenarioSignposts)
     setPossibilityErrorRowId(null)
     setTouchedFieldNames({})
     setTouchedScenarioNarrativeRows({})
@@ -1977,8 +2167,8 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
   const handleCreate = () => {
     const nextTouchedScenarioNarrativeRows: Record<number, boolean> = {}
 
-    rows.forEach((row) => {
-      nextTouchedScenarioNarrativeRows[row.id] = true
+    rows.forEach((row, index) => {
+      nextTouchedScenarioNarrativeRows[getScenarioDesignRowId(row, index + 1)] = true
     })
 
     setTouchedFieldNames({
@@ -1991,250 +2181,278 @@ const ScenarioDesignOneViewStep = ({ rows, columns, narrative, loading, onCancel
 
     onCreate({
       scenarioGroupName: scenarioGroupName.trim(),
+      scenarioGroupSummary: groupSummary,
       scenarioGroupDescription: scenarioGroupDescription.trim(),
-      scenarioNarratives: rows.map((row) => ({
-        rowId: row.id,
-        narrative: (scenarioNarratives[row.id] ?? reviewNarrative).trim(),
-      })),
-      scenarioPossibilities: rows.map((row) => ({
-        rowId: row.id,
-        possibility: Number(scenarioPossibilities[row.id]) || 0,
+      scenarioNarratives: rows.map((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        return {
+          rowId,
+          narrative: (scenarioNarratives[rowId] ?? '').trim(),
+        }
+      }),
+      scenarioPossibilities: rows.map((row, index) => {
+        const rowId = getScenarioDesignRowId(row, index + 1)
+        return {
+          rowId,
+          possibility: Number(scenarioPossibilities[rowId]) || 0,
+        }
+      }),
+      scenarioSignposts: rows.map((row, index) => ({
+        rowId: getScenarioDesignRowId(row, index + 1),
+        signposts: scenarioSignposts[getScenarioDesignRowId(row, index + 1)] ?? [],
       })),
     })
   }
 
+  const scenarioReviewLoadingCardCount = Math.max(rows.length, 3)
   const showScenarioReviewScrollbars = isScenarioReviewScrollHovered || isScenarioReviewScrollbarDragging
 
   return (
     <>
-      <Stack gap="24px" padding="24px 0">
-        <ScenarioDesignReviewTextSection
-          title="시나리오 그룹명"
-          value={scenarioGroupName}
-          maxLength={100}
-          minHeight="68px"
-          modified={scenarioGroupNameModified}
-          editable
-          loading={loading}
-          errorMessage={scenarioGroupNameErrorMessage}
-          resetKey={resetKey}
-          onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: true }))}
-          onChange={setScenarioGroupName}
-          onReset={() => {
-            setScenarioGroupName(SCENARIO_DESIGN_REVIEW_DEFAULT_GROUP_NAME)
-            setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: false }))
-          }}
-        />
-
-        <ScenarioDesignReviewTextSection
-          title="시나리오 그룹 설명"
-          value={scenarioGroupDescription}
-          maxLength={500}
-          minHeight="160px"
-          modified={scenarioGroupDescriptionModified}
-          editable
-          loading={loading}
-          errorMessage={scenarioGroupDescriptionErrorMessage}
-          resetKey={resetKey}
-          onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: true }))}
-          onChange={setScenarioGroupDescription}
-          onReset={() => {
-            setScenarioGroupDescription(reviewNarrative)
-            setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: false }))
-          }}
-        />
-
-        <Stack gap="12px" width="100%" minWidth={0}>
-          <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
-            시나리오 검토
-          </Typography>
-          <Stack
-            ref={scenarioReviewRootRef}
-            position="relative"
-            width="100%"
-            minWidth={0}
-            overflow="hidden"
-            onMouseEnter={() => setIsScenarioReviewScrollHovered(true)}
-            onMouseLeave={() => setIsScenarioReviewScrollHovered(false)}
-            sx={{
-              '--scenario-design-review-scroll-left-edge-opacity': 0,
-              '--scenario-design-review-scroll-right-edge-opacity': 0,
-              '--scenario-design-review-horizontal-thumb-left': '0%',
-              '--scenario-design-review-horizontal-thumb-width': '0%',
+      <Stack position="relative" width="100%" minWidth={0}>
+        <Stack gap="24px" padding="24px 0">
+          <ScenarioDesignReviewTextSection
+            title="시나리오 그룹명"
+            value={scenarioGroupName}
+            maxLength={100}
+            minHeight="68px"
+            modified={scenarioGroupNameModified}
+            editable
+            loading={loading}
+            errorMessage={scenarioGroupNameErrorMessage}
+            resetKey={resetKey}
+            onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: true }))}
+            onChange={setScenarioGroupName}
+            onReset={() => {
+              setScenarioGroupName(groupName)
+              setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: false }))
             }}
-          >
+          />
+
+          <ScenarioDesignReviewTextSection
+            title="시나리오 그룹 설명"
+            value={scenarioGroupDescription}
+            maxLength={500}
+            minHeight="160px"
+            modified={scenarioGroupDescriptionModified}
+            editable
+            loading={loading}
+            errorMessage={scenarioGroupDescriptionErrorMessage}
+            resetKey={resetKey}
+            onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: true }))}
+            onChange={setScenarioGroupDescription}
+            onReset={() => {
+              setScenarioGroupDescription(groupDescription)
+              setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: false }))
+            }}
+          />
+
+          <Stack gap="12px" width="100%" minWidth={0}>
+            <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
+              시나리오 검토
+            </Typography>
             <Stack
-              ref={scenarioReviewScrollRef}
-              direction="row"
-              gap="0px"
+              ref={scenarioReviewRootRef}
+              position="relative"
               width="100%"
               minWidth={0}
-              overflow="auto hidden"
-              paddingBottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
+              overflow="hidden"
+              onMouseEnter={() => setIsScenarioReviewScrollHovered(true)}
+              onMouseLeave={() => setIsScenarioReviewScrollHovered(false)}
               sx={{
-                scrollbarWidth: 'none',
-                '&::-webkit-scrollbar': {
-                  display: 'none',
-                },
+                '--scenario-design-review-scroll-left-edge-opacity': 0,
+                '--scenario-design-review-scroll-right-edge-opacity': 0,
+                '--scenario-design-review-horizontal-thumb-left': '0%',
+                '--scenario-design-review-horizontal-thumb-width': '0%',
               }}
             >
-              {rows.map((row, index) => {
-                const scenarioNarrative = scenarioNarratives[row.id] ?? reviewNarrative
-                const defaultScenarioNarrative = defaultScenarioNarratives[row.id] ?? reviewNarrative
-                const scenarioNarrativeErrorMessage =
-                  touchedScenarioNarrativeRows[row.id] && scenarioNarrative.trim().length === 0
-                    ? '최소 1자 이상 입력해야 합니다.'
-                    : undefined
+              <Stack
+                ref={scenarioReviewScrollRef}
+                direction="row"
+                gap="0px"
+                width="100%"
+                minWidth={0}
+                overflow="auto hidden"
+                paddingBottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
+                sx={{
+                  scrollbarWidth: 'none',
+                  '&::-webkit-scrollbar': {
+                    display: 'none',
+                  },
+                }}
+              >
+                {loading
+                  ? Array.from({ length: scenarioReviewLoadingCardCount }).map((_, index) => (
+                    <ScenarioDesignReviewScenarioCardSkeleton
+                      key={`scenarioReviewSkeleton${index}`}
+                      cardWidth={SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH}
+                      showSplitter={index < scenarioReviewLoadingCardCount - 1}
+                    />
+                  ))
+                  : rows.map((row, index) => {
+                    const rowId = getScenarioDesignRowId(row, index + 1)
+                    const scenarioNarrative = scenarioNarratives[rowId] ?? ''
+                    const defaultScenarioNarrative = defaultScenarioNarratives[rowId] ?? ''
+                    const scenarioNarrativeErrorMessage =
+                        touchedScenarioNarrativeRows[rowId] && scenarioNarrative.trim().length === 0
+                          ? '최소 1자 이상 입력해야 합니다.'
+                          : undefined
 
-                return (
-                  <ScenarioDesignReviewScenarioCard
-                    key={row.id}
-                    row={row}
-                    columns={columns}
-                    narrative={scenarioNarrative}
-                    cardWidth={scenarioCardWidths[row.id] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH}
-                    showSplitter={index < rows.length - 1}
-                    cardResizeDragging={activeScenarioCardSplitterIndex !== null}
-                    splitterActive={activeScenarioCardSplitterIndex === index}
-                    narrativeModified={scenarioNarrative !== defaultScenarioNarrative}
-                    narrativeErrorMessage={scenarioNarrativeErrorMessage}
-                    possibility={scenarioPossibilities[row.id] ?? '0'}
-                    possibilityModified={(scenarioPossibilities[row.id] ?? '0') !== (defaultScenarioPossibilities[row.id] ?? '0')}
-                    possibilityError={possibilityErrorRowId === row.id}
-                    resetKey={resetKey}
-                    signpostResetKey={signpostResetKeys[row.id] ?? 0}
-                    signpostModified={Object.values(signpostModifiedRows[row.id] ?? {}).some(Boolean)}
-                    onNarrativeBlur={() => setTouchedScenarioNarrativeRows((currentRows) => ({ ...currentRows, [row.id]: true }))}
-                    onNarrativeChange={(value) => handleScenarioNarrativeChange(row.id, value)}
-                    onNarrativeReset={() => handleScenarioNarrativeReset(row.id)}
-                    onCardRef={(element) => {
-                      scenarioCardRefs.current[row.id] = element
-                    }}
-                    onSplitterKeyDown={(event) => handleScenarioCardSplitterKeyDown(index, event)}
-                    onSplitterPointerDown={(event) => handleScenarioCardSplitterPointerDown(index, event)}
-                    onPossibilityChange={(value) => handlePossibilityChange(row.id, value)}
-                    onPossibilityReset={() => handlePossibilityReset(row.id)}
-                    onSignpostModifiedChange={handleSignpostModifiedChange}
-                    onSignpostReset={() => handleSignpostReset(row.id)}
-                  />
-                )
-              })}
-            </Stack>
-            <Stack
-              aria-hidden
-              position="absolute"
-              top={0}
-              left={0}
-              bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
-              width="100px"
-              sx={{
-                pointerEvents: 'none',
-                background: 'linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
-                opacity: 'var(--scenario-design-review-scroll-left-edge-opacity)',
-                transition: 'opacity 180ms ease',
-                zIndex: 5,
-              }}
-            />
-            <Stack
-              aria-hidden
-              position="absolute"
-              top={0}
-              right={0}
-              bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
-              width="100px"
-              sx={{
-                pointerEvents: 'none',
-                background: 'linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
-                opacity: 'var(--scenario-design-review-scroll-right-edge-opacity)',
-                transition: 'opacity 180ms ease',
-                zIndex: 5,
-              }}
-            />
-            {scenarioReviewScrollLayoutState.horizontal && (
+                    return (
+                      <ScenarioDesignReviewScenarioCard
+                        key={rowId}
+                        rowId={rowId}
+                        row={row}
+                        columns={columns}
+                        signposts={defaultScenarioSignposts[rowId] ?? []}
+                        narrative={scenarioNarrative}
+                        cardWidth={scenarioCardWidths[rowId] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH}
+                        showSplitter={index < rows.length - 1}
+                        cardResizeDragging={activeScenarioCardSplitterIndex !== null}
+                        splitterActive={activeScenarioCardSplitterIndex === index}
+                        narrativeModified={scenarioNarrative !== defaultScenarioNarrative}
+                        narrativeErrorMessage={scenarioNarrativeErrorMessage}
+                        possibility={scenarioPossibilities[rowId] ?? '0'}
+                        possibilityModified={(scenarioPossibilities[rowId] ?? '0') !== (defaultScenarioPossibilities[rowId] ?? '0')}
+                        possibilityError={possibilityErrorRowId === rowId}
+                        resetKey={resetKey}
+                        signpostResetKey={signpostResetKeys[rowId] ?? 0}
+                        signpostModified={Object.values(signpostModifiedRows[rowId] ?? {}).some(Boolean)}
+                        onNarrativeBlur={() => setTouchedScenarioNarrativeRows((currentRows) => ({ ...currentRows, [rowId]: true }))}
+                        onNarrativeChange={(value) => handleScenarioNarrativeChange(rowId, value)}
+                        onNarrativeReset={() => handleScenarioNarrativeReset(rowId)}
+                        onCardRef={(element) => {
+                          scenarioCardRefs.current[rowId] = element
+                        }}
+                        onSplitterKeyDown={(event) => handleScenarioCardSplitterKeyDown(index, event)}
+                        onSplitterPointerDown={(event) => handleScenarioCardSplitterPointerDown(index, event)}
+                        onPossibilityChange={(value) => handlePossibilityChange(rowId, value)}
+                        onPossibilityReset={() => handlePossibilityReset(rowId)}
+                        onSignpostModifiedChange={handleSignpostModifiedChange}
+                        onSignpostValueChange={handleSignpostValueChange}
+                        onSignpostReset={() => handleSignpostReset(rowId)}
+                      />
+                    )
+                  })}
+              </Stack>
               <Stack
                 aria-hidden
                 position="absolute"
+                top={0}
                 left={0}
-                right={0}
-                bottom="4px"
-                height="10px"
-                borderRadius="10px"
-                bgcolor="transparent"
+                bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
+                width="100px"
                 sx={{
-                  opacity: showScenarioReviewScrollbars ? 1 : 0,
-                  pointerEvents: showScenarioReviewScrollbars ? 'auto' : 'none',
-                  transition: 'opacity 120ms ease',
-                  zIndex: 6,
+                  pointerEvents: 'none',
+                  background: 'linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
+                  opacity: 'var(--scenario-design-review-scroll-left-edge-opacity)',
+                  transition: 'opacity 180ms ease',
+                  zIndex: 5,
                 }}
-              >
+              />
+              <Stack
+                aria-hidden
+                position="absolute"
+                top={0}
+                right={0}
+                bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
+                width="100px"
+                sx={{
+                  pointerEvents: 'none',
+                  background: 'linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
+                  opacity: 'var(--scenario-design-review-scroll-right-edge-opacity)',
+                  transition: 'opacity 180ms ease',
+                  zIndex: 5,
+                }}
+              />
+              {scenarioReviewScrollLayoutState.horizontal && (
                 <Stack
-                  onPointerDown={handleScenarioReviewScrollbarPointerDown}
+                  aria-hidden
                   position="absolute"
-                  top="2px"
-                  bottom="2px"
-                  left="var(--scenario-design-review-horizontal-thumb-left)"
-                  width="var(--scenario-design-review-horizontal-thumb-width)"
+                  left={0}
+                  right={0}
+                  bottom="4px"
+                  height="10px"
                   borderRadius="10px"
-                  bgcolor={isScenarioReviewScrollbarDragging ? '#868E96' : '#ADB5BD'}
+                  bgcolor="transparent"
                   sx={{
-                    cursor: isScenarioReviewScrollbarDragging ? 'grabbing' : 'grab',
-                    '&:hover': { bgcolor: '#868E96' },
+                    opacity: showScenarioReviewScrollbars ? 1 : 0,
+                    pointerEvents: showScenarioReviewScrollbars ? 'auto' : 'none',
+                    transition: 'opacity 120ms ease',
+                    zIndex: 6,
                   }}
-                />
-              </Stack>
-            )}
-          </Stack>
-
-          <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px" padding="12px 0">
-            <Stack direction="row" alignItems="center" gap="12px" minWidth={0}>
-              <MIBaseButton
-                variant="outlined"
-                prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
-                disabled={scenarioReviewResetDisabled}
-                onClick={() => setResetConfirmOpen(true)}
-                gap="4px"
-                sx={{ height: '36px', borderRadius: '8px', flexShrink: 0 }}
-              >
-                전체 초기화
-              </MIBaseButton>
-              {!canCreateScenarioPossibilities && <ScenarioDesignReviewPossibilityWarning />}
+                >
+                  <Stack
+                    onPointerDown={handleScenarioReviewScrollbarPointerDown}
+                    position="absolute"
+                    top="2px"
+                    bottom="2px"
+                    left="var(--scenario-design-review-horizontal-thumb-left)"
+                    width="var(--scenario-design-review-horizontal-thumb-width)"
+                    borderRadius="10px"
+                    bgcolor={isScenarioReviewScrollbarDragging ? '#868E96' : '#ADB5BD'}
+                    sx={{
+                      cursor: isScenarioReviewScrollbarDragging ? 'grabbing' : 'grab',
+                      '&:hover': { bgcolor: '#868E96' },
+                    }}
+                  />
+                </Stack>
+              )}
             </Stack>
 
-            <Stack direction="row" alignItems="center" gap="8px">
-              <MIBaseButton variant="outlined" onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
-                취소
-              </MIBaseButton>
-              <MIBaseButton
-                variant="contained"
-                suffix={<ChevronRightRoundedIcon sx={{ fontSize: '20px' }} />}
-                disabled={Boolean(
-                  scenarioGroupNameErrorMessage ||
-                    scenarioGroupDescriptionErrorMessage ||
-                    hasScenarioNarrativeError ||
-                    !canCreateScenarioPossibilities,
-                )}
-                onClick={handleCreate}
-                labelColor="contentText.White"
-                sx={{
-                  height: '36px',
-                  borderRadius: '8px',
-                  backgroundColor: 'mari.Primary',
-                  '&:hover:not(:disabled)': {
+            <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px" padding="12px 0">
+              <Stack direction="row" alignItems="center" gap="12px" minWidth={0}>
+                <MIBaseButton
+                  variant="outlined"
+                  prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
+                  disabled={interactionDisabled || scenarioReviewResetDisabled}
+                  onClick={() => setResetConfirmOpen(true)}
+                  gap="4px"
+                  sx={{ height: '36px', borderRadius: '8px', flexShrink: 0 }}
+                >
+                  전체 초기화
+                </MIBaseButton>
+                {!interactionDisabled && !canCreateScenarioPossibilities && <ScenarioDesignReviewPossibilityWarning />}
+              </Stack>
+
+              <Stack direction="row" alignItems="center" gap="8px">
+                <MIBaseButton variant="outlined" onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
+                  취소
+                </MIBaseButton>
+                <MIBaseButton
+                  variant="contained"
+                  suffix={<ChevronRightRoundedIcon sx={{ fontSize: '20px' }} />}
+                  disabled={Boolean(
+                    interactionDisabled ||
+                      scenarioGroupNameErrorMessage ||
+                      scenarioGroupDescriptionErrorMessage ||
+                      hasScenarioNarrativeError ||
+                      !canCreateScenarioPossibilities,
+                  )}
+                  onClick={handleCreate}
+                  labelColor="contentText.White"
+                  sx={{
+                    height: '36px',
+                    borderRadius: '8px',
                     backgroundColor: 'mari.Primary',
-                  },
-                  '&.Mui-disabled': {
-                    backgroundColor: '#C3CAEE',
-                  },
-                  '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
-                    color: 'contentText.White',
-                  },
-                }}
-              >
-                시나리오 그룹 생성
-              </MIBaseButton>
+                    '&:hover:not(:disabled)': {
+                      backgroundColor: 'mari.Primary',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: '#C3CAEE',
+                    },
+                    '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
+                      color: 'contentText.White',
+                    },
+                  }}
+                >
+                  시나리오 그룹 생성
+                </MIBaseButton>
+              </Stack>
             </Stack>
           </Stack>
         </Stack>
+        <ScenarioDesignReviewLoadingOverlay visible={creatingScenarioGroup} message="시나리오 그룹을 생성하고 있습니다" />
       </Stack>
       <ScenarioDesignReviewResetConfirmDialog open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} onConfirm={handleReset} />
     </>

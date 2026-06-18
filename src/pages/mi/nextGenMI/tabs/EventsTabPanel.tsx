@@ -16,6 +16,11 @@ import { buildNextGenMIDatePresets, defaultNextGenMIDateRange } from '@/pages/mi
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
+import {
+  findEventDesignAvailability,
+  isOwnEventDesignAvailability,
+  mergeEventListItemDesignAvailability,
+} from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
 import EventRecommendedStarCell from '@/pages/mi/nextGenMI/components/event/EventRecommendedStarCell'
 import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/EventScenarioGenerateButton'
@@ -25,11 +30,13 @@ import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusB
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
+  type EventDesignAvailability,
   type EventListItem,
   type EventSort,
   type EventStatus,
   type GetEventsParams,
 } from '@/service/mi/nextGenMI/event'
+import useAuthStore from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
@@ -63,6 +70,7 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
 const EventsTabPanel = () => {
   const navigate = useNavigate()
   const { onShow } = useDialog()
+  const currentUserNo = useAuthStore((state) => state.user?.userNo)
 
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
   const [sort, setSort] = useState<EventSort>('latest')
@@ -125,7 +133,32 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page])
 
-  const tableRows = data?.events?.detail ?? []
+  const rawTableRows = useMemo(() => data?.events?.detail ?? [], [data?.events?.detail])
+  const creatingEventIds = useMemo(
+    () => rawTableRows.filter((row) => row.scenarioDesignStatus === 'creating').map((row) => row.eventId),
+    [rawTableRows],
+  )
+
+  const { data: designAvailabilityData } = useQuery({
+    queryKey: ['nextGenMIEventDesignAvailability', 'events', creatingEventIds],
+    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: creatingEventIds }),
+    enabled: creatingEventIds.length > 0,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const designAvailabilityByEventId = useMemo(
+    () =>
+      new Map<number, EventDesignAvailability>(
+        (designAvailabilityData ?? []).flatMap((item) => (item.eventId === undefined ? [] : [[item.eventId, item]])),
+      ),
+    [designAvailabilityData],
+  )
+  const tableRows = useMemo(
+    () => rawTableRows.map((row) => mergeEventListItemDesignAvailability(row, designAvailabilityByEventId.get(row.eventId))),
+    [designAvailabilityByEventId, rawTableRows],
+  )
 
   const handleEventNameClick = useCallback(
     (row: EventListItem) =>
@@ -136,8 +169,19 @@ const EventsTabPanel = () => {
   )
 
   const handleScenarioClick = useCallback(
-    (row: EventListItem) => {
+    async (row: EventListItem) => {
+      let currentRow = row
       if (row.scenarioDesignStatus === 'creating') {
+        const availability =
+          designAvailabilityByEventId.get(row.eventId) ??
+          findEventDesignAvailability(
+            await nextGenMIEventService.getEventDesignAvailability({ eventIds: [row.eventId] }).catch(() => undefined),
+            row.eventId,
+          )
+        currentRow = mergeEventListItemDesignAvailability(row, availability)
+      }
+
+      if (currentRow.scenarioDesignStatus === 'creating' && !isOwnEventDesignAvailability(currentRow, currentUserNo)) {
         onShow({
           title: '시나리오 설계를 시작할 수 없습니다',
           width: 450,
@@ -146,18 +190,22 @@ const EventsTabPanel = () => {
         return
       }
 
-      if (row.scenarioDesignStatus === 'created' && row.scenarioGroupId !== undefined && row.scenarioGroupId !== null) {
-        navigate(getNextGenMIScenarioGroupDetailPath(row.scenarioGroupId), {
-          state: { eventName: row.eventName },
+      if (
+        currentRow.scenarioDesignStatus === 'created' &&
+        currentRow.scenarioGroupId !== undefined &&
+        currentRow.scenarioGroupId !== null
+      ) {
+        navigate(getNextGenMIScenarioGroupDetailPath(currentRow.scenarioGroupId), {
+          state: { eventName: currentRow.eventName },
         })
         return
       }
 
-      navigate(getNextGenMIEventDesignPath(row.eventId), {
-        state: { eventName: row.eventName },
+      navigate(getNextGenMIEventDesignPath(currentRow.eventId), {
+        state: { eventName: currentRow.eventName },
       })
     },
-    [navigate, onShow],
+    [currentUserNo, designAvailabilityByEventId, navigate, onShow],
   )
 
   const columns: GridColDef<EventListItem>[] = useMemo(

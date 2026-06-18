@@ -41,7 +41,7 @@ const ScenarioGroupGraphDownloadMenu = ({ scenarioGroupId, indexName, periodUnit
 
   return (
     <MIDropdownMenu
-      variant="outlined"
+      variant="text"
       open={open}
       onOpenChange={setOpen}
       closeOnScroll
@@ -50,13 +50,11 @@ const ScenarioGroupGraphDownloadMenu = ({ scenarioGroupId, indexName, periodUnit
       paperProps={{ sx: { minWidth: '180px' } }}
       sx={{
         width: '36px',
-        minWidth: '36px',
         height: '36px',
         padding: '0',
         justifyContent: 'center',
         borderRadius: '8px',
-        borderColor: 'contentBorder.Active',
-        backgroundColor: 'gray.5',
+        backgroundColor: 'gray.10',
         '&:hover:not(:disabled)': { backgroundColor: 'gray.10', borderColor: 'contentBorder.Active' },
         '& .MuiStack-root': { justifyContent: 'center' },
       }}

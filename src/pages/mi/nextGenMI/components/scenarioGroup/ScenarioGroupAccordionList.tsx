@@ -11,6 +11,7 @@ interface ScenarioGroupAccordionListProps {
   loading: boolean
   skeletonRowCount: number
   emptyMessage: string
+  chartBackgroundColor?: string
 }
 
 const ScenarioGroupAccordionList = ({
@@ -20,6 +21,7 @@ const ScenarioGroupAccordionList = ({
   loading,
   skeletonRowCount,
   emptyMessage,
+  chartBackgroundColor,
 }: ScenarioGroupAccordionListProps) => (
   <Stack width="100%">
     {loading ? (
@@ -46,6 +48,7 @@ const ScenarioGroupAccordionList = ({
           group={group}
           expanded={expandedGroupIds.has(group.scenarioGroupId)}
           onToggle={onToggle}
+          chartBackgroundColor={chartBackgroundColor}
         />
       ))
     )}

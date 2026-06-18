@@ -70,11 +70,14 @@ const tableButtonBaseSx = {
   },
   '& .MuiStack-root': {
     minWidth: 0,
+    overflow: 'visible',
   },
   '& .MuiTypography-root': {
+    flex: '0 0 auto',
     width: 'max-content',
     minWidth: 0,
     maxWidth: 'none',
+    overflow: 'visible',
     flexShrink: 0,
     opacity: 0,
     transform: 'translateX(-6px)',

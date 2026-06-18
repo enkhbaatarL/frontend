@@ -2,18 +2,13 @@ import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRenameOutlineRounded'
 
 import type { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
-
-export type ScenarioDesignColumnKey =
-  | 'period'
-  | 'transportDisruption'
-  | 'supplyIntensity'
-  | 'supplyRecovery'
-  | 'branchItem'
-  | 'demandAlternativeSupply'
-  | 'demandPowerMixAdjustment'
-  | 'tradeRestriction'
-  | 'generatedBranchItemA'
-  | 'generatedBranchItemB'
+import type {
+  DesignEditTable,
+  DesignScenarioRow,
+  ScenarioDimension,
+  ScenarioDimensionColumn,
+  ScenarioDimensionTemplateItem,
+} from '@/service/mi/nextGenMI/scenarioDesign'
 
 export const SCENARIO_DESIGN_BASE_EVENT_TABS = [
   { key: 'ai', label: 'AI Insights' },
@@ -24,56 +19,22 @@ export const SCENARIO_DESIGN_BASE_EVENT_TABS = [
 ] as const
 
 export type ScenarioDesignBaseEventTabKey = (typeof SCENARIO_DESIGN_BASE_EVENT_TABS)[number]['key']
-export type ScenarioDesignConfirmType = 'criteriaReset' | 'cancel' | 'review' | 'reviewComplete' | 'deleteRow' | 'deleteCriteriaColumn'
+export type ScenarioDesignConfirmType = 'cancel' | 'reviewComplete' | 'reviewCompleteWithWarning'
 
 export type ScenarioDesignLocationState = {
   eventName?: string
 }
 
-export type ScenarioDesignRow = {
-  id: number
-  scenarioName: string
-  recommended?: boolean
-  period: string
-  transportDisruption: string
-  supplyIntensity: string
-  supplyRecovery: string
-  branchItem: string
-  demandAlternativeSupply: string
-  demandPowerMixAdjustment: string
-  tradeRestriction: string
-  generatedBranchItemA: string
-  generatedBranchItemB: string
+export type ScenarioDesignColumn = {
+  key: string
+  label: string
+  width: string
+  required?: boolean
+  displayOrder?: number
+  valueEnums?: string[]
 }
 
-export const SCENARIO_DESIGN_COLUMNS: Array<{ key: ScenarioDesignColumnKey; label: string; width: string }> = [
-  { key: 'period', label: '기간', width: '200px' },
-  { key: 'transportDisruption', label: '운송 차질', width: '200px' },
-  { key: 'supplyIntensity', label: '공급 차질 - 강도', width: '200px' },
-  { key: 'supplyRecovery', label: '공급 차질 - 완화/회복...', width: '200px' },
-  { key: 'branchItem', label: '분기항목', width: '200px' },
-  { key: 'demandAlternativeSupply', label: '수요측 대응 - 타 공급원 경유 LNG 확보', width: '200px' },
-  { key: 'demandPowerMixAdjustment', label: '수요측 대응 - PowerMix 조정 LNG 수요 감소', width: '200px' },
-  { key: 'tradeRestriction', label: '거래 제한 (계약 취소 등)', width: '200px' },
-  { key: 'generatedBranchItemA', label: '분기항목명', width: '200px' },
-  { key: 'generatedBranchItemB', label: '분기항목명', width: '200px' },
-]
-
-export type ScenarioDesignColumn = (typeof SCENARIO_DESIGN_COLUMNS)[number]
-
 export const SCENARIO_DESIGN_MAX_ROW_COUNT = 15
-export const SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS: ScenarioDesignColumnKey[] = [
-  'demandAlternativeSupply',
-  'demandPowerMixAdjustment',
-  'tradeRestriction',
-  'generatedBranchItemA',
-  'generatedBranchItemB',
-]
-
-export const SCENARIO_DESIGN_REVIEW_DEFAULT_NARRATIVE =
-  '카타르 Ras Laffan LNG 시설의 피해 범위가 확대될 경우, 시장은 이를 단순한 설비 사고가 아니라 글로벌 LNG 공급망의 핵심 거점 리스크로 해석할 가능성이 높습니다. 피해가 일부 Train이나 부속 설비에 제한되고 재가동 일정이 빠르게 확인되면 수주 내 부분 복구와 카고 일정 조정으로 충격이 흡수될 수 있습니다. 반면 여러 Train의 동시 정지, 저장·선적 인프라 손상, 추가 군사 긴장, 호르무즈 해협 통항 불안이 함께 확인될 경우 카타르산 LNG의 공급 신뢰도와 장기계약 이행 가능성이 재평가될 수 있습니다. 이 경우 아시아·유럽 구매자의 대체 카고 확보 경쟁이 심화되고, JKM·TTF 가격 변동성, 운임·보험료, 목적지 전환 전략까지 연쇄적으로 영향을 받을 수 있습니다.'
-
-export const isScenarioDesignRequiredColumn = (key: ScenarioDesignColumnKey) => key === 'period' || key === 'transportDisruption'
 
 export const SCENARIO_DESIGN_SELECT_COMMON_ACTIONS = {
   agent: {
@@ -102,119 +63,186 @@ export const scenarioDesignManualItem: SelectMenuItem<string> = {
   icon: <DriveFileRenameOutlineRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Enabled' }} />,
 }
 
-const periodItems: SelectMenuItem<string>[] = [
-  { value: 'short', label: '단기 (1~3M)' },
-  { value: 'mid', label: '중기 (3~6M)' },
-  { value: 'long', label: '장기 (6M+)' },
-]
+const getScenarioDesignTemplateKey = (template: ScenarioDimensionTemplateItem) => template.dimKey?.trim() ?? ''
 
-const impactLevelItems: SelectMenuItem<string>[] = [
-  { value: 'none', label: '거의 없음' },
-  { value: 'low', label: '낮음' },
-  { value: 'medium', label: '중간' },
-  { value: 'high', label: '매우 높음' },
-]
+const getScenarioDesignTemplateLabel = (template: ScenarioDimensionTemplateItem) => {
+  const key = getScenarioDesignTemplateKey(template)
+  return template.label?.trim() || key
+}
 
-const recoveryItems: SelectMenuItem<string>[] = [
-  { value: 'immediate', label: '신속 차질 → 신속 회복' },
-  { value: 'delayed', label: '지연 발생 → 점진 회복' },
-  { value: 'extended', label: '급락 피해 → 장기 재고' },
-]
+export const createScenarioDesignColumn = (
+  column: ScenarioDimensionColumn,
+  templates: ScenarioDimensionTemplateItem[] = [],
+): ScenarioDesignColumn | null => {
+  const key = column.key?.trim() ?? ''
+  if (!key) return null
 
-const branchItems: SelectMenuItem<string>[] = [
-  { value: 'quarter', label: '분기기준값' },
-  { value: 'quarterBase', label: '분기기준값 분기기준값 분기기준값' },
-]
+  const template = templates.find((item) => getScenarioDesignTemplateKey(item) === key)
 
-export const createScenarioDesignGeneratedBranchDefaults = () => ({
-  demandAlternativeSupply: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-  demandPowerMixAdjustment: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-  tradeRestriction: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-  generatedBranchItemA: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-  generatedBranchItemB: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
+  return {
+    key,
+    label: column.label?.trim() || template?.label?.trim() || key,
+    width: '200px',
+    required: template?.required,
+    displayOrder: template?.displayOrder,
+    valueEnums: template?.valueEnums,
+  }
+}
+
+export const sortScenarioDesignColumns = <Column extends ScenarioDesignColumn>(columns: Column[]): Column[] =>
+  [...columns].sort((a, b) => (a.displayOrder ?? Number.MAX_SAFE_INTEGER) - (b.displayOrder ?? Number.MAX_SAFE_INTEGER))
+
+export const createScenarioDesignColumns = (
+  dimensionColumns: ScenarioDimensionColumn[] = [],
+  templates: ScenarioDimensionTemplateItem[] = [],
+): ScenarioDesignColumn[] =>
+  sortScenarioDesignColumns(
+    dimensionColumns.flatMap((column) => {
+      const nextColumn = createScenarioDesignColumn(column, templates)
+      return nextColumn ? [nextColumn] : []
+    }),
+  )
+
+export const createScenarioDesignTemplateColumns = (
+  templates: ScenarioDimensionTemplateItem[] = [],
+  visibleColumns: ScenarioDesignColumn[] = [],
+): ScenarioDesignColumn[] => {
+  const visibleColumnKeys = new Set(visibleColumns.map((column) => column.key))
+
+  return sortScenarioDesignColumns(
+    templates
+      .filter((template) => {
+        const key = getScenarioDesignTemplateKey(template)
+        return key.length > 0 && !visibleColumnKeys.has(key)
+      })
+      .map((template) => ({
+        key: getScenarioDesignTemplateKey(template),
+        label: getScenarioDesignTemplateLabel(template),
+        width: '200px',
+        required: template.required,
+        displayOrder: template.displayOrder,
+        valueEnums: template.valueEnums,
+      })),
+  )
+}
+
+export const isScenarioDesignRequiredColumn = (column: ScenarioDesignColumn) => column.required === true
+
+export const getScenarioDesignRowId = (row: DesignScenarioRow, fallback = 0) => row.scenarioId ?? row.displayOrder ?? fallback
+
+export const getScenarioDesignDimension = (row: DesignScenarioRow, key: string) =>
+  row.dimensions?.find((dimension) => dimension.key === key)
+
+export const getScenarioDesignDimensionSelectedValue = (row: DesignScenarioRow, key: string) => {
+  const value = getScenarioDesignDimension(row, key)?.value
+  if (value === undefined || value === null || value === '') return ''
+  return value
+}
+
+export const getScenarioDesignColumnItems = (column: ScenarioDesignColumn): SelectMenuItem<string>[] =>
+  (column.valueEnums ?? []).map((value) => ({ value, label: value }))
+
+const getScenarioDesignColumnValueLabel = (column: ScenarioDesignColumn, value: string) =>
+  String(getScenarioDesignColumnItems(column).find((item) => item.value === value)?.label ?? value)
+
+export const getScenarioDesignColumnDisplayValue = (column: ScenarioDesignColumn, row: DesignScenarioRow) => {
+  const dimension = getScenarioDesignDimension(row, column.key)
+  const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+  if (selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value) return SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label
+  if (selectedValue === '') return ''
+
+  return String(dimension?.valueLabel?.trim() || getScenarioDesignColumnValueLabel(column, selectedValue))
+}
+
+export const getInitialScenarioDesignColumnValue = (
+  initialRows: DesignScenarioRow[],
+  row: DesignScenarioRow,
+  column: ScenarioDesignColumn,
+) => {
+  const rowId = getScenarioDesignRowId(row)
+  const initialRow = initialRows.find((item, index) => getScenarioDesignRowId(item, index + 1) === rowId)
+  if (!initialRow) return ''
+
+  return getScenarioDesignDimensionSelectedValue(initialRow, column.key)
+}
+
+export const updateScenarioDesignRowScenarioName = (row: DesignScenarioRow, scenarioName: string): DesignScenarioRow => ({
+  ...row,
+  scenarioName,
 })
 
-const SCENARIO_DESIGN_INITIAL_ROWS: ScenarioDesignRow[] = [
-  {
-    id: 1,
-    scenarioName: '단기 휴전-위험 프리미엄 해소',
-    period: 'short',
-    transportDisruption: 'low',
-    supplyIntensity: 'none',
-    supplyRecovery: 'immediate',
-    branchItem: 'quarter',
-    ...createScenarioDesignGeneratedBranchDefaults(),
-  },
-  {
-    id: 2,
-    scenarioName: '분쟁 장기화·LNG 시장 경직 확대',
-    recommended: true,
-    period: 'mid',
-    transportDisruption: 'medium',
-    supplyIntensity: 'medium',
-    supplyRecovery: 'delayed',
-    branchItem: 'quarter',
-    ...createScenarioDesignGeneratedBranchDefaults(),
-  },
-  {
-    id: 3,
-    scenarioName: '신규형 정착·위험 프리미엄 영구화',
-    period: 'long',
-    transportDisruption: 'medium',
-    supplyIntensity: 'medium',
-    supplyRecovery: 'delayed',
-    branchItem: 'quarter',
-    ...createScenarioDesignGeneratedBranchDefaults(),
-  },
-  {
-    id: 4,
-    scenarioName: '확전·호르무즈 전면 봉쇄 (Tail Risk)',
-    period: 'long',
-    transportDisruption: 'high',
-    supplyIntensity: 'high',
-    supplyRecovery: 'extended',
-    branchItem: 'quarterBase',
-    ...createScenarioDesignGeneratedBranchDefaults(),
-  },
-  {
-    id: 5,
-    scenarioName: '시나리오명',
-    period: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-    transportDisruption: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-    supplyIntensity: 'medium',
-    supplyRecovery: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
-    branchItem: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
-    ...createScenarioDesignGeneratedBranchDefaults(),
-  },
-  {
-    id: 6,
-    scenarioName: '시나리오명',
-    period: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-    transportDisruption: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value,
-    supplyIntensity: 'medium',
-    supplyRecovery: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
-    branchItem: SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
-    ...createScenarioDesignGeneratedBranchDefaults(),
-  },
-]
+export const updateScenarioDesignRowDimension = (
+  row: DesignScenarioRow,
+  column: ScenarioDesignColumn,
+  value: string,
+): DesignScenarioRow => {
+  const nextDimensions = [...(row.dimensions ?? [])]
+  const dimensionIndex = nextDimensions.findIndex((dimension) => dimension.key === column.key)
+  const isAgentValue = value === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
+  const isEmptyValue = value === ''
+  const nextDimension: ScenarioDimension = {
+    key: column.key,
+    label: column.label,
+    value,
+    valueLabel: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, value),
+  }
 
-export const createInitialScenarioDesignRows = (): ScenarioDesignRow[] => SCENARIO_DESIGN_INITIAL_ROWS.map((row) => ({ ...row }))
+  if (dimensionIndex >= 0) {
+    nextDimensions[dimensionIndex] = {
+      ...nextDimensions[dimensionIndex],
+      ...nextDimension,
+    }
+  } else {
+    nextDimensions.push(nextDimension)
+  }
 
-export const getScenarioDesignColumnItems = (key: ScenarioDesignColumnKey) => {
-  if (key === 'period') return periodItems
-  if (key === 'supplyRecovery') return recoveryItems
-  if (key === 'branchItem' || SCENARIO_DESIGN_INITIAL_HIDDEN_COLUMN_KEYS.includes(key)) return branchItems
-  return impactLevelItems
+  return {
+    ...row,
+    dimensions: nextDimensions,
+  }
 }
 
-export const getScenarioDesignColumnDisplayValue = (key: ScenarioDesignColumnKey, value: string) => {
-  if (value === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value) return SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label
+export const createScenarioDesignRow = (
+  displayOrder: number,
+  columns: ScenarioDesignColumn[],
+  agentColumnKeys: Set<string> = new Set(),
+): DesignScenarioRow => ({
+  scenarioId: null,
+  isNew: true,
+  displayOrder,
+  scenarioName: '',
+  baseCase: false,
+  dimensions: columns.map((column) => ({
+    key: column.key,
+    label: column.label,
+    value: agentColumnKeys.has(column.key) ? SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value : '',
+    valueLabel: null,
+  })),
+})
 
-  return String(getScenarioDesignColumnItems(key).find((item) => item.value === value)?.label ?? value)
-}
+export const createScenarioDesignEditTable = (columns: ScenarioDesignColumn[], rows: DesignScenarioRow[]): DesignEditTable => ({
+  dimensionColumns: columns.map((column) => ({
+    key: column.key,
+    label: column.label,
+  })),
+  scenarios: rows.map((row, index) => ({
+    scenarioId: row.scenarioId ?? null,
+    displayOrder: row.displayOrder ?? index + 1,
+    scenarioName: row.scenarioName ?? '',
+    dimensions: columns.map((column) => {
+      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+      const isAgentValue = selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
+      const isEmptyValue = selectedValue === ''
 
-export const getInitialScenarioDesignColumnValue = (rowId: number, key: ScenarioDesignColumnKey, fallbackValue: string) =>
-  SCENARIO_DESIGN_INITIAL_ROWS.find((row) => row.id === rowId)?.[key] ?? fallbackValue
+      return {
+        key: column.key,
+        label: column.label,
+        value: isAgentValue ? null : selectedValue,
+        valueLabel: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, selectedValue),
+      }
+    }),
+  })),
+})
 
 export const SCENARIO_DESIGN_SECTIONS = [
   { id: 'scenario-design-section-base-event', label: 'Base Event' },
