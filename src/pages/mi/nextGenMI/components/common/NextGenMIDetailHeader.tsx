@@ -45,6 +45,7 @@ export interface NextGenMIDetailHeaderSection {
 
 interface NextGenMIDetailHeaderProps {
   backLabel: string
+  backIcon?: ReactNode
   onBack?: () => void
   titleSlot: ReactNode
   rightAction?: ReactNode
@@ -57,10 +58,12 @@ interface NextGenMIDetailHeaderProps {
   hideBackButton?: boolean
   /** 지정된 섹션 id로 1회 스크롤(진입 시 특정 섹션 포커스). 값이 바뀔 때마다 1회 동작 */
   pendingScrollSectionId?: string
+  pendingScrollKey?: string | number
 }
 
 const NextGenMIDetailHeader = ({
   backLabel,
+  backIcon,
   onBack,
   titleSlot,
   rightAction,
@@ -71,6 +74,7 @@ const NextGenMIDetailHeader = ({
   embeddedStickyTop = '68px',
   hideBackButton = false,
   pendingScrollSectionId,
+  pendingScrollKey,
 }: NextGenMIDetailHeaderProps) => {
   const { patchStickyHeaderOptions } = useStickyHeader()
   const isEmbedded = scrollContainer !== undefined
@@ -306,15 +310,19 @@ const NextGenMIDetailHeader = ({
   }, [applyScrollSpyActiveSection, isMainScrolled])
 
   // 진입 시 특정 섹션 포커스 — 값이 새로 지정될 때 1회 스크롤
-  const pendingScrollHandledRef = useRef<string | null>(null)
+  const pendingScrollHandledRef = useRef<string | number | null>(null)
   useEffect(() => {
-    if (!pendingScrollSectionId) return
-    if (pendingScrollHandledRef.current === pendingScrollSectionId) return
+    if (!pendingScrollSectionId) {
+      pendingScrollHandledRef.current = null
+      return
+    }
+    const scrollKey = pendingScrollKey ?? pendingScrollSectionId
+    if (pendingScrollHandledRef.current === scrollKey) return
     const index = sectionsRef.current.findIndex((section) => section.id === pendingScrollSectionId)
     if (index < 0) return
-    pendingScrollHandledRef.current = pendingScrollSectionId
+    pendingScrollHandledRef.current = scrollKey
     scrollSectionIntoView(index)
-  }, [pendingScrollSectionId, scrollSectionIntoView])
+  }, [pendingScrollKey, pendingScrollSectionId, scrollSectionIntoView])
 
   useLayoutEffect(() => {
     if (prevIsMainScrolledForStickyRef.current === null) {
@@ -402,7 +410,7 @@ const NextGenMIDetailHeader = ({
                   variant="outlined"
                   prefix={
                     <Box component="span" display="inline-flex" color="contentIcon.Enabled">
-                      <MoveToParentPageIcon />
+                      {backIcon ?? <MoveToParentPageIcon />}
                     </Box>
                   }
                   onClick={onBack}

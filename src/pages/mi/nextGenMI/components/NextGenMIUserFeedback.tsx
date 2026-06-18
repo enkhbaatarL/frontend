@@ -1,5 +1,5 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import { Box, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { useCallback, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
@@ -7,35 +7,21 @@ import UserFeedbackIcon from '@/components/common/icons/UserFeedbackIcon'
 import MIMaskInput from '@/components/common/input/MIMaskInput'
 import MIMenu from '@/components/common/menu/MIMenu'
 import useSnackbar from '@/hooks/useSnackbar'
-import userFeedbackService, { type UserFeedbackTypeCd } from '@/service/common/userFeedback'
+import userFeedbackService from '@/service/common/userFeedback'
 
 const FEEDBACK_MAX_LENGTH = 2000
 
-const FEEDBACK_OPTIONS = [
-  { value: 'data_error', label: '데이터 오류' },
-  { value: 'ui_improvement', label: 'UI 개선' },
-  { value: 'feature_suggestion', label: '기능 제안' },
-  { value: 'etc', label: '기타' },
-] as const
-
-const DEFAULT_FEEDBACK_TYPES: UserFeedbackTypeCd[] = ['data_error']
-
 interface NextGenMIUserFeedbackProps {
-  pageName: string
-  sectionName: string
-  targetLabel?: string
+  pageTitle: string
 }
 
-const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMIUserFeedbackProps) => {
+const NextGenMIUserFeedback = ({ pageTitle }: NextGenMIUserFeedbackProps) => {
   const { showSnackbar } = useSnackbar()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [feedbackTypes, setFeedbackTypes] = useState<UserFeedbackTypeCd[]>(() => [...DEFAULT_FEEDBACK_TYPES])
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const targetScreenLabel = targetLabel ?? `${pageName}/ ${sectionName}`
 
   const resetFeedback = useCallback(() => {
-    setFeedbackTypes([...DEFAULT_FEEDBACK_TYPES])
     setComment('')
   }, [])
 
@@ -44,27 +30,15 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
     resetFeedback()
   }, [resetFeedback])
 
-  const handleToggleFeedbackType = useCallback((value: UserFeedbackTypeCd) => {
-    setFeedbackTypes((prev) => {
-      if (!prev.includes(value)) return [...prev, value]
-      return prev.length === 1 ? prev : prev.filter((item) => item !== value)
-    })
-  }, [])
-
   const handleSubmit = useCallback(async () => {
     try {
       setIsSubmitting(true)
       const feedbackContent = comment.trim() || undefined
-      await Promise.all(
-        feedbackTypes.map((feedbackTypeCd) =>
-          userFeedbackService.createUserFeedback({
-            feedbackPageNm: pageName,
-            feedbackSectionNm: sectionName,
-            feedbackTypeCd,
-            feedbackContent,
-          }),
-        ),
-      )
+      await userFeedbackService.createUserFeedback({
+        feedbackPageNm: pageTitle,
+        feedbackTypeCd: 'etc',
+        feedbackContent,
+      })
       showSnackbar('피드백이 전송되었습니다.', { variant: 'success' })
       closeFeedbackMenu()
     } catch {
@@ -72,7 +46,7 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
     } finally {
       setIsSubmitting(false)
     }
-  }, [closeFeedbackMenu, comment, feedbackTypes, pageName, sectionName, showSnackbar])
+  }, [closeFeedbackMenu, comment, pageTitle, showSnackbar])
 
   return (
     <MIMenu
@@ -94,12 +68,14 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
         sx: { width: '600px', overflow: 'hidden' },
       }}
       sx={{
+        width: '36px',
+        minWidth: '36px',
         height: '36px',
         padding: '11px',
         color: 'contentIcon.Enabled',
       }}
     >
-      <Stack width="600px" minHeight="612px" boxSizing="border-box">
+      <Stack width="600px" minHeight="540px" boxSizing="border-box">
         <Stack gap="20px" padding="20px" width="100%" boxSizing="border-box" flex={1}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography variant="body1SB16" color="contentText.Black">
@@ -134,52 +110,8 @@ const NextGenMIUserFeedback = ({ pageName, sectionName, targetLabel }: NextGenMI
               boxSizing="border-box"
             >
               <Typography variant="body2M14" color="contentText.Normal" noWrap maxWidth="100%">
-                {targetScreenLabel}
+                {pageTitle}
               </Typography>
-            </Stack>
-          </Stack>
-
-          <Stack gap="8px" alignItems="flex-start">
-            <Typography variant="body2SB14" color="contentText.Normal">
-              피드백 유형
-            </Typography>
-            <Stack direction="row" gap="5px" alignItems="center" flexWrap="wrap">
-              {FEEDBACK_OPTIONS.map((option) => {
-                const selected = feedbackTypes.includes(option.value)
-
-                return (
-                  <Box
-                    key={option.value}
-                    component="button"
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => handleToggleFeedbackType(option.value)}
-                    sx={{
-                      border: '1px solid',
-                      borderColor: selected ? 'contentBorder.Primaryactive' : 'contentBorder.Normal',
-                      borderRadius: '100px',
-                      backgroundColor: selected ? 'contentBG.PrimaryFade' : 'commonColor.White',
-                      color: selected ? 'contentText.Black' : 'contentText.Normal',
-                      cursor: 'pointer',
-                      padding: '6px 10px',
-                      height: '32px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      font: 'inherit',
-                      transition: 'background-color 0.15s ease-in-out, border-color 0.15s ease-in-out',
-                      '&:hover': {
-                        borderColor: selected ? 'contentBorder.Primaryactive' : 'contentBorder.Hover',
-                        backgroundColor: selected ? 'contentBG.PrimaryFade' : 'contentBG.Hover',
-                      },
-                    }}
-                  >
-                    <Typography component="span" variant={selected ? 'body2SB14' : 'body2M14'} color="inherit" noWrap sx={{ minWidth: 0 }}>
-                      {option.label}
-                    </Typography>
-                  </Box>
-                )
-              })}
             </Stack>
           </Stack>
 

@@ -8,6 +8,7 @@ import type { RelatedEventScenario, RelatedScenario } from '@/service/mi/nextGen
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import ScenarioGroupInnerTable from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
@@ -16,6 +17,10 @@ import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNe
 interface EventDetailRelatedScenariosSectionProps {
   eventId?: string | number
   relatedEventScenario?: RelatedEventScenario | null
+  scenarioSuggestReason?: string | null
+  scenarioDesignDisabled?: boolean
+  scenarioDesignDisabledTooltipTitle?: string
+  onScenarioDesignClick?: () => void
   onScenarioRowClick?: (row: RelatedScenario) => void
   loading?: boolean
 }
@@ -23,6 +28,10 @@ interface EventDetailRelatedScenariosSectionProps {
 const EventDetailRelatedScenariosSection = ({
   eventId,
   relatedEventScenario,
+  scenarioSuggestReason,
+  scenarioDesignDisabled = false,
+  scenarioDesignDisabledTooltipTitle,
+  onScenarioDesignClick,
   onScenarioRowClick,
   loading = false,
 }: EventDetailRelatedScenariosSectionProps) => {
@@ -30,6 +39,7 @@ const EventDetailRelatedScenariosSection = ({
   const rows = relatedEventScenario?.scenarios ?? []
   const scenarioGroupId = relatedEventScenario?.scenarioGroupId
   const scenarioGroupLabel = relatedEventScenario?.groupName?.trim() ?? ''
+  const trimmedScenarioSuggestReason = scenarioSuggestReason?.trim() ?? ''
 
   const hasScenarioGroupLink = scenarioGroupLabel.length > 0 && scenarioGroupId !== undefined && scenarioGroupId !== null
   const handleScenarioGroupClick = () => {
@@ -38,6 +48,10 @@ const EventDetailRelatedScenariosSection = ({
   }
 
   const handleScenarioDesignClick = () => {
+    if (onScenarioDesignClick) {
+      onScenarioDesignClick()
+      return
+    }
     if (!eventId) {
       navigate(getNextGenMITabPath('scenarios'))
       return
@@ -46,6 +60,32 @@ const EventDetailRelatedScenariosSection = ({
       state: { eventName: scenarioGroupLabel || undefined },
     })
   }
+
+  const scenarioDesignButton = (
+    <Box component="span" display="inline-flex" sx={{ cursor: scenarioDesignDisabled ? 'not-allowed' : undefined }}>
+      <MIBaseButton
+        variant="contained"
+        prefix={<AutoAwesomeRoundedIcon sx={{ fontSize: 20 }} />}
+        disabled={scenarioDesignDisabled}
+        onClick={handleScenarioDesignClick}
+        gap="4px"
+        sx={{
+          height: '36px',
+          borderRadius: '8px',
+          padding: '8px 10px 8px 6px',
+          backgroundColor: 'mari.Primary',
+          '&:hover:not(:disabled)': {
+            backgroundColor: 'mari.Primary',
+          },
+          '&:active:not(:disabled)': {
+            backgroundColor: 'mari.Primary',
+          },
+        }}
+      >
+        시나리오 설계
+      </MIBaseButton>
+    </Box>
+  )
 
   if (loading) {
     return (
@@ -70,28 +110,60 @@ const EventDetailRelatedScenariosSection = ({
         tooltipTitle=""
       />
       {rows.length === 0 ? (
-        <Box
-          position="relative"
-          height="260px"
-          bgcolor="gray.5"
-          borderRadius="10px"
-          borderBottom="1px solid"
-          borderColor="gray.30"
-          overflow="hidden"
-        >
-          <Stack position="absolute" top="50%" left="50%" alignItems="center" gap="10px" sx={{ transform: 'translate(-50%, -50%)' }}>
-            <ErrorOutlineRoundedIcon sx={{ fontSize: 24, color: 'gray.60' }} />
-            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
-              생성된 시나리오가 없습니다
-            </Typography>
-            <MIBaseButton
-              variant="contained"
-              prefix={<AutoAwesomeRoundedIcon sx={{ fontSize: 20 }} />}
-              onClick={handleScenarioDesignClick}
-              sx={{ height: '36px', borderRadius: '8px', padding: '6px 10px' }}
-            >
-              시나리오 설계
-            </MIBaseButton>
+        <Box position="relative" height="260px" bgcolor="gray.5" borderBottom="1px solid" borderColor="gray.30" overflow="hidden">
+          <Stack
+            position="absolute"
+            top="50%"
+            left="50%"
+            alignItems="center"
+            gap="20px"
+            width="calc(100% - 48px)"
+            sx={{ transform: 'translate(-50%, -50%)' }}
+          >
+            <Stack alignItems="center" gap="10px">
+              <ErrorOutlineRoundedIcon sx={{ fontSize: 24, color: 'gray.60' }} />
+              <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
+                생성된 시나리오가 없습니다
+              </Typography>
+            </Stack>
+            {trimmedScenarioSuggestReason && (
+              <Stack
+                alignItems="center"
+                gap="10px"
+                padding="24px"
+                border="1px solid"
+                borderColor="contentBorder.Normal"
+                borderRadius="10px"
+                boxSizing="border-box"
+                maxWidth="100%"
+              >
+                {scenarioDesignDisabled && scenarioDesignDisabledTooltipTitle ? (
+                  <NextGenMIFollowCursorTooltip title={scenarioDesignDisabledTooltipTitle}>
+                    {scenarioDesignButton}
+                  </NextGenMIFollowCursorTooltip>
+                ) : (
+                  scenarioDesignButton
+                )}
+                <Typography
+                  variant="body3SB12"
+                  color="gray.60"
+                  lineHeight={1.4}
+                  textAlign="center"
+                  maxWidth="100%"
+                  sx={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}
+                >
+                  {trimmedScenarioSuggestReason}
+                </Typography>
+              </Stack>
+            )}
+            {!trimmedScenarioSuggestReason &&
+              (scenarioDesignDisabled && scenarioDesignDisabledTooltipTitle ? (
+                <NextGenMIFollowCursorTooltip title={scenarioDesignDisabledTooltipTitle}>
+                  {scenarioDesignButton}
+                </NextGenMIFollowCursorTooltip>
+              ) : (
+                scenarioDesignButton
+              ))}
           </Stack>
         </Box>
       ) : (

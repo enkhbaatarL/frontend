@@ -15,6 +15,7 @@ export interface SelectMenuItem<T = string> {
   value: T
   disabled?: boolean
   group?: string
+  suffix?: ReactNode
 }
 
 export type GroupDisplayType = 'label' | 'divider' | 'none'
@@ -39,6 +40,7 @@ interface Props<T> extends ButtonProps {
   maxHeight?: number | string
   enableHoverBackground?: boolean
   hideChevron?: boolean
+  showSelectedSuffix?: boolean
   zIndex?: number
   disableRipple?: boolean
   open?: boolean
@@ -47,6 +49,7 @@ interface Props<T> extends ButtonProps {
   textLabel?: ReactNode
   labelPrefix?: ReactNode
   footer?: ReactNode
+  selectionIconPosition?: 'left' | 'right'
 }
 
 const MISelectMenu = <T,>({
@@ -69,6 +72,7 @@ const MISelectMenu = <T,>({
   maxHeight = 300,
   enableHoverBackground = false,
   hideChevron = false,
+  showSelectedSuffix = false,
   zIndex,
   disableRipple,
   open: controlledOpen,
@@ -77,6 +81,7 @@ const MISelectMenu = <T,>({
   textLabel: externalTextLabel,
   labelPrefix: externalPrefix,
   footer,
+  selectionIconPosition = 'right',
   disabled,
   ...props
 }: Props<T>) => {
@@ -146,6 +151,7 @@ const MISelectMenu = <T,>({
             {placeholder}
           </Typography>
         ),
+        suffix: item?.suffix,
       }
     }
 
@@ -191,6 +197,7 @@ const MISelectMenu = <T,>({
     return {
       prefix: undefined,
       label,
+      suffix: undefined,
     }
   }, [items, multiple, placeholder, selected, t])
 
@@ -200,6 +207,10 @@ const MISelectMenu = <T,>({
     }
 
     if (multiple) {
+      if (selectionIconPosition === 'right') {
+        return undefined
+      }
+
       return isSelected ? (
         <CheckBox sx={{ width: '20px', height: '20px', color: itemDisabled ? 'contentIcon.Disabled' : 'mari.Primary' }} />
       ) : (
@@ -211,7 +222,7 @@ const MISelectMenu = <T,>({
       <CheckRounded
         fontSize="small"
         sx={{
-          color: itemDisabled ? 'contentIcon.Disabled' : 'mari.Primary',
+          color: itemDisabled ? 'contentIcon.Disabled' : selectionIconPosition === 'left' ? 'mari.Primary' : 'contentIcon.ActivePrimary',
           opacity: isSelected ? 1 : 0,
         }}
       />
@@ -225,38 +236,65 @@ const MISelectMenu = <T,>({
     return undefined
   }
 
-  const renderMenuItem = ({ icon, label, value, disabled: itemDisabled }: SelectMenuItem<T>) => {
+  const renderMenuItem = ({ icon, label, value, disabled: itemDisabled, suffix: itemSuffix }: SelectMenuItem<T>) => {
     const isSelected = isItemSelected(value)
     const selectionIcon = renderSelectionIcon(isSelected, itemDisabled)
-    const prefix =
-      selectionIcon !== undefined ? (
-        <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
-          <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
-            {selectionIcon}
-          </Box>
-          {icon}
-        </Stack>
-      ) : (
-        icon
-      )
-    const suffix = renderSuffix(isSelected, itemDisabled)
-    const labelColor = itemDisabled ? 'contentText.Disabled' : isSelected ? 'contentText.Black' : 'contentText.Normal'
+    const hasLeftSelectionIcon = selectionIconPosition === 'left' && selectionIcon !== undefined
+    const selectionIconSuffix =
+      selectionIconPosition === 'right' && selectionIcon !== undefined ? (
+        <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
+          {selectionIcon}
+        </Box>
+      ) : undefined
+    const prefix = hasLeftSelectionIcon ? (
+      <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
+        <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" width="20px" height="20px" flexShrink={0}>
+          {selectionIcon}
+        </Box>
+        {icon}
+      </Stack>
+    ) : (
+      icon
+    )
+    const suffix = renderSuffix(isSelected, itemDisabled) ?? selectionIconSuffix ?? itemSuffix
+    const labelColor =
+      selectionIconPosition === 'left'
+        ? itemDisabled
+          ? 'contentText.Disabled'
+          : isSelected
+            ? 'contentText.Black'
+            : 'contentText.Normal'
+        : itemDisabled
+          ? 'contentText.Disabled'
+          : isSelected
+            ? undefined
+            : 'contentText.Subtext'
 
     return (
       <Box
         key={String(value)}
         onClick={() => (itemDisabled ? null : handleToggle(value))}
         borderRadius="10px"
-        height="36px"
+        height={selectionIconPosition === 'left' ? '36px' : undefined}
+        width="100%"
+        minWidth={0}
         boxSizing="border-box"
         sx={{
-          padding: `8px ${suffix ? '8px' : '12px'} 8px ${selectionIcon !== undefined ? '6px' : icon ? '8px' : '12px'}`,
-          backgroundColor: itemDisabled ? 'transparent' : isSelected ? 'contentBG.PrimaryFade' : 'transparent',
+          padding: `8px ${suffix ? '8px' : '12px'} 8px ${hasLeftSelectionIcon ? '6px' : icon ? '8px' : '12px'}`,
+          backgroundColor:
+            selectionIconPosition === 'left'
+              ? itemDisabled
+                ? 'transparent'
+                : isSelected
+                  ? 'contentBG.PrimaryFade'
+                  : 'transparent'
+              : undefined,
           cursor: itemDisabled ? 'default' : 'pointer',
           '&:hover': {
-            backgroundColor: itemDisabled ? 'transparent' : 'contentBG.Active',
+            backgroundColor: itemDisabled ? 'transparent' : selectionIconPosition === 'left' ? 'contentBG.Active' : 'gray.10',
           },
           textWrap: 'nowrap',
+          overflow: 'hidden',
         }}
       >
         <Stack
@@ -264,13 +302,34 @@ const MISelectMenu = <T,>({
           alignItems="center"
           justifyContent="space-between"
           width="100%"
-          minWidth={(props.sx as Record<string, unknown>)?.minWidth as string | number}
-          gap="8px"
+          minWidth={0}
+          gap={selectionIconPosition === 'left' ? '8px' : '12px'}
           component="div"
+          overflow="hidden"
         >
-          <MIBaseButtonLabel prefix={prefix} suffix={suffix} color={labelColor} variant="body2M14" textAlign="left">
+          {prefix && (
+            <Box component="span" display="inline-flex" alignItems="center" flexShrink={0} minWidth={0}>
+              {prefix}
+            </Box>
+          )}
+          <Typography
+            component="span"
+            variant="body2M14"
+            color={labelColor}
+            flex={1}
+            minWidth={0}
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
+            textAlign="left"
+          >
             {label}
-          </MIBaseButtonLabel>
+          </Typography>
+          {suffix && (
+            <Box component="span" display="inline-flex" alignItems="center" justifyContent="center" flexShrink={0}>
+              {suffix}
+            </Box>
+          )}
         </Stack>
       </Box>
     )
@@ -322,6 +381,13 @@ const MISelectMenu = <T,>({
     )
   }
 
+  const chevronIcon = hideChevron ? null : open ? (
+    <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+  ) : (
+    <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+  )
+  const selectedSuffixNode = showSelectedSuffix && !multiple ? selectedItems.suffix : undefined
+
   const hasExternalLabel = externalLabel !== undefined
   const buttonLabelColor =
     !hasExternalLabel && externalTextLabel === undefined ? (disabled ? 'contentText.Disabled' : 'contentText.Normal') : undefined
@@ -353,15 +419,17 @@ const MISelectMenu = <T,>({
         <Typography
           variant="body2SB14"
           color={disabled ? 'contentText.Disabled' : open ? 'contentText.Black' : 'contentText.Normal'}
+          flex={1}
+          minWidth={0}
           noWrap
         >
           {externalTextLabel !== undefined ? externalTextLabel : selectedItems.label}
         </Typography>
         {!hideChevron &&
           (open ? (
-            <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+            <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled', flexShrink: 0 }} />
           ) : (
-            <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
+            <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled', flexShrink: 0 }} />
           ))}
       </Stack>
     </Stack>
@@ -375,14 +443,14 @@ const MISelectMenu = <T,>({
     <MIMenu
       prefix={hasExternalLabel ? undefined : externalPrefix !== undefined ? externalPrefix : selectedItems.prefix}
       suffix={
-        hasExternalLabel
-          ? undefined
-          : !hideChevron &&
-            (open ? (
-              <KeyboardArrowUpRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
-            ) : (
-              <KeyboardArrowDownRounded sx={{ color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />
-            ))
+        hasExternalLabel ? undefined : selectedSuffixNode ? (
+          <Stack direction="row" alignItems="center" gap="6px">
+            {selectedSuffixNode}
+            {chevronIcon}
+          </Stack>
+        ) : (
+          chevronIcon
+        )
       }
       label={menuLabel}
       variant={variant}
@@ -433,7 +501,7 @@ const MISelectMenu = <T,>({
           padding: '0',
         }}
       >
-        <Stack gap="4px" padding={footer ? '12px 12px 0 12px' : '12px'}>
+        <Stack gap={selectionIconPosition === 'left' ? '4px' : '8px'} padding={footer ? '12px 12px 0 12px' : '12px'}>
           {renderMenuItems()}
         </Stack>
       </ScrollWrapper>

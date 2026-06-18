@@ -19,6 +19,7 @@ export interface NextGenMIInlineEditableInputProps {
   inputWidth?: string
   emptyMode?: NextGenMIInlineEditableInputIdleMode
   selected?: boolean
+  disabled?: boolean
   autoFocus?: boolean
   showSaveButton?: boolean
   showEditButton?: boolean
@@ -77,6 +78,7 @@ const NextGenMIInlineEditableInput = ({
   inputWidth,
   emptyMode = 'display',
   selected = false,
+  disabled = false,
   autoFocus = false,
   showSaveButton = false,
   showEditButton = false,
@@ -112,6 +114,7 @@ const NextGenMIInlineEditableInput = ({
   const resolvedMode = mode ?? internalMode
   const resolvedValue = isModeControlled ? value : draftValue
   const resolvedPrefix = modePrefix?.[resolvedMode] ?? prefix
+  const hasDisplayValue = resolvedValue.trim().length > 0
   const nextSaveValue = trimOnSave ? draftValue.trim() : draftValue
   const resolvedSaveDisabled = saveDisabled ?? (!isModeControlled && nextSaveValue.trim().length === 0)
   const resolvedPadding =
@@ -127,6 +130,14 @@ const NextGenMIInlineEditableInput = ({
     setInternalMode(getIdleMode(value, emptyMode))
   }, [emptyMode, isModeControlled, value])
 
+  useEffect(() => {
+    if (!disabled || isModeControlled) return
+
+    setDraftValue(value)
+    editInitialValueRef.current = value
+    setInternalMode(getIdleMode(value, emptyMode))
+  }, [disabled, emptyMode, isModeControlled, value])
+
   useLayoutEffect(() => {
     if (resolvedMode !== 'input' || !autoFocus) return
     const input = inputRef.current
@@ -139,6 +150,8 @@ const NextGenMIInlineEditableInput = ({
   }, [autoFocus, resolvedMode])
 
   const handleEditStart = () => {
+    if (disabled) return
+
     skipNextBlurCommitRef.current = false
 
     if (isModeControlled) {
@@ -153,11 +166,15 @@ const NextGenMIInlineEditableInput = ({
   }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return
+
     if (!isModeControlled) setDraftValue(event.target.value)
     onChange?.(event)
   }
 
   const commitInternalValue = () => {
+    if (disabled) return
+
     editInitialValueRef.current = nextSaveValue
     setDraftValue(nextSaveValue)
     setInternalMode(getIdleMode(nextSaveValue, emptyMode))
@@ -180,6 +197,8 @@ const NextGenMIInlineEditableInput = ({
   }
 
   const handleSave = () => {
+    if (disabled) return
+
     if (isModeControlled) {
       onSaveClick?.()
       return
@@ -192,6 +211,8 @@ const NextGenMIInlineEditableInput = ({
   }
 
   const handleDisplayClick = () => {
+    if (disabled) return
+
     if (!isModeControlled && editOnClick) {
       handleEditStart()
       return
@@ -207,6 +228,7 @@ const NextGenMIInlineEditableInput = ({
         prefix={resolvedPrefix}
         suffix={suffix}
         onMouseDown={(event) => event.preventDefault()}
+        disabled={disabled}
         onClick={isModeControlled ? onClick : handleEditStart}
         labelColor="contentText.Placeholder"
         labelTextAlign="left"
@@ -255,15 +277,17 @@ const NextGenMIInlineEditableInput = ({
         boxSizing="border-box"
         sx={[
           {
-            cursor: onClick || editOnClick ? 'pointer' : 'default',
+            cursor: disabled ? 'default' : onClick || editOnClick ? 'pointer' : 'default',
             transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out, border-color 0.4s ease-in-out',
-            '&:hover': {
-              backgroundColor: displayButtonHoverBgColor,
-              borderColor: 'contentBorder.Hover',
-              '& [data-next-gen-mi-inline-editable-input-edit]': {
-                opacity: 1,
+            ...(!disabled && {
+              '&:hover': {
+                backgroundColor: displayButtonHoverBgColor,
+                borderColor: 'contentBorder.Hover',
+                '& [data-next-gen-mi-inline-editable-input-edit]': {
+                  opacity: 1,
+                },
               },
-            },
+            }),
             '& .MuiTypography-root, & svg': {
               transition: 'color 0.15s ease-in-out',
             },
@@ -273,12 +297,20 @@ const NextGenMIInlineEditableInput = ({
           },
           ...(sx === undefined ? [] : Array.isArray(sx) ? sx : [sx]),
         ]}
-        onClick={handleDisplayClick}
+        onClick={disabled ? undefined : handleDisplayClick}
       >
         <Stack direction="row" alignItems="center" gap="4px" flex="1 1 0" minWidth={0} overflow="hidden">
           {resolvedPrefix}
-          <Typography variant="body2M14" color={displayColor} flex={1} minWidth={0} overflow="hidden" textOverflow="ellipsis" noWrap>
-            {resolvedValue}
+          <Typography
+            variant="body2M14"
+            color={hasDisplayValue ? displayColor : 'contentText.Placeholder'}
+            flex={1}
+            minWidth={0}
+            overflow="hidden"
+            textOverflow="ellipsis"
+            noWrap
+          >
+            {hasDisplayValue ? resolvedValue : (placeholder ?? '')}
           </Typography>
         </Stack>
         {renderSuffix(suffix)}
@@ -286,7 +318,10 @@ const NextGenMIInlineEditableInput = ({
           <MIBaseButton
             data-next-gen-mi-inline-editable-input-edit
             variant="contained"
+            disabled={disabled}
             onClick={(event) => {
+              if (disabled) return
+
               event.stopPropagation()
               handleEditStart()
             }}
@@ -327,11 +362,13 @@ const NextGenMIInlineEditableInput = ({
         {resolvedPrefix}
         <InputBase
           inputRef={inputRef}
+          disabled={disabled}
           value={resolvedValue}
           placeholder={placeholder}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
           onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+            if (disabled) return
             if (event.key !== 'Enter') return
             if (!isModeControlled && showSaveButton) {
               handleSave()
@@ -377,13 +414,13 @@ const NextGenMIInlineEditableInput = ({
       {showSaveButton && (
         <MIBaseButton
           variant="contained"
-          disabled={resolvedSaveDisabled}
+          disabled={disabled || resolvedSaveDisabled}
           onMouseDown={(event) => event.preventDefault()}
           onClick={handleSave}
           sx={{
             ...actionButtonSx,
             backgroundColor: (theme) =>
-              resolvedSaveDisabled ? theme.palette.contentIcon.Disabled : theme.palette.contentIcon.ActivePrimary,
+              disabled || resolvedSaveDisabled ? theme.palette.contentIcon.Disabled : theme.palette.contentIcon.ActivePrimary,
             '&:hover:not(:disabled)': {
               backgroundColor: (theme) => theme.palette.contentIcon.ActivePrimary,
             },
@@ -393,7 +430,7 @@ const NextGenMIInlineEditableInput = ({
               opacity: 1,
             },
             '& .MuiTypography-root': {
-              fontWeight: resolvedSaveDisabled ? 500 : 600,
+              fontWeight: disabled || resolvedSaveDisabled ? 500 : 600,
             },
             '&.Mui-disabled .MuiTypography-root': {
               color: 'contentText.White',

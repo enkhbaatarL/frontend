@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 type MIChipSize = 'h20' | 'h22' | 'h24'
 export type MIChipColor =
   | 'A_INSIGHT'
+  | 'A_MAIL'
   | 'A_CMMDT_MRKT_RPT'
   | 'A_CMPY_RPT'
   | 'A_ASST_RPT'
@@ -97,6 +98,11 @@ export default function MIBage(props: Readonly<MIChipProps>) {
       return {
         background: '#E1F2D7',
         color: '#427127',
+      }
+    if (color === 'A_MAIL')
+      return {
+        background: '#FFE2FB',
+        color: '#C74EB6',
       }
     return {}
   }

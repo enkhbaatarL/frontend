@@ -176,6 +176,7 @@ const FundamentalModelSegmentToolbar = ({
         {scope !== 'trade' && (
           <MISelectMenu
             variant="outlined"
+            selectionIconPosition="left"
             selected={granularity}
             onSelected={(v: FundamentalModelVolumesGranularity) => onGranularityChange(v)}
             items={granularityItems}

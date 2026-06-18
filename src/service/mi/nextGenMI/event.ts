@@ -12,6 +12,8 @@ export type EventStatus = 'all' | 'new' | 'updated'
 
 export type EventSignalType = 'signal' | 'noise'
 
+export type EventScenarioDesignStatus = 'designable' | 'creating' | 'created'
+
 export type EventImpactTerm = 'short' | 'mid_long'
 
 export type EventImpactMarketImpactLevel = MarketImpactLevel.LOW | MarketImpactLevel.MEDIUM | MarketImpactLevel.HIGH
@@ -46,6 +48,11 @@ export interface EventListItem {
   latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
+  scenarioDesignStatus?: EventScenarioDesignStatus
+  scenarioDesignStatusLabel?: string
+  scenarioGroupId?: number | null
+  occupied?: boolean
+  occupantUserId?: number | null
   indexImpacts: EventImpactIndex[]
 }
 
@@ -74,6 +81,19 @@ export interface GetEventsParams {
   endDate?: string
   keyword?: string
   suggestedOnly?: boolean
+}
+
+export interface EventDesignAvailability {
+  eventId?: number
+  scenarioDesignStatus?: EventScenarioDesignStatus | string
+  scenarioDesignStatusLabel?: string
+  occupied?: boolean
+  occupantUserId?: number | null
+  scenarioGroupId?: number | null
+}
+
+export interface GetEventDesignAvailabilityParams {
+  eventIds?: number[]
 }
 
 export interface EventImpactIndexTerm {
@@ -133,7 +153,7 @@ export interface RelatedScenario {
 }
 
 export interface RelatedEventScenario {
-  scenarioGroupId?: number
+  scenarioGroupId?: number | null
   groupName?: string
   dimensionColumns?: IScenarioDimensionColumn[]
   scenarios?: RelatedScenario[]
@@ -172,6 +192,9 @@ export interface EventDetail {
   signalTypeLabel?: string | null
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
+  scenarioDesignStatus?: EventScenarioDesignStatus
+  scenarioDesignStatusLabel?: string | null
+  latestRecordFirstCreated?: string
   createdAt: string
   updatedAt: string
   aiInsights?: EventAiInsights | null
@@ -262,6 +285,17 @@ const nextGenMIEventService = {
     const response: AxiosResponse<ICommonResponse<EventDetail>> = await api.get(`mi/next-gen/events/${encodeURIComponent(eventId)}`)
 
     return response.data.data
+  },
+
+  async getEventDesignAvailability(params?: GetEventDesignAvailabilityParams): Promise<EventDesignAvailability[]> {
+    const response: AxiosResponse<ICommonResponse<EventDesignAvailability[]>> = await api.get('mi/next-gen/events/design-availability', {
+      params: {
+        eventIds: params?.eventIds,
+      },
+      paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
+    })
+
+    return response.data.data ?? []
   },
 
   async getEventRecords(eventId: string, params?: IGetNextGenMIEventRecordsParams): Promise<IPaginationResponse<EventRelatedRecord>> {

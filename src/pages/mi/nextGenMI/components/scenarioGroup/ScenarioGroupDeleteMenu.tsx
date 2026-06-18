@@ -28,9 +28,10 @@ const ScenarioGroupDeleteMenu = ({ scenarioGroupId }: ScenarioGroupDeleteMenuPro
       // 목록 쿼리는 gcTime:0 이라 재진입 시 새로 받아오지만, 캐시 잔존분 정리 위해 무효화
       void queryClient.invalidateQueries({ queryKey: ['nextGenMIScenarioGroups'] })
       void queryClient.invalidateQueries({ queryKey: ['nextGenMIScenarioGroupScenarios'] })
-      showSnackbar('시나리오 그룹이 삭제되었습니다.', { variant: 'success' })
       setIsConfirmOpen(false)
-      navigate(getNextGenMITabPath('scenarios'))
+      navigate(getNextGenMITabPath('scenarios'), {
+        state: { successMessage: '시나리오 그룹이 삭제되었습니다.' },
+      })
     },
     onError: () => {
       showSnackbar('시나리오 그룹 삭제에 실패했습니다.', { variant: 'error' })
@@ -64,7 +65,7 @@ const ScenarioGroupDeleteMenu = ({ scenarioGroupId }: ScenarioGroupDeleteMenuPro
             alignItems="center"
             gap="8px"
             padding="8px 12px 8px 6px"
-            borderRadius="8px"
+            borderRadius="10px"
             onClick={() => {
               setIsMenuOpen(false)
               setIsConfirmOpen(true)

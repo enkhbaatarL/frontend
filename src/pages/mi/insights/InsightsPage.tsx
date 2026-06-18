@@ -21,7 +21,7 @@ import insightsService, { IAdvancedFilter, IAdvancedFilterItem, IInsightsInfo, I
 import useAuthStore from '@/store/useAuthStore'
 import { IPaginationResponse } from '@/types/api'
 
-export type ReportType = 'A_INSIGHT' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT' | 'A_DATA'
+export type ReportType = 'A_INSIGHT' | 'A_MAIL' | 'A_CMMDT_MRKT_RPT' | 'A_CMPY_RPT' | 'A_ASST_RPT' | 'A_DEAL_INSIGHT' | 'A_DATA'
 export interface Report {
   type?: ReportType
   types?: string[]

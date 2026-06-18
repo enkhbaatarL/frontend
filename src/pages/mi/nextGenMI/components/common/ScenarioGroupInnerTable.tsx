@@ -6,7 +6,7 @@ import type { IScenarioDimension, IScenarioDimensionColumn, ScenarioJudgementSta
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
-import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import { NextGenMIBaseCaseChip, NextGenMIDiscardedBadge } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
@@ -75,15 +75,28 @@ const JUDGEMENT_CONFIRM_COPY: Record<ScenarioJudgementStatus, JudgementConfirmCo
     confirmLabel: '대기로 변경',
   },
   realized: {
-    title: '실현으로 판정하시겠습니까?',
-    body: '이 시나리오는 해당 이벤트의 실제 전개로 기록됩니다.',
-    confirmLabel: '실현으로 판정',
+    title: '이 시나리오를 실현 처리하시겠습니까?',
+    body: '이 시나리오가 실현 상태로 변경되며, 같은 그룹의 다른 시나리오는 모두 폐기됩니다. 이 작업은 되돌릴 수 없습니다.',
+    confirmLabel: '실현',
   },
   discarded: {
-    title: '폐기하시겠습니까?',
-    body: '이 시나리오는 후보에서 제외됩니다. 모든 시나리오가 폐기되면 새 시나리오를 설계할 수 있습니다.',
+    title: '시나리오를 폐기하시겠습니까?',
+    body: '폐기 후에는 상태를 다시 변경할 수 없습니다. 해당 시나리오는 목록에서 비활성화 처리됩니다.',
     confirmLabel: '폐기',
   },
+}
+
+const isDiscardedScenario = (status?: ScenarioJudgementStatus) => status === 'discarded'
+const isRealizedScenario = (status?: ScenarioJudgementStatus) => status === 'realized'
+const isJudgementLockedScenario = (status?: ScenarioJudgementStatus) => isDiscardedScenario(status) || isRealizedScenario(status)
+
+export const isLastRemainingScenarioDiscard = (
+  scenarios: Array<{ scenarioId: number; status?: ScenarioJudgementStatus }>,
+  targetScenarioId: number,
+) => {
+  const nonDiscardedScenarios = scenarios.filter((scenario) => scenario.status !== 'discarded')
+
+  return nonDiscardedScenarios.length === 1 && nonDiscardedScenarios[0]?.scenarioId === targetScenarioId
 }
 
 type ScenarioJudgementConfirmDialogProps = {
@@ -102,17 +115,24 @@ export const ScenarioJudgementConfirmDialog = ({
   onCancel,
 }: ScenarioJudgementConfirmDialogProps) => {
   const copy = targetStatus ? JUDGEMENT_CONFIRM_COPY[targetStatus] : null
+  const isDiscardConfirm = targetStatus === 'discarded'
 
   return (
     <MIConfirm
       open={open}
       title={copy?.title ?? ''}
-      width="440px"
+      width="450px"
       handleClose={onCancel}
       disableClose={pending}
       actions={[
         { label: '취소', variant: 'outlined', color: 'gray', disabled: pending, onClick: onCancel },
-        { label: copy?.confirmLabel ?? '확인', variant: 'filled', color: 'primary', disabled: pending, onClick: onConfirm },
+        {
+          label: copy?.confirmLabel ?? '확인',
+          variant: 'filled',
+          color: isDiscardConfirm ? 'red' : 'primary',
+          disabled: pending,
+          onClick: onConfirm,
+        },
       ]}
     >
       <Typography variant="body1M16" color="contentText.Normal" lineHeight={1.6}>
@@ -122,12 +142,38 @@ export const ScenarioJudgementConfirmDialog = ({
   )
 }
 
+type ScenarioLastDiscardConfirmDialogProps = {
+  open: boolean
+  pending?: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+export const ScenarioLastDiscardConfirmDialog = ({ open, pending = false, onConfirm, onCancel }: ScenarioLastDiscardConfirmDialogProps) => (
+  <MIConfirm
+    open={open}
+    title="마지막 시나리오를 폐기하시겠습니까?"
+    width="450px"
+    handleClose={onCancel}
+    disableClose={pending}
+    actions={[
+      { label: '취소', variant: 'outlined', color: 'gray', disabled: pending, onClick: onCancel },
+      { label: '폐기 후 그룹 삭제', variant: 'filled', color: 'red', disabled: pending, onClick: onConfirm },
+    ]}
+  >
+    <Typography variant="body2R14" color="contentText.Normal" lineHeight={1.6}>
+      이 시나리오를 폐기하면 남은 시나리오가 없어져 시나리오 그룹이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+    </Typography>
+  </MIConfirm>
+)
+
 export type ScenarioGroupInnerTableRow = {
   scenarioId: string | number
   scenarioName: string
   baseCase: boolean
   dimensions?: IScenarioDimension[]
   probability: number
+  adjustedProbability?: number
   status?: ScenarioJudgementStatus
   statusLabel?: string
 }
@@ -152,6 +198,12 @@ const getDimensionCellValue = <TRow extends ScenarioGroupInnerTableRow>(row: TRo
 
   return '-'
 }
+
+const ScenarioJudgementStatusLabel = ({ label, realized = false }: { label: string; realized?: boolean }) => (
+  <Typography variant="body2M14" color={realized ? 'mari.Primary' : 'contentText.Disabled'} noWrap>
+    {label}
+  </Typography>
+)
 
 const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRow>({
   scenarioGroupId,
@@ -179,11 +231,16 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         align: 'right',
         headerCellSx: tableCellSx,
         cellSx: { ...tableCellSx },
-        renderCell: ({ row }) => (
-          <Stack width="100%" alignItems="center" justifyContent="center">
-            {row.baseCase && <NextGenMIBaseCaseChip />}
-          </Stack>
-        ),
+        renderCell: ({ row }) => {
+          const discarded = isDiscardedScenario(row.status)
+
+          return (
+            <Stack width="100%" alignItems="center" justifyContent="center">
+              {discarded && <NextGenMIDiscardedBadge />}
+              {!discarded && row.baseCase && <NextGenMIBaseCaseChip />}
+            </Stack>
+          )
+        },
       },
       {
         field: 'scenario',
@@ -193,17 +250,19 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         headerCellSx: tableCellSx,
         cellSx: tableCellSx,
         renderCell: ({ row }) => {
+          const discarded = isDiscardedScenario(row.status)
+          const textColor = discarded ? 'contentText.Disabled' : 'contentText.Black'
           const handleScenarioClick = onScenarioClick
             ? () => onScenarioClick(row)
             : scenarioGroupId
               ? () => navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId, row.scenarioId))
               : undefined
 
-          if (handleScenarioClick) {
+          if (handleScenarioClick && !discarded) {
             return <NextGenMIHoverLinkCell value={row.scenarioName} onClick={handleScenarioClick} />
           }
 
-          return <NextGenMITableBodyText value={row.scenarioName} variant="body1SB16" color="contentText.Black" tooltipWhenTruncated />
+          return <NextGenMITableBodyText value={row.scenarioName} variant="body1SB16" color={textColor} tooltipWhenTruncated />
         },
       },
       ...dimensionColumns.map(
@@ -214,9 +273,17 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           align: 'left',
           headerCellSx: tableCellSx,
           cellSx: tableCellSx,
-          renderCell: ({ row }) => (
-            <NextGenMITableBodyText value={getDimensionCellValue(row, column)} color="contentText.Black" tooltipWhenTruncated />
-          ),
+          renderCell: ({ row }) => {
+            const discarded = isDiscardedScenario(row.status)
+
+            return (
+              <NextGenMITableBodyText
+                value={getDimensionCellValue(row, column)}
+                color={discarded ? 'contentText.Disabled' : 'contentText.Black'}
+                tooltipWhenTruncated
+              />
+            )
+          },
         }),
       ),
       {
@@ -228,7 +295,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         cellSx: tableCellSx,
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center">
-            <ScenarioPossibilityGauge probability={row.probability} />
+            <ScenarioPossibilityGauge probability={row.adjustedProbability ?? row.probability} disabled={isDiscardedScenario(row.status)} />
           </Stack>
         ),
       },
@@ -244,6 +311,17 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
             renderCell: ({ row }: { row: TRow }) => {
               if (!row.status || !onJudgementChange) {
                 return <NextGenMITableBodyText value={row.statusLabel ?? '-'} color="contentText.Black" tooltipWhenTruncated />
+              }
+
+              if (isJudgementLockedScenario(row.status)) {
+                return (
+                  <Stack width="100%" alignItems="center">
+                    <ScenarioJudgementStatusLabel
+                      label={row.statusLabel ?? (isRealizedScenario(row.status) ? '실현' : '폐기')}
+                      realized={isRealizedScenario(row.status)}
+                    />
+                  </Stack>
+                )
               }
 
               return (

@@ -1,6 +1,6 @@
-import { Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 
 import type {
   IScenarioDimension,
@@ -10,7 +10,6 @@ import type {
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
@@ -25,14 +24,34 @@ import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGen
 import { probabilityToLikelihoodLabel } from '@/pages/mi/nextGenMI/utils/probabilityFormatting'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
-const SCENARIO_DETAIL_SIDEBAR_WIDTH = '300px'
+const SCENARIO_DETAIL_SIDEBAR_WIDTH = '360px'
 const SCENARIO_DETAIL_STICKY_GAP_PX = 20
 const SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX = 42
 const SCENARIO_DETAIL_STICKY_TOP_FALLBACK_PX = NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.collapsed + 80
 
+const ScenarioSelectBadge = ({ label, disabled = false }: { label: string; disabled?: boolean }) => (
+  <Box
+    component="span"
+    display="inline-flex"
+    alignItems="center"
+    justifyContent="center"
+    padding="2px 6px"
+    borderRadius="8px"
+    boxSizing="border-box"
+    bgcolor={disabled ? 'contentBG.Disabled' : 'mari.Primary'}
+    color={disabled ? 'contentText.Disabled' : 'commonColor.White'}
+    flexShrink={0}
+  >
+    <Typography component="span" color="inherit" fontSize="12px" fontWeight={600} lineHeight={1.4} noWrap>
+      {label}
+    </Typography>
+  </Box>
+)
+
 interface ScenarioSelectSidebarProps {
   scenarios: IScenarioGroupDetailRow[]
   selectedScenarioId?: number
+  scenarioCount?: number
   stickyTopPx: number
   headingSlot?: ReactNode
   loading?: boolean
@@ -42,35 +61,41 @@ interface ScenarioSelectSidebarProps {
 const ScenarioSelectSidebar = ({
   scenarios,
   selectedScenarioId,
+  scenarioCount,
   stickyTopPx,
   headingSlot,
   loading = false,
   onSelect,
 }: ScenarioSelectSidebarProps) => {
   const maxHeight = `calc(100vh - ${stickyTopPx + 24}px)`
-  const listMaxHeight = headingSlot ? `calc(${maxHeight} - ${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px)` : maxHeight
+  const listMaxHeight = headingSlot
+    ? `max(160px, min(456px, calc(${maxHeight} - ${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX + 65}px)))`
+    : `max(160px, min(456px, calc(${maxHeight} - 65px)))`
   const scenarioItems: ReactNode[] = []
 
   if (loading) {
     Array.from({ length: 4 }).forEach((_, index) => {
-      scenarioItems.push(<Skeleton key={`skeleton-${index}`} variant="rounded" height="48px" sx={{ borderRadius: '10px' }} />)
+      scenarioItems.push(<Skeleton key={`skeleton-${index}`} variant="rounded" height="42px" sx={{ borderRadius: '10px' }} />)
     })
   } else {
     scenarios.forEach((scenario) => {
       const isSelected = scenario.scenarioId === selectedScenarioId
+      const isDiscarded = scenario.status === 'discarded'
       scenarioItems.push(
         <Stack
           key={scenario.scenarioId}
           role="button"
-          tabIndex={0}
+          tabIndex={isDiscarded ? -1 : 0}
+          aria-disabled={isDiscarded || undefined}
           direction="row"
           alignItems="center"
           gap="6px"
-          height="48px"
+          minHeight="42px"
           padding="10px 12px"
           borderRadius="10px"
-          onClick={() => onSelect(scenario.scenarioId)}
+          onClick={isDiscarded ? undefined : () => onSelect(scenario.scenarioId)}
           onKeyDown={(event) => {
+            if (isDiscarded) return
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault()
               onSelect(scenario.scenarioId)
@@ -78,24 +103,26 @@ const ScenarioSelectSidebar = ({
           }}
           sx={{
             boxSizing: 'border-box',
-            cursor: 'pointer',
+            cursor: isDiscarded ? 'default' : 'pointer',
             bgcolor: isSelected ? 'contentBG.Active' : 'transparent',
             border: '1px solid',
             borderColor: isSelected ? 'contentBorder.Active' : 'transparent',
             transition: 'background-color 120ms ease, border-color 120ms ease',
-            '&:hover': { bgcolor: isSelected ? 'contentBG.Active' : 'gray.10' },
+            '&:hover': { bgcolor: isSelected ? 'contentBG.Active' : isDiscarded ? 'transparent' : 'gray.10' },
           }}
         >
-          {scenario.baseCase && <NextGenMIBaseCaseChip />}
+          {scenario.baseCase && <ScenarioSelectBadge label="BC" />}
           <Typography
             variant={isSelected ? 'body1SB16' : 'body1M16'}
-            color={isSelected ? 'contentText.Black' : 'contentText.Normal'}
+            color={isDiscarded && !isSelected ? 'contentText.Disabled' : isSelected ? 'contentText.Black' : 'contentText.Normal'}
+            flex={1}
+            minWidth={0}
             noWrap
             title={scenario.scenarioName}
-            sx={{ minWidth: 0 }}
           >
             {scenario.scenarioName}
           </Typography>
+          {isDiscarded && <ScenarioSelectBadge label={scenario.statusLabel || '폐기'} disabled />}
         </Stack>,
       )
     })
@@ -115,21 +142,50 @@ const ScenarioSelectSidebar = ({
       }}
     >
       {headingSlot}
-      <ScrollWrapper
-        maxHeight={listMaxHeight}
-        scrollbarGap={8}
-        reserveScrollbarGap
-        thumbInsetTop={4}
-        thumbInsetBottom={4}
-        thumbWidth={4}
-        thumbMaxHeight={78}
-        showScrollbarOnHover
-        overscrollBehavior="auto"
-        contentKey={loading ? 'loading' : scenarios.length}
-        sx={{ width: '100%' }}
+      <Stack
+        width="100%"
+        minWidth={0}
+        gap="4px"
+        padding="12px 20px"
+        bgcolor="gray.5"
+        borderRadius="10px"
+        boxSizing="border-box"
+        overflow="hidden"
       >
-        <Stack gap="6px">{scenarioItems}</Stack>
-      </ScrollWrapper>
+        {loading ? (
+          <Skeleton variant="rounded" width="96px" height="17px" sx={{ margin: '10px 4px', borderRadius: '4px' }} />
+        ) : (
+          <Typography padding="10px 4px" fontSize="12px" fontWeight={500} lineHeight={1.4} color="contentText.Normal">
+            {scenarioCount ?? scenarios.length}개 시나리오
+          </Typography>
+        )}
+        <ScrollWrapper
+          maxHeight={listMaxHeight}
+          scrollbarGap={8}
+          reserveScrollbarGap
+          thumbWidth={4}
+          thumbMaxHeight={252}
+          overscrollBehavior="auto"
+          showScrollEdgeShadow
+          contentKey={loading ? 'loading' : scenarios.length}
+          sx={{
+            width: '100%',
+            '& .scroll-wrapper-edge-shadow-top': { height: '40px' },
+            '& .scroll-wrapper-edge-shadow-bottom': { height: '82px' },
+            '& .scroll-wrapper-edge-shadow-top > div:first-of-type': {
+              background: 'linear-gradient(to bottom, rgba(248, 249, 250, 1) 0%, rgba(248, 249, 250, 0) 80%)',
+            },
+            '& .scroll-wrapper-edge-shadow-bottom > div:first-of-type': {
+              background: 'linear-gradient(to top, rgba(248, 249, 250, 1) 0%, rgba(248, 249, 250, 0) 80%)',
+            },
+            '& .scroll-wrapper-edge-shadow-top > div:last-of-type, & .scroll-wrapper-edge-shadow-bottom > div:last-of-type': {
+              display: 'none',
+            },
+          }}
+        >
+          <Stack gap="4px">{scenarioItems}</Stack>
+        </ScrollWrapper>
+      </Stack>
     </Stack>
   )
 }
@@ -329,12 +385,12 @@ const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefin
         ),
       },
       {
-        field: 'probabilityImpact',
+        field: 'strengthLabel',
         headerName: '영향도',
         width: '120px',
         align: 'center',
         headerAlign: 'center',
-        renderCell: ({ row }) => <NextGenMITableBodyText value={`${row.probabilityImpact}%`} color="contentText.Black" align="center" />,
+        renderCell: ({ row }) => <NextGenMITableBodyText value={row.strengthLabel} color="contentText.Black" align="center" />,
       },
       {
         field: 'rationale',
@@ -437,6 +493,7 @@ interface ScenarioGroupDetailSectionProps {
   scenarioGroupId: string
   scenarios: IScenarioGroupDetailRow[]
   selectedScenarioId?: number
+  scenarioCount?: number
   headingSlot?: ReactNode
   listLoading?: boolean
   onSelectScenario: (scenarioId: number) => void
@@ -452,13 +509,21 @@ const ScenarioGroupDetailSection = ({
   scenarioGroupId,
   scenarios,
   selectedScenarioId,
+  scenarioCount,
   headingSlot,
   listLoading = false,
   onSelectScenario,
 }: ScenarioGroupDetailSectionProps) => {
   const stickyTopPx = useScenarioDetailStickyTop()
+  const sectionRootRef = useRef<HTMLDivElement>(null)
   const rightHeaderRef = useRef<HTMLDivElement>(null)
+  const pendingScrollScenarioIdRef = useRef<number | null>(null)
+  const scrollCompletionCleanupRef = useRef<(() => void) | null>(null)
+  const scrollSkeletonHoldTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
+  const scrollSkeletonHoldGenerationRef = useRef(0)
+  const [scrollSkeletonHoldScenarioId, setScrollSkeletonHoldScenarioId] = useState<number | null>(null)
   const rightHeaderPinned = useScenarioDetailStickyPinned(rightHeaderRef, stickyTopPx)
+  const hasHeadingSlot = Boolean(headingSlot)
   const { data, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioGroupScenarioDetail', scenarioGroupId, selectedScenarioId],
     queryFn: () => nextGenMIScenarioGroupService.getScenarioDetail(scenarioGroupId, selectedScenarioId ?? ''),
@@ -467,10 +532,143 @@ const ScenarioGroupDetailSection = ({
     gcTime: 0,
   })
 
-  const detailLoading = isLoading || (Boolean(selectedScenarioId) && !data)
+  const queryDetailLoading = isLoading || (Boolean(selectedScenarioId) && !data)
+  const detailLoading = queryDetailLoading || scrollSkeletonHoldScenarioId === selectedScenarioId
+  const scenarioProbability = data?.adjustedProbability ?? data?.probability
+
+  const isDetailHeaderSticky = useCallback(() => {
+    const rightHeader = rightHeaderRef.current
+    return Boolean(rightHeader && rightHeader.getBoundingClientRect().top <= stickyTopPx + 0.5)
+  }, [stickyTopPx])
+
+  const resetDetailScrollTop = useCallback(() => {
+    const scrollEl = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
+    const sectionRoot = sectionRootRef.current
+    const rightHeader = rightHeaderRef.current
+    if (!scrollEl || !sectionRoot || !rightHeader) return null
+    if (!isDetailHeaderSticky()) return null
+
+    const scrollRect = scrollEl.getBoundingClientRect()
+    const sectionRect = sectionRoot.getBoundingClientRect()
+    const headingOffset = hasHeadingSlot ? SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX : 0
+    const scrollTarget = Math.max(0, scrollEl.scrollTop + sectionRect.top - scrollRect.top + headingOffset - stickyTopPx)
+
+    scrollEl.scrollTo({
+      top: scrollTarget,
+      behavior: 'smooth',
+    })
+    return { scrollEl, scrollTarget }
+  }, [hasHeadingSlot, isDetailHeaderSticky, stickyTopPx])
+
+  const scheduleScrollSkeletonRelease = useCallback((scrollEl: HTMLElement, scrollTarget: number, scenarioId: number) => {
+    scrollCompletionCleanupRef.current?.()
+    if (scrollSkeletonHoldTimerRef.current) {
+      globalThis.clearTimeout(scrollSkeletonHoldTimerRef.current)
+      scrollSkeletonHoldTimerRef.current = null
+    }
+
+    scrollSkeletonHoldGenerationRef.current += 1
+    const generation = scrollSkeletonHoldGenerationRef.current
+    let settled = false
+    let rafId = 0
+    let settleTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+    let fallbackTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+    let release = () => undefined
+
+    const scheduleFallbackRelease = () => {
+      if (settleTimer) globalThis.clearTimeout(settleTimer)
+      settleTimer = globalThis.setTimeout(release, 160)
+    }
+
+    release = () => {
+      if (settled) return
+      settled = true
+      scrollEl.removeEventListener('scrollend', release)
+      scrollEl.removeEventListener('scroll', scheduleFallbackRelease)
+      if (rafId !== 0) globalThis.cancelAnimationFrame(rafId)
+      if (settleTimer) globalThis.clearTimeout(settleTimer)
+      if (fallbackTimer) globalThis.clearTimeout(fallbackTimer)
+      scrollCompletionCleanupRef.current = null
+
+      scrollSkeletonHoldTimerRef.current = globalThis.setTimeout(() => {
+        if (scrollSkeletonHoldGenerationRef.current === generation) {
+          setScrollSkeletonHoldScenarioId((current) => (current === scenarioId ? null : current))
+        }
+        scrollSkeletonHoldTimerRef.current = null
+      }, 10)
+    }
+
+    const watchScrollTarget = () => {
+      if (Math.abs(scrollEl.scrollTop - scrollTarget) < 1) {
+        release()
+        return
+      }
+      rafId = globalThis.requestAnimationFrame(watchScrollTarget)
+    }
+
+    scrollCompletionCleanupRef.current = () => {
+      settled = true
+      scrollEl.removeEventListener('scrollend', release)
+      scrollEl.removeEventListener('scroll', scheduleFallbackRelease)
+      if (rafId !== 0) globalThis.cancelAnimationFrame(rafId)
+      if (settleTimer) globalThis.clearTimeout(settleTimer)
+      if (fallbackTimer) globalThis.clearTimeout(fallbackTimer)
+    }
+
+    if (Math.abs(scrollEl.scrollTop - scrollTarget) < 1) {
+      release()
+      return
+    }
+
+    scrollEl.addEventListener('scrollend', release, { passive: true })
+    scrollEl.addEventListener('scroll', scheduleFallbackRelease, { passive: true })
+    rafId = globalThis.requestAnimationFrame(watchScrollTarget)
+    fallbackTimer = globalThis.setTimeout(release, 4000)
+  }, [])
+
+  const handleSelectScenario = useCallback(
+    (scenarioId: number) => {
+      if (scenarioId !== selectedScenarioId && isDetailHeaderSticky()) {
+        pendingScrollScenarioIdRef.current = scenarioId
+        scrollCompletionCleanupRef.current?.()
+        if (scrollSkeletonHoldTimerRef.current) {
+          globalThis.clearTimeout(scrollSkeletonHoldTimerRef.current)
+          scrollSkeletonHoldTimerRef.current = null
+        }
+        setScrollSkeletonHoldScenarioId(scenarioId)
+      } else {
+        pendingScrollScenarioIdRef.current = null
+      }
+      onSelectScenario(scenarioId)
+    },
+    [isDetailHeaderSticky, onSelectScenario, selectedScenarioId],
+  )
+
+  useEffect(() => {
+    if (pendingScrollScenarioIdRef.current !== selectedScenarioId) return
+    if (scrollSkeletonHoldScenarioId !== selectedScenarioId) return
+
+    pendingScrollScenarioIdRef.current = null
+    const result = resetDetailScrollTop()
+    if (result) {
+      scheduleScrollSkeletonRelease(result.scrollEl, result.scrollTarget, selectedScenarioId)
+      return
+    }
+
+    setScrollSkeletonHoldScenarioId((current) => (current === selectedScenarioId ? null : current))
+  }, [resetDetailScrollTop, scheduleScrollSkeletonRelease, scrollSkeletonHoldScenarioId, selectedScenarioId])
+
+  useEffect(
+    () => () => {
+      scrollCompletionCleanupRef.current?.()
+      if (scrollSkeletonHoldTimerRef.current) globalThis.clearTimeout(scrollSkeletonHoldTimerRef.current)
+    },
+    [],
+  )
 
   return (
     <Stack
+      ref={sectionRootRef}
       sx={{
         display: 'grid',
         gridTemplateColumns: `${SCENARIO_DETAIL_SIDEBAR_WIDTH} minmax(0, 1fr)`,
@@ -481,13 +679,14 @@ const ScenarioGroupDetailSection = ({
       <ScenarioSelectSidebar
         scenarios={scenarios}
         selectedScenarioId={selectedScenarioId}
+        scenarioCount={scenarioCount}
         stickyTopPx={stickyTopPx}
         headingSlot={headingSlot}
         loading={listLoading}
-        onSelect={onSelectScenario}
+        onSelect={handleSelectScenario}
       />
 
-      <Stack flex={1} minWidth={0} gap="12px" pt={headingSlot ? `${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px` : 0}>
+      <Stack flex={1} minWidth={0} gap="12px" pt={hasHeadingSlot ? `${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px` : 0}>
         <Stack
           ref={rightHeaderRef}
           gap="6px"
@@ -552,9 +751,9 @@ const ScenarioGroupDetailSection = ({
                 <Skeleton variant="rounded" sx={{ flex: 1, borderRadius: '10px' }} />
               ) : (
                 <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="20px 16px">
-                  <ScenarioPossibilityGauge probability={data?.probability ?? 0} hideBackground hideTooltip />
+                  <ScenarioPossibilityGauge probability={scenarioProbability ?? 0} hideBackground hideTooltip />
                   <Typography fontSize="15px" fontWeight={500} lineHeight={1.6} color="contentText.Black">
-                    {typeof data?.probability === 'number' ? probabilityToLikelihoodLabel(data.probability / 100) : '-'}
+                    {typeof scenarioProbability === 'number' ? probabilityToLikelihoodLabel(scenarioProbability / 100) : '-'}
                   </Typography>
                 </Stack>
               )}

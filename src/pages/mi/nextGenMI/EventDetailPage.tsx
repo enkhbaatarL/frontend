@@ -1,5 +1,5 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
-import { Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode, useEffect } from 'react'
@@ -17,6 +17,12 @@ import NextGenMIDetailHeader, {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type NextGenMIDetailHeaderSection,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
+import {
+  findEventDesignAvailability,
+  isEventDesignOccupiedByOther,
+  normalizeEventScenarioDesignStatus,
+} from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventDetailAiInsightsSection from '@/pages/mi/nextGenMI/components/event/EventDetailAiInsightsSection'
 import EventDetailDriverTreeScoreboardSection from '@/pages/mi/nextGenMI/components/event/EventDetailDriverTreeScoreboardSection'
 import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/event/EventDetailImpactAnalysisSection'
@@ -26,6 +32,8 @@ import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
+import useAuthStore from '@/store/useAuthStore'
+import useDialog from '@/store/useDialog'
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
 
@@ -63,20 +71,53 @@ const EVENT_DETAIL_HEADER_SECTIONS: NextGenMIDetailHeaderSection[] = EVENT_DETAI
   label: tab.label,
 }))
 
-const renderEventDetailHeaderTabActions = (targetLabel?: string, onScenarioDesignClick?: () => void) => (
-  <Stack direction="row" alignItems="center" gap="12px">
-    <NextGenMIUserFeedback pageName="Next-Gen MI" sectionName="Event List / Event Detail" targetLabel={targetLabel} />
-    <MIMenu
-      variant="contained"
-      label="시나리오 생성"
-      prefix={<AutoAwesomeRoundedIcon aria-hidden focusable="false" />}
-      onClick={onScenarioDesignClick}
-      sx={{
-        height: '36px',
-      }}
-    />
-  </Stack>
-)
+const renderEventDetailHeaderTabActions = ({
+  pageTitle,
+  scenarioDesignDisabled,
+  scenarioDesignDisabledTooltipTitle,
+  onScenarioDesignClick,
+}: {
+  pageTitle: string
+  scenarioDesignDisabled?: boolean
+  scenarioDesignDisabledTooltipTitle?: string
+  onScenarioDesignClick?: () => void
+}) => {
+  const scenarioDesignButton = (
+    <Box component="span" display="inline-flex" sx={{ cursor: scenarioDesignDisabled ? 'not-allowed' : undefined }}>
+      <MIMenu
+        variant="contained"
+        label="시나리오 설계"
+        prefix={<AutoAwesomeRoundedIcon aria-hidden focusable="false" />}
+        disabled={scenarioDesignDisabled}
+        onClick={onScenarioDesignClick}
+        gap="4px"
+        sx={{
+          height: '36px',
+          padding: '8px 10px 8px 6px',
+          borderRadius: '8px',
+          backgroundColor: 'mari.Primary',
+          '&:hover:not(:disabled)': {
+            backgroundColor: 'mari.Primary',
+          },
+          '&:active:not(:disabled)': {
+            backgroundColor: 'mari.Primary',
+          },
+        }}
+      />
+    </Box>
+  )
+
+  return (
+    <Stack direction="row" alignItems="center" gap="12px">
+      <NextGenMIUserFeedback pageTitle={pageTitle} />
+      {scenarioDesignDisabled && scenarioDesignDisabledTooltipTitle ? (
+        <NextGenMIFollowCursorTooltip title={scenarioDesignDisabledTooltipTitle}>{scenarioDesignButton}</NextGenMIFollowCursorTooltip>
+      ) : (
+        scenarioDesignButton
+      )}
+    </Stack>
+  )
+}
 
 interface EventDetailHeaderContent {
   backLabel: string
@@ -132,6 +173,9 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const location = useLocation()
   const state = location.state as NextGenMIEventDetailLocationState | null
   const { showSnackbar } = useSnackbar()
+  const { onShow } = useDialog()
+  const currentUserNo = useAuthStore((authState) => authState.user?.userNo)
+  const eventIdNumber = eventId !== undefined && Number.isFinite(Number(eventId)) ? Number(eventId) : null
 
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
@@ -155,6 +199,20 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     queryKey: ['nextGenMIEventDetail', eventId],
     queryFn: () => nextGenMIEventService.getEventDetail(eventId!),
     enabled: !!eventId,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
+  })
+
+  const creatingEventIds = useMemo(
+    () => (eventIdNumber !== null && detail?.scenarioDesignStatus === 'creating' ? [eventIdNumber] : []),
+    [detail?.scenarioDesignStatus, eventIdNumber],
+  )
+
+  const { data: designAvailabilityData } = useQuery({
+    queryKey: ['nextGenMIEventDesignAvailability', 'eventDetail', eventIdNumber],
+    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: creatingEventIds }),
+    enabled: creatingEventIds.length > 0,
+    refetchInterval: 5000,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -221,16 +279,55 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const recordRows = recordsData?.detail ?? []
   const outlookRows = outlooksData?.detail ?? []
   const relatedEventScenario = detail?.relatedEventScenario
-  const handleScenarioDesignClick = useCallback(() => {
+  const designAvailability = useMemo(
+    () => findEventDesignAvailability(designAvailabilityData, eventIdNumber),
+    [designAvailabilityData, eventIdNumber],
+  )
+  const scenarioDesignStatus = normalizeEventScenarioDesignStatus(designAvailability?.scenarioDesignStatus) ?? detail?.scenarioDesignStatus
+  const hasRelatedScenarioGroup = relatedEventScenario?.scenarioGroupId !== undefined && relatedEventScenario.scenarioGroupId !== null
+  const isScenarioDesignCreated = scenarioDesignStatus === 'created' || hasRelatedScenarioGroup
+  const scenarioDesignDisabled = detailLoading || isScenarioDesignCreated
+  const scenarioDesignDisabledTooltipTitle = isScenarioDesignCreated
+    ? '새로 설계하려면 기존 시나리오 그룹을 먼저 삭제해야 합니다. 삭제는 시나리오 그룹 상세에서 가능합니다.'
+    : undefined
+  const handleScenarioDesignClick = useCallback(async () => {
     if (!eventId) return
+    if (isScenarioDesignCreated) return
+
+    let currentDesignAvailability = designAvailability
+    if (scenarioDesignStatus === 'creating' && !currentDesignAvailability && eventIdNumber !== null) {
+      currentDesignAvailability = findEventDesignAvailability(
+        await nextGenMIEventService.getEventDesignAvailability({ eventIds: [eventIdNumber] }).catch(() => undefined),
+        eventIdNumber,
+      )
+    }
+
+    if (
+      scenarioDesignStatus === 'creating' &&
+      isEventDesignOccupiedByOther(currentDesignAvailability ?? { scenarioDesignStatus }, currentUserNo)
+    ) {
+      onShow({
+        title: '시나리오 설계를 시작할 수 없습니다',
+        width: 450,
+        children: '다른 사용자가 현재 시나리오 설계를 진행 중입니다. 해당 작업이 완료된 후 다시 시도해 주세요.',
+      })
+      return
+    }
+
     navigate(getNextGenMIEventDesignPath(eventId), {
       state: { eventName: title },
     })
-  }, [eventId, navigate, title])
+  }, [currentUserNo, designAvailability, eventId, eventIdNumber, isScenarioDesignCreated, navigate, onShow, scenarioDesignStatus, title])
 
   const eventDetailHeaderTabActions = useMemo(
-    () => renderEventDetailHeaderTabActions(title ? `이벤트 상세/ ${title}` : '이벤트 상세', handleScenarioDesignClick),
-    [handleScenarioDesignClick, title],
+    () =>
+      renderEventDetailHeaderTabActions({
+        pageTitle: title,
+        scenarioDesignDisabled,
+        scenarioDesignDisabledTooltipTitle,
+        onScenarioDesignClick: handleScenarioDesignClick,
+      }),
+    [handleScenarioDesignClick, scenarioDesignDisabled, scenarioDesignDisabledTooltipTitle, title],
   )
 
   const headerTitleSlot = useMemo(
@@ -372,6 +469,10 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
           <EventDetailRelatedScenariosSection
             eventId={eventId}
             relatedEventScenario={relatedEventScenario}
+            scenarioSuggestReason={detail?.scenarioSuggestReason}
+            scenarioDesignDisabled={isScenarioDesignCreated}
+            scenarioDesignDisabledTooltipTitle={scenarioDesignDisabledTooltipTitle}
+            onScenarioDesignClick={handleScenarioDesignClick}
             onScenarioRowClick={(row) => {
               const scenarioGroupId = relatedEventScenario?.scenarioGroupId
               if (scenarioGroupId === undefined || scenarioGroupId === null) return

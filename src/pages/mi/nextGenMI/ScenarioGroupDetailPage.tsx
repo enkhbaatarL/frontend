@@ -1,20 +1,23 @@
-import { Summarize } from '@mui/icons-material'
-import { Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { type ReactNode, useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import DocumentIcon from '@/components/common/icons/DocumentIcon'
 import LineChartIcon from '@/components/common/icons/LineChartIcon'
 import RadarIcon from '@/components/common/icons/RadarIcon'
+import ScenarioDetailIcon from '@/components/common/icons/ScenarioDetailIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
 import NextGenMIDetailHeader, {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type NextGenMIDetailHeaderSection,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
-import ScenarioGroupInnerTable, { ScenarioJudgementConfirmDialog } from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
+import ScenarioGroupInnerTable, {
+  isLastRemainingScenarioDiscard,
+  ScenarioJudgementConfirmDialog,
+  ScenarioLastDiscardConfirmDialog,
+} from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import ScenarioGroupDeleteMenu from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDeleteMenu'
 import ScenarioGroupDetailSection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDetailSection'
@@ -32,15 +35,31 @@ type ScenarioGroupDetailSectionItem = NextGenMIDetailHeaderSection & {
 
 const JUDGEMENT_SUCCESS_MESSAGE: Record<ScenarioJudgementStatus, string> = {
   pending: '시나리오가 대기 상태로 변경되었습니다.',
-  realized: '시나리오가 실현으로 판정되었습니다.',
+  realized: '시나리오가 실현 처리되었습니다.',
   discarded: '시나리오가 폐기되었습니다.',
 }
 
 const SCENARIO_GROUP_DETAIL_SECTIONS: ScenarioGroupDetailSectionItem[] = [
   { id: 'scenario-group-detail-section-summary', label: '요약', icon: <DocumentIcon /> },
   { id: 'scenario-group-detail-section-assumption', label: '가정 및 실현 가능성', icon: <RadarIcon /> },
-  { id: 'scenario-group-detail-section-price-forecast', label: '가격 전망', icon: <LineChartIcon width="30" height="30" /> },
-  { id: 'scenario-group-detail-section-detail', label: '시나리오 상세', icon: <Summarize sx={{ fontSize: 30 }} /> },
+  {
+    id: 'scenario-group-detail-section-price-forecast',
+    label: '가격 전망',
+    icon: (
+      <Box padding="2px 6px 0">
+        <LineChartIcon width="20" height="20" />
+      </Box>
+    ),
+  },
+  {
+    id: 'scenario-group-detail-section-detail',
+    label: '시나리오 상세',
+    icon: (
+      <Box padding="8px 4px 2px 6px">
+        <ScenarioDetailIcon />
+      </Box>
+    ),
+  },
 ]
 
 const SectionHeading = ({ sectionId }: { sectionId: NextGenMIDetailHeaderSection['id'] }) => {
@@ -53,7 +72,6 @@ const SectionHeading = ({ sectionId }: { sectionId: NextGenMIDetailHeaderSection
       <Typography fontSize={20} fontWeight={600} color="contentText.Black">
         {section.label}
       </Typography>
-      <InfoTooltip title="" iconSize={16} iconColor="contentText.Normal" />
     </Stack>
   )
 }
@@ -64,6 +82,7 @@ interface ScenarioGroupDetailHeaderContent {
   titleSlot: ReactNode
   rightAction?: ReactNode
   pendingScrollSectionId?: string
+  pendingScrollKey?: string | number
 }
 
 let scenarioGroupDetailHeaderContent: ScenarioGroupDetailHeaderContent | null = null
@@ -98,13 +117,15 @@ const ScenarioGroupDetailHeaderView = () => {
       titleSlot={content.titleSlot}
       rightAction={content.rightAction}
       pendingScrollSectionId={content.pendingScrollSectionId}
+      pendingScrollKey={content.pendingScrollKey}
     />
   )
 }
 
 const resolveSelectedScenarioId = (scenarios: IScenarioGroupDetailRow[]): number | undefined => {
-  if (scenarios.length === 0) return undefined
-  return (scenarios.find((scenario) => scenario.baseCase) ?? scenarios[0]).scenarioId
+  const viewableScenarios = scenarios.filter((scenario) => scenario.status !== 'discarded')
+  if (viewableScenarios.length === 0) return undefined
+  return (viewableScenarios.find((scenario) => scenario.baseCase) ?? viewableScenarios[0]).scenarioId
 }
 
 const ScenarioGroupDetailPage = () => {
@@ -118,7 +139,9 @@ const ScenarioGroupDetailPage = () => {
   const [judgementTarget, setJudgementTarget] = useState<{
     scenario: IScenarioGroupDetailRow
     status: ScenarioJudgementStatus
+    isLastDiscard: boolean
   } | null>(null)
+  const [detailScrollRequestSeq, setDetailScrollRequestSeq] = useState(0)
 
   // 시나리오를 직접 눌러 진입(초기 URL에 scenarioId)했는지 — 진입 시 '시나리오 상세' 섹션으로 포커스
   const [arrivedWithScenarioId] = useState(() => searchParams.get('scenarioId') !== null)
@@ -136,26 +159,46 @@ const ScenarioGroupDetailPage = () => {
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
 
   const queryScenarioId = searchParams.get('scenarioId')
-  const selectedScenarioId = useMemo(() => {
+  const hasViewableQueryScenarioId = useMemo(() => {
     const parsed = queryScenarioId ? Number(queryScenarioId) : NaN
-    if (Number.isFinite(parsed) && scenarios.some((scenario) => scenario.scenarioId === parsed)) {
-      return parsed
-    }
-    return resolveSelectedScenarioId(scenarios)
+    return Number.isFinite(parsed) && scenarios.some((scenario) => scenario.scenarioId === parsed && scenario.status !== 'discarded')
   }, [queryScenarioId, scenarios])
 
-  // 쿼리스트링이 비었거나 잘못된 경우 폴백 선택값으로 URL 보정
-  useEffect(() => {
-    if (scenarios.length === 0 || selectedScenarioId === undefined) return
-    if (queryScenarioId && Number(queryScenarioId) === selectedScenarioId) return
-    setSearchParams({ scenarioId: String(selectedScenarioId) }, { replace: true })
-  }, [queryScenarioId, scenarios.length, selectedScenarioId, setSearchParams])
+  const selectedScenarioId = useMemo(() => {
+    const parsed = queryScenarioId ? Number(queryScenarioId) : NaN
+    if (hasViewableQueryScenarioId) return parsed
+    return resolveSelectedScenarioId(scenarios)
+  }, [hasViewableQueryScenarioId, queryScenarioId, scenarios])
+
+  // URL로 폐기/미존재 시나리오가 들어온 경우 상세를 열지 않고 scenarioId 파라미터 제거
+  useLayoutEffect(() => {
+    if (!queryScenarioId || scenarios.length === 0) return
+    if (hasViewableQueryScenarioId) return
+
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.delete('scenarioId')
+    setSearchParams(nextSearchParams, { replace: true })
+  }, [hasViewableQueryScenarioId, queryScenarioId, scenarios.length, searchParams, setSearchParams])
 
   const handleSelectScenario = useCallback(
     (scenarioId: number) => {
-      setSearchParams({ scenarioId: String(scenarioId) }, { replace: false })
+      const scenario = scenarios.find((item) => item.scenarioId === scenarioId)
+      if (!scenario || scenario.status === 'discarded') return
+
+      const nextSearchParams = new URLSearchParams(searchParams)
+      nextSearchParams.set('scenarioId', String(scenarioId))
+      setSearchParams(nextSearchParams, { replace: false })
     },
-    [setSearchParams],
+    [scenarios, searchParams, setSearchParams],
+  )
+
+  const handleAssumptionScenarioClick = useCallback(
+    (scenario: IScenarioGroupDetailRow) => {
+      if (scenario.status === 'discarded') return
+      setDetailScrollRequestSeq((current) => current + 1)
+      handleSelectScenario(scenario.scenarioId)
+    },
+    [handleSelectScenario],
   )
 
   const { mutate: mutateScenarioStatus, isPending: isStatusUpdating } = useMutation({
@@ -171,14 +214,45 @@ const ScenarioGroupDetailPage = () => {
     },
   })
 
-  const handleJudgementChange = useCallback((scenario: IScenarioGroupDetailRow, status: ScenarioJudgementStatus) => {
-    setJudgementTarget({ scenario, status })
-  }, [])
+  const { mutate: discardLastScenarioAndDeleteGroup, isPending: isLastDiscardDeleting } = useMutation({
+    mutationFn: (scenarioId: number) => nextGenMIScenarioGroupService.discardLastScenarioAndDeleteGroup(scenarioGroupId ?? '', scenarioId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['nextGenMIScenarioGroups'] })
+      void queryClient.invalidateQueries({ queryKey: ['nextGenMIScenarioGroupScenarios'] })
+      setJudgementTarget(null)
+      navigate(getNextGenMITabPath('scenarios'), {
+        state: { successMessage: '시나리오 그룹이 삭제되었습니다.' },
+      })
+    },
+    onError: () => {
+      showSnackbar('시나리오 그룹 삭제에 실패했습니다.', { variant: 'error' })
+    },
+  })
+
+  const isJudgementPending = isStatusUpdating || isLastDiscardDeleting
+
+  const handleJudgementChange = useCallback(
+    (scenario: IScenarioGroupDetailRow, status: ScenarioJudgementStatus) => {
+      if (scenario.status === 'discarded' || scenario.status === 'realized') return
+
+      setJudgementTarget({
+        scenario,
+        status,
+        isLastDiscard: status === 'discarded' && isLastRemainingScenarioDiscard(scenarios, scenario.scenarioId),
+      })
+    },
+    [scenarios],
+  )
 
   const handleJudgementConfirm = useCallback(() => {
-    if (!judgementTarget) return
+    if (!judgementTarget || judgementTarget.isLastDiscard) return
     mutateScenarioStatus({ scenarioId: judgementTarget.scenario.scenarioId, status: judgementTarget.status })
   }, [judgementTarget, mutateScenarioStatus])
+
+  const handleLastDiscardConfirm = useCallback(() => {
+    if (!judgementTarget?.isLastDiscard) return
+    discardLastScenarioAndDeleteGroup(judgementTarget.scenario.scenarioId)
+  }, [discardLastScenarioAndDeleteGroup, judgementTarget])
 
   const groupName = data?.groupName ?? ''
 
@@ -205,18 +279,17 @@ const ScenarioGroupDetailPage = () => {
   const headerRightAction = useMemo(
     () => (
       <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexShrink={0} minHeight="62px">
-        <NextGenMIUserFeedback
-          pageName="Next-Gen MI"
-          sectionName="Scenario Group List / Scenario Group Detail"
-          targetLabel={groupName ? `시나리오 그룹 상세/ ${groupName}` : '시나리오 그룹 상세'}
-        />
+        <NextGenMIUserFeedback pageTitle={groupName || '시나리오 그룹 상세'} />
         <ScenarioGroupDeleteMenu scenarioGroupId={scenarioGroupId ?? ''} />
       </Stack>
     ),
     [groupName, scenarioGroupId],
   )
 
-  const focusDetailSectionId = arrivedWithScenarioId && !isLoading && Boolean(data) ? SCENARIO_GROUP_DETAIL_SECTIONS[3].id : undefined
+  const shouldFocusDetailSection =
+    hasViewableQueryScenarioId && !isLoading && Boolean(data) && (arrivedWithScenarioId || detailScrollRequestSeq > 0)
+  const focusDetailSectionId = shouldFocusDetailSection ? SCENARIO_GROUP_DETAIL_SECTIONS[3].id : undefined
+  const focusDetailScrollKey = shouldFocusDetailSection ? `${queryScenarioId ?? 'fallback'}:${detailScrollRequestSeq}` : undefined
 
   useLayoutEffect(() => {
     publishScenarioGroupDetailHeaderContent({
@@ -225,8 +298,9 @@ const ScenarioGroupDetailPage = () => {
       titleSlot: headerTitleSlot,
       rightAction: headerRightAction,
       pendingScrollSectionId: focusDetailSectionId,
+      pendingScrollKey: focusDetailScrollKey,
     })
-  }, [focusDetailSectionId, headerRightAction, headerTitleSlot, navigate])
+  }, [focusDetailScrollKey, focusDetailSectionId, headerRightAction, headerTitleSlot, navigate])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioGroupDetailHeaderView />, {
@@ -255,16 +329,20 @@ const ScenarioGroupDetailPage = () => {
             scenarios={scenarios}
             backgroundColor="commonColor.White"
             showStatusColumn
-            judgementPendingScenarioId={isStatusUpdating ? judgementTarget?.scenario.scenarioId : undefined}
+            judgementPendingScenarioId={isJudgementPending ? judgementTarget?.scenario.scenarioId : undefined}
             loading={isLoading}
             skeletonRowCount={4}
+            onScenarioClick={handleAssumptionScenarioClick}
             onJudgementChange={handleJudgementChange}
           />
         </Stack>
 
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} gap="12px" py="20px">
-          <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} />
-          <ScenarioGroupGraphView scenarioGroupId={Number(scenarioGroupId)} enabled={Boolean(scenarioGroupId)} />
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} py="20px">
+          <ScenarioGroupGraphView
+            scenarioGroupId={Number(scenarioGroupId)}
+            enabled={Boolean(scenarioGroupId)}
+            headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} />}
+          />
         </Stack>
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} py="20px">
@@ -272,6 +350,7 @@ const ScenarioGroupDetailPage = () => {
             scenarioGroupId={scenarioGroupId ?? ''}
             scenarios={scenarios}
             selectedScenarioId={selectedScenarioId}
+            scenarioCount={data?.scenarioCount}
             headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} />}
             listLoading={isLoading}
             onSelectScenario={handleSelectScenario}
@@ -279,16 +358,28 @@ const ScenarioGroupDetailPage = () => {
         </Stack>
       </Stack>
 
-      <ScenarioJudgementConfirmDialog
-        open={Boolean(judgementTarget)}
-        targetStatus={judgementTarget?.status ?? null}
-        pending={isStatusUpdating}
-        onConfirm={handleJudgementConfirm}
-        onCancel={() => {
-          if (isStatusUpdating) return
-          setJudgementTarget(null)
-        }}
-      />
+      {judgementTarget?.isLastDiscard ? (
+        <ScenarioLastDiscardConfirmDialog
+          open={Boolean(judgementTarget)}
+          pending={isLastDiscardDeleting}
+          onConfirm={handleLastDiscardConfirm}
+          onCancel={() => {
+            if (isLastDiscardDeleting) return
+            setJudgementTarget(null)
+          }}
+        />
+      ) : (
+        <ScenarioJudgementConfirmDialog
+          open={Boolean(judgementTarget)}
+          targetStatus={judgementTarget?.status ?? null}
+          pending={isStatusUpdating}
+          onConfirm={handleJudgementConfirm}
+          onCancel={() => {
+            if (isStatusUpdating) return
+            setJudgementTarget(null)
+          }}
+        />
+      )}
     </Stack>
   )
 }

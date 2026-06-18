@@ -2,10 +2,15 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import { ListSort, NextGenMIIndexName } from '@/service/mi/nextGenMI/common'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 /** 시나리오 판정 상태 (대기/실현/폐기) */
 export type ScenarioJudgementStatus = 'pending' | 'realized' | 'discarded'
+
+export type ScenarioSignpostStrength = 'verystrong' | 'strong' | 'medium' | 'weak' | 'veryweak'
+
+export type ScenarioGroupGraphPeriodUnit = 'monthly' | 'yearly'
 
 /** 동적 표 헤더 (차원 칼럼) */
 export interface IScenarioDimensionColumn {
@@ -28,12 +33,16 @@ export interface IScenarioRow {
   baseCase: boolean
   dimensions: IScenarioDimension[]
   probability: number
+  adjustedProbability: number
+  status: ScenarioJudgementStatus
+  statusLabel: string
 }
 
 export interface IScenarioGroupListItem {
   scenarioGroupId: number
   groupName: string
   createdAt: string
+  updatedAt: string
   summary: string
   scenarioCount: number
   dimensionColumns: IScenarioDimensionColumn[]
@@ -64,9 +73,13 @@ export interface IScenarioIndividualItem {
   scenarioName: string
   baseCase: boolean
   createdAt: string
+  updatedAt: string
   group: IScenarioGroupRef
   dimensions: IScenarioDimension[]
   probability: number
+  adjustedProbability: number
+  status: ScenarioJudgementStatus
+  statusLabel: string
 }
 
 export interface IScenarioIndividualListRes {
@@ -99,6 +112,7 @@ export interface IScenarioGroupDetailRow {
   baseCase: boolean
   dimensions: IScenarioDimension[]
   probability: number
+  adjustedProbability: number
   status: ScenarioJudgementStatus
   statusLabel: string
 }
@@ -107,6 +121,7 @@ export interface IScenarioGroupDetailRes {
   scenarioGroupId: number
   groupName: string
   createdAt: string
+  updatedAt: string
   baseEvent: IScenarioBaseEvent
   summary: string
   scenarioCount: number
@@ -120,6 +135,8 @@ export interface IScenarioSignpostDefinition {
   direction: 'sup'
   directionLabel: string
   probabilityImpact: number
+  strength: ScenarioSignpostStrength
+  strengthLabel: string
   rationale: string
 }
 
@@ -137,8 +154,11 @@ export interface IScenarioDetailViewRes {
   scenarioGroupId: number
   scenarioName: string
   baseCase: boolean
+  createdAt: string
+  updatedAt: string
   narrative: string
   probability: number
+  adjustedProbability: number
   dimensions: IScenarioDimension[]
   signpostDefinitions: IScenarioSignpostDefinition[]
   signpostMonitorings: IScenarioSignpostMonitoring[]
@@ -148,7 +168,7 @@ export interface IScenarioDetailViewRes {
 export interface IScenarioBaseSeries {
   seriesId: string
   seriesName: string
-  values: number[]
+  values: (number | null)[]
 }
 
 /** 그래프 - 시나리오별 예측 시리즈 */
@@ -157,18 +177,36 @@ export interface IScenarioGraphSeries {
   scenarioName: string
   baseCase: boolean
   executed: boolean
-  /** 수급모델 실행 전이면 null */
-  values: number[] | null
+  modelRunning: boolean
+  /** 판정 상태 (대기/실현/폐기). 폐기 필터 기준 */
+  status: ScenarioJudgementStatus
+  statusLabel: string
+  /** 베이스케이스 가격 (dates 순서, 빠진 구간 null). 미실행이면 null */
+  baseCaseValues: (number | null)[] | null
+  /** 사용자조정 가격 (dates 순서, 빠진 구간 null). 미실행이면 null */
+  userAdjustedValues: (number | null)[] | null
 }
 
 export interface IScenarioGroupGraphRes {
   scenarioGroupId: number
   indexName: NextGenMIIndexName
+  periodUnit: ScenarioGroupGraphPeriodUnit
+  periodUnitLabel: string
   currency: string
   unit: string
   dates: string[]
   baseSeries: IScenarioBaseSeries[]
   scenarioSeries: IScenarioGraphSeries[]
+}
+
+export interface IScenarioGroupGraphCmeBenchmark {
+  indexName: NextGenMIIndexName
+  periodUnit: ScenarioGroupGraphPeriodUnit
+  periodUnitLabel: string
+  currency: string
+  unit: string
+  dates: string[]
+  baseSeries: IScenarioBaseSeries[]
 }
 
 export interface IScenarioStatusUpdateReq {
@@ -179,6 +217,8 @@ export interface IScenarioStatusRes {
   scenarioId: number
   status: ScenarioJudgementStatus
   statusLabel: string
+  /** '폐기'로 자동 변경된 시나리오 ID 목록 (실현 변경 시에만, 그 외 빈 배열) */
+  discardedScenarioIds?: number[]
 }
 
 const nextGenMIScenarioGroupService = {
@@ -231,15 +271,39 @@ const nextGenMIScenarioGroupService = {
   },
 
   /**
-   * Scenario Group 그래프 데이터 조회 (단일 인덱스)
+   * Scenario Group 그래프 데이터 조회 (단일 인덱스 × 단일 기간단위)
    * @param scenarioGroupId - 시나리오 그룹 ID
    * @param indexName - 조회 인덱스 (기본 JKM)
+   * @param periodUnit - 기간 단위 (기본 monthly)
    */
-  async getScenarioGroupGraph(scenarioGroupId: string | number, indexName?: NextGenMIIndexName): Promise<IScenarioGroupGraphRes> {
+  async getScenarioGroupGraph(
+    scenarioGroupId: string | number,
+    indexName?: NextGenMIIndexName,
+    periodUnit?: ScenarioGroupGraphPeriodUnit,
+  ): Promise<IScenarioGroupGraphRes> {
     const response: AxiosResponse<ICommonResponse<IScenarioGroupGraphRes>> = await api.get(
       `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph`,
       {
-        params: { indexName },
+        params: { indexName, periodUnit },
+      },
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * Scenario Group 그래프 CME 벤치마크 기준선 조회 (단일 인덱스 × 단일 기간단위)
+   * @param indexName - 조회 인덱스 (기본 JKM)
+   * @param periodUnit - 기간 단위 (기본 monthly)
+   */
+  async getScenarioGroupGraphCmeBenchmark(
+    indexName?: NextGenMIIndexName,
+    periodUnit?: ScenarioGroupGraphPeriodUnit,
+  ): Promise<IScenarioGroupGraphCmeBenchmark> {
+    const response: AxiosResponse<ICommonResponse<IScenarioGroupGraphCmeBenchmark>> = await api.get(
+      withCustomBaseUrl('mi/next-gen/scenario-groups/graph/cme-benchmark'),
+      {
+        params: { indexName, periodUnit },
       },
     )
 
@@ -249,9 +313,14 @@ const nextGenMIScenarioGroupService = {
   /**
    * Scenario Group 그래프 엑셀(.xlsx) 다운로드 (전 인덱스 시트 묶음)
    * @param scenarioGroupId - 시나리오 그룹 ID
+   * @param periodUnit - 기간 단위 (기본 monthly)
    */
-  async exportScenarioGroupGraph(scenarioGroupId: string | number): Promise<AxiosResponse<Blob>> {
+  async exportScenarioGroupGraph(
+    scenarioGroupId: string | number,
+    periodUnit?: ScenarioGroupGraphPeriodUnit,
+  ): Promise<AxiosResponse<Blob>> {
     return api.get(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph/export`, {
+      params: { periodUnit },
       responseType: 'blob',
     })
   },
@@ -296,6 +365,14 @@ const nextGenMIScenarioGroupService = {
     )
 
     return response.data.data
+  },
+
+  /**
+   * 마지막 남은 시나리오 폐기 후 시나리오 그룹 삭제
+   */
+  async discardLastScenarioAndDeleteGroup(scenarioGroupId: string | number, scenarioId: number): Promise<void> {
+    await this.updateScenarioStatus(scenarioGroupId, scenarioId, { status: 'discarded' })
+    await this.deleteScenarioGroup(scenarioGroupId)
   },
 }
 

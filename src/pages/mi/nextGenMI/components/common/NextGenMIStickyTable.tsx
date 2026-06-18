@@ -1,5 +1,5 @@
 import { Box, Skeleton, Stack, Typography, type SxProps, type Theme } from '@mui/material'
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 
 import {
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
@@ -22,6 +22,7 @@ export type NextGenMIStickyTableColumn<T> = {
   getRowSpan?: (params: { row: T; rowIndex: number; column: NextGenMIStickyTableColumn<T> }) => number
   cellSx?: SxProps<Theme>
   headerCellSx?: SxProps<Theme>
+  headerContentSx?: SxProps<Theme>
 }
 
 type NextGenMIStickyTableProps<T> = {
@@ -48,6 +49,8 @@ type NextGenMIStickyTableProps<T> = {
   skeletonRowCount?: number
   containerPadding?: string
   containerShell?: boolean
+  scrollContainerRef?: { current: HTMLDivElement | null }
+  rightScrollEdgeOffset?: string
 }
 
 // 피그마: 행 컨테이너 px-8 + 셀 px-6 구조 → 외곽 14px(8+6) / 셀 사이 12px(6+6). 8px가 첫/마지막 컬럼에 붙는 엣지 인셋.
@@ -174,6 +177,8 @@ const NextGenMIStickyTable = <T,>({
   skeletonRowCount = 8,
   containerPadding = '12px',
   containerShell = true,
+  scrollContainerRef,
+  rightScrollEdgeOffset = '0px',
 }: NextGenMIStickyTableProps<T>) => {
   const tableRootRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -276,6 +281,13 @@ const NextGenMIStickyTable = <T,>({
   const scrollLayoutStateRef = useRef(scrollLayoutState)
   const [isScrollAreaHovered, setIsScrollAreaHovered] = useState(false)
   const [dragAxis, setDragAxis] = useState<ScrollAxis>(null)
+  const handleScrollContainerRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      scrollRef.current = element
+      if (scrollContainerRef) scrollContainerRef.current = element
+    },
+    [scrollContainerRef],
+  )
 
   useEffect(() => {
     const el = scrollRef.current
@@ -308,6 +320,7 @@ const NextGenMIStickyTable = <T,>({
       root.style.setProperty('--next-gen-mi-sticky-right-column-shadow-opacity', fixedRightColumnShadow ? '1' : '0')
       root.style.setProperty('--next-gen-mi-scroll-left-edge-opacity', left ? '1' : '0')
       root.style.setProperty('--next-gen-mi-scroll-right-edge-opacity', right ? '1' : '0')
+      root.style.setProperty('--next-gen-mi-scroll-right-edge-transition-duration', right ? '180ms' : '360ms')
       root.style.setProperty(
         '--next-gen-mi-scroll-top-edge-shadow',
         nextActiveAxis === 'vertical' && scrollTop > 1 ? NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP : 'none',
@@ -510,6 +523,7 @@ const NextGenMIStickyTable = <T,>({
               width: 'fit-content',
               maxWidth: '100%',
             },
+            ...toSxArray(column.headerContentSx),
           ]}
         >
           {column.headerName}
@@ -602,6 +616,7 @@ const NextGenMIStickyTable = <T,>({
         '--next-gen-mi-sticky-right-column-shadow-inset': fixedRightColumnsWidth,
         '--next-gen-mi-scroll-left-edge-opacity': 0,
         '--next-gen-mi-scroll-right-edge-opacity': 0,
+        '--next-gen-mi-scroll-right-edge-transition-duration': '360ms',
         '--next-gen-mi-scroll-top-edge-shadow': 'none',
         '--next-gen-mi-scroll-bottom-edge-opacity': 0,
         '--next-gen-mi-horizontal-thumb-left': '0%',
@@ -611,7 +626,7 @@ const NextGenMIStickyTable = <T,>({
       }}
     >
       <Box
-        ref={scrollRef}
+        ref={handleScrollContainerRef}
         sx={{
           width: '100%',
           ...(maxHeight ? { maxHeight } : {}),
@@ -807,11 +822,11 @@ const NextGenMIStickyTable = <T,>({
             top: leftAlignedHeaderSticky ? headerHeight : 0,
             right: scrollLayoutState.vertical ? '16px' : 0,
             bottom: scrollLayoutState.horizontal ? '18px' : 0,
-            width: '100px',
+            width: `calc(100px + ${rightScrollEdgeOffset})`,
             pointerEvents: 'none',
-            background: 'linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
+            background: `linear-gradient(to left, #ffffff 0, #ffffff ${rightScrollEdgeOffset}, rgba(255, 255, 255, 0) 100%)`,
             opacity: 'var(--next-gen-mi-scroll-right-edge-opacity)',
-            transition: 'opacity 180ms ease',
+            transition: 'opacity var(--next-gen-mi-scroll-right-edge-transition-duration) ease',
             zIndex: 5,
           }}
         />

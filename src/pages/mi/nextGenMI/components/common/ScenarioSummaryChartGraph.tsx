@@ -40,6 +40,7 @@ type ScenarioSummaryChartData = ChartData & {
   startDates?: string[]
   visibilityKey?: string
   isDashed?: boolean
+  badge?: 'BC' | 'UA'
 }
 
 interface ScenarioSummaryChartGraphProps {
@@ -47,12 +48,13 @@ interface ScenarioSummaryChartGraphProps {
   height: string | number
   targetLabel?: string
   chartVisibilityMap?: Map<string, boolean>
-  hoveredChartKey?: string | null
+  hoveredChartKey?: string | string[] | null
   chartColorMap?: Map<string, string>
   spanGaps?: boolean
   disableIntroAnimation?: boolean
   crosshairDateFormat?: string
   currentMarkerGranularity?: CurrentMarkerGranularity
+  zoomButtonBackgroundColor?: string
 }
 
 type CurrentMarkerGranularity = 'DAY' | 'MONTH' | 'YEAR'
@@ -67,6 +69,7 @@ type DatasetMeta = {
   timestamps?: string[]
   resultDates?: string[]
   startDates?: string[]
+  badge?: 'BC' | 'UA'
 }
 
 type ScenarioLineDataset = ChartDataset<'line', Point[]> & {
@@ -446,6 +449,7 @@ const ScenarioSummaryChartGraph = ({
   disableIntroAnimation = false,
   crosshairDateFormat,
   currentMarkerGranularity = 'DAY',
+  zoomButtonBackgroundColor = 'commonColor.White',
 }: ScenarioSummaryChartGraphProps) => {
   const chartRef = useRef<ChartJS<'line'> | null>(null)
   const crosshairRef = useRef<ScenarioSummaryCrosshairLineHandle | null>(null)
@@ -498,6 +502,10 @@ const ScenarioSummaryChartGraph = ({
   const axisResultDates = useMemo(() => axisBase?.resultDates || [], [axisBase])
   const yAxisScale = useMemo(() => getYAxisScale(charts), [charts])
   const dataMaxPrecision = useMemo(() => getDataMaxPrecision(charts), [charts])
+  const hoveredChartKeySet = useMemo(() => {
+    const keys = Array.isArray(hoveredChartKey) ? hoveredChartKey : hoveredChartKey ? [hoveredChartKey] : []
+    return new Set(keys)
+  }, [hoveredChartKey])
 
   const datasets = useMemo<ScenarioLineDataset[]>(
     () =>
@@ -507,8 +515,8 @@ const ScenarioSummaryChartGraph = ({
         const visibilityKey = chart.visibilityKey ?? `${displayName}_${chart.dataType ?? ''}`
         const isVisible = chartVisibilityMap?.get(visibilityKey) !== false
         const color = chartColorMap?.get(displayName) ?? '#2F62A3'
-        const isHovered = hoveredChartKey === visibilityKey
-        const hasHover = hoveredChartKey !== null && hoveredChartKey !== undefined
+        const isHovered = hoveredChartKeySet.has(visibilityKey)
+        const hasHover = hoveredChartKeySet.size > 0
         const opacity = !isVisible ? 0 : hasHover && !isHovered ? 0.2 : 1
         const isDashed = chart.isDashed === true
 
@@ -541,10 +549,11 @@ const ScenarioSummaryChartGraph = ({
             timestamps: chart.timestamps,
             resultDates: chart.resultDates,
             startDates: chart.startDates,
+            badge: chart.badge,
           },
         }
       }),
-    [chartColorMap, chartVisibilityMap, charts, dataMaxPrecision, dataPointCount, hoveredChartKey, spanGaps],
+    [chartColorMap, chartVisibilityMap, charts, dataMaxPrecision, dataPointCount, hoveredChartKeySet, spanGaps],
   )
 
   const scenarioPlugin = useMemo(
@@ -1029,7 +1038,7 @@ const ScenarioSummaryChartGraph = ({
             borderBottomRightRadius: 0,
             border: '1px solid',
             borderColor: 'contentBorder.Normal',
-            backgroundColor: 'commonColor.White',
+            backgroundColor: zoomButtonBackgroundColor,
             justifyContent: 'center',
           }}
         >
@@ -1052,7 +1061,7 @@ const ScenarioSummaryChartGraph = ({
             borderBottomRightRadius: '10px',
             border: '1px solid',
             borderColor: 'contentBorder.Normal',
-            backgroundColor: 'commonColor.White',
+            backgroundColor: zoomButtonBackgroundColor,
             justifyContent: 'center',
           }}
         >

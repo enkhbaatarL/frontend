@@ -348,6 +348,7 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
           <Stack direction="row" alignItems="center" gap="8px" pr="12px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">
             <MISelectMenu
               variant="outlined"
+              selectionIconPosition="left"
               selected={searchField}
               onSelected={(v: RunListSearchField) => setSearchField(v)}
               items={SEARCH_FIELD_ITEMS}

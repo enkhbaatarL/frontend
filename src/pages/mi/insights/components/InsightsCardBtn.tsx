@@ -10,6 +10,7 @@ import dataBgImg from '@/assets/data-bg.png'
 import diBgImg from '@/assets/deal-insight-bg.png'
 import horizonsBgImg from '@/assets/horizons-bg.png'
 import iBgImg from '@/assets/insight-bg.png'
+import mailBgImg from '@/assets/mail-bg.png'
 import pshImg from '@/assets/product_symbol_hover.png'
 import rsrchBgImg from '@/assets/research-presentation-bg.png'
 import edBgImg from '@/assets/the-edge-bg.png'
@@ -19,6 +20,7 @@ import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 
 export type ReportType =
   | 'A_INSIGHT'
+  | 'A_MAIL'
   | 'A_CMMDT_MRKT_RPT'
   | 'A_CMPY_RPT'
   | 'A_ASST_RPT'
@@ -78,6 +80,8 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         return `url(${horizonsBgImg})`
       case 'A_DATA':
         return `url(${dataBgImg})`
+      case 'A_MAIL':
+        return `url(${mailBgImg})`
       default:
         return `url(${bgCardImg})`
     }
@@ -91,6 +95,8 @@ const InsightsCardBtn: FC<InsightsCardBtnProps> = ({ report, index }) => {
         return 'Commodity Market Report'
       case 'A_DEAL_INSIGHT':
         return 'Deal Insight'
+      case 'A_MAIL':
+        return 'Mail'
       case 'A_INSIGHT':
         return 'Insight'
       case 'A_CMPY_RPT':

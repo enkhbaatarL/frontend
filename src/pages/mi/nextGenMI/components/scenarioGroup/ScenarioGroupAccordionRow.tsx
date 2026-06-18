@@ -62,6 +62,7 @@ interface ScenarioGroupAccordionRowProps {
   group: IScenarioGroupListItem
   expanded: boolean
   onToggle: (scenarioGroupId: number) => void
+  chartBackgroundColor?: string
 }
 
 const ChevronCell = ({ expanded }: { expanded: boolean }) => (
@@ -77,7 +78,7 @@ const ChevronCell = ({ expanded }: { expanded: boolean }) => (
   </Stack>
 )
 
-const ScenarioGroupAccordionRow = ({ group, expanded, onToggle }: ScenarioGroupAccordionRowProps) => {
+const ScenarioGroupAccordionRow = ({ group, expanded, onToggle, chartBackgroundColor }: ScenarioGroupAccordionRowProps) => {
   const navigate = useNavigate()
   const dateLabel = formatNextGenMIDateTime(group.createdAt)
   const [viewMode, setViewMode] = useState<ScenarioGroupViewMode>('table')
@@ -194,7 +195,11 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle }: ScenarioGroupA
               </Box>
             </Box>
             <Box padding="16px 20px" aria-hidden={isTableView} sx={getViewPanelSx(!isTableView)}>
-              <ScenarioGroupGraphView scenarioGroupId={group.scenarioGroupId} enabled={expanded} />
+              <ScenarioGroupGraphView
+                scenarioGroupId={group.scenarioGroupId}
+                enabled={expanded}
+                chartBackgroundColor={chartBackgroundColor}
+              />
             </Box>
           </Box>
         </Box>

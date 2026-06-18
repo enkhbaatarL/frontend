@@ -82,6 +82,7 @@ const ScenarioGroupToolbar = ({
 
         <MISelectMenu
           variant="outlined"
+          selectionIconPosition="left"
           buttonHoverBgColor="gray.20"
           selected={sort}
           onSelected={(value: string) => onSortChange(value as ListSort)}

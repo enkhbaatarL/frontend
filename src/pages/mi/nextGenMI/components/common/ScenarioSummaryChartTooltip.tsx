@@ -1,7 +1,9 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Divider, Stack, Typography } from '@mui/material'
 import { forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 
+import AdjustedLineIcon from '@/components/common/icons/AdjustedLineIcon'
+import BaseCaseLineIcon from '@/components/common/icons/BaseCaseLineIcon'
 import { formatValue } from '@/utils/number'
 
 export interface ScenarioSummaryTooltipContent {
@@ -14,6 +16,7 @@ export interface ScenarioSummaryTooltipContent {
   isForecast?: boolean
   goodsDataSourceNo?: number
   visibilityKey?: string
+  badge?: 'BC' | 'UA'
 }
 
 interface ScenarioSummaryChartTooltipProps {
@@ -23,12 +26,21 @@ interface ScenarioSummaryChartTooltipProps {
   content: Record<string, ScenarioSummaryTooltipContent>
   visibility?: 'visible' | 'hidden'
   targetLabel?: string
-  highlightVisibilityKey?: string | null
+  highlightVisibilityKey?: string | string[] | null
 }
 
-const TOOLTIP_COLUMN_WIDTH = 240
+const TOOLTIP_COLUMN_WIDTH = 252
 const ITEMS_PER_COLUMN = 25
 const COLUMN_GAP_PX = 10
+
+type TooltipDisplayRow =
+  | {
+      type: 'divider'
+    }
+  | {
+      type: 'item'
+      item: ScenarioSummaryTooltipContent
+    }
 
 const chunkItems = <T,>(list: T[], size: number): T[][] => {
   if (size <= 0) return [list]
@@ -37,6 +49,33 @@ const chunkItems = <T,>(list: T[], size: number): T[][] => {
     chunks.push(list.slice(i, i + size))
   }
   return chunks
+}
+
+const isBaseTooltipItem = (item: ScenarioSummaryTooltipContent) => item.visibilityKey?.trim().startsWith('base:') === true
+
+const isScenarioTooltipItem = (item: ScenarioSummaryTooltipContent) => item.visibilityKey?.trim().startsWith('scenario:') === true
+
+const buildTooltipDisplayRows = (items: ScenarioSummaryTooltipContent[]): TooltipDisplayRow[] => {
+  if (!items.some(isBaseTooltipItem) || !items.some(isScenarioTooltipItem)) {
+    return items.map((item) => ({ type: 'item', item }))
+  }
+
+  const rows: TooltipDisplayRow[] = []
+  let hasSeenBase = false
+  let dividerInserted = false
+
+  items.forEach((item) => {
+    if (isBaseTooltipItem(item)) {
+      hasSeenBase = true
+    }
+    if (hasSeenBase && !dividerInserted && isScenarioTooltipItem(item)) {
+      rows.push({ type: 'divider' })
+      dividerInserted = true
+    }
+    rows.push({ type: 'item', item })
+  })
+
+  return rows
 }
 
 const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<ScenarioSummaryChartTooltipProps>>(
@@ -50,8 +89,13 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
 
     if (items.length === 0) return null
 
-    const columns = chunkItems(items, ITEMS_PER_COLUMN)
-    const tooltipWidth = columns.length * TOOLTIP_COLUMN_WIDTH + Math.max(0, columns.length - 1) * COLUMN_GAP_PX
+    const columns = chunkItems(buildTooltipDisplayRows(items), ITEMS_PER_COLUMN)
+    const tooltipWidth = columns.length * TOOLTIP_COLUMN_WIDTH + Math.max(0, columns.length - 1) * COLUMN_GAP_PX + 16
+    const highlightKeySet = new Set(
+      (Array.isArray(highlightVisibilityKey) ? highlightVisibilityKey : highlightVisibilityKey ? [highlightVisibilityKey] : [])
+        .map((key) => key.trim())
+        .filter(Boolean),
+    )
 
     const tooltipNode = (
       <Stack
@@ -64,10 +108,13 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
           boxSizing: 'border-box',
           pointerEvents: 'none',
           zIndex: 1600,
-          borderRadius: '4px',
+          gap: '4px',
+          padding: '8px',
+          borderRadius: '6px',
           border: '1px solid',
           borderColor: 'contentBorder.Normal',
           bgcolor: 'commonColor.White',
+          boxShadow: '0 0 2px 0 rgba(0, 0, 0, 0.1)',
           visibility,
           overflow: 'hidden',
         }}
@@ -79,15 +126,17 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
           sx={{
             width: '100%',
             boxSizing: 'border-box',
-            height: 30,
-            px: '12px',
-            color: 'contentText.Black',
+            gap: '8px',
+            padding: '0 4px',
           }}
         >
           <Typography
-            variant="body3SB12"
-            color="inherit"
             sx={{
+              color: 'contentText.Normal',
+              fontSize: '13px',
+              fontWeight: 500,
+              lineHeight: 1.4,
+              letterSpacing: '-0.26px',
               fontVariantNumeric: 'lining-nums tabular-nums',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -98,14 +147,16 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
           </Typography>
           {targetLabel ? (
             <Typography
-              variant="body3SB12"
-              color="inherit"
               sx={{
+                color: 'contentText.Normal',
+                fontSize: '13px',
+                fontWeight: 500,
+                lineHeight: 1.4,
+                letterSpacing: '-0.26px',
                 fontVariantNumeric: 'lining-nums tabular-nums',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                ml: '8px',
               }}
             >
               {targetLabel}
@@ -120,18 +171,20 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
               width={TOOLTIP_COLUMN_WIDTH}
               minWidth={0}
               boxSizing="border-box"
-              gap="4px"
-              px="12px"
-              py="6px"
+              gap="0px"
               sx={{ flex: `0 0 ${TOOLTIP_COLUMN_WIDTH}px` }}
             >
-              {columnItems.map((item, rowIndexInColumn) => {
+              {columnItems.map((row, rowIndexInColumn) => {
                 const index = columnIndex * ITEMS_PER_COLUMN + rowIndexInColumn
-                const highlightKey = highlightVisibilityKey?.trim() ?? ''
-                const hasActiveHighlight = highlightKey !== ''
+                if (row.type === 'divider') {
+                  return <Divider key={`tooltip-divider-${index}`} flexItem sx={{ borderColor: 'contentBorder.Normal', my: '4px' }} />
+                }
+
+                const item = row.item
+                const hasActiveHighlight = highlightKeySet.size > 0
                 const itemKey = typeof item.visibilityKey === 'string' ? item.visibilityKey.trim() : ''
-                const rowDimmed = hasActiveHighlight && itemKey !== '' && itemKey !== highlightKey
-                const isRowStrong = hasActiveHighlight && itemKey !== '' && itemKey === highlightKey
+                const isRowStrong = hasActiveHighlight && itemKey !== '' && highlightKeySet.has(itemKey)
+                const rowDimmed = hasActiveHighlight && itemKey !== '' && !isRowStrong
 
                 return (
                   <Stack
@@ -139,27 +192,59 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
                     direction="row"
                     alignItems="center"
                     justifyContent="space-between"
+                    gap="8px"
+                    padding="4px 6px"
                     width="100%"
                     minWidth={0}
+                    boxSizing="border-box"
                     sx={{
                       opacity: rowDimmed ? 0.45 : 1,
                       transition: 'opacity 0.15s ease-in-out',
                     }}
                   >
-                    <Stack direction="row" alignItems="center" gap="8px" minWidth={0} flex="1 1 auto">
-                      <Box width={18} height={26} display="flex" alignItems="center" flexShrink={0}>
-                        <Box
-                          width={18}
-                          height={isRowStrong ? 5 : 4}
-                          borderRadius="100px"
-                          bgcolor={item.color ?? 'gray.50'}
-                          sx={{ opacity: rowDimmed ? 0.5 : 1, transition: 'height 0.15s ease, opacity 0.15s ease' }}
-                        />
+                    <Stack direction="row" alignItems="center" gap="4px" minWidth={0} flex="1 1 auto">
+                      <Box
+                        width="12px"
+                        height="16px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        flexShrink={0}
+                        color={item.color ?? '#ADB5BD'}
+                        sx={{ opacity: rowDimmed ? 0.5 : 1, transition: 'opacity 0.15s ease' }}
+                      >
+                        {item.badge === 'UA' ? <AdjustedLineIcon /> : <BaseCaseLineIcon />}
                       </Box>
+                      {item.badge ? (
+                        <Box
+                          flexShrink={0}
+                          padding="2px 4px"
+                          borderRadius="4px"
+                          bgcolor="gray.5"
+                          border="1px solid"
+                          borderColor="contentBorder.Normal"
+                          sx={{ opacity: rowDimmed ? 0.5 : 1, transition: 'opacity 0.15s ease' }}
+                        >
+                          <Typography
+                            color="contentText.Disabled"
+                            sx={{
+                              fontSize: '11px',
+                              fontWeight: 500,
+                              lineHeight: 1.4,
+                              letterSpacing: '-0.22px',
+                              fontVariantNumeric: 'lining-nums tabular-nums',
+                            }}
+                          >
+                            {item.badge}
+                          </Typography>
+                        </Box>
+                      ) : null}
                       <Typography
-                        variant={isRowStrong ? 'body3SB12' : 'body3M12'}
-                        color={rowDimmed ? 'contentText.Subtext' : 'contentText.Normal'}
+                        color={rowDimmed ? 'contentText.Subtext' : 'contentText.Black'}
                         sx={{
+                          fontSize: '13px',
+                          fontWeight: isRowStrong ? 600 : 500,
+                          lineHeight: 1.4,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -170,12 +255,14 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
                       </Typography>
                     </Stack>
                     <Typography
-                      variant="body3M12"
-                      color={rowDimmed ? 'contentText.Subtext' : 'commonColor.Black'}
+                      color={rowDimmed ? 'contentText.Subtext' : 'contentText.Black'}
                       sx={{
-                        width: 40,
+                        minWidth: '40px',
                         flexShrink: 0,
                         textAlign: 'right',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        lineHeight: 1.4,
                         fontVariantNumeric: 'lining-nums tabular-nums',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
