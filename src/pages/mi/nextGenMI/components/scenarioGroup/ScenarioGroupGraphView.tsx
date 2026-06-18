@@ -16,6 +16,8 @@ import ScenarioGroupGraphLegend from '@/pages/mi/nextGenMI/components/scenarioGr
 import {
   buildScenarioGroupGraphRender,
   buildScenarioGroupGraphUnit,
+  mergeScenarioGroupGraphCmeBenchmark,
+  scenarioGroupGraphCmeBenchmarkQueryKey,
   scenarioGroupGraphQueryKey,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import ScenarioModelExecutionButton from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionButton'
@@ -70,7 +72,29 @@ const ScenarioGroupGraphView = ({
     placeholderData: keepPreviousData,
   })
 
-  const graphData = graphQuery.data
+  const cmeBenchmarkQuery = useQuery({
+    queryKey: scenarioGroupGraphCmeBenchmarkQueryKey(indexName, periodUnit),
+    queryFn: () => nextGenMIScenarioGroupService.getScenarioGroupGraphCmeBenchmark(indexName, periodUnit),
+    enabled: enabled && Boolean(indexName),
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
+  })
+
+  const cmeBenchmarkData = useMemo(() => {
+    if (!graphQuery.data || !cmeBenchmarkQuery.data) return undefined
+    if (
+      graphQuery.data.indexName !== cmeBenchmarkQuery.data.indexName ||
+      graphQuery.data.periodUnit !== cmeBenchmarkQuery.data.periodUnit
+    ) {
+      return undefined
+    }
+    return cmeBenchmarkQuery.data
+  }, [cmeBenchmarkQuery.data, graphQuery.data])
+
+  const graphData = useMemo(
+    () => (graphQuery.data ? mergeScenarioGroupGraphCmeBenchmark(graphQuery.data, cmeBenchmarkData) : undefined),
+    [cmeBenchmarkData, graphQuery.data],
+  )
 
   useEffect(() => {
     setVisibilityMap(new Map())
@@ -172,7 +196,7 @@ const ScenarioGroupGraphView = ({
                 </Stack>
               </Stack>
               <Box width="100%" height={`${height}px`} borderRadius="10px" bgcolor={hasChart ? chartBackgroundColor : 'gray.5'}>
-                {graphQuery.isLoading ? (
+                {graphQuery.isLoading || cmeBenchmarkQuery.isLoading ? (
                   <Skeleton variant="rounded" width="100%" height="100%" sx={{ borderRadius: '10px' }} />
                 ) : hasChart && render ? (
                   <ScenarioSummaryChartGraph
@@ -184,7 +208,6 @@ const ScenarioGroupGraphView = ({
                     chartColorMap={render.chartColorMap}
                     crosshairDateFormat={render.periodUnit === 'yearly' ? 'YYYY' : 'YYYY-MM'}
                     currentMarkerGranularity={render.periodUnit === 'yearly' ? 'YEAR' : 'MONTH'}
-                    zoomButtonBackgroundColor={chartBackgroundColor}
                     disableIntroAnimation
                     spanGaps
                   />

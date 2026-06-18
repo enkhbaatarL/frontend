@@ -1,6 +1,11 @@
 import dayjs from 'dayjs'
 
-import type { IScenarioGroupGraphRes, ScenarioGroupGraphPeriodUnit } from '@/service/mi/nextGenMI/scenarioGroup'
+import type {
+  IScenarioBaseSeries,
+  IScenarioGroupGraphCmeBenchmark,
+  IScenarioGroupGraphRes,
+  ScenarioGroupGraphPeriodUnit,
+} from '@/service/mi/nextGenMI/scenarioGroup'
 import type { ChartData } from '@/types/dataDetailChart'
 
 import { buildDistinctSeriesColors } from '@/pages/mi/nextGenMI/components/common/nextGenMISeriesColors'
@@ -50,6 +55,9 @@ const DISABLED_LEGEND_COLOR = '#ADB5BD'
 export const scenarioGroupGraphQueryKey = (scenarioGroupId: number, indexName: string, periodUnit: ScenarioGroupGraphPeriodUnit) =>
   ['nextGenMIScenarioGroupGraph', scenarioGroupId, indexName, periodUnit] as const
 
+export const scenarioGroupGraphCmeBenchmarkQueryKey = (indexName: string, periodUnit: ScenarioGroupGraphPeriodUnit) =>
+  ['nextGenMIScenarioGroupGraphCmeBenchmark', indexName, periodUnit] as const
+
 export const baseSeriesVisibilityKey = (seriesId: string): string => `base:${seriesId}`
 
 export const scenarioBcVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}:BC`
@@ -66,6 +74,69 @@ const buildPeriodTimestamps = (dates: string[], periodUnit: ScenarioGroupGraphPe
       .add(index, periodUnit === 'yearly' ? 'year' : 'month')
       .format('YYYY-MM-DD')
   })
+
+const normalizePeriodKey = (date: string, periodUnit: ScenarioGroupGraphPeriodUnit): string => {
+  const parsed = dayjs(date)
+  if (!parsed.isValid()) return date
+  return periodUnit === 'yearly' ? parsed.startOf('year').format('YYYY') : parsed.startOf('month').format('YYYY-MM')
+}
+
+const getPeriodSortValue = (date: string, periodUnit: ScenarioGroupGraphPeriodUnit): number => {
+  const parsed = dayjs(periodUnit === 'yearly' ? `${date}-01-01` : `${date}-01`)
+  return parsed.isValid() ? parsed.valueOf() : Number.POSITIVE_INFINITY
+}
+
+const buildMergedPeriodDates = (graphDates: string[], benchmarkDates: string[], periodUnit: ScenarioGroupGraphPeriodUnit): string[] =>
+  Array.from(new Set([...graphDates, ...benchmarkDates].map((date) => normalizePeriodKey(date, periodUnit)))).sort((a, b) => {
+    const diff = getPeriodSortValue(a, periodUnit) - getPeriodSortValue(b, periodUnit)
+    return diff === 0 ? a.localeCompare(b) : diff
+  })
+
+const alignPeriodValues = (
+  sourceDates: string[],
+  sourceValues: (number | null)[],
+  targetDates: string[],
+  periodUnit: ScenarioGroupGraphPeriodUnit,
+): (number | null)[] => {
+  const valueByDate = new Map(sourceDates.map((date, index) => [normalizePeriodKey(date, periodUnit), sourceValues[index] ?? null]))
+  return targetDates.map((date) => valueByDate.get(normalizePeriodKey(date, periodUnit)) ?? null)
+}
+
+const isCmeBaseSeries = (series: IScenarioBaseSeries): boolean =>
+  series.seriesId.trim().toUpperCase() === 'CME' || series.seriesName.trim().toUpperCase() === 'CME'
+
+export const mergeScenarioGroupGraphCmeBenchmark = (
+  graphData: IScenarioGroupGraphRes,
+  cmeBenchmark?: IScenarioGroupGraphCmeBenchmark,
+): IScenarioGroupGraphRes => {
+  if (!cmeBenchmark) return graphData
+
+  const dates = buildMergedPeriodDates(graphData.dates, cmeBenchmark.dates, graphData.periodUnit)
+  const alignBaseSeries = (series: IScenarioBaseSeries, sourceDates: string[]): IScenarioBaseSeries => ({
+    ...series,
+    values: alignPeriodValues(sourceDates, series.values, dates, graphData.periodUnit),
+  })
+
+  return {
+    ...graphData,
+    currency: graphData.currency || cmeBenchmark.currency,
+    unit: graphData.unit || cmeBenchmark.unit,
+    dates,
+    baseSeries: [
+      ...cmeBenchmark.baseSeries.map((series) => alignBaseSeries(series, cmeBenchmark.dates)),
+      ...graphData.baseSeries.filter((series) => !isCmeBaseSeries(series)).map((series) => alignBaseSeries(series, graphData.dates)),
+    ],
+    scenarioSeries: graphData.scenarioSeries.map((series) => ({
+      ...series,
+      baseCaseValues:
+        series.baseCaseValues === null ? null : alignPeriodValues(graphData.dates, series.baseCaseValues, dates, graphData.periodUnit),
+      userAdjustedValues:
+        series.userAdjustedValues === null
+          ? null
+          : alignPeriodValues(graphData.dates, series.userAdjustedValues, dates, graphData.periodUnit),
+    })),
+  }
+}
 
 const buildChart = (
   name: string,

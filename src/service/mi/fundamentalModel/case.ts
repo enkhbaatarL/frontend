@@ -297,14 +297,18 @@ const fundamentalModelCaseService = {
     const formData = new FormData()
     body.files.forEach((file) => formData.append('files', file))
 
-    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseCreate>> = await api.post('mi/fundamental-model/cases', formData, {
-      params: {
-        title: body.title.trim(),
-        description: body.description?.trim() || undefined,
-      },
-      suppressGlobalErrorHandler: true,
-      timeout: 0,
-    } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean })
+    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseCreate>> = await api.post(
+      withCustomBaseUrl('mi/fundamental-model/cases'),
+      formData,
+      {
+        params: {
+          title: body.title.trim(),
+          description: body.description?.trim() || undefined,
+        },
+        suppressGlobalErrorHandler: true,
+        timeout: 0,
+      } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
+    )
     return response.data.data
   },
 

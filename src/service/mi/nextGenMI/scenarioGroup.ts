@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import { ListSort, NextGenMIIndexName } from '@/service/mi/nextGenMI/common'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 /** 시나리오 판정 상태 (대기/실현/폐기) */
@@ -167,7 +168,7 @@ export interface IScenarioDetailViewRes {
 export interface IScenarioBaseSeries {
   seriesId: string
   seriesName: string
-  values: number[]
+  values: (number | null)[]
 }
 
 /** 그래프 - 시나리오별 예측 시리즈 */
@@ -196,6 +197,16 @@ export interface IScenarioGroupGraphRes {
   dates: string[]
   baseSeries: IScenarioBaseSeries[]
   scenarioSeries: IScenarioGraphSeries[]
+}
+
+export interface IScenarioGroupGraphCmeBenchmark {
+  indexName: NextGenMIIndexName
+  periodUnit: ScenarioGroupGraphPeriodUnit
+  periodUnitLabel: string
+  currency: string
+  unit: string
+  dates: string[]
+  baseSeries: IScenarioBaseSeries[]
 }
 
 export interface IScenarioStatusUpdateReq {
@@ -272,6 +283,25 @@ const nextGenMIScenarioGroupService = {
   ): Promise<IScenarioGroupGraphRes> {
     const response: AxiosResponse<ICommonResponse<IScenarioGroupGraphRes>> = await api.get(
       `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph`,
+      {
+        params: { indexName, periodUnit },
+      },
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * Scenario Group 그래프 CME 벤치마크 기준선 조회 (단일 인덱스 × 단일 기간단위)
+   * @param indexName - 조회 인덱스 (기본 JKM)
+   * @param periodUnit - 기간 단위 (기본 monthly)
+   */
+  async getScenarioGroupGraphCmeBenchmark(
+    indexName?: NextGenMIIndexName,
+    periodUnit?: ScenarioGroupGraphPeriodUnit,
+  ): Promise<IScenarioGroupGraphCmeBenchmark> {
+    const response: AxiosResponse<ICommonResponse<IScenarioGroupGraphCmeBenchmark>> = await api.get(
+      withCustomBaseUrl('mi/next-gen/scenario-groups/graph/cme-benchmark'),
       {
         params: { indexName, periodUnit },
       },
