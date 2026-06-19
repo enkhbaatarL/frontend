@@ -1,12 +1,19 @@
 import type { EventDesignAvailability, EventListItem, EventScenarioDesignStatus } from '@/service/mi/nextGenMI/event'
 
+export const EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE =
+  '본 이벤트 유형에 대한 시나리오설계 지원은 Phase #2 릴리즈에 예정되어 있습니다 (현재 시나리오화를 지원하는 이벤트유형을 기준으로, Agent의 시나리오 설계 품질 향상을 먼저 수행)'
+
 export const normalizeEventScenarioDesignStatus = (
   status?: EventScenarioDesignStatus | string | null,
 ): EventScenarioDesignStatus | undefined => {
   const normalized = status?.toLowerCase()
-  if (normalized === 'designable' || normalized === 'creating' || normalized === 'created') return normalized
+  if (normalized === 'designable' || normalized === 'creating' || normalized === 'created' || normalized === 'unavailable')
+    return normalized
   return undefined
 }
+
+export const hasCreatingEventDesignAvailability = (availabilities: EventDesignAvailability[] | undefined) =>
+  availabilities?.some((item) => normalizeEventScenarioDesignStatus(item.scenarioDesignStatus) === 'creating') ?? false
 
 export const findEventDesignAvailability = (
   availabilities: EventDesignAvailability[] | undefined,

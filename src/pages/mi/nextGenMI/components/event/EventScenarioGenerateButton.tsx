@@ -5,10 +5,12 @@ import { type SxProps, type Theme } from '@mui/material/styles'
 import { type MouseEvent } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 
 export interface EventScenarioGenerateButtonProps {
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean
+  disabledTooltipTitle?: string
   recommended?: boolean
   scenarioAvailable?: boolean
 }
@@ -260,15 +262,37 @@ const ViewScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) => 
 )
 
 /** Events - 시나리오 생성 버튼 (목록 아이콘) */
-const EventScenarioGenerateButton = ({ onClick, disabled, recommended, scenarioAvailable }: EventScenarioGenerateButtonProps) => {
+const EventScenarioGenerateButton = ({
+  onClick,
+  disabled,
+  disabledTooltipTitle,
+  recommended,
+  scenarioAvailable,
+}: EventScenarioGenerateButtonProps) => {
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     onClick?.(e)
   }
 
-  if (scenarioAvailable) return <ViewScenarioButton disabled={disabled} onClick={handleClick} />
-  if (recommended) return <RecommendedScenarioButton disabled={disabled} onClick={handleClick} />
-  return <DesignScenarioButton disabled={disabled} onClick={handleClick} />
+  const button = scenarioAvailable ? (
+    <ViewScenarioButton disabled={disabled} onClick={handleClick} />
+  ) : recommended ? (
+    <RecommendedScenarioButton disabled={disabled} onClick={handleClick} />
+  ) : (
+    <DesignScenarioButton disabled={disabled} onClick={handleClick} />
+  )
+
+  if (disabled && disabledTooltipTitle) {
+    return (
+      <NextGenMIFollowCursorTooltip title={disabledTooltipTitle}>
+        <Box component="span" display="inline-flex" sx={{ cursor: 'not-allowed' }}>
+          {button}
+        </Box>
+      </NextGenMIFollowCursorTooltip>
+    )
+  }
+
+  return button
 }
 
 export default EventScenarioGenerateButton

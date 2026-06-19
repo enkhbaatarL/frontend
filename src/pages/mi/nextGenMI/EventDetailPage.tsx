@@ -19,7 +19,9 @@ import NextGenMIDetailHeader, {
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import {
+  EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
   findEventDesignAvailability,
+  hasCreatingEventDesignAvailability,
   isEventDesignOccupiedByOther,
   normalizeEventScenarioDesignStatus,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
@@ -203,16 +205,18 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     gcTime: 0,
   })
 
-  const creatingEventIds = useMemo(
-    () => (eventIdNumber !== null && detail?.scenarioDesignStatus === 'creating' ? [eventIdNumber] : []),
-    [detail?.scenarioDesignStatus, eventIdNumber],
-  )
+  const designAvailabilityEventIds = useMemo(() => (eventIdNumber === null ? [] : [eventIdNumber]), [eventIdNumber])
 
   const { data: designAvailabilityData } = useQuery({
     queryKey: ['nextGenMIEventDesignAvailability', 'eventDetail', eventIdNumber],
-    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: creatingEventIds }),
-    enabled: creatingEventIds.length > 0,
-    refetchInterval: 5000,
+    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: designAvailabilityEventIds }),
+    enabled: designAvailabilityEventIds.length > 0,
+    refetchInterval: (query) => {
+      if (query.state.data !== undefined) {
+        return hasCreatingEventDesignAvailability(query.state.data) ? 5000 : false
+      }
+      return detail?.scenarioDesignStatus === 'creating' ? 5000 : false
+    },
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -286,13 +290,16 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const scenarioDesignStatus = normalizeEventScenarioDesignStatus(designAvailability?.scenarioDesignStatus) ?? detail?.scenarioDesignStatus
   const hasRelatedScenarioGroup = relatedEventScenario?.scenarioGroupId !== undefined && relatedEventScenario.scenarioGroupId !== null
   const isScenarioDesignCreated = scenarioDesignStatus === 'created' || hasRelatedScenarioGroup
-  const scenarioDesignDisabled = detailLoading || isScenarioDesignCreated
+  const scenarioDesignUnavailable = scenarioDesignStatus === 'unavailable'
+  const scenarioDesignDisabled = detailLoading || isScenarioDesignCreated || scenarioDesignUnavailable
   const scenarioDesignDisabledTooltipTitle = isScenarioDesignCreated
     ? '새로 설계하려면 기존 시나리오 그룹을 먼저 삭제해야 합니다. 삭제는 시나리오 그룹 상세에서 가능합니다.'
-    : undefined
+    : scenarioDesignUnavailable
+      ? EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE
+      : undefined
   const handleScenarioDesignClick = useCallback(async () => {
     if (!eventId) return
-    if (isScenarioDesignCreated) return
+    if (isScenarioDesignCreated || scenarioDesignUnavailable) return
 
     let currentDesignAvailability = designAvailability
     if (scenarioDesignStatus === 'creating' && !currentDesignAvailability && eventIdNumber !== null) {
@@ -317,7 +324,18 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     navigate(getNextGenMIEventDesignPath(eventId), {
       state: { eventName: title },
     })
-  }, [currentUserNo, designAvailability, eventId, eventIdNumber, isScenarioDesignCreated, navigate, onShow, scenarioDesignStatus, title])
+  }, [
+    currentUserNo,
+    designAvailability,
+    eventId,
+    eventIdNumber,
+    isScenarioDesignCreated,
+    navigate,
+    onShow,
+    scenarioDesignStatus,
+    scenarioDesignUnavailable,
+    title,
+  ])
 
   const eventDetailHeaderTabActions = useMemo(
     () =>
@@ -470,7 +488,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             eventId={eventId}
             relatedEventScenario={relatedEventScenario}
             scenarioSuggestReason={detail?.scenarioSuggestReason}
-            scenarioDesignDisabled={isScenarioDesignCreated}
+            scenarioDesignDisabled={scenarioDesignDisabled}
             scenarioDesignDisabledTooltipTitle={scenarioDesignDisabledTooltipTitle}
             onScenarioDesignClick={handleScenarioDesignClick}
             onScenarioRowClick={(row) => {

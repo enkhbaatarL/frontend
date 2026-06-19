@@ -13,6 +13,7 @@ import NextGenMIDetailHeader, {
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import {
+  EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
   findEventDesignAvailability,
   isEventDesignOccupiedByOther,
   isOwnEventDesignAvailability,
@@ -730,6 +731,13 @@ const ScenarioDesignPage = () => {
       if (status === 'created' && availability.scenarioGroupId !== undefined && availability.scenarioGroupId !== null) {
         confirmedScenarioDesignLeaveRef.current = true
         navigate(getNextGenMIScenarioGroupDetailPath(availability.scenarioGroupId), { replace: true })
+        return
+      }
+
+      if (status === 'unavailable') {
+        confirmedScenarioDesignLeaveRef.current = true
+        showSnackbar(EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE, { variant: 'error' })
+        navigate(eventDetailPath, { replace: true, state: { eventName: eventTitle } })
         return
       }
 

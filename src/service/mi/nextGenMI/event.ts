@@ -12,7 +12,7 @@ export type EventStatus = 'all' | 'new' | 'updated'
 
 export type EventSignalType = 'signal' | 'noise'
 
-export type EventScenarioDesignStatus = 'designable' | 'creating' | 'created'
+export type EventScenarioDesignStatus = 'designable' | 'creating' | 'created' | 'unavailable'
 
 export type EventImpactTerm = 'short' | 'mid_long'
 

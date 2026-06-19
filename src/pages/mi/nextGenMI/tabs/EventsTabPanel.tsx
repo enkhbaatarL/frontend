@@ -17,7 +17,9 @@ import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextG
 import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
 import {
+  EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
   findEventDesignAvailability,
+  hasCreatingEventDesignAvailability,
   isOwnEventDesignAvailability,
   mergeEventListItemDesignAvailability,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
@@ -134,16 +136,18 @@ const EventsTabPanel = () => {
   }, [data?.events, pagination.page])
 
   const rawTableRows = useMemo(() => data?.events?.detail ?? [], [data?.events?.detail])
-  const creatingEventIds = useMemo(
-    () => rawTableRows.filter((row) => row.scenarioDesignStatus === 'creating').map((row) => row.eventId),
-    [rawTableRows],
-  )
+  const designAvailabilityEventIds = useMemo(() => rawTableRows.map((row) => row.eventId), [rawTableRows])
 
   const { data: designAvailabilityData } = useQuery({
-    queryKey: ['nextGenMIEventDesignAvailability', 'events', creatingEventIds],
-    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: creatingEventIds }),
-    enabled: creatingEventIds.length > 0,
-    refetchInterval: 5000,
+    queryKey: ['nextGenMIEventDesignAvailability', 'events', designAvailabilityEventIds],
+    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: designAvailabilityEventIds }),
+    enabled: designAvailabilityEventIds.length > 0,
+    refetchInterval: (query) => {
+      if (query.state.data !== undefined) {
+        return hasCreatingEventDesignAvailability(query.state.data) ? 5000 : false
+      }
+      return rawTableRows.some((row) => row.scenarioDesignStatus === 'creating') ? 5000 : false
+    },
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -170,6 +174,8 @@ const EventsTabPanel = () => {
 
   const handleScenarioClick = useCallback(
     async (row: EventListItem) => {
+      if (row.scenarioDesignStatus === 'unavailable') return
+
       let currentRow = row
       if (row.scenarioDesignStatus === 'creating') {
         const availability =
@@ -180,6 +186,8 @@ const EventsTabPanel = () => {
           )
         currentRow = mergeEventListItemDesignAvailability(row, availability)
       }
+
+      if (currentRow.scenarioDesignStatus === 'unavailable') return
 
       if (currentRow.scenarioDesignStatus === 'creating' && !isOwnEventDesignAvailability(currentRow, currentUserNo)) {
         onShow({
@@ -330,17 +338,23 @@ const EventsTabPanel = () => {
         width: 100,
         align: 'center',
         sortable: false,
-        renderCell: (params) => (
-          <EventScenarioGenerateButton
-            recommended={params.row.isScenarioSuggested}
-            scenarioAvailable={params.row.scenarioDesignStatus === 'created'}
-            disabled={
-              params.row.scenarioDesignStatus === 'created' &&
-              (params.row.scenarioGroupId === undefined || params.row.scenarioGroupId === null)
-            }
-            onClick={() => handleScenarioClick(params.row)}
-          />
-        ),
+        renderCell: (params) => {
+          const scenarioDesignUnavailable = params.row.scenarioDesignStatus === 'unavailable'
+
+          return (
+            <EventScenarioGenerateButton
+              recommended={params.row.isScenarioSuggested}
+              scenarioAvailable={params.row.scenarioDesignStatus === 'created'}
+              disabled={
+                scenarioDesignUnavailable ||
+                (params.row.scenarioDesignStatus === 'created' &&
+                  (params.row.scenarioGroupId === undefined || params.row.scenarioGroupId === null))
+              }
+              disabledTooltipTitle={scenarioDesignUnavailable ? EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE : undefined}
+              onClick={() => handleScenarioClick(params.row)}
+            />
+          )
+        },
       },
     ],
     [handleEventNameClick, handleScenarioClick],
