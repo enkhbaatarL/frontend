@@ -336,6 +336,7 @@ const ScenarioDesignPage = () => {
   const [reviewFailedDialogOpen, setReviewFailedDialogOpen] = useState(false)
   const [reviewErrorItems, setReviewErrorItems] = useState<ScenarioDesignReviewErrorItem[]>([])
   const confirmedScenarioDesignLeaveRef = useRef(false)
+  const leaveScenarioDesignRef = useRef<() => void>(() => undefined)
   const initialScenarioDesignHistoryIndexRef = useRef<number | null>(null)
   const scenarioDesignStartRequestedRef = useRef(false)
   const scenarioGroupIdRef = useRef<number | null>(null)
@@ -560,7 +561,6 @@ const ScenarioDesignPage = () => {
   useEffect(() => {
     scenarioGroupIdRef.current = scenarioGroupId
   }, [scenarioGroupId])
-  useEffect(() => () => requestDeleteScenarioDesignGroup(), [requestDeleteScenarioDesignGroup])
   const handleBackToEvent = useCallback(() => {
     navigate(eventDetailPath, { state: { eventName: eventTitle } })
   }, [eventDetailPath, eventTitle, navigate])
@@ -574,7 +574,6 @@ const ScenarioDesignPage = () => {
   }, [])
   const handleLeaveScenarioDesign = useCallback(() => {
     confirmedScenarioDesignLeaveRef.current = true
-    requestDeleteScenarioDesignGroup()
 
     const currentState = globalThis.history.state as { scenarioDesignLeaveGuard?: unknown } | null
     if (initialScenarioDesignHistoryIndexRef.current !== null && initialScenarioDesignHistoryIndexRef.current > 0) {
@@ -583,10 +582,17 @@ const ScenarioDesignPage = () => {
     }
 
     navigate(eventDetailPath, { state: { eventName: eventTitle } })
-  }, [eventDetailPath, eventTitle, navigate, requestDeleteScenarioDesignGroup])
+  }, [eventDetailPath, eventTitle, navigate])
+  useEffect(() => {
+    leaveScenarioDesignRef.current = handleLeaveScenarioDesign
+  }, [handleLeaveScenarioDesign])
   const handleCancelScenarioDesignRequest = useCallback(() => {
     setConfirmType('cancel')
   }, [])
+  const handleCancelScenarioDesign = useCallback(() => {
+    requestDeleteScenarioDesignGroup()
+    handleLeaveScenarioDesign()
+  }, [handleLeaveScenarioDesign, requestDeleteScenarioDesignGroup])
   const clearScenarioDesignReviewCompletedTimeout = useCallback(() => {
     if (reviewCompletedVisibleTimeoutRef.current) {
       globalThis.clearTimeout(reviewCompletedVisibleTimeoutRef.current)
@@ -1031,12 +1037,12 @@ const ScenarioDesignPage = () => {
 
     const handlePopState = () => {
       if (confirmedScenarioDesignLeaveRef.current) return
-      handleLeaveScenarioDesign()
+      leaveScenarioDesignRef.current()
     }
 
     globalThis.addEventListener('popstate', handlePopState)
     return () => globalThis.removeEventListener('popstate', handlePopState)
-  }, [handleLeaveScenarioDesign, pushScenarioDesignHistoryGuard])
+  }, [pushScenarioDesignHistoryGuard])
 
   const designRationale = detail?.scenarioSuggestReason?.trim() ?? ''
   const showDesignRationale = isLoading || Boolean(designRationale)
