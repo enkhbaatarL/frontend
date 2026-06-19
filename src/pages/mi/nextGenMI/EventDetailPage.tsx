@@ -21,6 +21,7 @@ import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
   findEventDesignAvailability,
+  getEventDesignOccupiedMessage,
   hasCreatingEventDesignAvailability,
   isEventDesignOccupiedByOther,
   normalizeEventScenarioDesignStatus,
@@ -316,7 +317,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
       onShow({
         title: '시나리오 설계를 시작할 수 없습니다',
         width: 450,
-        children: '다른 사용자가 현재 시나리오 설계를 진행 중입니다. 해당 작업이 완료된 후 다시 시도해 주세요.',
+        children: getEventDesignOccupiedMessage(currentDesignAvailability?.occupantUserName),
       })
       return
     }
