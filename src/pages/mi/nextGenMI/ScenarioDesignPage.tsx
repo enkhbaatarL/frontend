@@ -2,8 +2,11 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Divider, Stack, Typography } from '@mui/material'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+
+import type { HttpResponse } from '@/lib/axios'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
@@ -158,6 +161,24 @@ const parseScenarioDesignStreamEventData = (data?: string): ScenarioDesignStream
 const isScenarioDesignStreamFailure = (
   data: ScenarioDesignStreamEventData | null,
 ): data is ScenarioDesignStreamEventData & { result: 'failure' } => data?.result === 'failure'
+
+type ScenarioDesignErrorRoute = {
+  to: string
+  state?: Record<string, unknown>
+}
+
+const getScenarioDesignErrorRoute = (error: unknown): ScenarioDesignErrorRoute | null => {
+  if (isAxiosError<HttpResponse<unknown>>(error)) {
+    const status = error.response?.status
+    const code = error.response?.data?.code
+
+    if (code === 'AUTH-001' || code === 'SYS-999' || code === 'AUTH-005' || code === 'AUTH-007' || code === 'AUTH-008') return null
+    if (status === 404) return { to: '/error/404', state: { code, status } }
+    if (status) return { to: '/error', state: { code, status } }
+  }
+
+  return { to: '/error/unknown' }
+}
 
 type ScenarioDesignCriteriaValidation = {
   dimensionValueErrorMessages: Map<number, Map<string, string>>
@@ -334,16 +355,34 @@ const ScenarioDesignPage = () => {
   } | null>(null)
   const reviewMinimumLoadingTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
   const reviewCompletedVisibleTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
+  const navigateScenarioDesignErrorPage = useCallback(
+    (error: unknown) => {
+      const route = getScenarioDesignErrorRoute(error)
+      if (!route) return
+      navigate(route.to, { state: route.state, replace: true })
+    },
+    [navigate],
+  )
 
-  const { data: detail, isLoading } = useQuery({
+  const {
+    data: detail,
+    isLoading,
+    isError: isDetailError,
+    error: detailError,
+  } = useQuery({
     queryKey: ['nextGenMIScenarioDesignEvent', id],
     queryFn: () => nextGenMIEventService.getEventDetail(id ?? ''),
-    enabled: Boolean(id),
+    enabled: eventIdNumber !== null,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
-  const { data: designAvailabilityData, isLoading: designAvailabilityLoading } = useQuery({
+  const {
+    data: designAvailabilityData,
+    isLoading: designAvailabilityLoading,
+    isError: isDesignAvailabilityError,
+    error: designAvailabilityError,
+  } = useQuery({
     queryKey: ['nextGenMIEventDesignAvailability', eventIdNumber],
     queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: eventIdNumber === null ? [] : [eventIdNumber] }),
     enabled: eventIdNumber !== null && scenarioGroupId === null,
@@ -393,7 +432,9 @@ const ScenarioDesignPage = () => {
   const {
     data: scenarioDesignState,
     dataUpdatedAt: scenarioDesignStateUpdatedAt,
+    error: scenarioDesignStateError,
     isFetching: scenarioDesignStateFetching,
+    isError: isScenarioDesignStateError,
     isLoading: scenarioDesignStateLoading,
     refetch: refetchScenarioDesignState,
   } = useQuery({
@@ -404,7 +445,11 @@ const ScenarioDesignPage = () => {
     gcTime: 0,
   })
 
-  const { data: scenarioDimensionTemplate } = useQuery({
+  const {
+    data: scenarioDimensionTemplate,
+    error: scenarioDimensionTemplateError,
+    isError: isScenarioDimensionTemplateError,
+  } = useQuery({
     queryKey: ['nextGenMIScenarioDesignDimensionTemplates', scenarioGroupId],
     queryFn: () => nextGenMIScenarioDesignService.getScenarioDimensionTemplates(scenarioGroupId!),
     enabled: scenarioGroupId !== null,
@@ -423,6 +468,39 @@ const ScenarioDesignPage = () => {
     () => createScenarioDesignTemplateColumns(scenarioDimensionTemplates, visibleScenarioDesignColumns),
     [scenarioDimensionTemplates, visibleScenarioDesignColumns],
   )
+  useEffect(() => {
+    if (eventIdNumber === null) {
+      navigate('/error/404', { replace: true })
+      return
+    }
+    if (isDetailError) {
+      navigateScenarioDesignErrorPage(detailError)
+      return
+    }
+    if (isDesignAvailabilityError) {
+      navigateScenarioDesignErrorPage(designAvailabilityError)
+      return
+    }
+    if (isScenarioDesignStateError) {
+      navigateScenarioDesignErrorPage(scenarioDesignStateError)
+      return
+    }
+    if (isScenarioDimensionTemplateError) {
+      navigateScenarioDesignErrorPage(scenarioDimensionTemplateError)
+    }
+  }, [
+    designAvailabilityError,
+    detailError,
+    eventIdNumber,
+    isDesignAvailabilityError,
+    isDetailError,
+    isScenarioDesignStateError,
+    isScenarioDimensionTemplateError,
+    navigate,
+    navigateScenarioDesignErrorPage,
+    scenarioDesignStateError,
+    scenarioDimensionTemplateError,
+  ])
   const scenarioDesignActiveTable = useMemo(() => getScenarioDesignActiveTable(scenarioDesignState), [scenarioDesignState])
   const scenarioDesignActiveTableRowCount = scenarioDesignActiveTable?.scenarios?.length ?? 0
   const scenarioDesignStage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
@@ -752,7 +830,7 @@ const ScenarioDesignPage = () => {
     }
 
     scenarioDesignStartRequestedRef.current = true
-    startScenarioDesign(eventIdNumber)
+    startScenarioDesign(eventIdNumber, { onError: navigateScenarioDesignErrorPage })
   }, [
     currentUserNo,
     designAvailabilityData,
@@ -761,6 +839,7 @@ const ScenarioDesignPage = () => {
     eventIdNumber,
     eventTitle,
     navigate,
+    navigateScenarioDesignErrorPage,
     scenarioGroupId,
     showSnackbar,
     startScenarioDesign,
@@ -793,12 +872,15 @@ const ScenarioDesignPage = () => {
         },
         controller.signal,
       )
-      .catch(() => undefined)
+      .catch((error) => {
+        if (controller.signal.aborted) return
+        navigateScenarioDesignErrorPage(error)
+      })
 
     return () => {
       controller.abort()
     }
-  }, [handleScenarioDesignStreamFailure, refreshScenarioDesignStateFromStream, scenarioGroupId])
+  }, [handleScenarioDesignStreamFailure, navigateScenarioDesignErrorPage, refreshScenarioDesignStateFromStream, scenarioGroupId])
 
   useEffect(() => {
     const activeTable = scenarioDesignActiveTable
