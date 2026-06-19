@@ -1,9 +1,10 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse } from '@/types/api'
 
-export type ModelExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed'
+export type ModelExecutionStatus = 'RUNNING' | 'COMPLETED' | 'FAILED'
 
 export interface ModelExecutionFile {
   fileNo: number
@@ -14,13 +15,27 @@ export interface ModelExecutionFile {
 }
 
 export interface ModelExecutionAccept {
-  executionId: string
+  caseId: number
   scenarioId: number
-  externalRunId: string
+  runId: string
   status: ModelExecutionStatus
   files: ModelExecutionFile[]
   requestedAt: string
+  startedAt?: string
   statusEndpoint?: string
+}
+
+export interface ModelExecutionStatusSnapshot {
+  caseId: number
+  scenarioId: number
+  runId: string
+  status: ModelExecutionStatus
+  files: ModelExecutionFile[]
+  requestedAt: string
+  startedAt?: string
+  finishedAt?: string
+  failureReason?: string
+  errorMessage?: string
 }
 
 const nextGenMIModelExecutionService = {
@@ -29,13 +44,21 @@ const nextGenMIModelExecutionService = {
     files.forEach((file) => formData.append('files', file))
 
     const response: AxiosResponse<ICommonResponse<ModelExecutionAccept>> = await api.post(
-      `mi/next-gen/scenarios/${scenarioId}/model-executions`,
+      withCustomBaseUrl(`mi/next-gen/scenarios/${scenarioId}/model-executions`),
       formData,
       {
         suppressGlobalErrorHandler: true,
         timeout: 0,
       } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
     )
+    return response.data.data
+  },
+
+  async getModelExecutionStatus(scenarioId: number, runId: string): Promise<ModelExecutionStatusSnapshot> {
+    const response: AxiosResponse<ICommonResponse<ModelExecutionStatusSnapshot>> = await api.get(
+      withCustomBaseUrl(`mi/next-gen/scenarios/${scenarioId}/model-executions/${encodeURIComponent(runId)}`),
+    )
+
     return response.data.data
   },
 }

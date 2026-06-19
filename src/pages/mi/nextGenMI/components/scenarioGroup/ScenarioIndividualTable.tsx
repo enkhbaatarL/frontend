@@ -57,7 +57,7 @@ const DimensionStrip = ({ dimensions }: { dimensions: IScenarioDimension[] }) =>
           {dimension.label}
         </Typography>
         <Typography variant="body2M14" color="contentText.Black" noWrap sx={{ width: '100%' }}>
-          {dimension.valueLabel}
+          {dimension.valueLabel?.trim() || '-'}
         </Typography>
       </Stack>
     ))}

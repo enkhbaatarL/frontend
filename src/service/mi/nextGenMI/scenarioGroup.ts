@@ -319,7 +319,7 @@ const nextGenMIScenarioGroupService = {
     scenarioGroupId: string | number,
     periodUnit?: ScenarioGroupGraphPeriodUnit,
   ): Promise<AxiosResponse<Blob>> {
-    return api.get(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph/export`, {
+    return api.get(withCustomBaseUrl(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph/export`), {
       params: { periodUnit },
       responseType: 'blob',
     })

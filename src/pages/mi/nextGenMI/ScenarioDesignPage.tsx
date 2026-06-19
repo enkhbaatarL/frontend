@@ -1,9 +1,11 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded'
+import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Divider, Stack, Typography } from '@mui/material'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import NextGenMIDetailHeader, {
@@ -44,6 +46,7 @@ import {
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
 import ScenarioDesignOneViewStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOneViewStep'
 import ScenarioDesignProgressStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignProgressStep'
+import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
 import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { scrollNextGenMILayoutToTop } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
@@ -152,6 +155,10 @@ const parseScenarioDesignStreamEventData = (data?: string): ScenarioDesignStream
   }
 }
 
+const isScenarioDesignStreamFailure = (
+  data: ScenarioDesignStreamEventData | null,
+): data is ScenarioDesignStreamEventData & { result: 'failure' } => data?.result === 'failure'
+
 type ScenarioDesignCriteriaValidation = {
   dimensionValueErrorMessages: Map<number, Map<string, string>>
   errorItems: ScenarioDesignReviewErrorItem[]
@@ -177,6 +184,59 @@ const createScenarioDesignReviewFallbackErrorItem = (message: string): ScenarioD
   severity: 'error',
   actionLabel: '수정 필요',
 })
+
+const createScenarioDesignReviewRetryErrorItem = (message: string): ScenarioDesignReviewErrorItem => ({
+  label: '검토 요청 실패',
+  message,
+  severity: 'error',
+  actionLabel: '재시도 필요',
+})
+
+const ScenarioDesignGenerationFailureState = ({
+  reason,
+  retrying,
+  onRetry,
+  onCancel,
+}: {
+  reason?: string | null
+  retrying: boolean
+  onRetry: () => void
+  onCancel: () => void
+}) => (
+  <Stack minHeight="560px" alignItems="center" justifyContent="center" gap="20px" padding="48px 0">
+    <Stack gap="8px" alignItems="center" maxWidth="520px">
+      <Typography variant="body1" fontSize="18px" fontWeight={700} color="contentText.Black" lineHeight={1.4} textAlign="center">
+        시나리오 설계를 생성하지 못했습니다.
+      </Typography>
+      <Typography variant="body2R14" color="contentText.Subtext" lineHeight={1.5} textAlign="center">
+        {reason?.trim() || '잠시 후 다시 시도해 주세요.'}
+      </Typography>
+    </Stack>
+    <Stack direction="row" alignItems="center" gap="8px">
+      <MIBaseButton variant="outlined" onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
+        취소
+      </MIBaseButton>
+      <MIBaseButton
+        variant="contained"
+        prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
+        isLoading={retrying}
+        onClick={onRetry}
+        labelColor="contentText.White"
+        gap="4px"
+        sx={{
+          height: '36px',
+          borderRadius: '8px',
+          backgroundColor: 'contentIcon.ActivePrimary',
+          '&:hover:not(:disabled)': {
+            backgroundColor: 'contentIcon.ActivePrimary',
+          },
+        }}
+      >
+        재시도
+      </MIBaseButton>
+    </Stack>
+  </Stack>
+)
 
 const hasScenarioDesignRequiredReviewItem = (items: ScenarioDesignReviewErrorItem[]) =>
   items.some((item) => item.label === SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM.label)
@@ -246,6 +306,8 @@ const ScenarioDesignPage = () => {
   const [reviewCompletedVisible, setReviewCompletedVisible] = useState(false)
   const [signpostPending, setSignpostPending] = useState(false)
   const [scenarioGroupCreatePending, setScenarioGroupCreatePending] = useState(false)
+  const [scenarioDesignGenerationFailure, setScenarioDesignGenerationFailure] = useState<{ reason?: string | null } | null>(null)
+  const [scenarioDesignGenerationRetryPending, setScenarioDesignGenerationRetryPending] = useState(false)
   const [currentStep, setCurrentStep] = useState<'criteria' | 'oneView'>('criteria')
   const [oneViewDefaultKey, setOneViewDefaultKey] = useState(0)
   const [confirmType, setConfirmType] = useState<ScenarioDesignConfirmType | null>(null)
@@ -292,10 +354,11 @@ const ScenarioDesignPage = () => {
   const startScenarioDesignMutation = useMutation({
     mutationFn: (miEventId: number) => nextGenMIScenarioDesignService.startScenarioDesign({ miEventId }),
     onSuccess: (data) => {
+      setScenarioDesignGenerationFailure(null)
       if (data.scenarioGroupId !== undefined) setScenarioGroupId(data.scenarioGroupId)
     },
   })
-  const { mutate: startScenarioDesign } = startScenarioDesignMutation
+  const { mutate: startScenarioDesign, mutateAsync: startScenarioDesignAsync } = startScenarioDesignMutation
 
   const createScenarioSignpostsMutation = useMutation({
     mutationFn: () => {
@@ -363,16 +426,20 @@ const ScenarioDesignPage = () => {
   const scenarioDesignActiveTable = useMemo(() => getScenarioDesignActiveTable(scenarioDesignState), [scenarioDesignState])
   const scenarioDesignActiveTableRowCount = scenarioDesignActiveTable?.scenarios?.length ?? 0
   const scenarioDesignStage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
-  const scenarioDesignWaitingForInitialTable = scenarioGroupId !== null && currentStep === 'criteria' && scenarioDesignActiveTable === null
+  const scenarioDesignGenerationFailed = scenarioDesignGenerationFailure !== null
+  const scenarioDesignWaitingForInitialTable =
+    scenarioGroupId !== null && currentStep === 'criteria' && scenarioDesignActiveTable === null && !scenarioDesignGenerationFailed
   const scenarioDesignWaitingForInitialRows =
     scenarioGroupId !== null &&
     currentStep === 'criteria' &&
     rows.length === 0 &&
+    !scenarioDesignGenerationFailed &&
     (scenarioDesignStateFetching || scenarioDesignStage === 'ready' || scenarioDesignActiveTableRowCount > 0)
   const scenarioDesignLoading =
     isLoading ||
     designAvailabilityLoading ||
     startScenarioDesignMutation.isPending ||
+    scenarioDesignGenerationRetryPending ||
     scenarioDesignStateLoading ||
     resetScenarioDesignMutation.isPending ||
     scenarioDesignWaitingForInitialTable ||
@@ -500,6 +567,70 @@ const ScenarioDesignPage = () => {
 
     refetchOnce()
   }, [refetchScenarioDesignState])
+  const handleScenarioDesignStreamFailure = useCallback(
+    (event: Exclude<ScenarioDesignStreamEventType, 'connected'>, reason?: string | null) => {
+      const failureReason = reason?.trim() || null
+
+      if (event === 'generation') {
+        clearScenarioDesignReviewMinimumLoadingTimeout()
+        setScenarioDesignGenerationFailure({ reason: failureReason })
+        setReviewPending(false)
+        setReviewMinimumLoadingComplete(false)
+        setSignpostPending(false)
+        setScenarioGroupCreatePending(false)
+        showSnackbar('시나리오 설계 생성에 실패했습니다.', {
+          variant: 'error',
+          body: failureReason ?? '잠시 후 다시 시도해 주세요.',
+        })
+        return
+      }
+
+      if (event === 'validation') {
+        clearScenarioDesignReviewMinimumLoadingTimeout()
+        submittedCriteriaDraftRef.current = null
+        pendingFrontendReviewItemsRef.current = null
+        reviewStartedScenarioDesignUpdatedAtRef.current = 0
+        reviewValidationStreamStageRef.current = null
+        setReviewPending(false)
+        setReviewMinimumLoadingComplete(false)
+        setReviewed(false)
+        setReviewErrorItems([
+          ...pendingScenarioDesignReviewItemsRef.current,
+          createScenarioDesignReviewRetryErrorItem(failureReason ?? '변경사항 검토를 다시 시도해 주세요.'),
+        ])
+        pendingScenarioDesignReviewItemsRef.current = []
+        showSnackbar('변경사항 검토에 실패했습니다.', {
+          variant: 'error',
+          body: failureReason ?? '잠시 후 다시 시도해 주세요.',
+        })
+        return
+      }
+
+      signpostStreamReceivedRef.current = false
+      setSignpostPending(false)
+      setCurrentStep('criteria')
+      showSnackbar('시나리오 One-view 생성에 실패했습니다.', {
+        variant: 'error',
+        body: failureReason ?? '잠시 후 다시 시도해 주세요.',
+      })
+    },
+    [clearScenarioDesignReviewMinimumLoadingTimeout, showSnackbar],
+  )
+  const retryScenarioDesignGeneration = useCallback(async () => {
+    if (eventIdNumber === null || scenarioDesignGenerationRetryPending) return
+
+    setScenarioDesignGenerationRetryPending(true)
+    setScenarioDesignGenerationFailure(null)
+
+    try {
+      await startScenarioDesignAsync(eventIdNumber)
+    } catch {
+      setScenarioDesignGenerationFailure({ reason: null })
+      showSnackbar('시나리오 설계 생성을 다시 요청하지 못했습니다.', { variant: 'error', body: '잠시 후 다시 시도해 주세요.' })
+    } finally {
+      setScenarioDesignGenerationRetryPending(false)
+    }
+  }, [eventIdNumber, scenarioDesignGenerationRetryPending, showSnackbar, startScenarioDesignAsync])
   const startScenarioDesignReview = useCallback(async () => {
     if (scenarioGroupId === null) return
 
@@ -650,7 +781,12 @@ const ScenarioDesignPage = () => {
 
           const streamData = parseScenarioDesignStreamEventData(data)
           if (streamData?.scenarioGroupId !== undefined && streamData.scenarioGroupId !== scenarioGroupId) return
+          if (isScenarioDesignStreamFailure(streamData)) {
+            handleScenarioDesignStreamFailure(event, streamData.reason)
+            return
+          }
 
+          if (event === 'generation') setScenarioDesignGenerationFailure(null)
           if (event === 'validation') reviewValidationStreamStageRef.current = normalizeScenarioDesignStage(streamData?.stage) ?? null
           if (event === 'signposts') signpostStreamReceivedRef.current = true
           refreshScenarioDesignStateFromStream()
@@ -662,7 +798,7 @@ const ScenarioDesignPage = () => {
     return () => {
       controller.abort()
     }
-  }, [refreshScenarioDesignStateFromStream, scenarioGroupId])
+  }, [handleScenarioDesignStreamFailure, refreshScenarioDesignStateFromStream, scenarioGroupId])
 
   useEffect(() => {
     const activeTable = scenarioDesignActiveTable
@@ -726,17 +862,27 @@ const ScenarioDesignPage = () => {
           setReviewCompletedVisible(false)
         }, 1000)
       } else {
-        setReviewed(true)
-        setReviewErrorItems([
+        const scenarioDesignReviewItems = [
           ...pendingScenarioDesignReviewItemsRef.current,
-          {
-            ...createScenarioDesignReviewFallbackErrorItem(
-              scenarioDesignState?.validation?.reason?.trim() || '검토 기준을 충족하지 않는 항목이 있습니다.',
-            ),
-          },
-        ])
+          ...createScenarioDesignBackendReviewItems(
+            scenarioDesignState?.validation?.reason?.trim() || '검토 기준을 충족하지 않는 항목이 있습니다.',
+          ),
+        ]
+
+        setReviewed(true)
+        setReviewErrorItems(scenarioDesignReviewItems)
         pendingScenarioDesignReviewItemsRef.current = []
-        setReviewFailedDialogOpen(true)
+
+        if (hasBlockingScenarioDesignReviewItem(scenarioDesignReviewItems)) {
+          setReviewFailedDialogOpen(true)
+        } else {
+          setReviewCompletedVisible(true)
+          showSnackbar('변경사항 검토가 완료되었습니다.', { variant: 'success' })
+          reviewCompletedVisibleTimeoutRef.current = globalThis.setTimeout(() => {
+            reviewCompletedVisibleTimeoutRef.current = null
+            setReviewCompletedVisible(false)
+          }, 1000)
+        }
       }
     }
 
@@ -1198,7 +1344,14 @@ const ScenarioDesignPage = () => {
   return (
     <>
       <Stack maxWidth="1380px" margin="auto" padding="12px 12px 0px" position="relative" sx={{ overflowX: 'hidden' }}>
-        {currentStep === 'oneView' ? (
+        {scenarioDesignGenerationFailure ? (
+          <ScenarioDesignGenerationFailureState
+            reason={scenarioDesignGenerationFailure.reason}
+            retrying={scenarioDesignGenerationRetryPending || startScenarioDesignMutation.isPending}
+            onRetry={retryScenarioDesignGeneration}
+            onCancel={handleCancelScenarioDesignRequest}
+          />
+        ) : currentStep === 'oneView' ? (
           <ScenarioDesignOneViewStep
             key={oneViewDefaultKey}
             rows={rows}

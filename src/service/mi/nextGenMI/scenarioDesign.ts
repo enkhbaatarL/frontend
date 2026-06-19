@@ -35,6 +35,8 @@ export type ScenarioDesignStreamEventType = 'connected' | 'generation' | 'valida
 export interface ScenarioDesignStreamEventData {
   scenarioGroupId?: number
   type?: 'generation' | 'validation' | 'signposts'
+  result?: 'success' | 'failure'
+  reason?: string | null
   stage?: ScenarioDesignStageValue
 }
 

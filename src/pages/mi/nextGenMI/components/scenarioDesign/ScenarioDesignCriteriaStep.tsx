@@ -40,6 +40,7 @@ import {
   SCENARIO_DESIGN_SELECT_COMMON_ACTIONS,
   type ScenarioDesignColumn,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
+import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
 import ScenarioDesignStatusBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignStatusBadge'
 
 type ScenarioDesignReviewButtonStatus = 'loading' | 'completed' | null
@@ -625,7 +626,7 @@ const ScenarioDesignReviewIssueRow = ({ issue }: { issue: ScenarioDesignReviewEr
         </Typography>
       </Stack>
       <Divider orientation="vertical" flexItem sx={{ borderColor: issueStyle.borderColor }} />
-      <Typography variant="body3R12" color={issueStyle.textColor} lineHeight={1.4} flex={1} minWidth={0}>
+      <Typography variant="body3R12" color={issueStyle.textColor} lineHeight={1.4} flex={1} minWidth={0} sx={{ whiteSpace: 'pre-line' }}>
         {issue.message}
       </Typography>
       <Typography variant="body3R12" color={issueStyle.actionColor} lineHeight={1.4} textAlign="right" flexShrink={0} noWrap>
@@ -636,14 +637,23 @@ const ScenarioDesignReviewIssueRow = ({ issue }: { issue: ScenarioDesignReviewEr
 }
 
 const ScenarioDesignReviewErrorPanel = ({ errors }: { errors: ScenarioDesignReviewErrorItem[] }) => {
+  const displayErrors = useMemo(
+    () =>
+      errors.flatMap((error) =>
+        error.label === '검토 결과' && /(?:^|\\n|\r?\n)\s*(?:[•*-]\s*)?\[(주의|경고|warn|warning|오류|에러|error)\]/i.test(error.message)
+          ? createScenarioDesignBackendReviewItems(error.message)
+          : [error],
+      ),
+    [errors],
+  )
   const contentRef = useRef<HTMLDivElement | null>(null)
-  const [visibleErrors, setVisibleErrors] = useState(errors)
+  const [visibleErrors, setVisibleErrors] = useState(displayErrors)
   const [height, setHeight] = useState('0px')
-  const open = errors.length > 0
+  const open = displayErrors.length > 0
 
   useLayoutEffect(() => {
-    if (open) setVisibleErrors(errors)
-  }, [errors, open])
+    if (open) setVisibleErrors(displayErrors)
+  }, [displayErrors, open])
 
   useEffect(() => {
     const frame = globalThis.requestAnimationFrame(() => {
