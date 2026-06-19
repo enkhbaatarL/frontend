@@ -53,6 +53,7 @@ export interface EventListItem {
   scenarioGroupId?: number | null
   occupied?: boolean
   occupantUserId?: number | null
+  occupantUserName?: string | null
   indexImpacts: EventImpactIndex[]
 }
 
@@ -89,6 +90,7 @@ export interface EventDesignAvailability {
   scenarioDesignStatusLabel?: string
   occupied?: boolean
   occupantUserId?: number | null
+  occupantUserName?: string | null
   scenarioGroupId?: number | null
 }
 

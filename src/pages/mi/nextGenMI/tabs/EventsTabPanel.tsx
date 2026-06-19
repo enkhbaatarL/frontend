@@ -18,6 +18,7 @@ import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/c
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
 import {
   findEventDesignAvailability,
+  getEventDesignOccupiedMessage,
   isOwnEventDesignAvailability,
   mergeEventListItemDesignAvailability,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
@@ -185,7 +186,7 @@ const EventsTabPanel = () => {
         onShow({
           title: '시나리오 설계를 시작할 수 없습니다',
           width: 450,
-          children: '다른 사용자가 현재 시나리오 설계를 진행 중입니다. 해당 작업이 완료된 후 다시 시도해 주세요.',
+          children: getEventDesignOccupiedMessage(currentRow.occupantUserName),
         })
         return
       }

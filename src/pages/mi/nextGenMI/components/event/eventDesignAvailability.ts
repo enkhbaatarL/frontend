@@ -31,6 +31,14 @@ export const isEventDesignOccupiedByOther = (
   return normalizeEventScenarioDesignStatus(availability.scenarioDesignStatus) === 'creating' || availability.occupied === true
 }
 
+export const getEventDesignOccupiedMessage = (occupantUserName?: string | null) => {
+  const name = occupantUserName?.trim()
+  if (name) {
+    return `다른 사용자(${name})가 현재 시나리오 설계를 진행 중입니다. 해당 작업이 완료된 후 다시 시도해 주세요.`
+  }
+  return '다른 사용자가 현재 시나리오 설계를 진행 중입니다. 해당 작업이 완료된 후 다시 시도해 주세요.'
+}
+
 export const mergeEventListItemDesignAvailability = (
   row: EventListItem,
   availability: EventDesignAvailability | undefined,
@@ -44,5 +52,6 @@ export const mergeEventListItemDesignAvailability = (
     scenarioGroupId: availability.scenarioGroupId ?? row.scenarioGroupId,
     occupied: availability.occupied ?? row.occupied,
     occupantUserId: availability.occupantUserId ?? row.occupantUserId,
+    occupantUserName: availability.occupantUserName ?? row.occupantUserName,
   }
 }
