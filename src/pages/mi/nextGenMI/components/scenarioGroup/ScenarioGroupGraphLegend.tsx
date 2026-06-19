@@ -187,7 +187,7 @@ const ScenarioGroupGraphLegend = ({
       const isNonExecuted = item.variant === 'nonExecuted'
       const isHidden = interactive && item.toggleKeys.length > 0 && item.toggleKeys.every((key) => visibilityMap.get(key) === false)
       const isHovered = hoveredRow === item.visibilityKey
-      const showEye = interactive && (hoveredIcon === item.visibilityKey || isHidden)
+      const showEye = interactive && ((isHovered && hoveredIcon === item.visibilityKey) || isHidden)
       const executing = isNonExecuted && item.scenarioId !== undefined && executingScenarioIds.has(item.scenarioId)
       const showExecuteButton = isNonExecuted && hoveredAction === item.visibilityKey && !executing
 
@@ -202,10 +202,14 @@ const ScenarioGroupGraphLegend = ({
           minWidth={0}
           onMouseEnter={() => {
             setHoveredRow(item.visibilityKey)
+            setHoveredIcon(null)
+            setHoveredAction(null)
             if (interactive && !isHidden) onHover(item.toggleKeys)
           }}
           onMouseLeave={() => {
             setHoveredRow(null)
+            setHoveredIcon(null)
+            setHoveredAction(null)
             onHover(null)
           }}
           sx={{
@@ -225,7 +229,7 @@ const ScenarioGroupGraphLegend = ({
             onMouseEnter={() => {
               if (interactive) setHoveredIcon(item.visibilityKey)
             }}
-            onMouseLeave={() => setHoveredIcon(null)}
+            onMouseLeave={() => setHoveredIcon((current) => (current === item.visibilityKey ? null : current))}
           >
             {showEye ? (
               <Box
@@ -264,7 +268,11 @@ const ScenarioGroupGraphLegend = ({
             executing ? (
               <ExecutingBadge />
             ) : (
-              <Stack flexShrink={0} onMouseEnter={() => setHoveredAction(item.visibilityKey)} onMouseLeave={() => setHoveredAction(null)}>
+              <Stack
+                flexShrink={0}
+                onMouseEnter={() => setHoveredAction(item.visibilityKey)}
+                onMouseLeave={() => setHoveredAction((current) => (current === item.visibilityKey ? null : current))}
+              >
                 {showExecuteButton ? (
                   <ExecuteButton onClick={() => item.scenarioId !== undefined && onExecute(item.scenarioId)} />
                 ) : (

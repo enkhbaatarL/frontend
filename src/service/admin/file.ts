@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
+import { withCustomBaseUrl } from '@/store/useAuthStore'
 
 export interface IFile {
   fileNo: number
@@ -21,7 +22,7 @@ const fileService = {
    * @param fileData - 파일 정보 객체
    */
   async downloadFile(fileData: IFileDownloadRequest): Promise<Blob> {
-    const response: AxiosResponse<Blob> = await api.post('file-management/download/file', fileData, {
+    const response: AxiosResponse<Blob> = await api.post(withCustomBaseUrl('file-management/download/file'), fileData, {
       responseType: 'blob',
     })
     return response.data
@@ -33,7 +34,7 @@ const fileService = {
    * @param fileData - 파일 정보 객체
    */
   async downloadFiles(prefix?: string, fileData?: IFileDownloadRequest[]) {
-    const response: AxiosResponse<Blob> = await api.post('/file-management/download', fileData, {
+    const response: AxiosResponse<Blob> = await api.post(withCustomBaseUrl('/file-management/download'), fileData, {
       params: { prefix },
       responseType: 'blob',
     })
