@@ -249,8 +249,7 @@ const AiSummary = forwardRef<AiSummaryHandle, Props>(({ fetchSummary, viewOrigin
                     </Stack>
                   </Stack>
 
-                  {/* View Original 버튼은 hasSimilarNews가 false일 때만 노출 */}
-                  {!showSimilarNews && (
+                  {viewOriginal && (
                     <MIButton
                       width="100%"
                       color="gray"
