@@ -1,12 +1,15 @@
 import SourceIcon from '@mui/icons-material/Source'
 import { Box, Stack } from '@mui/material'
+import { keyframes } from '@mui/material/styles'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import type { EventRelatedRecord } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
+import ShakeableLockIcon from '@/components/common/icons/ShakeableLockIcon'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import MIDataTableCellText from '@/components/common/table/MIDataTableCellText'
 import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/common/NextGenMIEventDetailBlockSkeleton'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
@@ -14,6 +17,14 @@ import { NEXT_GEN_MI_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/compon
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
+
+const shakeAnimation = keyframes`
+  0%, 100% { transform: translateX(0); }
+  25%, 75% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+`
+
+const getEventRelatedRecordRowKey = (row: EventRelatedRecord, index: number) => `${row.publishedAt ?? ''}-${row.title ?? ''}-${index}`
 
 const getEventRelatedRecordPath = (row: EventRelatedRecord) => {
   if (row.recordType === 'NEWS' && row.sourceObjId !== undefined && row.sourceObjId !== null) {
@@ -53,16 +64,29 @@ const EventDetailMiRecordsTable = ({
 }: EventDetailMiRecordsTableProps) => {
   const navigate = useNavigate()
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
+  const [shakingRowKeys, setShakingRowKeys] = useState<Set<string>>(new Set())
 
   const isServerMode = serverPagination !== undefined
 
   const handleTitleClick = useCallback(
     (row: EventRelatedRecord) => {
+      if (row.isPermitted === false) return
       const path = getEventRelatedRecordPath(row)
       if (path) navigate(path)
     },
     [navigate],
   )
+
+  const handleLockedTitleClick = useCallback((itemKey: string) => {
+    setShakingRowKeys((prev) => new Set(prev).add(itemKey))
+    setTimeout(() => {
+      setShakingRowKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(itemKey)
+        return next
+      })
+    }, 400)
+  }, [])
 
   const totalPages = useMemo(() => {
     if (isServerMode) return Math.max(1, serverPagination.totalPages)
@@ -125,9 +149,56 @@ const EventDetailMiRecordsTable = ({
         field: 'title',
         headerName: '제목',
         width: '400px',
-        renderCell: ({ row }) => {
+        renderCell: ({ row, rowIndex }) => {
           const title = row.title ?? ''
-          if (!title || !getEventRelatedRecordPath(row)) return title
+          if (!title) return title
+
+          if (row.isPermitted === false) {
+            const itemKey = getEventRelatedRecordRowKey(row, rowIndex)
+
+            return (
+              <Stack
+                component="button"
+                type="button"
+                direction="row"
+                alignItems="center"
+                minWidth={0}
+                maxWidth="100%"
+                color="contentText.Black"
+                aria-label={`${title} 권한 없음`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleLockedTitleClick(itemKey)
+                }}
+                sx={{
+                  p: 0,
+                  border: 0,
+                  backgroundColor: 'transparent',
+                  font: 'inherit',
+                  cursor: 'default',
+                  textAlign: 'left',
+                  width: 'fit-content',
+                  animation: shakingRowKeys.has(itemKey) ? `${shakeAnimation} 0.4s ease-in-out` : 'none',
+                }}
+              >
+                <ShakeableLockIcon
+                  width={16}
+                  height={16}
+                  sx={{ animation: 'none', marginLeft: 0, marginRight: '4px', display: 'inline-flex', verticalAlign: 'middle' }}
+                />
+                <MIDataTableCellText
+                  value={title}
+                  variant="body2M14"
+                  color="inherit"
+                  tooltipWhenTruncated
+                  component="span"
+                  sx={{ display: 'block', minWidth: 0, flex: '0 1 auto', width: 'auto' }}
+                />
+              </Stack>
+            )
+          }
+
+          if (!getEventRelatedRecordPath(row)) return title
 
           return (
             <NextGenMIHoverLinkCell
@@ -152,7 +223,7 @@ const EventDetailMiRecordsTable = ({
         },
       },
     ],
-    [handleTitleClick, paginatedRows.length],
+    [handleLockedTitleClick, handleTitleClick, paginatedRows.length, shakingRowKeys],
   )
 
   return (
@@ -174,7 +245,7 @@ const EventDetailMiRecordsTable = ({
               rows={paginatedRows}
               fixedLeftColumnIndexes={[2]}
               leftAlignedHeaderSticky
-              getRowKey={(row, index) => `${row.publishedAt ?? ''}-${row.title ?? ''}-${index}`}
+              getRowKey={getEventRelatedRecordRowKey}
               noRowMessage="표시할 데이터가 없습니다."
               rowHeight={paginatedRows.length === 0 ? '400px' : undefined}
               containerShell={false}

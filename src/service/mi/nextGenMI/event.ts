@@ -214,6 +214,7 @@ export interface EventRelatedRecord {
   goodsNo?: number | null
   goodsDataNo?: number | null
   sourceObjId?: number | null
+  isPermitted?: boolean
 }
 
 export interface EventInstitutionOutlook {
