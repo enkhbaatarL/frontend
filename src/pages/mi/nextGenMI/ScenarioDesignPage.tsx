@@ -186,6 +186,12 @@ type ScenarioDesignCriteriaValidation = {
   errorItems: ScenarioDesignReviewErrorItem[]
 }
 
+type ScenarioDesignCriteriaDraft = {
+  columns: ScenarioDesignColumn[]
+  rows: DesignScenarioRow[]
+  agentColumnKeys: Set<string>
+}
+
 const SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM: ScenarioDesignReviewErrorItem = {
   label: '필수 입력값 누락',
   message: '비어 있는 필수 항목에 값을 입력해 주세요.',
@@ -307,6 +313,19 @@ const validateScenarioDesignCriteriaValues = (
   return { dimensionValueErrorMessages, errorItems }
 }
 
+const createScenarioDesignCriteriaSnapshotKey = (
+  columns: ScenarioDesignColumn[],
+  rows: DesignScenarioRow[],
+  agentColumnKeys: Set<string>,
+) =>
+  JSON.stringify({
+    table: createScenarioDesignEditTable(columns, rows),
+    agentColumnKeys: Array.from(agentColumnKeys).sort(),
+  })
+
+const createScenarioDesignCriteriaDraftSnapshotKey = (draft: ScenarioDesignCriteriaDraft) =>
+  createScenarioDesignCriteriaSnapshotKey(draft.columns, draft.rows, draft.agentColumnKeys)
+
 const ScenarioDesignPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -350,11 +369,9 @@ const ScenarioDesignPage = () => {
   const reviewValidationStreamStageRef = useRef<string | null>(null)
   const pendingFrontendReviewItemsRef = useRef<ScenarioDesignReviewErrorItem[] | null>(null)
   const pendingScenarioDesignReviewItemsRef = useRef<ScenarioDesignReviewErrorItem[]>([])
-  const submittedCriteriaDraftRef = useRef<{
-    columns: ScenarioDesignColumn[]
-    rows: DesignScenarioRow[]
-    agentColumnKeys: Set<string>
-  } | null>(null)
+  const submittedCriteriaDraftRef = useRef<ScenarioDesignCriteriaDraft | null>(null)
+  const reviewedCriteriaSnapshotKeyRef = useRef<string | null>(null)
+  const criteriaReviewSnapshotInvalidatedRef = useRef(false)
   const reviewMinimumLoadingTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
   const reviewCompletedVisibleTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
   const navigateScenarioDesignErrorPage = useCallback(
@@ -551,6 +568,11 @@ const ScenarioDesignPage = () => {
     () => validateScenarioDesignCriteriaValues(visibleScenarioDesignColumns, rows, agentScenarioDesignColumnKeys),
     [agentScenarioDesignColumnKeys, rows, visibleScenarioDesignColumns],
   )
+  const currentCriteriaSnapshotKey = useMemo(
+    () => createScenarioDesignCriteriaSnapshotKey(visibleScenarioDesignColumns, rows, agentScenarioDesignColumnKeys),
+    [agentScenarioDesignColumnKeys, rows, visibleScenarioDesignColumns],
+  )
+  const isCurrentCriteriaReviewed = reviewed && reviewedCriteriaSnapshotKeyRef.current === currentCriteriaSnapshotKey
   const requestDeleteScenarioDesignGroup = useCallback(() => {
     const targetScenarioGroupId = scenarioGroupIdRef.current
     if (targetScenarioGroupId === null || preserveScenarioDesignGroupRef.current || deleteScenarioDesignGroupRequestedRef.current) return
@@ -622,6 +644,8 @@ const ScenarioDesignPage = () => {
       setReviewCompletedVisible(false)
       setReviewFailedDialogOpen(false)
       submittedCriteriaDraftRef.current = null
+      reviewedCriteriaSnapshotKeyRef.current = null
+      criteriaReviewSnapshotInvalidatedRef.current = true
       reviewStartedScenarioDesignUpdatedAtRef.current = 0
       reviewValidationStreamStageRef.current = null
       signpostStreamReceivedRef.current = false
@@ -633,6 +657,11 @@ const ScenarioDesignPage = () => {
     },
     [clearScenarioDesignReviewCompletedTimeout, clearScenarioDesignReviewMinimumLoadingTimeout],
   )
+  useEffect(() => {
+    if (!reviewed || reviewedCriteriaSnapshotKeyRef.current === currentCriteriaSnapshotKey) return
+
+    resetScenarioDesignReviewState({ keepErrorItems: true })
+  }, [currentCriteriaSnapshotKey, resetScenarioDesignReviewState, reviewed])
   const refreshScenarioDesignStateFromStream = useCallback(() => {
     const refetchOnce = () => {
       if (scenarioDesignStateRefreshInFlightRef.current) {
@@ -673,6 +702,8 @@ const ScenarioDesignPage = () => {
       if (event === 'validation') {
         clearScenarioDesignReviewMinimumLoadingTimeout()
         submittedCriteriaDraftRef.current = null
+        reviewedCriteriaSnapshotKeyRef.current = null
+        criteriaReviewSnapshotInvalidatedRef.current = true
         pendingFrontendReviewItemsRef.current = null
         reviewStartedScenarioDesignUpdatedAtRef.current = 0
         reviewValidationStreamStageRef.current = null
@@ -748,6 +779,7 @@ const ScenarioDesignPage = () => {
 
     setReviewErrorItems([])
     setReviewed(false)
+    reviewedCriteriaSnapshotKeyRef.current = null
     submittedCriteriaDraftRef.current = {
       columns: visibleScenarioDesignColumns,
       rows,
@@ -767,6 +799,8 @@ const ScenarioDesignPage = () => {
     } catch {
       clearScenarioDesignReviewMinimumLoadingTimeout()
       submittedCriteriaDraftRef.current = null
+      reviewedCriteriaSnapshotKeyRef.current = null
+      criteriaReviewSnapshotInvalidatedRef.current = true
       reviewStartedScenarioDesignUpdatedAtRef.current = 0
       reviewValidationStreamStageRef.current = null
       pendingFrontendReviewItemsRef.current = null
@@ -903,29 +937,40 @@ const ScenarioDesignPage = () => {
     const stage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
     const validationResult = scenarioDesignState?.validation?.isValid
     const hasValidationResult = validationResult === true || validationResult === false
-    const reviewValidationResultReady =
-      !reviewPending ||
-      (reviewMinimumLoadingComplete &&
-        pendingFrontendReviewItemsRef.current === null &&
-        scenarioDesignStateUpdatedAt > reviewStartedScenarioDesignUpdatedAtRef.current &&
-        (hasValidationResult || reviewValidationStreamStageRef.current === 'scenario_validated' || stage === 'scenario_validated'))
+    const backendValidationResultReady =
+      reviewPending &&
+      reviewMinimumLoadingComplete &&
+      pendingFrontendReviewItemsRef.current === null &&
+      scenarioDesignStateUpdatedAt > reviewStartedScenarioDesignUpdatedAtRef.current &&
+      (hasValidationResult || reviewValidationStreamStageRef.current === 'scenario_validated' || stage === 'scenario_validated')
+    const reviewValidationResultReady = !reviewPending || backendValidationResultReady
     const validationPassed =
       reviewValidationResultReady && (validationResult === true || (!hasValidationResult && stage === 'scenario_validated'))
     const validationFailed = reviewValidationResultReady && validationResult === false
     const submittedCriteriaDraft = submittedCriteriaDraftRef.current
     const hasOneViewTable = scenarioDesignState?.step2?.table !== undefined && scenarioDesignState.step2.table !== null
-    const shouldUseSubmittedCriteriaDraft = !hasOneViewTable && submittedCriteriaDraft !== null && (reviewPending || reviewed)
+    const shouldUseSubmittedCriteriaDraft =
+      !hasOneViewTable &&
+      submittedCriteriaDraft !== null &&
+      (reviewPending || reviewedCriteriaSnapshotKeyRef.current !== null) &&
+      !backendValidationResultReady
     const shouldSyncScenarioDesignTable =
       shouldUseSubmittedCriteriaDraft || scenarioDesignStateUpdatedAt > lastSyncedScenarioDesignStateUpdatedAtRef.current
     const serverColumns = createScenarioDesignColumns(activeTable.dimensionColumns, scenarioDimensionTemplates)
     const serverRows = activeTable.scenarios ?? []
     const nextColumns = shouldUseSubmittedCriteriaDraft ? submittedCriteriaDraft.columns : serverColumns
     const nextRows = shouldUseSubmittedCriteriaDraft ? submittedCriteriaDraft.rows : serverRows
+    const nextAgentColumnKeys = shouldUseSubmittedCriteriaDraft ? submittedCriteriaDraft.agentColumnKeys : new Set<string>()
+    const nextCriteriaSnapshotKey = createScenarioDesignCriteriaSnapshotKey(nextColumns, nextRows, nextAgentColumnKeys)
+    const canUseValidatedCriteriaSnapshot =
+      reviewPending ||
+      (!criteriaReviewSnapshotInvalidatedRef.current &&
+        (shouldSyncScenarioDesignTable || currentCriteriaSnapshotKey === nextCriteriaSnapshotKey))
 
     if (shouldSyncScenarioDesignTable) {
       setVisibleScenarioDesignColumns(nextColumns)
       setRows(nextRows)
-      setAgentScenarioDesignColumnKeys(shouldUseSubmittedCriteriaDraft ? new Set(submittedCriteriaDraft.agentColumnKeys) : new Set())
+      setAgentScenarioDesignColumnKeys(new Set(nextAgentColumnKeys))
       if (!shouldUseSubmittedCriteriaDraft || validationPassed) {
         setInitialScenarioDesignColumns(nextColumns)
         setInitialRows(nextRows)
@@ -934,7 +979,11 @@ const ScenarioDesignPage = () => {
         lastSyncedScenarioDesignStateUpdatedAtRef.current = scenarioDesignStateUpdatedAt
       }
     }
-    if (validationPassed || stage === 'signpost_created' || stage === 'completed') setReviewed(true)
+    if ((validationPassed || stage === 'signpost_created' || stage === 'completed') && canUseValidatedCriteriaSnapshot) {
+      reviewedCriteriaSnapshotKeyRef.current = nextCriteriaSnapshotKey
+      criteriaReviewSnapshotInvalidatedRef.current = false
+      setReviewed(true)
+    }
 
     if (stage === 'signpost_created' || stage === 'completed') {
       submittedCriteriaDraftRef.current = null
@@ -942,12 +991,15 @@ const ScenarioDesignPage = () => {
     }
 
     if (reviewPending && (validationPassed || validationFailed)) {
+      submittedCriteriaDraftRef.current = null
       setReviewPending(false)
       setReviewMinimumLoadingComplete(false)
       reviewStartedScenarioDesignUpdatedAtRef.current = 0
       reviewValidationStreamStageRef.current = null
 
       if (validationPassed) {
+        reviewedCriteriaSnapshotKeyRef.current = nextCriteriaSnapshotKey
+        criteriaReviewSnapshotInvalidatedRef.current = false
         setReviewed(true)
         setReviewErrorItems(pendingScenarioDesignReviewItemsRef.current.filter((item) => item.severity === 'warning'))
         pendingScenarioDesignReviewItemsRef.current = []
@@ -965,6 +1017,8 @@ const ScenarioDesignPage = () => {
           ),
         ]
 
+        reviewedCriteriaSnapshotKeyRef.current = nextCriteriaSnapshotKey
+        criteriaReviewSnapshotInvalidatedRef.current = false
         setReviewed(true)
         setReviewErrorItems(scenarioDesignReviewItems)
         pendingScenarioDesignReviewItemsRef.current = []
@@ -992,8 +1046,8 @@ const ScenarioDesignPage = () => {
       scrollNextGenMILayoutToTop()
     }
   }, [
+    currentCriteriaSnapshotKey,
     reviewPending,
-    reviewed,
     scenarioDesignActiveTable,
     scenarioDesignState,
     scenarioDesignStateUpdatedAt,
@@ -1014,6 +1068,11 @@ const ScenarioDesignPage = () => {
     reviewValidationStreamStageRef.current = null
     setReviewPending(false)
     setReviewMinimumLoadingComplete(false)
+    reviewedCriteriaSnapshotKeyRef.current =
+      submittedCriteriaDraftRef.current === null
+        ? currentCriteriaSnapshotKey
+        : createScenarioDesignCriteriaDraftSnapshotKey(submittedCriteriaDraftRef.current)
+    criteriaReviewSnapshotInvalidatedRef.current = false
     setReviewed(true)
     setReviewErrorItems(frontendReviewItems)
 
@@ -1025,7 +1084,7 @@ const ScenarioDesignPage = () => {
         setReviewCompletedVisible(false)
       }, 1000)
     }
-  }, [reviewMinimumLoadingComplete, reviewPending, showSnackbar])
+  }, [currentCriteriaSnapshotKey, reviewMinimumLoadingComplete, reviewPending, showSnackbar])
 
   useEffect(() => {
     const currentState = globalThis.history.state as { idx?: unknown; scenarioDesignLeaveGuard?: unknown } | null
@@ -1053,24 +1112,32 @@ const ScenarioDesignPage = () => {
     [initialRows, initialScenarioDesignColumns, rows, visibleScenarioDesignColumns],
   )
   const canCompleteScenarioDesignReview = useMemo(
-    () => !hasBlockingScenarioDesignReviewItem(reviewErrorItems) && scenarioNameErrorMessages.size === 0 && reviewed,
-    [reviewErrorItems, reviewed, scenarioNameErrorMessages.size],
+    () => !hasBlockingScenarioDesignReviewItem(reviewErrorItems) && scenarioNameErrorMessages.size === 0 && isCurrentCriteriaReviewed,
+    [isCurrentCriteriaReviewed, reviewErrorItems, scenarioNameErrorMessages.size],
   )
   const handleRowValueChange = useCallback(
     (rowId: number, key: string, value: string) => {
-      setRows((currentRows) =>
-        currentRows.map((row, index) => {
+      setRows((currentRows) => {
+        let changed = false
+        const nextRows = currentRows.map((row, index) => {
           if (getScenarioDesignRowId(row, index + 1) !== rowId) return row
-          if (key === 'scenarioName') return updateScenarioDesignRowScenarioName(row, value)
+          if (key === 'scenarioName') {
+            if ((row.scenarioName ?? '') === value) return row
+            changed = true
+            return updateScenarioDesignRowScenarioName(row, value)
+          }
 
           const column = visibleScenarioDesignColumns.find((item) => item.key === key)
-          return column ? updateScenarioDesignRowDimension(row, column, value) : row
-        }),
-      )
+          if (!column || getScenarioDesignDimensionSelectedValue(row, column.key) === value) return row
 
-      resetScenarioDesignReviewState({ keepErrorItems: true })
+          changed = true
+          return updateScenarioDesignRowDimension(row, column, value)
+        })
+
+        return changed ? nextRows : currentRows
+      })
     },
-    [resetScenarioDesignReviewState, visibleScenarioDesignColumns],
+    [visibleScenarioDesignColumns],
   )
 
   const handleAddRow = useCallback(() => {
@@ -1086,8 +1153,7 @@ const ScenarioDesignPage = () => {
         ),
       ]
     })
-    resetScenarioDesignReviewState({ keepErrorItems: true })
-  }, [agentScenarioDesignColumnKeys, resetScenarioDesignReviewState, visibleScenarioDesignColumns])
+  }, [agentScenarioDesignColumnKeys, visibleScenarioDesignColumns])
 
   const handleDeleteCriteriaColumn = useCallback(
     (key: string) => {
@@ -1106,46 +1172,37 @@ const ScenarioDesignPage = () => {
           dimensions: row.dimensions?.filter((dimension) => dimension.key !== key) ?? [],
         })),
       )
-      resetScenarioDesignReviewState({ keepErrorItems: true })
     },
-    [resetScenarioDesignReviewState, visibleScenarioDesignColumns],
+    [visibleScenarioDesignColumns],
   )
 
-  const handleAddCriteriaColumns = useCallback(
-    (selectedColumns: ScenarioDesignColumn[]) => {
-      if (selectedColumns.length === 0) return
+  const handleAddCriteriaColumns = useCallback((selectedColumns: ScenarioDesignColumn[]) => {
+    if (selectedColumns.length === 0) return
 
-      const selectedColumnKeys = selectedColumns.map((column) => column.key)
+    const selectedColumnKeys = selectedColumns.map((column) => column.key)
 
-      setVisibleScenarioDesignColumns((currentColumns) =>
-        sortScenarioDesignColumns([
-          ...currentColumns,
-          ...selectedColumns.filter((column) => !currentColumns.some((currentColumn) => currentColumn.key === column.key)),
-        ]),
-      )
-      setAgentScenarioDesignColumnKeys((currentKeys) => new Set([...currentKeys, ...selectedColumnKeys]))
-      setRows((currentRows) =>
-        currentRows.map((row) =>
-          selectedColumns.reduce(
-            (nextRow, column) => updateScenarioDesignRowDimension(nextRow, column, SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value),
-            row,
-          ),
+    setVisibleScenarioDesignColumns((currentColumns) =>
+      sortScenarioDesignColumns([
+        ...currentColumns,
+        ...selectedColumns.filter((column) => !currentColumns.some((currentColumn) => currentColumn.key === column.key)),
+      ]),
+    )
+    setAgentScenarioDesignColumnKeys((currentKeys) => new Set([...currentKeys, ...selectedColumnKeys]))
+    setRows((currentRows) =>
+      currentRows.map((row) =>
+        selectedColumns.reduce(
+          (nextRow, column) => updateScenarioDesignRowDimension(nextRow, column, SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value),
+          row,
         ),
-      )
-      resetScenarioDesignReviewState({ keepErrorItems: true })
-    },
-    [resetScenarioDesignReviewState],
-  )
+      ),
+    )
+  }, [])
 
-  const handleDeleteRow = useCallback(
-    (rowId: number) => {
-      setRows((currentRows) =>
-        currentRows.length <= 1 ? currentRows : currentRows.filter((row, index) => getScenarioDesignRowId(row, index + 1) !== rowId),
-      )
-      resetScenarioDesignReviewState({ keepErrorItems: true })
-    },
-    [resetScenarioDesignReviewState],
-  )
+  const handleDeleteRow = useCallback((rowId: number) => {
+    setRows((currentRows) =>
+      currentRows.length <= 1 ? currentRows : currentRows.filter((row, index) => getScenarioDesignRowId(row, index + 1) !== rowId),
+    )
+  }, [])
 
   const handleResetCriteriaStep = useCallback(() => {
     if (scenarioGroupId === null) return
@@ -1215,17 +1272,17 @@ const ScenarioDesignPage = () => {
       }
 
       if (type === 'reviewComplete' || type === 'reviewCompleteWithWarning') {
-        if (!reviewed || !canCompleteScenarioDesignReview) return
+        if (!isCurrentCriteriaReviewed || !canCompleteScenarioDesignReview) return
         void handleCreateScenarioSignposts()
       }
     },
-    [canCompleteScenarioDesignReview, handleCancelScenarioDesign, handleCreateScenarioSignposts, reviewed],
+    [canCompleteScenarioDesignReview, handleCancelScenarioDesign, handleCreateScenarioSignposts, isCurrentCriteriaReviewed],
   )
 
   const handleComplete = useCallback(() => {
-    if (!reviewed || !canCompleteScenarioDesignReview) return
+    if (!isCurrentCriteriaReviewed || !canCompleteScenarioDesignReview) return
     setConfirmType(hasWarningScenarioDesignReviewItem(reviewErrorItems) ? 'reviewCompleteWithWarning' : 'reviewComplete')
-  }, [canCompleteScenarioDesignReview, reviewErrorItems, reviewed])
+  }, [canCompleteScenarioDesignReview, isCurrentCriteriaReviewed, reviewErrorItems])
 
   const handleCreateScenarioGroup = useCallback(
     async (value: {
@@ -1306,7 +1363,7 @@ const ScenarioDesignPage = () => {
           completed={currentStep === 'oneView'}
           number={1}
           label="시나리오 분기항목 및 분기기준 검토"
-          stateLabel={currentStep === 'criteria' ? (reviewed ? '검토 완료' : '진행 중') : undefined}
+          stateLabel={currentStep === 'criteria' ? (isCurrentCriteriaReviewed ? '검토 완료' : '진행 중') : undefined}
         />
         <Divider sx={{ width: '40px', borderColor: 'gray.20', flexShrink: 0 }} />
         <ScenarioDesignProgressStep
@@ -1317,7 +1374,7 @@ const ScenarioDesignPage = () => {
         />
       </Stack>
     ),
-    [currentStep, reviewed],
+    [currentStep, isCurrentCriteriaReviewed],
   )
 
   const headerRightAction = useMemo(() => <NextGenMIUserFeedback pageTitle="Scenario Design" />, [])
@@ -1354,7 +1411,7 @@ const ScenarioDesignPage = () => {
       },
       isLoading: scenarioDesignLoading,
       review: {
-        reviewed,
+        reviewed: isCurrentCriteriaReviewed,
         pending: reviewPending || validateScenarioDesignMutation.isPending,
         completedVisible: reviewCompletedVisible,
         canComplete: canCompleteScenarioDesignReview,
@@ -1392,8 +1449,8 @@ const ScenarioDesignPage = () => {
       initialRows,
       initialScenarioDesignColumns,
       isScenarioSuggested,
+      isCurrentCriteriaReviewed,
       resetScenarioDesignMutation.isPending,
-      reviewed,
       reviewCompletedVisible,
       reviewErrorItems,
       reviewPending,
