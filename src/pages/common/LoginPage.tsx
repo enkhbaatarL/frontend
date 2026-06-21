@@ -61,8 +61,16 @@ const LoginPage = () => {
       return
     }
 
-    if (['skgas', '낳ㅁㄴ'].includes(inputValue)) {
-      const token = devTokens.user.find(({ label }) => label === 'SK Gas')?.value
+    const skGasTokenLabel = ['skgas', '낳ㅁㄴ', 'gas1', 'ㅎㅁㄴ1'].includes(inputValue)
+      ? 'SK Gas'
+      : ['gas2', 'ㅎㅁㄴ2'].includes(inputValue)
+        ? 'SK Gas 2'
+        : ['gas3', 'ㅎㅁㄴ3'].includes(inputValue)
+          ? 'SK Gas 3'
+          : null
+
+    if (skGasTokenLabel) {
+      const token = devTokens.user.find(({ label }) => label === skGasTokenLabel)?.value
       if (!token) return
 
       await setUserInfo(token)

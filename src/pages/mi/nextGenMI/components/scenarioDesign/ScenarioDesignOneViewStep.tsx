@@ -2247,7 +2247,7 @@ const ScenarioDesignOneViewStep = ({
             }}
           />
 
-          <Stack gap="12px" width="100%" minWidth={0}>
+          <Stack gap="12px" width="100%" minWidth={0} padding="12px">
             <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
               시나리오 검토
             </Typography>
@@ -2400,7 +2400,7 @@ const ScenarioDesignOneViewStep = ({
               )}
             </Stack>
 
-            <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px" padding="12px 0">
+            <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px">
               <Stack direction="row" alignItems="center" gap="12px" minWidth={0}>
                 <MIBaseButton
                   variant="outlined"
