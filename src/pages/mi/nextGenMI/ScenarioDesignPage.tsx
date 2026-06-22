@@ -192,6 +192,8 @@ type ScenarioDesignCriteriaDraft = {
   agentColumnKeys: Set<string>
 }
 
+type ScenarioDesignDeleteResult = 'deleted' | 'skipped' | 'failed'
+
 const SCENARIO_DESIGN_REQUIRED_REVIEW_ITEM: ScenarioDesignReviewErrorItem = {
   label: '필수 입력값 누락',
   message: '비어 있는 필수 항목에 값을 입력해 주세요.',
@@ -573,12 +575,19 @@ const ScenarioDesignPage = () => {
     [agentScenarioDesignColumnKeys, rows, visibleScenarioDesignColumns],
   )
   const isCurrentCriteriaReviewed = reviewed && reviewedCriteriaSnapshotKeyRef.current === currentCriteriaSnapshotKey
-  const requestDeleteScenarioDesignGroup = useCallback(() => {
+  const requestDeleteScenarioDesignGroup = useCallback(async (): Promise<ScenarioDesignDeleteResult> => {
     const targetScenarioGroupId = scenarioGroupIdRef.current
-    if (targetScenarioGroupId === null || preserveScenarioDesignGroupRef.current || deleteScenarioDesignGroupRequestedRef.current) return
+    if (targetScenarioGroupId === null || preserveScenarioDesignGroupRef.current || deleteScenarioDesignGroupRequestedRef.current)
+      return 'skipped'
 
     deleteScenarioDesignGroupRequestedRef.current = true
-    void nextGenMIScenarioGroupService.deleteScenarioGroup(targetScenarioGroupId).catch(() => undefined)
+    try {
+      await nextGenMIScenarioGroupService.deleteScenarioGroup(targetScenarioGroupId)
+      return 'deleted'
+    } catch {
+      deleteScenarioDesignGroupRequestedRef.current = false
+      return 'failed'
+    }
   }, [])
   useEffect(() => {
     scenarioGroupIdRef.current = scenarioGroupId
@@ -611,10 +620,15 @@ const ScenarioDesignPage = () => {
   const handleCancelScenarioDesignRequest = useCallback(() => {
     setConfirmType('cancel')
   }, [])
-  const handleCancelScenarioDesign = useCallback(() => {
-    requestDeleteScenarioDesignGroup()
+  const handleCancelScenarioDesign = useCallback(async () => {
+    const deleteResult = await requestDeleteScenarioDesignGroup()
+    if (deleteResult === 'failed') {
+      showSnackbar('시나리오 설계 취소에 실패했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+      return
+    }
+
     handleLeaveScenarioDesign()
-  }, [handleLeaveScenarioDesign, requestDeleteScenarioDesignGroup])
+  }, [handleLeaveScenarioDesign, requestDeleteScenarioDesignGroup, showSnackbar])
   const clearScenarioDesignReviewCompletedTimeout = useCallback(() => {
     if (reviewCompletedVisibleTimeoutRef.current) {
       globalThis.clearTimeout(reviewCompletedVisibleTimeoutRef.current)
@@ -1267,7 +1281,7 @@ const ScenarioDesignPage = () => {
       setConfirmType(null)
 
       if (type === 'cancel') {
-        handleCancelScenarioDesign()
+        void handleCancelScenarioDesign()
         return
       }
 

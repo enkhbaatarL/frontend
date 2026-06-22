@@ -3,7 +3,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRenameOutlineRounded'
 import PercentRoundedIcon from '@mui/icons-material/PercentRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
-import { Dialog, DialogActions, DialogContent, Divider, Skeleton, Stack, Typography, type TypographyProps } from '@mui/material'
+import { Collapse, Dialog, DialogActions, DialogContent, Divider, Stack, Typography, type TypographyProps } from '@mui/material'
 import {
   type ChangeEvent,
   type CSSProperties,
@@ -608,7 +608,6 @@ const ScenarioDesignReviewParagraphField = ({
   maxHeight,
   fontSize = '14px',
   editable,
-  loading,
   errorMessage,
   ariaLabel,
   resetKey,
@@ -622,7 +621,6 @@ const ScenarioDesignReviewParagraphField = ({
   maxHeight?: string
   fontSize?: string
   editable?: boolean
-  loading?: boolean
   errorMessage?: string
   ariaLabel?: string
   resetKey?: number
@@ -630,24 +628,7 @@ const ScenarioDesignReviewParagraphField = ({
   onChange?: (value: string) => void
 }) => (
   <Stack gap="4px" width="100%" minWidth={0}>
-    {loading ? (
-      <Stack
-        bgcolor="commonColor.White"
-        border="1px solid"
-        borderColor="contentBorder.Normal"
-        borderRadius="10px"
-        minHeight={minHeight}
-        maxHeight={maxHeight}
-        padding="20px"
-        overflow="auto"
-        boxSizing="border-box"
-      >
-        <Stack gap="8px">
-          <Skeleton variant="rounded" width="100%" height="18px" />
-          <Skeleton variant="rounded" width="84%" height="18px" />
-        </Stack>
-      </Stack>
-    ) : editable ? (
+    {editable ? (
       <ScenarioDesignReviewResizableTextarea
         ariaLabel={ariaLabel}
         value={value}
@@ -699,7 +680,7 @@ const ScenarioDesignReviewParagraphField = ({
         textAlign="right"
         noWrap
       >
-        {loading ? 0 : value.length} / {maxLength}
+        {value.length} / {maxLength}
       </Typography>
     </Stack>
   </Stack>
@@ -712,7 +693,6 @@ const ScenarioDesignReviewTextSection = ({
   minHeight,
   modified,
   editable,
-  loading,
   errorMessage,
   resetKey,
   onBlur,
@@ -725,7 +705,6 @@ const ScenarioDesignReviewTextSection = ({
   minHeight: string
   modified?: boolean
   editable?: boolean
-  loading?: boolean
   errorMessage?: string
   resetKey?: number
   onBlur?: () => void
@@ -749,7 +728,7 @@ const ScenarioDesignReviewTextSection = ({
         </Typography>
         {modified && <ScenarioDesignReviewModifiedBadge />}
       </Stack>
-      <ScenarioDesignReviewResetButton disabled={loading || !modified} onClick={onReset} />
+      <ScenarioDesignReviewResetButton disabled={!modified} onClick={onReset} />
     </Stack>
     <ScenarioDesignReviewParagraphField
       ariaLabel={title}
@@ -761,11 +740,47 @@ const ScenarioDesignReviewTextSection = ({
       resetKey={resetKey}
       fontSize="16px"
       editable={editable}
-      loading={loading}
       errorMessage={errorMessage}
       onBlur={onBlur}
       onChange={onChange}
     />
+  </Stack>
+)
+
+const ScenarioDesignReviewDataLoadingState = () => (
+  <Stack
+    role="status"
+    aria-live="polite"
+    aria-label="데이터 조회 중... 데이터를 불러오고 있습니다. 잠시만 기다려 주세요."
+    width="100%"
+    minWidth={0}
+    height="442px"
+    padding="30px 12px"
+    bgcolor="commonColor.White"
+    boxSizing="border-box"
+  >
+    <Stack flex={1} minHeight={0} alignItems="center" justifyContent="center">
+      <Stack width="max-content" maxWidth="100%" alignItems="center" gap="20px">
+        <Stack width="max-content" maxWidth="100%" alignItems="center" gap="0px">
+          <MIAgentSpinner
+            size={80}
+            tone="gray"
+            sx={{
+              '& svg': {
+                width: '80px',
+                height: '80px',
+              },
+            }}
+          />
+          <Typography fontSize="28px" fontWeight={700} lineHeight={1.6} color="contentText.Black" textAlign="center" noWrap>
+            데이터 조회 중...
+          </Typography>
+        </Stack>
+        <Typography fontSize="16px" fontWeight={400} lineHeight={1.4} color="contentText.Subtext" textAlign="center" noWrap>
+          데이터를 불러오고 있습니다. 잠시만 기다려 주세요.
+        </Typography>
+      </Stack>
+    </Stack>
   </Stack>
 )
 
@@ -1645,61 +1660,6 @@ const ScenarioDesignReviewScenarioCard = ({
   </Stack>
 )
 
-const ScenarioDesignReviewScenarioCardSkeleton = ({ cardWidth, showSplitter }: { cardWidth: number; showSplitter?: boolean }) => (
-  <Stack
-    width={`calc(var(--scenario-design-card-width) + ${showSplitter ? SCENARIO_DESIGN_REVIEW_SPLITTER_WIDTH : 0}px)`}
-    flex={`0 0 calc(var(--scenario-design-card-width) + ${showSplitter ? SCENARIO_DESIGN_REVIEW_SPLITTER_WIDTH : 0}px)`}
-    minWidth={0}
-    style={{ '--scenario-design-card-width': `${cardWidth}px` } as CSSProperties}
-  >
-    <Stack
-      width="var(--scenario-design-card-width)"
-      flex="0 0 var(--scenario-design-card-width)"
-      bgcolor="commonColor.White"
-      border="1px solid"
-      borderColor="contentBorder.Normal"
-      borderRadius="10px"
-      padding="12px"
-      boxSizing="border-box"
-    >
-      <Stack gap="8px" padding="6px 8px 12px" minHeight="95px">
-        <Skeleton variant="rounded" width="72px" height="20px" />
-        <Skeleton variant="rounded" width="82%" height="24px" />
-        <Skeleton variant="rounded" width="64%" height="18px" />
-      </Stack>
-      <Divider />
-
-      <Stack gap="10px" padding="24px 0">
-        <Skeleton variant="rounded" width="128px" height="22px" />
-        <Skeleton variant="rounded" width="100%" height="194px" sx={{ borderRadius: '10px' }} />
-      </Stack>
-      <Divider />
-
-      <Stack gap="10px" padding="24px 0">
-        <Skeleton variant="rounded" width="128px" height="22px" />
-        <Stack display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap="8px">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={`criteriaSkeleton${index}`} variant="rounded" height="72px" sx={{ borderRadius: '10px' }} />
-          ))}
-        </Stack>
-      </Stack>
-      <Divider />
-
-      <Stack gap="10px" padding="24px 0">
-        <Skeleton variant="rounded" width="112px" height="22px" />
-        <Skeleton variant="rounded" width="120px" height="36px" />
-      </Stack>
-      <Divider />
-
-      <Stack gap="10px" padding="24px 0 0">
-        <Skeleton variant="rounded" width="96px" height="22px" />
-        <Skeleton variant="rounded" width="100%" height="56px" sx={{ borderRadius: '10px' }} />
-        <Skeleton variant="rounded" width="100%" height="56px" sx={{ borderRadius: '10px' }} />
-      </Stack>
-    </Stack>
-  </Stack>
-)
-
 type ScenarioDesignOneViewStepProps = {
   rows: DesignScenarioRow[]
   columns: ScenarioDesignColumn[]
@@ -2204,253 +2164,275 @@ const ScenarioDesignOneViewStep = ({
     })
   }
 
-  const scenarioReviewLoadingCardCount = Math.max(rows.length, 3)
   const showScenarioReviewScrollbars = isScenarioReviewScrollHovered || isScenarioReviewScrollbarDragging
 
   return (
     <>
       <Stack position="relative" width="100%" minWidth={0}>
-        <Stack gap="24px" padding="24px 0">
-          <ScenarioDesignReviewTextSection
-            title="시나리오 그룹명"
-            value={scenarioGroupName}
-            maxLength={100}
-            minHeight="68px"
-            modified={scenarioGroupNameModified}
-            editable
-            loading={loading}
-            errorMessage={scenarioGroupNameErrorMessage}
-            resetKey={resetKey}
-            onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: true }))}
-            onChange={setScenarioGroupName}
-            onReset={() => {
-              setScenarioGroupName(groupName)
-              setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: false }))
-            }}
-          />
-
-          <ScenarioDesignReviewTextSection
-            title="시나리오 그룹 설명"
-            value={scenarioGroupDescription}
-            maxLength={500}
-            minHeight="160px"
-            modified={scenarioGroupDescriptionModified}
-            editable
-            loading={loading}
-            errorMessage={scenarioGroupDescriptionErrorMessage}
-            resetKey={resetKey}
-            onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: true }))}
-            onChange={setScenarioGroupDescription}
-            onReset={() => {
-              setScenarioGroupDescription(groupDescription)
-              setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: false }))
-            }}
-          />
-
-          <Stack gap="12px" width="100%" minWidth={0} padding="12px">
-            <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
-              시나리오 검토
-            </Typography>
+        <Stack padding="24px 0">
+          <Collapse
+            in={loading}
+            timeout={{ enter: 220, exit: 240 }}
+            unmountOnExit
+            sx={{ width: '100%', '& .MuiCollapse-wrapperInner': { width: '100%' } }}
+          >
+            <ScenarioDesignReviewDataLoadingState />
+          </Collapse>
+          <Collapse
+            in={!loading}
+            timeout={{ enter: 520, exit: 160 }}
+            mountOnEnter
+            unmountOnExit
+            sx={{ width: '100%', '& .MuiCollapse-wrapperInner': { width: '100%' } }}
+          >
             <Stack
-              ref={scenarioReviewRootRef}
-              position="relative"
-              width="100%"
-              minWidth={0}
-              overflow="hidden"
-              onMouseEnter={() => setIsScenarioReviewScrollHovered(true)}
-              onMouseLeave={() => setIsScenarioReviewScrollHovered(false)}
+              gap="24px"
               sx={{
-                '--scenario-design-review-scroll-left-edge-opacity': 0,
-                '--scenario-design-review-scroll-right-edge-opacity': 0,
-                '--scenario-design-review-horizontal-thumb-left': '0%',
-                '--scenario-design-review-horizontal-thumb-width': '0%',
+                animation: 'scenarioDesignReviewContentReveal 360ms ease 120ms both',
+                '@keyframes scenarioDesignReviewContentReveal': {
+                  '0%': {
+                    opacity: 0,
+                    transform: 'translateY(8px)',
+                  },
+                  '100%': {
+                    opacity: 1,
+                    transform: 'translateY(0px)',
+                  },
+                },
               }}
             >
-              <Stack
-                ref={scenarioReviewScrollRef}
-                direction="row"
-                gap="0px"
-                width="100%"
-                minWidth={0}
-                overflow="auto hidden"
-                paddingBottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
-                sx={{
-                  scrollbarWidth: 'none',
-                  '&::-webkit-scrollbar': {
-                    display: 'none',
-                  },
+              <ScenarioDesignReviewTextSection
+                title="시나리오 그룹명"
+                value={scenarioGroupName}
+                maxLength={100}
+                minHeight="68px"
+                modified={scenarioGroupNameModified}
+                editable
+                errorMessage={scenarioGroupNameErrorMessage}
+                resetKey={resetKey}
+                onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: true }))}
+                onChange={setScenarioGroupName}
+                onReset={() => {
+                  setScenarioGroupName(groupName)
+                  setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: false }))
                 }}
-              >
-                {loading
-                  ? Array.from({ length: scenarioReviewLoadingCardCount }).map((_, index) => (
-                    <ScenarioDesignReviewScenarioCardSkeleton
-                      key={`scenarioReviewSkeleton${index}`}
-                      cardWidth={SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH}
-                      showSplitter={index < scenarioReviewLoadingCardCount - 1}
-                    />
-                  ))
-                  : rows.map((row, index) => {
-                    const rowId = getScenarioDesignRowId(row, index + 1)
-                    const scenarioNarrative = scenarioNarratives[rowId] ?? ''
-                    const defaultScenarioNarrative = defaultScenarioNarratives[rowId] ?? ''
-                    const scenarioNarrativeErrorMessage =
+              />
+
+              <ScenarioDesignReviewTextSection
+                title="시나리오 그룹 설명"
+                value={scenarioGroupDescription}
+                maxLength={500}
+                minHeight="160px"
+                modified={scenarioGroupDescriptionModified}
+                editable
+                errorMessage={scenarioGroupDescriptionErrorMessage}
+                resetKey={resetKey}
+                onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: true }))}
+                onChange={setScenarioGroupDescription}
+                onReset={() => {
+                  setScenarioGroupDescription(groupDescription)
+                  setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: false }))
+                }}
+              />
+
+              <Stack gap="12px" width="100%" minWidth={0} padding="12px">
+                <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
+                  시나리오 검토
+                </Typography>
+                <Stack
+                  ref={scenarioReviewRootRef}
+                  position="relative"
+                  width="100%"
+                  minWidth={0}
+                  overflow="hidden"
+                  onMouseEnter={() => setIsScenarioReviewScrollHovered(true)}
+                  onMouseLeave={() => setIsScenarioReviewScrollHovered(false)}
+                  sx={{
+                    '--scenario-design-review-scroll-left-edge-opacity': 0,
+                    '--scenario-design-review-scroll-right-edge-opacity': 0,
+                    '--scenario-design-review-horizontal-thumb-left': '0%',
+                    '--scenario-design-review-horizontal-thumb-width': '0%',
+                  }}
+                >
+                  <Stack
+                    ref={scenarioReviewScrollRef}
+                    direction="row"
+                    gap="0px"
+                    width="100%"
+                    minWidth={0}
+                    overflow="auto hidden"
+                    paddingBottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
+                    sx={{
+                      scrollbarWidth: 'none',
+                      '&::-webkit-scrollbar': {
+                        display: 'none',
+                      },
+                    }}
+                  >
+                    {rows.map((row, index) => {
+                      const rowId = getScenarioDesignRowId(row, index + 1)
+                      const scenarioNarrative = scenarioNarratives[rowId] ?? ''
+                      const defaultScenarioNarrative = defaultScenarioNarratives[rowId] ?? ''
+                      const scenarioNarrativeErrorMessage =
                         touchedScenarioNarrativeRows[rowId] && scenarioNarrative.trim().length === 0
                           ? '최소 1자 이상 입력해야 합니다.'
                           : undefined
 
-                    return (
-                      <ScenarioDesignReviewScenarioCard
-                        key={rowId}
-                        rowId={rowId}
-                        row={row}
-                        columns={columns}
-                        signposts={defaultScenarioSignposts[rowId] ?? []}
-                        narrative={scenarioNarrative}
-                        cardWidth={scenarioCardWidths[rowId] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH}
-                        showSplitter={index < rows.length - 1}
-                        cardResizeDragging={activeScenarioCardSplitterIndex !== null}
-                        splitterActive={activeScenarioCardSplitterIndex === index}
-                        narrativeModified={scenarioNarrative !== defaultScenarioNarrative}
-                        narrativeErrorMessage={scenarioNarrativeErrorMessage}
-                        possibility={scenarioPossibilities[rowId] ?? '0'}
-                        possibilityModified={(scenarioPossibilities[rowId] ?? '0') !== (defaultScenarioPossibilities[rowId] ?? '0')}
-                        possibilityError={possibilityErrorRowId === rowId}
-                        resetKey={resetKey}
-                        signpostResetKey={signpostResetKeys[rowId] ?? 0}
-                        signpostModified={Object.values(signpostModifiedRows[rowId] ?? {}).some(Boolean)}
-                        onNarrativeBlur={() => setTouchedScenarioNarrativeRows((currentRows) => ({ ...currentRows, [rowId]: true }))}
-                        onNarrativeChange={(value) => handleScenarioNarrativeChange(rowId, value)}
-                        onNarrativeReset={() => handleScenarioNarrativeReset(rowId)}
-                        onCardRef={(element) => {
-                          scenarioCardRefs.current[rowId] = element
-                        }}
-                        onSplitterKeyDown={(event) => handleScenarioCardSplitterKeyDown(index, event)}
-                        onSplitterPointerDown={(event) => handleScenarioCardSplitterPointerDown(index, event)}
-                        onPossibilityChange={(value) => handlePossibilityChange(rowId, value)}
-                        onPossibilityReset={() => handlePossibilityReset(rowId)}
-                        onSignpostModifiedChange={handleSignpostModifiedChange}
-                        onSignpostValueChange={handleSignpostValueChange}
-                        onSignpostReset={() => handleSignpostReset(rowId)}
-                      />
-                    )
-                  })}
-              </Stack>
-              <Stack
-                aria-hidden
-                position="absolute"
-                top={0}
-                left={0}
-                bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
-                width="100px"
-                sx={{
-                  pointerEvents: 'none',
-                  background: 'linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
-                  opacity: 'var(--scenario-design-review-scroll-left-edge-opacity)',
-                  transition: 'opacity 180ms ease',
-                  zIndex: 5,
-                }}
-              />
-              <Stack
-                aria-hidden
-                position="absolute"
-                top={0}
-                right={0}
-                bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
-                width="100px"
-                sx={{
-                  pointerEvents: 'none',
-                  background: 'linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
-                  opacity: 'var(--scenario-design-review-scroll-right-edge-opacity)',
-                  transition: 'opacity 180ms ease',
-                  zIndex: 5,
-                }}
-              />
-              {scenarioReviewScrollLayoutState.horizontal && (
-                <Stack
-                  aria-hidden
-                  position="absolute"
-                  left={0}
-                  right={0}
-                  bottom="4px"
-                  height="10px"
-                  borderRadius="10px"
-                  bgcolor="transparent"
-                  sx={{
-                    opacity: showScenarioReviewScrollbars ? 1 : 0,
-                    pointerEvents: showScenarioReviewScrollbars ? 'auto' : 'none',
-                    transition: 'opacity 120ms ease',
-                    zIndex: 6,
-                  }}
-                >
+                      return (
+                        <ScenarioDesignReviewScenarioCard
+                          key={rowId}
+                          rowId={rowId}
+                          row={row}
+                          columns={columns}
+                          signposts={defaultScenarioSignposts[rowId] ?? []}
+                          narrative={scenarioNarrative}
+                          cardWidth={scenarioCardWidths[rowId] ?? SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH}
+                          showSplitter={index < rows.length - 1}
+                          cardResizeDragging={activeScenarioCardSplitterIndex !== null}
+                          splitterActive={activeScenarioCardSplitterIndex === index}
+                          narrativeModified={scenarioNarrative !== defaultScenarioNarrative}
+                          narrativeErrorMessage={scenarioNarrativeErrorMessage}
+                          possibility={scenarioPossibilities[rowId] ?? '0'}
+                          possibilityModified={(scenarioPossibilities[rowId] ?? '0') !== (defaultScenarioPossibilities[rowId] ?? '0')}
+                          possibilityError={possibilityErrorRowId === rowId}
+                          resetKey={resetKey}
+                          signpostResetKey={signpostResetKeys[rowId] ?? 0}
+                          signpostModified={Object.values(signpostModifiedRows[rowId] ?? {}).some(Boolean)}
+                          onNarrativeBlur={() => setTouchedScenarioNarrativeRows((currentRows) => ({ ...currentRows, [rowId]: true }))}
+                          onNarrativeChange={(value) => handleScenarioNarrativeChange(rowId, value)}
+                          onNarrativeReset={() => handleScenarioNarrativeReset(rowId)}
+                          onCardRef={(element) => {
+                            scenarioCardRefs.current[rowId] = element
+                          }}
+                          onSplitterKeyDown={(event) => handleScenarioCardSplitterKeyDown(index, event)}
+                          onSplitterPointerDown={(event) => handleScenarioCardSplitterPointerDown(index, event)}
+                          onPossibilityChange={(value) => handlePossibilityChange(rowId, value)}
+                          onPossibilityReset={() => handlePossibilityReset(rowId)}
+                          onSignpostModifiedChange={handleSignpostModifiedChange}
+                          onSignpostValueChange={handleSignpostValueChange}
+                          onSignpostReset={() => handleSignpostReset(rowId)}
+                        />
+                      )
+                    })}
+                  </Stack>
                   <Stack
-                    onPointerDown={handleScenarioReviewScrollbarPointerDown}
+                    aria-hidden
                     position="absolute"
-                    top="2px"
-                    bottom="2px"
-                    left="var(--scenario-design-review-horizontal-thumb-left)"
-                    width="var(--scenario-design-review-horizontal-thumb-width)"
-                    borderRadius="10px"
-                    bgcolor={isScenarioReviewScrollbarDragging ? '#868E96' : '#ADB5BD'}
+                    top={0}
+                    left={0}
+                    bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
+                    width="100px"
                     sx={{
-                      cursor: isScenarioReviewScrollbarDragging ? 'grabbing' : 'grab',
-                      '&:hover': { bgcolor: '#868E96' },
+                      pointerEvents: 'none',
+                      background: 'linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
+                      opacity: 'var(--scenario-design-review-scroll-left-edge-opacity)',
+                      transition: 'opacity 180ms ease',
+                      zIndex: 5,
                     }}
                   />
-                </Stack>
-              )}
-            </Stack>
-
-            <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px">
-              <Stack direction="row" alignItems="center" gap="12px" minWidth={0}>
-                <MIBaseButton
-                  variant="outlined"
-                  prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
-                  disabled={interactionDisabled || scenarioReviewResetDisabled}
-                  onClick={() => setResetConfirmOpen(true)}
-                  gap="4px"
-                  sx={{ height: '36px', borderRadius: '8px', flexShrink: 0 }}
-                >
-                  전체 초기화
-                </MIBaseButton>
-                {!interactionDisabled && !canCreateScenarioPossibilities && <ScenarioDesignReviewPossibilityWarning />}
-              </Stack>
-
-              <Stack direction="row" alignItems="center" gap="8px">
-                <MIBaseButton variant="outlined" onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
-                  취소
-                </MIBaseButton>
-                <MIBaseButton
-                  variant="contained"
-                  suffix={<ChevronRightRoundedIcon sx={{ fontSize: '20px' }} />}
-                  disabled={Boolean(
-                    interactionDisabled ||
-                      scenarioGroupNameErrorMessage ||
-                      scenarioGroupDescriptionErrorMessage ||
-                      hasScenarioNarrativeError ||
-                      !canCreateScenarioPossibilities,
+                  <Stack
+                    aria-hidden
+                    position="absolute"
+                    top={0}
+                    right={0}
+                    bottom={scenarioReviewScrollLayoutState.horizontal ? '18px' : '0px'}
+                    width="100px"
+                    sx={{
+                      pointerEvents: 'none',
+                      background: 'linear-gradient(to left, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
+                      opacity: 'var(--scenario-design-review-scroll-right-edge-opacity)',
+                      transition: 'opacity 180ms ease',
+                      zIndex: 5,
+                    }}
+                  />
+                  {scenarioReviewScrollLayoutState.horizontal && (
+                    <Stack
+                      aria-hidden
+                      position="absolute"
+                      left={0}
+                      right={0}
+                      bottom="4px"
+                      height="10px"
+                      borderRadius="10px"
+                      bgcolor="transparent"
+                      sx={{
+                        opacity: showScenarioReviewScrollbars ? 1 : 0,
+                        pointerEvents: showScenarioReviewScrollbars ? 'auto' : 'none',
+                        transition: 'opacity 120ms ease',
+                        zIndex: 6,
+                      }}
+                    >
+                      <Stack
+                        onPointerDown={handleScenarioReviewScrollbarPointerDown}
+                        position="absolute"
+                        top="2px"
+                        bottom="2px"
+                        left="var(--scenario-design-review-horizontal-thumb-left)"
+                        width="var(--scenario-design-review-horizontal-thumb-width)"
+                        borderRadius="10px"
+                        bgcolor={isScenarioReviewScrollbarDragging ? '#868E96' : '#ADB5BD'}
+                        sx={{
+                          cursor: isScenarioReviewScrollbarDragging ? 'grabbing' : 'grab',
+                          '&:hover': { bgcolor: '#868E96' },
+                        }}
+                      />
+                    </Stack>
                   )}
-                  onClick={handleCreate}
-                  labelColor="contentText.White"
-                  sx={{
-                    height: '36px',
-                    borderRadius: '8px',
-                    backgroundColor: 'mari.Primary',
-                    '&:hover:not(:disabled)': {
-                      backgroundColor: 'mari.Primary',
-                    },
-                    '&.Mui-disabled': {
-                      backgroundColor: '#C3CAEE',
-                    },
-                    '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
-                      color: 'contentText.White',
-                    },
-                  }}
-                >
-                  시나리오 그룹 생성
-                </MIBaseButton>
+                </Stack>
+
+                <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px">
+                  <Stack direction="row" alignItems="center" gap="12px" minWidth={0}>
+                    <MIBaseButton
+                      variant="outlined"
+                      prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}
+                      disabled={interactionDisabled || scenarioReviewResetDisabled}
+                      onClick={() => setResetConfirmOpen(true)}
+                      gap="4px"
+                      sx={{ height: '36px', borderRadius: '8px', flexShrink: 0 }}
+                    >
+                      전체 초기화
+                    </MIBaseButton>
+                    {!interactionDisabled && !canCreateScenarioPossibilities && <ScenarioDesignReviewPossibilityWarning />}
+                  </Stack>
+
+                  <Stack direction="row" alignItems="center" gap="8px">
+                    <MIBaseButton variant="outlined" onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
+                      취소
+                    </MIBaseButton>
+                    <MIBaseButton
+                      variant="contained"
+                      suffix={<ChevronRightRoundedIcon sx={{ fontSize: '20px' }} />}
+                      disabled={Boolean(
+                        interactionDisabled ||
+                          scenarioGroupNameErrorMessage ||
+                          scenarioGroupDescriptionErrorMessage ||
+                          hasScenarioNarrativeError ||
+                          !canCreateScenarioPossibilities,
+                      )}
+                      onClick={handleCreate}
+                      labelColor="contentText.White"
+                      sx={{
+                        height: '36px',
+                        borderRadius: '8px',
+                        backgroundColor: 'mari.Primary',
+                        '&:hover:not(:disabled)': {
+                          backgroundColor: 'mari.Primary',
+                        },
+                        '&.Mui-disabled': {
+                          backgroundColor: '#C3CAEE',
+                        },
+                        '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
+                          color: 'contentText.White',
+                        },
+                      }}
+                    >
+                      시나리오 그룹 생성
+                    </MIBaseButton>
+                  </Stack>
+                </Stack>
               </Stack>
             </Stack>
-          </Stack>
+          </Collapse>
         </Stack>
         <ScenarioDesignReviewLoadingOverlay visible={creatingScenarioGroup} message="시나리오 그룹을 생성하고 있습니다" />
       </Stack>
