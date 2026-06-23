@@ -51,6 +51,8 @@ const EventCategoryFilterMenu = ({ selected, onApply, closeOnScroll }: EventCate
 
   const handleClear = () => {
     setDraftSelected([])
+    onApply([])
+    setIsMenuOpen(false)
   }
 
   const handleApply = () => {
