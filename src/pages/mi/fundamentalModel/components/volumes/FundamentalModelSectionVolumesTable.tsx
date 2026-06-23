@@ -54,8 +54,9 @@ const rowTypography = (kind: FundamentalModelVolumesRowKind) => {
 }
 
 const formatVolumeCell = (value: unknown): string => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return ''
-  return value.toFixed(1)
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  if (typeof value === 'string') return value
+  return ''
 }
 
 interface SectionGroup {

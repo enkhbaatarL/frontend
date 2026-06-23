@@ -27,7 +27,7 @@ import { downloadFile } from '@/utils/file'
 const MAIN_SCROLL_WRAPPER_ID = 'main-scroll-wrapper'
 const RIGHT_STICKY_TOP_PX = 80
 const RIGHT_STICKY_GAP_PX = 16
-const RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX = 6
+const RIGHT_STICKY_CONTENT_BOTTOM_PADDING_PX = 6
 const RIGHT_STICKY_TOP_COVER_PX = 16
 const RIGHT_STICKY_Z_INDEX = 8
 const RIGHT_BODY_CONTENT_GAP_PX = 16
@@ -36,7 +36,7 @@ const STICKY_GUARANTEE_PX = 1
 const RIGHT_BODY_MIN_HEIGHT_FALLBACK_CSS = `calc(${FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS} + ${STICKY_GUARANTEE_PX}px)`
 
 const getTabPanelAttachOffset = (tabKey: FundamentalModelViewTabKey, completed: boolean) =>
-  RIGHT_BODY_CONTENT_GAP_PX - (completed && tabKey === 'volumes' ? RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX : 0)
+  RIGHT_BODY_CONTENT_GAP_PX - (completed && tabKey === 'volumes' ? RIGHT_STICKY_CONTENT_BOTTOM_PADDING_PX : 0)
 
 const getMountedTabPanelSx = (isActive: boolean) => ({
   position: isActive ? 'relative' : 'absolute',
@@ -77,7 +77,7 @@ const FundamentalModelPage = () => {
   const [tabStickyHeight, setTabStickyHeight] = useState(TAB_STICKY_FALLBACK_HEIGHT_PX)
   const [tabStickyBoundHeight, setTabStickyBoundHeight] = useState(TAB_STICKY_FALLBACK_HEIGHT_PX)
   const [rightBodyMinHeightPx, setRightBodyMinHeightPx] = useState<number | null>(null)
-  const [volumeToolbarSlotEl, setVolumeToolbarSlotEl] = useState<HTMLDivElement | null>(null)
+  const [volumeStickySlotEl, setVolumeStickySlotEl] = useState<HTMLDivElement | null>(null)
 
   const activeCaseId = selectedCaseId
   const parsedCaseId = Number(activeCaseId)
@@ -176,7 +176,10 @@ const FundamentalModelPage = () => {
         tabStickyStartScrollTop - leftBoundaryScrollTop + FUNDAMENTAL_MODEL_RUN_LIST_STICKY_TOP_PX + STICKY_GUARANTEE_PX,
       )
       const requiredRightBodyMinHeight = Math.ceil(leftStickyRect.height + requiredStickyBuffer)
-      const leftBoundaryHeightForRelease = Math.max(leftBoundaryRect.height, requiredRightBodyMinHeight)
+      const isVolumeStickyActive = effectiveCaseStatus === 'COMPLETED' && viewTab === 'volumes'
+      const leftBoundaryHeightForRelease = isVolumeStickyActive
+        ? Math.max(tabHeight, requiredRightBodyMinHeight)
+        : Math.max(leftBoundaryRect.height, requiredRightBodyMinHeight)
       const releaseScrollTop =
         leftBoundaryScrollTop + leftBoundaryHeightForRelease - FUNDAMENTAL_MODEL_RUN_LIST_STICKY_TOP_PX - leftStickyRect.height
       const tabBoundHeight = Math.max(tabHeight, releaseScrollTop - tabBoundaryScrollTop + RIGHT_STICKY_TOP_PX + tabHeight)
@@ -207,7 +210,7 @@ const FundamentalModelPage = () => {
       resizeObserver.disconnect()
       globalThis.removeEventListener('resize', scheduleMeasure)
     }
-  }, [activeCaseId, caseDetail?.status, detailError, detailLoading, viewTab])
+  }, [activeCaseId, detailError, detailLoading, effectiveCaseStatus, viewTab])
 
   useLayoutEffect(() => {
     const shouldResetPanel = pendingTabPanelResetRef.current === viewTab
@@ -263,7 +266,7 @@ const FundamentalModelPage = () => {
       globalThis.cancelAnimationFrame(rafId)
       if (secondRafId !== 0) globalThis.cancelAnimationFrame(secondRafId)
     }
-  }, [caseDetail?.status, priceLoading, tabStickyHeight, tabStickyBoundHeight, viewTab, volumeToolbarSlotEl])
+  }, [caseDetail?.status, priceLoading, tabStickyHeight, tabStickyBoundHeight, viewTab, volumeStickySlotEl])
 
   const tabBarItems = useMemo(
     () =>
@@ -351,10 +354,11 @@ const FundamentalModelPage = () => {
     () => (effectiveCaseStatus ? runStatusToPlaceholderMode(effectiveCaseStatus) : null),
     [effectiveCaseStatus],
   )
-  const showVolumeToolbarSlot = isCompletedCase && viewTab === 'volumes'
+  const showVolumeStickySlot = isCompletedCase && viewTab === 'volumes'
   const isVolumesTabActive = viewTab === 'volumes'
   const isPriceTabActive = viewTab === 'price'
   const rightBodyMinHeight = rightBodyMinHeightPx === null ? RIGHT_BODY_MIN_HEIGHT_FALLBACK_CSS : `${rightBodyMinHeightPx}px`
+  const volumeStickyReleaseSpacerHeight = showVolumeStickySlot ? Math.max(0, tabStickyBoundHeight - tabStickyHeight) : 0
 
   const rightBody = !activeCaseId ? (
     <Box
@@ -446,15 +450,15 @@ const FundamentalModelPage = () => {
             />
             {isCompletedCase && (
               <Box
-                ref={setVolumeToolbarSlotEl}
-                aria-hidden={!showVolumeToolbarSlot}
+                ref={setVolumeStickySlotEl}
+                aria-hidden={!showVolumeStickySlot}
                 sx={{
-                  height: showVolumeToolbarSlot ? 'auto' : 0,
+                  height: showVolumeStickySlot ? 'auto' : 0,
                   overflow: 'hidden',
-                  visibility: showVolumeToolbarSlot ? 'visible' : 'hidden',
-                  pointerEvents: showVolumeToolbarSlot ? 'auto' : 'none',
-                  pt: showVolumeToolbarSlot ? `${RIGHT_STICKY_GAP_PX}px` : 0,
-                  pb: showVolumeToolbarSlot ? `${RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX}px` : 0,
+                  visibility: showVolumeStickySlot ? 'visible' : 'hidden',
+                  pointerEvents: showVolumeStickySlot ? 'auto' : 'none',
+                  pt: showVolumeStickySlot ? `${RIGHT_STICKY_GAP_PX}px` : 0,
+                  pb: showVolumeStickySlot ? `${RIGHT_STICKY_CONTENT_BOTTOM_PADDING_PX}px` : 0,
                 }}
               />
             )}
@@ -471,7 +475,7 @@ const FundamentalModelPage = () => {
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          mt: showVolumeToolbarSlot ? `-${RIGHT_STICKY_TOOLBAR_BOTTOM_PADDING_PX}px` : 0,
+          mt: showVolumeStickySlot ? `-${RIGHT_STICKY_CONTENT_BOTTOM_PADDING_PX}px` : 0,
         }}
       >
         {isCaseDetailResolving && !isCompletedCase ? (
@@ -495,9 +499,10 @@ const FundamentalModelPage = () => {
             >
               <VolumesTabPanel
                 caseId={Number.isFinite(parsedCaseId) && parsedCaseId > 0 ? parsedCaseId : null}
-                toolbarSlotEl={volumeToolbarSlotEl}
+                stickySlotEl={volumeStickySlotEl}
                 detailLoading={detailLoading}
               />
+              {volumeStickyReleaseSpacerHeight > 0 && <Box aria-hidden sx={{ height: `${volumeStickyReleaseSpacerHeight}px` }} />}
             </Box>
 
             <Box

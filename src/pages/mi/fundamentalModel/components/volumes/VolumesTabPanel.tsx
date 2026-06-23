@@ -30,8 +30,8 @@ import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
 export interface VolumesTabPanelProps {
   /** getVolumes 호출 대상 case (양수일 때만 호출) */
   caseId: number | null
-  /** 페이지 탭 sticky band 내부에 toolbar를 주입할 slot */
-  toolbarSlotEl?: HTMLElement | null
+  /** 페이지 탭 sticky band 내부에 Volumes 콘텐츠를 주입할 slot */
+  stickySlotEl?: HTMLElement | null
   /** 케이스 상세 로딩 상태(헤더/탭 전환과 동기화) */
   detailLoading: boolean
 }
@@ -43,7 +43,7 @@ const SCOPE_TO_SEGMENT: Record<FundamentalModelScopeKey, FundamentalModelVolumes
 }
 
 /** Volumes 탭 본문(툴바 + 매트릭스 - 레이아웃은 FundamentalModelPage) */
-const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesTabPanelProps) => {
+const VolumesTabPanel = memo(({ caseId, stickySlotEl, detailLoading }: VolumesTabPanelProps) => {
   const [scope, setScope] = useState<FundamentalModelScopeKey>('global')
   const [granularity, setGranularity] = useState<FundamentalModelVolumesGranularity>('YEARLY')
   const [tradeSelector, setTradeSelector] = useState<FundamentalModelTradeSelector>('LNG')
@@ -81,6 +81,14 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesT
     () => (allFiltersSelected ? undefined : toApiTradeFlowTypes(scopedVolumeFilters.types)),
     [allFiltersSelected, scopedVolumeFilters.types],
   )
+  const sectionTableKey = useMemo(
+    () => [caseId ?? 'empty', segment, granularity, apiTypes?.join(',') ?? 'ALL', apiRegions?.join(',') ?? 'ALL'].join('|'),
+    [apiRegions, apiTypes, caseId, granularity, segment],
+  )
+  const tradeTableKey = useMemo(
+    () => [caseId ?? 'empty', tradeSelector, tradeYear, apiTradeTypes?.join(',') ?? 'ALL', apiRegions?.join(',') ?? 'ALL'].join('|'),
+    [apiRegions, apiTradeTypes, caseId, tradeSelector, tradeYear],
+  )
 
   const isValidCaseId = typeof caseId === 'number' && Number.isFinite(caseId) && caseId > 0
   const enableSectionQuery = isSectionScope && isValidCaseId
@@ -108,7 +116,6 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesT
       }),
     enabled: enableSectionQuery,
     refetchOnWindowFocus: false,
-    placeholderData: (previous) => previous,
   })
 
   const {
@@ -127,7 +134,6 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesT
       }),
     enabled: enableTradeQuery,
     refetchOnWindowFocus: false,
-    placeholderData: (previous) => previous,
   })
 
   const sectionLoading = detailLoading || volumesLoading || volumesFetching
@@ -147,7 +153,36 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesT
       filterOptions={filterOptions ?? null}
     />
   )
-  const toolbarPortalContent = (
+  const content = (
+    <Stack sx={{ gap: '16px' }}>
+      {toolbar}
+      {scope === 'trade' ? (
+        <FundamentalModelTradeVolumesTable
+          key={tradeTableKey}
+          tradeFlows={tradeFlows ?? null}
+          selector={tradeSelector}
+          year={tradeYear}
+          unit={tradeFlows?.unit ?? 'MTPA'}
+          loading={tradeLoading}
+          onSelectorChange={setTradeSelector}
+          onYearChange={setTradeYear}
+        />
+      ) : (
+        <Stack gap="10px">
+          <Stack direction="row" alignItems="center" gap="4px" sx={{ minHeight: '28px' }}>
+            <Typography variant="body2M14" color="gray.60">
+              Unit:
+            </Typography>
+            <Typography variant="body2M14" color="gray.70">
+              {sectionLoading ? '-' : (volumesRes?.unit ?? '-')}
+            </Typography>
+          </Stack>
+          <FundamentalModelSectionVolumesTable key={sectionTableKey} columns={volumeColumns} rows={sectionRows} loading={sectionLoading} />
+        </Stack>
+      )}
+    </Stack>
+  )
+  const stickyPortalContent = (
     <Box
       sx={{
         animation: 'fundamentalModelPageFadeIn 0.15s ease-out',
@@ -157,41 +192,15 @@ const VolumesTabPanel = memo(({ caseId, toolbarSlotEl, detailLoading }: VolumesT
         },
       }}
     >
-      {toolbar}
+      {content}
     </Box>
   )
-  const toolbarPortal = toolbarSlotEl ? createPortal(toolbarPortalContent, toolbarSlotEl) : null
+  const stickyPortal = stickySlotEl ? createPortal(stickyPortalContent, stickySlotEl) : null
 
   return (
     <>
-      {toolbarPortal}
-
-      <Stack sx={{ gap: '16px' }}>
-        {!toolbarSlotEl && toolbar}
-        {scope === 'trade' ? (
-          <FundamentalModelTradeVolumesTable
-            tradeFlows={tradeFlows ?? null}
-            selector={tradeSelector}
-            year={tradeYear}
-            unit={tradeFlows?.unit ?? 'MTPA'}
-            loading={tradeLoading}
-            onSelectorChange={setTradeSelector}
-            onYearChange={setTradeYear}
-          />
-        ) : (
-          <Stack gap="10px">
-            <Stack direction="row" alignItems="center" gap="4px" sx={{ minHeight: '28px' }}>
-              <Typography variant="body2M14" color="gray.60">
-                Unit:
-              </Typography>
-              <Typography variant="body2M14" color="gray.70">
-                {sectionLoading ? '-' : (volumesRes?.unit ?? '-')}
-              </Typography>
-            </Stack>
-            <FundamentalModelSectionVolumesTable columns={volumeColumns} rows={sectionRows} loading={sectionLoading} />
-          </Stack>
-        )}
-      </Stack>
+      {stickyPortal}
+      {!stickySlotEl && content}
     </>
   )
 })
