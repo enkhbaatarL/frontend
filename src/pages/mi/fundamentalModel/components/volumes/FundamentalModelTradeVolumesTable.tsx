@@ -29,7 +29,7 @@ import {
   FM_VOLUME_TABLE_SKELETON_H,
   FM_VOLUME_TRADE_TABLE_BODY_MAX_HEIGHT,
   FM_VOLUME_TRADE_TABLE_HEADER_H,
-  FM_VOLUME_TRADE_TOTAL_COL_W,
+  FM_VOLUME_TRADE_FROM_COL_MIN_W,
   FM_VOLUME_TRADE_TO_COL_W,
   FM_VOLUME_SUBTOTAL_CELL_BG,
   FM_VOLUME_TOTAL_CELL_BG,
@@ -38,7 +38,6 @@ import {
   fmVolumeTableFrameSx,
   fmVolumeTableHeaderCellSx,
   fmVolumeTradeBodyCellSx,
-  fmVolumeTradeFromColumnWidth,
   mergeVolumeTableSx,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumesTableLayout'
 
@@ -88,6 +87,24 @@ const TradeCountryHeaderLabel = ({
 }
 
 const getFlowLookupKey = (toKey: string, fromKey: string) => `${toKey}\u0000${fromKey}`
+
+const formatTradeFlowCell = (value: unknown): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  if (typeof value === 'string') return value
+  return '0'
+}
+
+const getTradeFromColumnWidth = (
+  column: FundamentalModelTradeCountryHeader,
+  rows: FundamentalModelTradeCountryHeader[],
+  flowValues: Map<string, number>,
+): number => {
+  const maxTextLength = rows.reduce(
+    (max, row) => Math.max(max, formatTradeFlowCell(flowValues.get(getFlowLookupKey(row.key, column.key))).length),
+    column.label.length,
+  )
+  return Math.max(FM_VOLUME_TRADE_FROM_COL_MIN_W, Math.ceil(maxTextLength * 8 + 32))
+}
 
 const tradeBodyScrollWrapperProps = {
   maxHeight: FM_VOLUME_TRADE_TABLE_BODY_MAX_HEIGHT,
@@ -145,14 +162,11 @@ const FundamentalModelTradeVolumesTable = memo(
       () => new Map((tradeFlows?.flows ?? []).map((flow) => [getFlowLookupKey(flow.toKey, flow.fromKey), flow.value])),
       [tradeFlows?.flows],
     )
-    const tradeScrollWidth = useMemo(
-      () =>
-        fromColumns.reduce(
-          (width, column, index) => width + (column.key === 'TOTAL' ? FM_VOLUME_TRADE_TOTAL_COL_W : fmVolumeTradeFromColumnWidth(index)),
-          0,
-        ),
-      [fromColumns],
+    const fromColumnWidths = useMemo(
+      () => fromColumns.map((column) => getTradeFromColumnWidth(column, toCountries, flowValues)),
+      [flowValues, fromColumns, toCountries],
     )
+    const tradeScrollWidth = useMemo(() => fromColumnWidths.reduce((sum, width) => sum + width, 0), [fromColumnWidths])
     const selectorOptions = useMemo<Array<{ value: FundamentalModelTradeSelector; label: string }>>(
       () => [
         { value: 'LNG', label: 'LNG' },
@@ -287,7 +301,7 @@ const FundamentalModelTradeVolumesTable = memo(
     )
 
     const headerScrollable = (
-      <Stack sx={{ width: '100%', minWidth: tradeScrollWidth }}>
+      <Stack sx={{ width: `${tradeScrollWidth}px`, minWidth: `${tradeScrollWidth}px` }}>
         <Box
           sx={mergeVolumeTableSx(fmVolumeTableHeaderCellSx, {
             height: FM_VOLUME_TABLE_HEADER_H,
@@ -312,7 +326,7 @@ const FundamentalModelTradeVolumesTable = memo(
         </Box>
         <Stack direction="row" alignItems="flex-start">
           {fromColumns.map((col, colIdx) => {
-            const colWidth = col.key === 'TOTAL' ? FM_VOLUME_TRADE_TOTAL_COL_W : fmVolumeTradeFromColumnWidth(colIdx)
+            const colWidth = `${fromColumnWidths[colIdx] ?? FM_VOLUME_TRADE_FROM_COL_MIN_W}px`
             const isRegionCol = col.kind === 'REGION_TOTAL'
             const isTotalCol = col.kind === 'GRAND_TOTAL'
             return (
@@ -320,8 +334,7 @@ const FundamentalModelTradeVolumesTable = memo(
                 key={col.key}
                 sx={mergeVolumeTableSx(fmVolumeTableBodyCellSx, {
                   width: colWidth,
-                  minWidth: colWidth,
-                  flexShrink: 0,
+                  flex: `0 0 ${colWidth}`,
                   justifyContent: 'flex-end',
                   bgcolor: isTotalCol ? FM_VOLUME_TOTAL_CELL_BG : isRegionCol ? FM_VOLUME_SUBTOTAL_CELL_BG : 'commonColor.White',
                 })}
@@ -352,13 +365,13 @@ const FundamentalModelTradeVolumesTable = memo(
     )
 
     const bodyScrollable = (
-      <Stack direction="row" alignItems="flex-start">
+      <Stack direction="row" alignItems="flex-start" sx={{ width: `${tradeScrollWidth}px`, minWidth: `${tradeScrollWidth}px` }}>
         {fromColumns.map((col, colIdx) => {
-          const colWidth = col.key === 'TOTAL' ? FM_VOLUME_TRADE_TOTAL_COL_W : fmVolumeTradeFromColumnWidth(colIdx)
+          const colWidth = `${fromColumnWidths[colIdx] ?? FM_VOLUME_TRADE_FROM_COL_MIN_W}px`
           const isRegionCol = col.kind === 'REGION_TOTAL'
           const isTotalCol = col.kind === 'GRAND_TOTAL'
           return (
-            <Stack key={col.key} sx={{ width: colWidth, minWidth: colWidth, flexShrink: 0 }}>
+            <Stack key={col.key} sx={{ width: colWidth, flex: `0 0 ${colWidth}` }}>
               {toCountries.map((row, rowIdx) => {
                 const nextIsTotal = toCountries[rowIdx + 1]?.kind === 'GRAND_TOTAL'
                 const isTotal = row.kind === 'GRAND_TOTAL'
@@ -379,7 +392,7 @@ const FundamentalModelTradeVolumesTable = memo(
                       noWrap
                       sx={{ width: '100%', textAlign: 'right' }}
                     >
-                      {flowValues.get(getFlowLookupKey(row.key, col.key)) ?? 0}
+                      {formatTradeFlowCell(flowValues.get(getFlowLookupKey(row.key, col.key)))}
                     </Typography>
                   </Box>
                 )

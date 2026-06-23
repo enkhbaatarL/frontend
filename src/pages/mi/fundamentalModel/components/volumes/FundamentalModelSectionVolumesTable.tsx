@@ -33,7 +33,6 @@ import {
   FM_VOLUME_TABLE_TOTAL_ROW_BORDER,
   fmVolumeGlobalBodyCellSx,
   fmVolumeHiddenHorizontalScrollbarSx,
-  fmVolumeMonthColumnsWidth,
   fmVolumeTableBodyCellSx,
   fmVolumeTableFrameSx,
   fmVolumeTableHeaderCellSx,
@@ -65,9 +64,19 @@ interface SectionGroup {
   rows: FundamentalModelVolumesRow[]
 }
 
+interface SectionFlatRow {
+  sectionType: FundamentalModelVolumesType
+  row: FundamentalModelVolumesRow
+}
+
 interface SectionLabelLayout {
   labelRows: number
   totalRows: number
+}
+
+const getVolumeMonthColumnWidth = (column: FundamentalModelVolumesColumn, rows: SectionFlatRow[]): number => {
+  const maxTextLength = rows.reduce((max, { row }) => Math.max(max, formatVolumeCell(row.values[column.key]).length), column.label.length)
+  return Math.max(FM_VOLUME_MONTH_COL_W, Math.ceil(maxTextLength * 8 + 32))
 }
 
 const sortRowsWithRegionSubtotalFirst = (rows: FundamentalModelVolumesRow[]): FundamentalModelVolumesRow[] => {
@@ -161,8 +170,13 @@ const SectionVolumesTableSkeleton = () => (
  */
 const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = false }: FundamentalModelSectionVolumesTableProps) => {
   const sections = useMemo(() => groupRowsByType(rows), [rows])
+  const flatRows = useMemo<SectionFlatRow[]>(
+    () => sections.flatMap((section) => section.rows.map((row) => ({ sectionType: section.type, row }))),
+    [sections],
+  )
+  const monthColumnWidths = useMemo(() => columns.map((column) => getVolumeMonthColumnWidth(column, flatRows)), [columns, flatRows])
 
-  const monthScrollWidth = fmVolumeMonthColumnsWidth(columns.length)
+  const monthScrollWidth = useMemo(() => monthColumnWidths.reduce((sum, width) => sum + width, 0), [monthColumnWidths])
 
   const headerMonthScrollRef = useRef<HTMLDivElement>(null)
   const bodyMonthScrollRef = useRef<HTMLDivElement>(null)
@@ -260,23 +274,21 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
   )
 
   const headerMonthColumns = (
-    <Stack direction="row" alignItems="flex-start" sx={{ width: '100%', minWidth: monthScrollWidth }}>
-      {columns.map((column, colIdx) => (
-        <Stack key={`${column.key}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
-          <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
-            <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
-              {column.label}
-            </Typography>
-          </Box>
-        </Stack>
-      ))}
+    <Stack direction="row" alignItems="flex-start" sx={{ width: `${monthScrollWidth}px`, minWidth: `${monthScrollWidth}px` }}>
+      {columns.map((column, colIdx) => {
+        const columnWidth = `${monthColumnWidths[colIdx] ?? FM_VOLUME_MONTH_COL_W}px`
+        return (
+          <Stack key={`${column.key}-${colIdx}`} sx={{ width: columnWidth, flex: `0 0 ${columnWidth}` }}>
+            <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
+              <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
+                {column.label}
+              </Typography>
+            </Box>
+          </Stack>
+        )
+      })}
     </Stack>
   )
-
-  const flatRows: { sectionType: FundamentalModelVolumesType; row: FundamentalModelVolumesRow }[] = []
-  sections.forEach((section) => {
-    section.rows.forEach((row) => flatRows.push({ sectionType: section.type, row }))
-  })
 
   const bodyFrozenColumns = (
     <Stack direction="row" alignItems="flex-start" sx={[{ flexShrink: 0 }, rowHeaderShadowSx]}>
@@ -346,26 +358,29 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
   )
 
   const bodyMonthColumns = (
-    <Stack direction="row" alignItems="flex-start" sx={{ width: '100%', minWidth: monthScrollWidth }}>
-      {columns.map((column, colIdx) => (
-        <Stack key={`${column.key}-${colIdx}`} sx={{ flex: `1 0 ${FM_VOLUME_MONTH_COL_W}px`, minWidth: FM_VOLUME_MONTH_COL_W }}>
-          {flatRows.map(({ sectionType, row }, rowIdx) => {
-            const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
-            const isTotal = row.rowKind === 'TYPE_TOTAL'
-            const isRegion = row.rowKind === 'REGION_SUBTOTAL'
-            return (
-              <Box
-                key={`${sectionType}-${row.region}-${row.rowKind}-${row.country ?? 'NA'}-${rowIdx}-${colIdx}`}
-                sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion), { justifyContent: 'flex-end' }]}
-              >
-                <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%', textAlign: 'right' }}>
-                  {formatVolumeCell(row.values[column.key])}
-                </Typography>
-              </Box>
-            )
-          })}
-        </Stack>
-      ))}
+    <Stack direction="row" alignItems="flex-start" sx={{ width: `${monthScrollWidth}px`, minWidth: `${monthScrollWidth}px` }}>
+      {columns.map((column, colIdx) => {
+        const columnWidth = `${monthColumnWidths[colIdx] ?? FM_VOLUME_MONTH_COL_W}px`
+        return (
+          <Stack key={`${column.key}-${colIdx}`} sx={{ width: columnWidth, flex: `0 0 ${columnWidth}` }}>
+            {flatRows.map(({ sectionType, row }, rowIdx) => {
+              const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
+              const isTotal = row.rowKind === 'TYPE_TOTAL'
+              const isRegion = row.rowKind === 'REGION_SUBTOTAL'
+              return (
+                <Box
+                  key={`${sectionType}-${row.region}-${row.rowKind}-${row.country ?? 'NA'}-${rowIdx}-${colIdx}`}
+                  sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion), { justifyContent: 'flex-end' }]}
+                >
+                  <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%', textAlign: 'right' }}>
+                    {formatVolumeCell(row.values[column.key])}
+                  </Typography>
+                </Box>
+              )
+            })}
+          </Stack>
+        )
+      })}
     </Stack>
   )
 
