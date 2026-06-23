@@ -36,6 +36,14 @@ export const fmVolumeResolvedMonthColumnWidth = (monthCount: number, frozenWidth
   return Math.max(FM_VOLUME_MONTH_COL_W, stretchWidth)
 }
 
+export const fmVolumeExpandColumnWidthsToFit = (columnWidths: number[], availableWidth: number): number[] => {
+  if (columnWidths.length === 0 || !Number.isFinite(availableWidth)) return columnWidths
+  const totalWidth = columnWidths.reduce((sum, width) => sum + width, 0)
+  if (totalWidth >= availableWidth) return columnWidths
+  const extraWidth = (availableWidth - totalWidth) / columnWidths.length
+  return columnWidths.map((width) => width + extraWidth)
+}
+
 /** 가로 스크롤바 숨김(하단 트랙만 표시할 때) */
 export const fmVolumeHiddenHorizontalScrollbarSx: SystemStyleObject<Theme> = {
   scrollbarWidth: 'none',

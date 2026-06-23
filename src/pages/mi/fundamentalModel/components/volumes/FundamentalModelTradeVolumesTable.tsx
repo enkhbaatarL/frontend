@@ -18,6 +18,7 @@ import FundamentalModelTradeSummaryToolbar from '@/pages/mi/fundamentalModel/com
 import {
   FM_VOLUME_GLOBAL_TABLE_FOOTER_SCROLL_H,
   FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
+  FM_VOLUME_TABLE_BASE_W,
   FM_VOLUME_TABLE_BODY_H,
   FM_VOLUME_TABLE_BORDER,
   FM_VOLUME_TABLE_COLUMN_HEADER_SHADOW,
@@ -33,6 +34,7 @@ import {
   FM_VOLUME_TRADE_TO_COL_W,
   FM_VOLUME_SUBTOTAL_CELL_BG,
   FM_VOLUME_TOTAL_CELL_BG,
+  fmVolumeExpandColumnWidthsToFit,
   fmVolumeHiddenHorizontalScrollbarSx,
   fmVolumeTableBodyCellSx,
   fmVolumeTableFrameSx,
@@ -162,9 +164,15 @@ const FundamentalModelTradeVolumesTable = memo(
       () => new Map((tradeFlows?.flows ?? []).map((flow) => [getFlowLookupKey(flow.toKey, flow.fromKey), flow.value])),
       [tradeFlows?.flows],
     )
+    const tableFrameRef = useRef<HTMLDivElement>(null)
+    const [tableFrameWidth, setTableFrameWidth] = useState(FM_VOLUME_TABLE_BASE_W)
     const fromColumnWidths = useMemo(
-      () => fromColumns.map((column) => getTradeFromColumnWidth(column, toCountries, flowValues)),
-      [flowValues, fromColumns, toCountries],
+      () =>
+        fmVolumeExpandColumnWidthsToFit(
+          fromColumns.map((column) => getTradeFromColumnWidth(column, toCountries, flowValues)),
+          Math.max(tableFrameWidth - FM_VOLUME_TRADE_TO_COL_W, 0),
+        ),
+      [flowValues, fromColumns, tableFrameWidth, toCountries],
     )
     const tradeScrollWidth = useMemo(() => fromColumnWidths.reduce((sum, width) => sum + width, 0), [fromColumnWidths])
     const selectorOptions = useMemo<Array<{ value: FundamentalModelTradeSelector; label: string }>>(
@@ -200,6 +208,25 @@ const FundamentalModelTradeVolumesTable = memo(
       const next = (bodyScrollRef.current?.scrollTop ?? 0) > FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX
       setHasScrolledY((prev) => (prev === next ? prev : next))
     }, [])
+
+    useEffect(() => {
+      const frameEl = tableFrameRef.current
+      if (!frameEl) return undefined
+
+      const updateTableFrameWidth = () => {
+        const nextWidth = frameEl.clientWidth
+        if (nextWidth <= 0) return
+        setTableFrameWidth((prev) => (prev === nextWidth ? prev : nextWidth))
+      }
+
+      updateTableFrameWidth()
+      const resizeObserver = new ResizeObserver(updateTableFrameWidth)
+      resizeObserver.observe(frameEl)
+
+      return () => {
+        resizeObserver.disconnect()
+      }
+    }, [loading])
 
     const syncHorizontalScroll = useCallback(
       (source: 'header' | 'body' | 'footer') => {
@@ -417,6 +444,7 @@ const FundamentalModelTradeVolumesTable = memo(
         />
 
         <Box
+          ref={tableFrameRef}
           className={FM_VOLUME_TABLE_HOVER_SCROLL_CLASS}
           sx={mergeVolumeTableSx(fmVolumeTableFrameSx, {
             maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,

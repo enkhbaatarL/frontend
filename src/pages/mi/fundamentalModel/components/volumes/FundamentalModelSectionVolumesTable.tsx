@@ -22,6 +22,7 @@ import {
   FM_VOLUME_TABLE_SKELETON_H,
   FM_VOLUME_TABLE_BODY_H,
   FM_VOLUME_TABLE_BORDER,
+  FM_VOLUME_TABLE_BASE_W,
   FM_VOLUME_TABLE_COLUMN_HEADER_SHADOW,
   FM_VOLUME_TABLE_HEADER_H,
   FM_VOLUME_TABLE_HOVER_SCROLL_CLASS,
@@ -31,6 +32,7 @@ import {
   FM_VOLUME_TABLE_SCROLL_SHADOW_TRANSITION,
   FM_VOLUME_TOTAL_CELL_BG,
   FM_VOLUME_TABLE_TOTAL_ROW_BORDER,
+  fmVolumeExpandColumnWidthsToFit,
   fmVolumeGlobalBodyCellSx,
   fmVolumeHiddenHorizontalScrollbarSx,
   fmVolumeTableBodyCellSx,
@@ -174,7 +176,16 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
     () => sections.flatMap((section) => section.rows.map((row) => ({ sectionType: section.type, row }))),
     [sections],
   )
-  const monthColumnWidths = useMemo(() => columns.map((column) => getVolumeMonthColumnWidth(column, flatRows)), [columns, flatRows])
+  const tableFrameRef = useRef<HTMLDivElement>(null)
+  const [tableFrameWidth, setTableFrameWidth] = useState(FM_VOLUME_TABLE_BASE_W)
+  const monthColumnWidths = useMemo(
+    () =>
+      fmVolumeExpandColumnWidthsToFit(
+        columns.map((column) => getVolumeMonthColumnWidth(column, flatRows)),
+        Math.max(tableFrameWidth - FM_VOLUME_GLOBAL_FROZEN_W, 0),
+      ),
+    [columns, flatRows, tableFrameWidth],
+  )
 
   const monthScrollWidth = useMemo(() => monthColumnWidths.reduce((sum, width) => sum + width, 0), [monthColumnWidths])
 
@@ -185,6 +196,25 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
   const syncingHorizontalRef = useRef(false)
   const [hasScrolledX, setHasScrolledX] = useState(false)
   const [hasScrolledY, setHasScrolledY] = useState(false)
+
+  useEffect(() => {
+    const frameEl = tableFrameRef.current
+    if (!frameEl) return undefined
+
+    const updateTableFrameWidth = () => {
+      const nextWidth = frameEl.clientWidth
+      if (nextWidth <= 0) return
+      setTableFrameWidth((prev) => (prev === nextWidth ? prev : nextWidth))
+    }
+
+    updateTableFrameWidth()
+    const resizeObserver = new ResizeObserver(updateTableFrameWidth)
+    resizeObserver.observe(frameEl)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [loading])
 
   const updateHorizontalScrollShadow = useCallback((scrollLeft: number) => {
     const next = scrollLeft > FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX
@@ -392,6 +422,7 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
 
   return (
     <Box
+      ref={tableFrameRef}
       className={FM_VOLUME_TABLE_HOVER_SCROLL_CLASS}
       sx={mergeVolumeTableSx(fmVolumeTableFrameSx, {
         maxHeight: FM_VOLUME_GLOBAL_TABLE_MAX_HEIGHT,
