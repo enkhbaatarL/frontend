@@ -3,7 +3,7 @@
 export const formatPriceForDisplay = (n: number): string =>
   new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 1,
     useGrouping: false,
   }).format(n)
 
