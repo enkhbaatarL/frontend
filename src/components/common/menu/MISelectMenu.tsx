@@ -1,6 +1,6 @@
 import { CheckBox, CheckBoxOutlineBlank, CheckRounded, KeyboardArrowDownRounded, KeyboardArrowUpRounded } from '@mui/icons-material'
 import { Box, Typography, Stack, Switch, ButtonProps, PaperProps, ListSubheader, Divider } from '@mui/material'
-import { ReactNode, useMemo, useState, Fragment } from 'react'
+import { Fragment, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
@@ -87,6 +87,8 @@ const MISelectMenu = <T,>({
 }: Props<T>) => {
   const { t } = useTranslation()
   const [internalOpen, setInternalOpen] = useState(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const selectedMenuItemRef = useRef<HTMLDivElement>(null)
 
   // 외부에서 open이 제공되면 controlled, 아니면 uncontrolled
   const open = controlledOpen ?? internalOpen
@@ -116,6 +118,11 @@ const MISelectMenu = <T,>({
     }
     return selected === value
   }
+
+  const selectedScrollTargetItem = useMemo(
+    () => items.find((item) => (Array.isArray(selected) ? selected.includes(item.value) : selected === item.value)),
+    [items, selected],
+  )
 
   const groupedItems = useMemo(() => {
     if (groupDisplayType === 'none') {
@@ -201,6 +208,31 @@ const MISelectMenu = <T,>({
     }
   }, [items, multiple, placeholder, selected, t])
 
+  useEffect(() => {
+    if (!open) return undefined
+
+    let scrollAnimationFrame: number | undefined
+
+    scrollAnimationFrame = requestAnimationFrame(() => {
+      scrollAnimationFrame = requestAnimationFrame(() => {
+        const container = scrollContainerRef.current
+        const selectedMenuItem = selectedMenuItemRef.current
+
+        if (!container || !selectedMenuItem) return
+
+        const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight)
+
+        container.scrollTop = Math.min(Math.max(0, selectedMenuItem.offsetTop - 12), maxScrollTop)
+      })
+    })
+
+    return () => {
+      if (scrollAnimationFrame !== undefined) {
+        cancelAnimationFrame(scrollAnimationFrame)
+      }
+    }
+  }, [open, selectedScrollTargetItem])
+
   const renderSelectionIcon = (isSelected: boolean, itemDisabled?: boolean): ReactNode => {
     if (selectType !== 'default') {
       return undefined
@@ -272,6 +304,7 @@ const MISelectMenu = <T,>({
 
     return (
       <Box
+        ref={selectedScrollTargetItem?.value === value ? selectedMenuItemRef : undefined}
         key={String(value)}
         onClick={() => (itemDisabled ? null : handleToggle(value))}
         borderRadius="10px"
@@ -493,6 +526,7 @@ const MISelectMenu = <T,>({
       }}
     >
       <ScrollWrapper
+        ref={scrollContainerRef}
         maxHeight={maxHeight}
         offsetTop={12}
         offsetBottom={12}
