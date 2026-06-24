@@ -166,6 +166,32 @@ const isFirstFixedRightColumnSticky = (scrollRoot: HTMLDivElement) => {
 const getFixedColumnWidth = (scrollRoot: HTMLDivElement, selector: string) =>
   Array.from(scrollRoot.querySelectorAll<HTMLElement>(selector)).reduce((sum, column) => sum + column.getBoundingClientRect().width, 0)
 
+const getFixedColumnResizeMaxWidth = (
+  scrollRoot: HTMLDivElement | null,
+  side: Exclude<FixedColumnResizeSide, null>,
+  columnIndex: number,
+  configuredMaxWidth: number | undefined,
+  minWidth: number,
+) => {
+  const configuredMaxWidthValue = configuredMaxWidth && configuredMaxWidth >= minWidth ? configuredMaxWidth : Number.POSITIVE_INFINITY
+  if (!scrollRoot) return configuredMaxWidthValue
+
+  const fixedColumnSelector = side === 'left' ? '[data-fixed-left-column="true"]' : '[data-fixed-right-column="true"]'
+  const fixedColumnWidthMap = new Map<string, number>()
+
+  Array.from(scrollRoot.querySelectorAll<HTMLElement>(fixedColumnSelector)).forEach((fixedColumn) => {
+    const fixedColumnIndex = fixedColumn.dataset.nextGenMiStickyTableColumnIndex
+    if (!fixedColumnIndex || fixedColumnIndex === String(columnIndex) || fixedColumnWidthMap.has(fixedColumnIndex)) return
+
+    fixedColumnWidthMap.set(fixedColumnIndex, fixedColumn.getBoundingClientRect().width)
+  })
+
+  const otherFixedColumnWidth = Array.from(fixedColumnWidthMap.values()).reduce((sum, width) => sum + width, 0)
+  const viewportMaxWidth = Math.max(minWidth, Math.floor(scrollRoot.clientWidth * 0.8 - otherFixedColumnWidth))
+
+  return Math.min(configuredMaxWidthValue, viewportMaxWidth)
+}
+
 const getScrollThumbSizePercent = (clientSize: number, scrollSize: number) =>
   scrollSize > 0 ? Math.max((clientSize / scrollSize) * 100, 8) : 0
 
@@ -502,19 +528,20 @@ const NextGenMIStickyTable = <T,>({
       event.stopPropagation()
       setFixedColumnResizeSide(side)
 
+      const scrollRoot = scrollRef.current
       const columnElement =
-        scrollRef.current?.querySelector<HTMLElement>(`thead [data-next-gen-mi-sticky-table-column-index="${columnIndex}"]`) ??
-        scrollRef.current?.querySelector<HTMLElement>(`[data-next-gen-mi-sticky-table-column-index="${columnIndex}"]`)
+        scrollRoot?.querySelector<HTMLElement>(`thead [data-next-gen-mi-sticky-table-column-index="${columnIndex}"]`) ??
+        scrollRoot?.querySelector<HTMLElement>(`[data-next-gen-mi-sticky-table-column-index="${columnIndex}"]`)
       const configuredMinWidth = getPixelValue(column.minWidth)
       const configuredMaxWidth = column.maxWidth === 'none' ? undefined : getPixelValue(column.maxWidth)
       const minWidth = configuredMinWidth ?? FIXED_COLUMN_RESIZE_MIN_WIDTH
-      const maxWidth = configuredMaxWidth && configuredMaxWidth >= minWidth ? configuredMaxWidth : undefined
+      const maxWidth = getFixedColumnResizeMaxWidth(scrollRoot, side, columnIndex, configuredMaxWidth, minWidth)
       const startX = event.clientX
       const startWidth = Math.max(
         minWidth,
         Math.min(
           resizedFixedColumnWidths[columnIndex] ?? columnElement?.getBoundingClientRect().width ?? getPixelValue(column.width) ?? minWidth,
-          maxWidth ?? Number.POSITIVE_INFINITY,
+          maxWidth,
         ),
       )
       const previousUserSelect = document.body.style.userSelect
@@ -525,7 +552,7 @@ const NextGenMIStickyTable = <T,>({
 
       const handlePointerMove = (moveEvent: PointerEvent) => {
         const delta = side === 'left' ? moveEvent.clientX - startX : startX - moveEvent.clientX
-        const nextWidth = Math.round(Math.max(minWidth, Math.min(startWidth + delta, maxWidth ?? Number.POSITIVE_INFINITY)))
+        const nextWidth = Math.round(Math.max(minWidth, Math.min(startWidth + delta, maxWidth)))
 
         setResizedFixedColumnWidths((current) => (current[columnIndex] === nextWidth ? current : { ...current, [columnIndex]: nextWidth }))
       }

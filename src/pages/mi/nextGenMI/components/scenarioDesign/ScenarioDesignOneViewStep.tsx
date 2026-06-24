@@ -751,35 +751,29 @@ const ScenarioDesignReviewDataLoadingState = () => (
   <Stack
     role="status"
     aria-live="polite"
-    aria-label="데이터 조회 중... 데이터를 불러오고 있습니다. 잠시만 기다려 주세요."
+    aria-label="데이터를 로드 중입니다"
     width="100%"
     minWidth={0}
-    height="442px"
-    padding="30px 12px"
-    bgcolor="commonColor.White"
+    height="600px"
+    padding="20px"
+    alignItems="center"
+    justifyContent="center"
     boxSizing="border-box"
   >
-    <Stack flex={1} minHeight={0} alignItems="center" justifyContent="center">
-      <Stack width="max-content" maxWidth="100%" alignItems="center" gap="20px">
-        <Stack width="max-content" maxWidth="100%" alignItems="center" gap="0px">
-          <MIAgentSpinner
-            size={80}
-            tone="gray"
-            sx={{
-              '& svg': {
-                width: '80px',
-                height: '80px',
-              },
-            }}
-          />
-          <Typography fontSize="28px" fontWeight={700} lineHeight={1.6} color="contentText.Black" textAlign="center" noWrap>
-            데이터 조회 중...
-          </Typography>
-        </Stack>
-        <Typography fontSize="16px" fontWeight={400} lineHeight={1.4} color="contentText.Subtext" textAlign="center" noWrap>
-          데이터를 불러오고 있습니다. 잠시만 기다려 주세요.
-        </Typography>
-      </Stack>
+    <Stack width="336px" maxWidth="100%" alignItems="center" gap="10px">
+      <MIAgentSpinner
+        size={24}
+        tone="gray"
+        sx={{
+          '& svg': {
+            width: '24px',
+            height: '24px',
+          },
+        }}
+      />
+      <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center" width="100%" sx={{ wordBreak: 'break-word' }}>
+        데이터를 로드 중입니다
+      </Typography>
     </Stack>
   </Stack>
 )
