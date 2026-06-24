@@ -1,6 +1,6 @@
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { ScenarioGroupGraphFilter } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
@@ -24,6 +24,7 @@ import ScenarioModelExecutionButton from '@/pages/mi/nextGenMI/components/scenar
 import ScenarioModelExecutionPopup, {
   type ScenarioModelExecutionPopupRef,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopup'
+import { useScenarioGroupGraphRunStatusPolling } from '@/pages/mi/nextGenMI/hooks/useScenarioGroupGraphRunStatusPolling'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
 const INDEX_OPTIONS: { value: NextGenMIIndexName; label: string }[] = [
@@ -62,7 +63,6 @@ const ScenarioGroupGraphView = ({
   const chartWrapperRef = useRef<HTMLDivElement | null>(null)
   const realizedDefaultAppliedRef = useRef(false)
   const executionPopupRef = useRef<ScenarioModelExecutionPopupRef>(null)
-  const queryClient = useQueryClient()
 
   const graphQuery = useQuery({
     queryKey: scenarioGroupGraphQueryKey(scenarioGroupId, indexName, periodUnit),
@@ -70,6 +70,12 @@ const ScenarioGroupGraphView = ({
     enabled: enabled && Boolean(indexName),
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
+  })
+
+  const { executingScenarioIds, notifyExecutionAccepted } = useScenarioGroupGraphRunStatusPolling({
+    scenarioGroupId,
+    enabled,
+    fallbackScenarioSeries: graphQuery.data?.scenarioSeries,
   })
 
   const cmeBenchmarkQuery = useQuery({
@@ -144,14 +150,12 @@ const ScenarioGroupGraphView = ({
     [graphData?.scenarioSeries],
   )
 
-  const executingScenarioIds = useMemo(
-    () => new Set((graphData?.scenarioSeries ?? []).filter((series) => series.modelRunning).map((series) => series.scenarioId)),
-    [graphData?.scenarioSeries],
+  const handleAccepted = useCallback(
+    (scenarioId: number) => {
+      notifyExecutionAccepted(scenarioId)
+    },
+    [notifyExecutionAccepted],
   )
-
-  const handleAccepted = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['nextGenMIScenarioGroupGraph', scenarioGroupId] })
-  }, [queryClient, scenarioGroupId])
 
   const unitLabel = graphData ? buildScenarioGroupGraphUnit(graphData.currency, graphData.unit) : 'Unit: -'
   const hasChart = Boolean(render && render.charts.length > 0)
@@ -249,7 +253,12 @@ const ScenarioGroupGraphView = ({
         </Box>
       </Stack>
 
-      <ScenarioModelExecutionPopup ref={executionPopupRef} scenarioOptions={scenarioOptions} onAccepted={handleAccepted} />
+      <ScenarioModelExecutionPopup
+        ref={executionPopupRef}
+        scenarioOptions={scenarioOptions}
+        executingScenarioIds={executingScenarioIds}
+        onAccepted={handleAccepted}
+      />
     </>
   )
 }

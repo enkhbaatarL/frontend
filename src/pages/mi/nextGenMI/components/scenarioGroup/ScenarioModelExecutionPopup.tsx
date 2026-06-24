@@ -24,7 +24,8 @@ export interface ScenarioModelExecutionPopupRef {
 
 interface ScenarioModelExecutionPopupProps {
   scenarioOptions: ScenarioModelExecutionOption[]
-  onAccepted: () => void
+  executingScenarioIds: Set<number>
+  onAccepted: (scenarioId: number) => void
 }
 
 const isExecutionValidationError = (error: unknown) => {
@@ -39,7 +40,7 @@ const isExecutionValidationError = (error: unknown) => {
 }
 
 const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, ScenarioModelExecutionPopupProps>(
-  ({ scenarioOptions, onAccepted }, ref) => {
+  ({ scenarioOptions, executingScenarioIds, onAccepted }, ref) => {
     const { showSnackbar } = useSnackbar()
     const [open, setOpen] = useState(false)
     const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null)
@@ -97,8 +98,8 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const { mutate: submitExecution, isPending: isSubmitting } = useMutation({
       mutationFn: ({ scenarioId, files: uploadFiles }: { scenarioId: number; files: File[] }) =>
         nextGenMIModelExecutionService.submitModelExecution(scenarioId, uploadFiles),
-      onSuccess: () => {
-        onAccepted()
+      onSuccess: (_data, variables) => {
+        onAccepted(variables.scenarioId)
         handleClose()
       },
       onError: (error) => {
@@ -112,8 +113,9 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
 
     const handleSubmit = useCallback(() => {
       if (isSubmitting || selectedScenarioId === null || !hasRequiredFundamentalModelFiles(files)) return
+      if (executingScenarioIds.has(selectedScenarioId)) return
       submitExecution({ scenarioId: selectedScenarioId, files })
-    }, [files, isSubmitting, selectedScenarioId, submitExecution])
+    }, [executingScenarioIds, files, isSubmitting, selectedScenarioId, submitExecution])
 
     useImperativeHandle(
       ref,
@@ -147,6 +149,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         <ScenarioModelExecutionPopupContent
           scenarioOptions={scenarioOptions}
           selectedScenarioId={selectedScenarioId}
+          executingScenarioIds={executingScenarioIds}
           onSelectScenario={setSelectedScenarioId}
           files={files}
           isSubmitting={isSubmitting}
