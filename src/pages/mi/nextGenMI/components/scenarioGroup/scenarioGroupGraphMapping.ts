@@ -58,6 +58,9 @@ export const scenarioGroupGraphQueryKey = (scenarioGroupId: number, indexName: s
 export const scenarioGroupGraphCmeBenchmarkQueryKey = (indexName: string, periodUnit: ScenarioGroupGraphPeriodUnit) =>
   ['nextGenMIScenarioGroupGraphCmeBenchmark', indexName, periodUnit] as const
 
+export const scenarioGroupGraphRunStatusQueryKey = (scenarioGroupId: number) =>
+  ['nextGenMIScenarioGroupGraphRunStatus', scenarioGroupId] as const
+
 export const baseSeriesVisibilityKey = (seriesId: string): string => `base:${seriesId}`
 
 export const scenarioBcVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}:BC`

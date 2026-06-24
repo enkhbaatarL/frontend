@@ -209,6 +209,19 @@ export interface IScenarioGroupGraphCmeBenchmark {
   baseSeries: IScenarioBaseSeries[]
 }
 
+/** 그래프 수급모델 실행 상태 - 시나리오별 */
+export interface IScenarioRunStatus {
+  scenarioId: number
+  modelRunning: boolean
+}
+
+/** 그래프 수급모델 실행 상태 - 그룹 단위 */
+export interface IScenarioGroupRunStatusRes {
+  scenarioGroupId: number
+  anyRunning: boolean
+  scenarios: IScenarioRunStatus[]
+}
+
 export interface IScenarioStatusUpdateReq {
   status: ScenarioJudgementStatus
 }
@@ -286,6 +299,18 @@ const nextGenMIScenarioGroupService = {
       {
         params: { indexName, periodUnit },
       },
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * Scenario Group 그래프 수급모델 진행상태 조회 (폴링용)
+   * @param scenarioGroupId - 시나리오 그룹 ID
+   */
+  async getScenarioGroupGraphRunStatus(scenarioGroupId: string | number): Promise<IScenarioGroupRunStatusRes> {
+    const response: AxiosResponse<ICommonResponse<IScenarioGroupRunStatusRes>> = await api.get(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/graph/run-status`,
     )
 
     return response.data.data

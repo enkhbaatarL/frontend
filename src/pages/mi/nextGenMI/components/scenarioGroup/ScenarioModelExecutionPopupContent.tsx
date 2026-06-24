@@ -29,6 +29,7 @@ export interface ScenarioModelExecutionOption {
 interface ScenarioModelExecutionPopupContentProps {
   scenarioOptions: ScenarioModelExecutionOption[]
   selectedScenarioId: number | null
+  executingScenarioIds: Set<number>
   onSelectScenario: (scenarioId: number) => void
   files: File[]
   isSubmitting: boolean
@@ -98,6 +99,7 @@ const ScenarioOptionBadge = ({ label, disabled }: { label: string; disabled: boo
 const ScenarioModelExecutionPopupContent = ({
   scenarioOptions,
   selectedScenarioId,
+  executingScenarioIds,
   onSelectScenario,
   files,
   isSubmitting,
@@ -106,7 +108,11 @@ const ScenarioModelExecutionPopupContent = ({
   onSubmit,
   onCancel,
 }: ScenarioModelExecutionPopupContentProps) => {
-  const submitDisabled = isSubmitting || !hasRequiredFundamentalModelFiles(files) || selectedScenarioId === null
+  const submitDisabled =
+    isSubmitting ||
+    !hasRequiredFundamentalModelFiles(files) ||
+    selectedScenarioId === null ||
+    (selectedScenarioId !== null && executingScenarioIds.has(selectedScenarioId))
   const uploadDisabled = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES || isSubmitting
   const showFileError = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES && !hasRequiredFundamentalModelFiles(files)
 
@@ -133,7 +139,7 @@ const ScenarioModelExecutionPopupContent = ({
   return (
     <Stack sx={{ width: '100%' }}>
       <Stack gap="20px" sx={{ width: '100%' }}>
-        <Box px="20px">
+        <Box px="20px" pt="20px">
           <UploadGuideNotice hasError={showFileError} />
         </Box>
 
