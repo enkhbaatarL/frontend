@@ -1,5 +1,5 @@
-import { InputBase, Stack, SxProps, Theme, Typography } from '@mui/material'
-import { type ChangeEvent, type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Box, Grow, InputBase, Popper, Stack, SxProps, Theme, Typography, useTheme } from '@mui/material'
+import { type ChangeEvent, type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 
@@ -55,6 +55,30 @@ const actionButtonSx = {
   flexShrink: 0,
 }
 
+const inlineEditableTooltipSx: SxProps<Theme> = (theme) => ({
+  bgcolor: '#202d44',
+  color: theme.palette.common.white,
+  px: '10px',
+  py: '8px',
+  borderRadius: '6px',
+  maxWidth: 400,
+  fontSize: 12,
+  lineHeight: 1.4,
+  fontWeight: 400,
+  letterSpacing: 0,
+  fontFamily: theme.typography.fontFamily,
+  boxSizing: 'border-box',
+  '& .MuiTypography-root': {
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+    color: 'inherit',
+    fontFamily: 'inherit',
+  },
+  '& p': {
+    margin: 0,
+  },
+})
+
 const renderSuffix = (suffix?: ReactNode, marginLeft = '4px') =>
   suffix ? (
     <Stack component="span" direction="row" alignItems="center" flexShrink={0} ml={marginLeft}>
@@ -64,6 +88,38 @@ const renderSuffix = (suffix?: ReactNode, marginLeft = '4px') =>
 
 const getIdleMode = (value: string, emptyMode: NextGenMIInlineEditableInputIdleMode): NextGenMIInlineEditableInputIdleMode =>
   value.trim().length > 0 ? 'display' : emptyMode
+
+const DISPLAY_TEXT_SELECTOR = '[data-next-gen-mi-inline-editable-input-display-text]'
+
+const isDisplayTextEllipsis = (element: HTMLElement) => {
+  const textElement = (
+    element.matches(DISPLAY_TEXT_SELECTOR) ? element : element.querySelector(DISPLAY_TEXT_SELECTOR)
+  ) as HTMLElement | null
+  if (!textElement) return false
+
+  if (textElement.scrollWidth > textElement.clientWidth || textElement.scrollHeight > textElement.clientHeight) return true
+
+  try {
+    const range = document.createRange()
+    range.selectNodeContents(textElement)
+    const rangeRect = range.getBoundingClientRect()
+    const textRect = textElement.getBoundingClientRect()
+
+    return rangeRect.width > textRect.width || rangeRect.height > textRect.height
+  } catch {
+    return false
+  }
+}
+
+type DisplayTooltipEvent = {
+  currentTarget: EventTarget & HTMLElement
+  clientX: number
+  clientY: number
+}
+
+interface PopperJsInstance {
+  update?: () => void
+}
 
 const NextGenMIInlineEditableInput = ({
   mode,
@@ -105,11 +161,15 @@ const NextGenMIInlineEditableInput = ({
   sx,
   inputSx,
 }: NextGenMIInlineEditableInputProps) => {
+  const muiTheme = useTheme()
   const inputRef = useRef<HTMLInputElement | null>(null)
   const skipNextBlurCommitRef = useRef(false)
+  const displayTooltipPositionRef = useRef({ x: 0, y: 0 })
+  const displayTooltipPopperRef = useRef<PopperJsInstance | null>(null)
   const isModeControlled = mode !== undefined
   const [internalMode, setInternalMode] = useState<NextGenMIInlineEditableInputMode>(() => getIdleMode(value, emptyMode))
   const [draftValue, setDraftValue] = useState(value)
+  const [displayTooltipOpen, setDisplayTooltipOpen] = useState(false)
   const editInitialValueRef = useRef(value)
   const resolvedMode = mode ?? internalMode
   const resolvedValue = isModeControlled ? value : draftValue
@@ -117,11 +177,31 @@ const NextGenMIInlineEditableInput = ({
   const hasDisplayValue = resolvedValue.trim().length > 0
   const nextSaveValue = trimOnSave ? draftValue.trim() : draftValue
   const resolvedSaveDisabled = saveDisabled ?? (!isModeControlled && nextSaveValue.trim().length === 0)
+  const displayText = hasDisplayValue ? resolvedValue : (placeholder ?? '')
   const resolvedPadding =
     padding ??
     `8px ${
       (resolvedMode === 'input' && showSaveButton) || (resolvedMode === 'display' && showEditButton) ? '4px' : suffix ? '8px' : '12px'
     } 8px ${resolvedPrefix ? '8px' : '12px'}`
+  const displayTooltipAnchor = useMemo(
+    () => ({
+      getBoundingClientRect: () => {
+        const { x, y } = displayTooltipPositionRef.current
+        return {
+          width: 0,
+          height: 0,
+          top: y,
+          left: x,
+          right: x,
+          bottom: y,
+          x,
+          y,
+          toJSON: () => ({}),
+        } as DOMRect
+      },
+    }),
+    [],
+  )
 
   useEffect(() => {
     if (isModeControlled) return
@@ -148,6 +228,22 @@ const NextGenMIInlineEditableInput = ({
     input.setSelectionRange(caretPosition, caretPosition)
     input.scrollLeft = input.scrollWidth
   }, [autoFocus, resolvedMode])
+
+  const handleDisplayTooltipMove = (event: DisplayTooltipEvent) => {
+    displayTooltipPositionRef.current = { x: event.clientX, y: event.clientY }
+
+    if (!displayText || !isDisplayTextEllipsis(event.currentTarget)) {
+      setDisplayTooltipOpen(false)
+      return
+    }
+
+    setDisplayTooltipOpen(true)
+    displayTooltipPopperRef.current?.update?.()
+  }
+
+  const handleDisplayTooltipClose = () => {
+    setDisplayTooltipOpen(false)
+  }
 
   const handleEditStart = () => {
     if (disabled) return
@@ -260,8 +356,24 @@ const NextGenMIInlineEditableInput = ({
   }
 
   if (resolvedMode === 'display') {
-    return (
+    const displayTypography = (
+      <Typography
+        data-next-gen-mi-inline-editable-input-display-text
+        variant="body2M14"
+        color={hasDisplayValue ? displayColor : 'contentText.Placeholder'}
+        flex={1}
+        minWidth={0}
+        overflow="hidden"
+        textOverflow="ellipsis"
+        noWrap
+      >
+        {displayText}
+      </Typography>
+    )
+
+    const displayContent = (
       <Stack
+        data-next-gen-mi-inline-editable-input-display-root
         direction="row"
         alignItems="center"
         justifyContent="space-between"
@@ -298,20 +410,16 @@ const NextGenMIInlineEditableInput = ({
           ...(sx === undefined ? [] : Array.isArray(sx) ? sx : [sx]),
         ]}
         onClick={disabled ? undefined : handleDisplayClick}
+        onMouseEnter={handleDisplayTooltipMove}
+        onMouseMove={handleDisplayTooltipMove}
+        onMouseLeave={handleDisplayTooltipClose}
+        onPointerEnter={handleDisplayTooltipMove}
+        onPointerMove={handleDisplayTooltipMove}
+        onPointerLeave={handleDisplayTooltipClose}
       >
         <Stack direction="row" alignItems="center" gap="4px" flex="1 1 0" minWidth={0} overflow="hidden">
           {resolvedPrefix}
-          <Typography
-            variant="body2M14"
-            color={hasDisplayValue ? displayColor : 'contentText.Placeholder'}
-            flex={1}
-            minWidth={0}
-            overflow="hidden"
-            textOverflow="ellipsis"
-            noWrap
-          >
-            {hasDisplayValue ? resolvedValue : (placeholder ?? '')}
-          </Typography>
+          {displayTypography}
         </Stack>
         {renderSuffix(suffix)}
         {showEditButton && (
@@ -338,6 +446,32 @@ const NextGenMIInlineEditableInput = ({
           </MIBaseButton>
         )}
       </Stack>
+    )
+
+    return (
+      <>
+        {displayContent}
+        <Popper
+          open={displayTooltipOpen && !!displayText}
+          anchorEl={displayTooltipAnchor}
+          placement="top-start"
+          transition
+          modifiers={[{ name: 'offset', options: { offset: [-8, 8] } }]}
+          popperRef={(instance) => {
+            displayTooltipPopperRef.current = instance
+          }}
+          sx={{
+            zIndex: (t) => t.zIndex.tooltip,
+            pointerEvents: 'none',
+          }}
+        >
+          {({ TransitionProps }) => (
+            <Grow {...TransitionProps} timeout={muiTheme.transitions.duration.shorter}>
+              <Box sx={inlineEditableTooltipSx}>{displayText}</Box>
+            </Grow>
+          )}
+        </Popper>
+      </>
     )
   }
 
