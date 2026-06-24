@@ -8,6 +8,7 @@ import {
 
 type NextGenMIStickyTableAlign = 'left' | 'center' | 'right'
 type ScrollAxis = 'horizontal' | 'vertical' | null
+type FixedColumnResizeSide = 'left' | 'right' | null
 
 export type NextGenMIStickyTableColumn<T> = {
   field: string
@@ -31,6 +32,7 @@ type NextGenMIStickyTableProps<T> = {
   getRowKey: (row: T, index: number) => string | number
   fixedLeftColumnIndexes?: number[]
   fixedRightColumnIndexes?: number[]
+  resizableFixedColumns?: boolean
   leftAlignedHeaderSticky?: boolean
   /** 헤더(thead)를 렌더하지 않음 — 컬럼 헤더를 외부(페이지 sticky 슬롯 등)에서 따로 그릴 때 사용 */
   hideHeader?: boolean
@@ -55,6 +57,8 @@ type NextGenMIStickyTableProps<T> = {
 
 // 피그마: 행 컨테이너 px-8 + 셀 px-6 구조 → 외곽 14px(8+6) / 셀 사이 12px(6+6). 8px가 첫/마지막 컬럼에 붙는 엣지 인셋.
 const CELL_EDGE_INSET = '8px'
+const FIXED_COLUMN_RESIZE_HANDLE_WIDTH = 12
+const FIXED_COLUMN_RESIZE_MIN_WIDTH = 120
 
 const STICKY_COLUMN_EDGE_SHADOW_VERTICAL_MASK_IMAGE =
   'linear-gradient(to bottom, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%)'
@@ -120,7 +124,19 @@ const toCssCalc = (parts: string[]) => (parts.length > 0 ? `calc(${parts.join(' 
 
 const getColumnAlign = <T,>(column: NextGenMIStickyTableColumn<T>) => column.align ?? 'left'
 
-const getColumnStickyWidth = <T,>(column: NextGenMIStickyTableColumn<T>) => column.minWidth ?? column.width
+const getPixelValue = (value?: string) => {
+  const pixelValue = value ? Number.parseFloat(value) : Number.NaN
+  return Number.isFinite(pixelValue) ? pixelValue : undefined
+}
+
+const getColumnStickyWidth = <T,>(
+  column: NextGenMIStickyTableColumn<T>,
+  columnIndex: number,
+  resizedFixedColumnWidths: Record<number, number>,
+) => {
+  const resizedWidth = resizedFixedColumnWidths[columnIndex]
+  return typeof resizedWidth === 'number' ? `${resizedWidth}px` : (column.minWidth ?? column.width)
+}
 
 const queryColumnElement = (scrollRoot: HTMLDivElement, selector: string) =>
   scrollRoot.querySelector<HTMLElement>(`thead ${selector}`) ?? scrollRoot.querySelector<HTMLElement>(selector)
@@ -162,6 +178,7 @@ const NextGenMIStickyTable = <T,>({
   getRowKey,
   fixedLeftColumnIndexes,
   fixedRightColumnIndexes,
+  resizableFixedColumns = false,
   leftAlignedHeaderSticky = false,
   hideHeader = false,
   loading = false,
@@ -205,6 +222,7 @@ const NextGenMIStickyTable = <T,>({
   )
   const lastFixedLeftColumnIndex = fixedLeftColumnIndexList.at(-1)
   const firstFixedRightColumnIndex = fixedRightColumnIndexList.at(0)
+  const [resizedFixedColumnWidths, setResizedFixedColumnWidths] = useState<Record<number, number>>({})
   const fixedLeftColumnLeftMap = useMemo(() => {
     const next = new Map<number, string | number>()
     const widthParts: string[] = []
@@ -213,11 +231,11 @@ const NextGenMIStickyTable = <T,>({
       const column = columns.at(columnIndex)
       if (!column) return
       next.set(columnIndex, widthParts.length > 0 ? toCssCalc(widthParts) : 0)
-      widthParts.push(getColumnStickyWidth(column))
+      widthParts.push(getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths))
     })
 
     return next
-  }, [columns, fixedLeftColumnIndexList])
+  }, [columns, fixedLeftColumnIndexList, resizedFixedColumnWidths])
   const fixedRightColumnRightMap = useMemo(() => {
     const next = new Map<number, string | number>()
     const widthParts: string[] = []
@@ -229,26 +247,26 @@ const NextGenMIStickyTable = <T,>({
         const column = columns.at(columnIndex)
         if (!column) return
         next.set(columnIndex, widthParts.length > 0 ? toCssCalc(widthParts) : 0)
-        widthParts.push(getColumnStickyWidth(column))
+        widthParts.push(getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths))
       })
 
     return next
-  }, [columns, fixedRightColumnIndexList])
+  }, [columns, fixedRightColumnIndexList, resizedFixedColumnWidths])
   const fixedLeftColumnsWidthParts = useMemo(
     () =>
       fixedLeftColumnIndexList.flatMap((columnIndex) => {
         const column = columns.at(columnIndex)
-        return column ? [getColumnStickyWidth(column)] : []
+        return column ? [getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths)] : []
       }),
-    [columns, fixedLeftColumnIndexList],
+    [columns, fixedLeftColumnIndexList, resizedFixedColumnWidths],
   )
   const fixedRightColumnsWidthParts = useMemo(
     () =>
       fixedRightColumnIndexList.flatMap((columnIndex) => {
         const column = columns.at(columnIndex)
-        return column ? [getColumnStickyWidth(column)] : []
+        return column ? [getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths)] : []
       }),
-    [columns, fixedRightColumnIndexList],
+    [columns, fixedRightColumnIndexList, resizedFixedColumnWidths],
   )
   const fixedLeftColumnsWidth = fixedLeftColumnsWidthParts.length > 0 ? toCssCalc(fixedLeftColumnsWidthParts) : '0px'
   const fixedRightColumnsWidth = fixedRightColumnsWidthParts.length > 0 ? toCssCalc(fixedRightColumnsWidthParts) : '0px'
@@ -264,6 +282,23 @@ const NextGenMIStickyTable = <T,>({
     paddingLeft: columnIndex === 0 ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
     paddingRight: columnIndex === columns.length - 1 ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
   })
+  const getColumnWidthSx = (column: NextGenMIStickyTableColumn<T>, columnIndex: number, isFixedColumn: boolean) => {
+    const resizedWidth = resizableFixedColumns && isFixedColumn ? resizedFixedColumnWidths[columnIndex] : undefined
+    if (typeof resizedWidth === 'number') {
+      const width = `${resizedWidth}px`
+      return {
+        width,
+        minWidth: width,
+        maxWidth: width,
+      }
+    }
+
+    return {
+      width: column.width,
+      minWidth: column.minWidth ?? column.width,
+      maxWidth: column.maxWidth ?? column.width,
+    }
+  }
   const canInsetHorizontalScrollbar =
     fixedLeftColumnIndexList.every((columnIndex, index) => columnIndex === index) &&
     fixedRightColumnIndexList.every((columnIndex, index) => columnIndex === columns.length - fixedRightColumnIndexList.length + index)
@@ -281,6 +316,7 @@ const NextGenMIStickyTable = <T,>({
   const scrollLayoutStateRef = useRef(scrollLayoutState)
   const [isScrollAreaHovered, setIsScrollAreaHovered] = useState(false)
   const [dragAxis, setDragAxis] = useState<ScrollAxis>(null)
+  const [fixedColumnResizeSide, setFixedColumnResizeSide] = useState<FixedColumnResizeSide>(null)
   const handleScrollContainerRef = useCallback(
     (element: HTMLDivElement | null) => {
       scrollRef.current = element
@@ -288,6 +324,17 @@ const NextGenMIStickyTable = <T,>({
     },
     [scrollContainerRef],
   )
+
+  useEffect(() => {
+    setResizedFixedColumnWidths((current) => {
+      const fixedColumnIndexes = new Set([...fixedLeftColumnIndexList, ...fixedRightColumnIndexList])
+      const next = Object.fromEntries(
+        Object.entries(current).filter(([columnIndex]) => resizableFixedColumns && fixedColumnIndexes.has(Number(columnIndex))),
+      )
+
+      return Object.keys(next).length === Object.keys(current).length ? current : next
+    })
+  }, [fixedLeftColumnIndexList, fixedRightColumnIndexList, resizableFixedColumns])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -446,6 +493,57 @@ const NextGenMIStickyTable = <T,>({
     globalThis.addEventListener('pointerup', handlePointerUp, { once: true })
   }
 
+  const handleFixedColumnResizePointerDown =
+    (side: Exclude<FixedColumnResizeSide, null>, columnIndex: number) => (event: ReactPointerEvent<HTMLDivElement>) => {
+      const column = columns.at(columnIndex)
+      if (!resizableFixedColumns || !column) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      setFixedColumnResizeSide(side)
+
+      const columnElement =
+        scrollRef.current?.querySelector<HTMLElement>(`thead [data-next-gen-mi-sticky-table-column-index="${columnIndex}"]`) ??
+        scrollRef.current?.querySelector<HTMLElement>(`[data-next-gen-mi-sticky-table-column-index="${columnIndex}"]`)
+      const configuredMinWidth = getPixelValue(column.minWidth)
+      const configuredMaxWidth = column.maxWidth === 'none' ? undefined : getPixelValue(column.maxWidth)
+      const minWidth = configuredMinWidth ?? FIXED_COLUMN_RESIZE_MIN_WIDTH
+      const maxWidth = configuredMaxWidth && configuredMaxWidth >= minWidth ? configuredMaxWidth : undefined
+      const startX = event.clientX
+      const startWidth = Math.max(
+        minWidth,
+        Math.min(
+          resizedFixedColumnWidths[columnIndex] ?? columnElement?.getBoundingClientRect().width ?? getPixelValue(column.width) ?? minWidth,
+          maxWidth ?? Number.POSITIVE_INFINITY,
+        ),
+      )
+      const previousUserSelect = document.body.style.userSelect
+      const previousCursor = document.body.style.cursor
+
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        const delta = side === 'left' ? moveEvent.clientX - startX : startX - moveEvent.clientX
+        const nextWidth = Math.round(Math.max(minWidth, Math.min(startWidth + delta, maxWidth ?? Number.POSITIVE_INFINITY)))
+
+        setResizedFixedColumnWidths((current) => (current[columnIndex] === nextWidth ? current : { ...current, [columnIndex]: nextWidth }))
+      }
+
+      const handlePointerUp = () => {
+        setFixedColumnResizeSide(null)
+        document.body.style.userSelect = previousUserSelect
+        document.body.style.cursor = previousCursor
+        globalThis.removeEventListener('pointermove', handlePointerMove)
+        globalThis.removeEventListener('pointerup', handlePointerUp)
+        globalThis.removeEventListener('pointercancel', handlePointerUp)
+      }
+
+      globalThis.addEventListener('pointermove', handlePointerMove)
+      globalThis.addEventListener('pointerup', handlePointerUp, { once: true })
+      globalThis.addEventListener('pointercancel', handlePointerUp, { once: true })
+    }
+
   const showScrollbars = isScrollAreaHovered || dragAxis !== null
   const canUseInsetHorizontalScrollbar =
     canInsetHorizontalScrollbar &&
@@ -457,6 +555,46 @@ const NextGenMIStickyTable = <T,>({
     (canUseInsetHorizontalScrollbar ? scrollLayoutState.fixedRightColumnWidth : 0) + (scrollLayoutState.vertical ? 18 : 0)
   const horizontalScrollbarRight = horizontalScrollbarRightWidth > 0 ? `${horizontalScrollbarRightWidth}px` : 0
   const stickyColumnShadowVerticalSx = !hideHeader && leftAlignedHeaderSticky ? { mt: headerHeight } : {}
+  const renderFixedColumnResizeHandle = (side: Exclude<FixedColumnResizeSide, null>, columnIndex: number) => {
+    const active = fixedColumnResizeSide === side
+    const halfWidth = `${FIXED_COLUMN_RESIZE_HANDLE_WIDTH / 2}px`
+    const positionSx =
+      side === 'left'
+        ? { left: `calc(${fixedLeftColumnsWidth} - ${halfWidth})` }
+        : { right: `calc(${fixedRightColumnsWidth} + ${scrollLayoutState.vertical ? '16px' : '0px'} - ${halfWidth})` }
+
+    return (
+      <Box
+        key={`fixed-column-resize-handle-${side}-${columnIndex}`}
+        aria-hidden
+        onPointerDown={handleFixedColumnResizePointerDown(side, columnIndex)}
+        sx={(theme) => ({
+          position: 'absolute',
+          top: 0,
+          bottom: scrollLayoutState.horizontal ? '18px' : 0,
+          width: `${FIXED_COLUMN_RESIZE_HANDLE_WIDTH}px`,
+          ...positionSx,
+          cursor: 'col-resize',
+          touchAction: 'none',
+          zIndex: 7,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: '10px',
+            bottom: '10px',
+            left: '4px',
+            width: '4px',
+            background: `linear-gradient(0deg, transparent 0%, ${theme.palette.mari.Primary} 50%, transparent 100%)`,
+            opacity: active ? 1 : 0,
+            transition: 'opacity 120ms ease',
+          },
+          '&:hover::before': {
+            opacity: 1,
+          },
+        })}
+      />
+    )
+  }
 
   const renderHeaderCell = (column: NextGenMIStickyTableColumn<T>, columnIndex: number) => {
     const align = column.headerAlign ?? getColumnAlign(column)
@@ -472,6 +610,7 @@ const NextGenMIStickyTable = <T,>({
       <Box
         key={column.field}
         component="th"
+        data-next-gen-mi-sticky-table-column-index={columnIndex}
         data-fixed-column={isFixedColumn ? 'true' : undefined}
         data-fixed-left-column={isFixedLeftColumn ? 'true' : undefined}
         data-last-fixed-left-column={isLastFixedLeftColumn ? 'true' : undefined}
@@ -488,9 +627,7 @@ const NextGenMIStickyTable = <T,>({
             borderBottom: '0.5px solid',
             borderColor: 'contentBorder.Active',
             whiteSpace: 'nowrap',
-            width: column.width,
-            minWidth: column.minWidth ?? column.width,
-            maxWidth: column.maxWidth ?? column.width,
+            ...getColumnWidthSx(column, columnIndex, isFixedColumn),
             boxSizing: 'border-box',
             bgcolor: 'commonColor.White',
           },
@@ -550,6 +687,7 @@ const NextGenMIStickyTable = <T,>({
         key={column.field}
         component="td"
         rowSpan={rowSpan}
+        data-next-gen-mi-sticky-table-column-index={columnIndex}
         data-fixed-column={isFixedColumn ? 'true' : undefined}
         data-fixed-left-column={isFixedLeftColumn ? 'true' : undefined}
         data-last-fixed-left-column={isLastFixedLeftColumn ? 'true' : undefined}
@@ -571,9 +709,7 @@ const NextGenMIStickyTable = <T,>({
             whiteSpace: 'nowrap',
             overflow: isFixedColumn ? 'visible' : 'hidden',
             textOverflow: 'ellipsis',
-            width: column.width,
-            minWidth: column.minWidth ?? column.width,
-            maxWidth: column.maxWidth ?? column.width,
+            ...getColumnWidthSx(column, columnIndex, isFixedColumn),
             boxSizing: 'border-box',
             bgcolor: 'commonColor.White',
           },
@@ -688,6 +824,7 @@ const NextGenMIStickyTable = <T,>({
                           <Box
                             key={column.field}
                             component="td"
+                            data-next-gen-mi-sticky-table-column-index={columnIndex}
                             data-fixed-column={isFixedColumn ? 'true' : undefined}
                             data-fixed-left-column={isFixedLeftColumn ? 'true' : undefined}
                             data-last-fixed-left-column={isLastFixedLeftColumn ? 'true' : undefined}
@@ -699,9 +836,7 @@ const NextGenMIStickyTable = <T,>({
                                 borderBottom: isLastSkeletonRow ? 'none' : '1px solid',
                                 borderColor: 'contentBorder.Normal',
                                 height: rowHeight,
-                                width: column.width,
-                                minWidth: column.minWidth ?? column.width,
-                                maxWidth: column.maxWidth ?? column.width,
+                                ...getColumnWidthSx(column, columnIndex, isFixedColumn),
                                 boxSizing: 'border-box',
                                 bgcolor: 'commonColor.White',
                                 overflow: isFixedColumn ? 'visible' : 'hidden',
@@ -779,6 +914,12 @@ const NextGenMIStickyTable = <T,>({
           )}
         </Box>
       </Box>
+
+      {resizableFixedColumns && lastFixedLeftColumnIndex !== undefined && renderFixedColumnResizeHandle('left', lastFixedLeftColumnIndex)}
+
+      {resizableFixedColumns &&
+        firstFixedRightColumnIndex !== undefined &&
+        renderFixedColumnResizeHandle('right', firstFixedRightColumnIndex)}
 
       <Box
         aria-hidden

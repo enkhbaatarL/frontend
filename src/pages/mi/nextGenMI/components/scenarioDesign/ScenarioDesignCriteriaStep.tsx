@@ -1138,6 +1138,7 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
                 rows={rows}
                 getRowKey={(row, index) => getScenarioDesignRowId(row, index + 1)}
                 fixedLeftColumnIndexes={[0]}
+                resizableFixedColumns
                 rowHeight="56px"
                 headerHeight="56px"
                 cellPaddingX="8px"
