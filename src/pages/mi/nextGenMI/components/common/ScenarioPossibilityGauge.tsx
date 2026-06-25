@@ -1,4 +1,4 @@
-import { Box, Stack } from '@mui/material'
+import { Box, Divider, Stack, Typography } from '@mui/material'
 
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import { FILLED_BARS_TO_LABEL, probabilityToFilledBars } from '@/pages/mi/nextGenMI/utils/probabilityFormatting'
@@ -9,6 +9,7 @@ type ScenarioPossibilityGaugeProps = {
   hideBackground?: boolean
   hideTooltip?: boolean
   disabled?: boolean
+  mode?: 'gauge' | 'percent'
 }
 
 const DISABLED_GAUGE_DOT_COLOR = '#dee2e6'
@@ -19,7 +20,33 @@ const ScenarioPossibilityGauge = ({
   hideBackground = false,
   hideTooltip = false,
   disabled = false,
+  mode = 'gauge',
 }: ScenarioPossibilityGaugeProps) => {
+  if (mode === 'percent') {
+    return (
+      <Stack
+        direction="row"
+        display="inline-flex"
+        alignItems="center"
+        justifyContent="center"
+        height={disabled ? '24px' : undefined}
+        borderRadius="8px"
+        padding="2px 6px"
+        overflow="hidden"
+        boxSizing="border-box"
+        sx={disabled ? undefined : { '&:hover': { bgcolor: 'gray.5' } }}
+      >
+        {disabled ? (
+          <Divider sx={{ width: '20px', borderColor: 'contentText.Disabled' }} />
+        ) : (
+          <Typography variant="body2M14" color="contentText.Black" whiteSpace="nowrap">
+            {Number.isFinite(probability) ? `${Math.round(Math.min(100, Math.max(0, probability)))}%` : '-'}
+          </Typography>
+        )}
+      </Stack>
+    )
+  }
+
   const filledBars = probabilityToFilledBars(probability / 100)
 
   const gauge = (
