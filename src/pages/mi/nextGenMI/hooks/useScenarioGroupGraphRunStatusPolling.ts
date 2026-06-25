@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { IScenarioGraphSeries } from '@/service/mi/nextGenMI/scenarioGroup'
+import type { IScenarioGraphSeries, IScenarioGroupRunStatusRes } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import useSnackbar from '@/hooks/useSnackbar'
 import { scenarioGroupGraphRunStatusQueryKey } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
@@ -10,15 +10,34 @@ import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 const STATUS_POLL_INTERVAL_MS = 3000
 const POLL_AFTER_EXECUTION_TIMEOUT_MS = 120_000
 
+interface RunStatusSnapshot {
+  anyRunning: boolean
+  runningScenarioIds: number[]
+}
+
 interface UseScenarioGroupGraphRunStatusPollingOptions {
   scenarioGroupId: number
   enabled: boolean
   fallbackScenarioSeries?: IScenarioGraphSeries[]
 }
 
+const buildRunStatusSnapshot = (runStatus: IScenarioGroupRunStatusRes): RunStatusSnapshot => ({
+  anyRunning: runStatus.anyRunning,
+  runningScenarioIds: runStatus.scenarios
+    .filter((scenario) => scenario.modelRunning)
+    .map((scenario) => scenario.scenarioId)
+    .sort((a, b) => a - b),
+})
+
+const isSameRunStatusSnapshot = (prev: RunStatusSnapshot, next: RunStatusSnapshot): boolean =>
+  prev.anyRunning === next.anyRunning &&
+  prev.runningScenarioIds.length === next.runningScenarioIds.length &&
+  prev.runningScenarioIds.every((scenarioId, index) => scenarioId === next.runningScenarioIds[index])
+
 /**
  * 시나리오 그룹 그래프 수급모델 실행 상태 폴링.
- * run-status API로 modelRunning을 추적하고, true -> false 전환 시 graph API를 재조회한다.
+ * run-status 스냅샷을 기록하고, 상태가 바뀔 때마다 graph API를 재조회한다.
+ * modelRunning true -> false 전환 시 완료 스낵바를 표시한다.
  */
 export const useScenarioGroupGraphRunStatusPolling = ({
   scenarioGroupId,
@@ -27,13 +46,17 @@ export const useScenarioGroupGraphRunStatusPolling = ({
 }: UseScenarioGroupGraphRunStatusPollingOptions) => {
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
-  const prevModelRunningRef = useRef<Map<number, boolean>>(new Map())
-  const prevAnyRunningRef = useRef<boolean | undefined>(undefined)
+  const prevSnapshotRef = useRef<RunStatusSnapshot | null>(null)
   const handledCompletionKeyRef = useRef<string | null>(null)
   const optimisticExecutingIdsRef = useRef<Set<number>>(new Set())
+  const pollAfterExecutionRef = useRef(false)
   const [pollAfterExecution, setPollAfterExecution] = useState(false)
 
   const isQueryEnabled = enabled && scenarioGroupId > 0
+
+  useEffect(() => {
+    pollAfterExecutionRef.current = pollAfterExecution
+  }, [pollAfterExecution])
 
   const { data: runStatus } = useQuery({
     queryKey: scenarioGroupGraphRunStatusQueryKey(scenarioGroupId),
@@ -41,21 +64,21 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     enabled: isQueryEnabled,
     refetchInterval: (query) => {
       const data = query.state.data
-      if (data?.anyRunning || pollAfterExecution) return STATUS_POLL_INTERVAL_MS
+      if (data?.anyRunning || pollAfterExecutionRef.current) return STATUS_POLL_INTERVAL_MS
       return false
     },
     refetchOnWindowFocus: false,
   })
 
   useEffect(() => {
-    prevModelRunningRef.current = new Map()
-    prevAnyRunningRef.current = undefined
+    prevSnapshotRef.current = null
     handledCompletionKeyRef.current = null
     optimisticExecutingIdsRef.current = new Set()
+    pollAfterExecutionRef.current = false
     setPollAfterExecution(false)
   }, [scenarioGroupId])
 
-  const invalidateGraphQueries = useCallback(() => {
+  const refetchGraphQueries = useCallback(() => {
     void queryClient.refetchQueries({ queryKey: ['nextGenMIScenarioGroupGraph', scenarioGroupId] })
   }, [queryClient, scenarioGroupId])
 
@@ -63,58 +86,41 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     if (!pollAfterExecution) return undefined
     const timer = setTimeout(() => {
       setPollAfterExecution(false)
-      invalidateGraphQueries()
+      refetchGraphQueries()
     }, POLL_AFTER_EXECUTION_TIMEOUT_MS)
     return () => clearTimeout(timer)
-  }, [invalidateGraphQueries, pollAfterExecution])
+  }, [pollAfterExecution, refetchGraphQueries])
 
   const settleExecution = useCallback(
     (completionKey: string) => {
       if (handledCompletionKeyRef.current === completionKey) return
       handledCompletionKeyRef.current = completionKey
       showSnackbar('실행 완료되었습니다.', { variant: 'success' })
-      invalidateGraphQueries()
+      refetchGraphQueries()
       setPollAfterExecution(false)
     },
-    [invalidateGraphQueries, showSnackbar],
+    [refetchGraphQueries, showSnackbar],
   )
 
   useEffect(() => {
     if (!runStatus) return
 
-    let completionKey: string | null = null
+    const nextSnapshot = buildRunStatusSnapshot(runStatus)
+    const prevSnapshot = prevSnapshotRef.current
 
-    runStatus.scenarios.forEach((scenario) => {
-      const prevRunning = prevModelRunningRef.current.get(scenario.scenarioId)
-      if (prevRunning === true && scenario.modelRunning === false) {
-        completionKey = `scenario-${scenario.scenarioId}`
-      }
-      prevModelRunningRef.current.set(scenario.scenarioId, scenario.modelRunning)
-    })
+    if (prevSnapshot && !isSameRunStatusSnapshot(prevSnapshot, nextSnapshot)) {
+      refetchGraphQueries()
 
-    const prevAnyRunning = prevAnyRunningRef.current
-    prevAnyRunningRef.current = runStatus.anyRunning
-    if (!completionKey && prevAnyRunning === true && !runStatus.anyRunning) {
-      completionKey = `group-${scenarioGroupId}`
+      const nextRunningSet = new Set(nextSnapshot.runningScenarioIds)
+      prevSnapshot.runningScenarioIds.forEach((scenarioId) => {
+        if (!nextRunningSet.has(scenarioId)) {
+          settleExecution(`scenario-${scenarioId}`)
+        }
+      })
     }
 
-    if (
-      !completionKey &&
-      pollAfterExecution &&
-      !runStatus.anyRunning &&
-      optimisticExecutingIdsRef.current.size > 0 &&
-      runStatus.scenarios.some((scenario) => optimisticExecutingIdsRef.current.has(scenario.scenarioId) && scenario.modelRunning === false)
-    ) {
-      const settledScenarioId = [...optimisticExecutingIdsRef.current].find((scenarioId) =>
-        runStatus.scenarios.some((scenario) => scenario.scenarioId === scenarioId && !scenario.modelRunning),
-      )
-      if (settledScenarioId !== undefined) {
-        completionKey = `scenario-${settledScenarioId}`
-      }
-    }
-
-    if (completionKey) settleExecution(completionKey)
-  }, [pollAfterExecution, runStatus, scenarioGroupId, settleExecution])
+    prevSnapshotRef.current = nextSnapshot
+  }, [refetchGraphQueries, runStatus, settleExecution])
 
   const executingScenarioIds = useMemo(() => {
     const ids = new Set<number>()
@@ -140,9 +146,8 @@ export const useScenarioGroupGraphRunStatusPolling = ({
       handledCompletionKeyRef.current = null
       setPollAfterExecution(true)
       void queryClient.invalidateQueries({ queryKey: scenarioGroupGraphRunStatusQueryKey(scenarioGroupId) })
-      invalidateGraphQueries()
     },
-    [invalidateGraphQueries, queryClient, scenarioGroupId],
+    [queryClient, scenarioGroupId],
   )
 
   return {
