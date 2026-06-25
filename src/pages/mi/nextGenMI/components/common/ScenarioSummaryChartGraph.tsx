@@ -366,6 +366,12 @@ const getDataMaxPrecision = (charts: ScenarioSummaryChartData[]) => {
   return maxPrecision
 }
 
+const formatYAxisTickLabel = (value: string | number) => {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return String(value)
+  return String(Number(numericValue.toFixed(12)))
+}
+
 const Y_AXIS_RANGE_PADDING_RATIO = 0.08
 const Y_AXIS_SINGLE_VALUE_PAD = 2.5
 const Y_AXIS_TICK_TARGET = 9
@@ -414,7 +420,8 @@ const getYAxisScale = (charts: ScenarioSummaryChartData[]): YAxisScale => {
 
   const span = paddedMax - paddedMin
   const rawStep = span / Math.max(1, Y_AXIS_TICK_TARGET - 1)
-  const tickStep = niceTickStep(rawStep)
+  const niceStep = niceTickStep(rawStep)
+  const tickStep = niceStep <= 0.1 ? 0.2 : niceStep
 
   const alignFloor = (v: number, step: number) => Math.floor(v / step + Number.EPSILON) * step
   const alignCeil = (v: number, step: number) => Math.ceil(v / step - Number.EPSILON) * step
@@ -650,7 +657,7 @@ const ScenarioSummaryChartGraph = ({
               weight: 'normal',
             },
             callback(value: string | number) {
-              return String(value)
+              return formatYAxisTickLabel(value)
             },
           },
         },
