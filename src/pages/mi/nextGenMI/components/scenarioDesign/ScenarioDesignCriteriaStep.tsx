@@ -22,6 +22,12 @@ import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISe
 import MISpinner from '@/components/common/spinner/MISpinner'
 import MIFollowCursorTooltip from '@/components/common/table/MIFollowCursorTooltip'
 import useSnackbar from '@/hooks/useSnackbar'
+import {
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
+  NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
+  NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIInlineEditableInput from '@/pages/mi/nextGenMI/components/common/NextGenMIInlineEditableInput'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import ScenarioDesignBaseEventSection, {
@@ -811,6 +817,8 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
   const [criteriaConfirmType, setCriteriaConfirmType] = useState<ScenarioDesignCriteriaConfirmType | null>(null)
   const [deleteRowId, setDeleteRowId] = useState<number | null>(null)
   const [deleteCriteriaColumnKey, setDeleteCriteriaColumnKey] = useState<string | null>(null)
+  const criteriaTableContainerRef = useRef<HTMLDivElement | null>(null)
+  const criteriaActionBarRef = useRef<HTMLDivElement | null>(null)
   const criteriaEditingDisabled = isLoading || reviewPending
   const reviewButtonDisabled = criteriaEditingDisabled || reviewCompletedVisible || (reviewed && canCompleteScenarioDesignReview)
   const reviewButtonStatusColor = reviewCompletedVisible ? 'point.green1' : 'contentText.Disabled'
@@ -839,6 +847,62 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
     setDeleteRowId(null)
     setDeleteCriteriaColumnKey(null)
   }, [criteriaEditingDisabled])
+
+  useLayoutEffect(() => {
+    const actionBar = criteriaActionBarRef.current
+    const tableContainer = criteriaTableContainerRef.current
+    if (!actionBar || !tableContainer) return undefined
+
+    const scrollContainer = document.getElementById('main-scroll-wrapper')
+    let rafId: number | null = null
+
+    const updateActionBarLimit = () => {
+      rafId = null
+
+      const scrollContainerRect = scrollContainer?.getBoundingClientRect()
+      const scrollBottom = scrollContainerRect?.bottom ?? window.innerHeight
+      const actionBarTop = scrollBottom - actionBar.offsetHeight
+      const tableHeader = tableContainer.querySelector('thead')
+      const tableHeaderBottom = tableHeader instanceof HTMLElement ? tableHeader.getBoundingClientRect().bottom : actionBarTop
+      const offsetY = Math.max(0, Math.ceil(tableHeaderBottom - actionBarTop))
+      const previousElement = actionBar.previousElementSibling
+      const parentStyle = actionBar.parentElement ? getComputedStyle(actionBar.parentElement) : null
+      const parentRowGap = parentStyle ? Number.parseFloat(parentStyle.rowGap) || 0 : 0
+      const actionBarNaturalTop =
+        previousElement instanceof HTMLElement
+          ? previousElement.getBoundingClientRect().bottom + parentRowGap
+          : actionBar.getBoundingClientRect().top
+
+      actionBar.style.setProperty('--scenario-design-action-bar-y', `${offsetY}px`)
+      actionBar.toggleAttribute('data-scenario-design-action-bar-sticky', actionBarNaturalTop > actionBarTop + offsetY + 0.5)
+    }
+
+    const scheduleActionBarLimitUpdate = () => {
+      if (rafId !== null) return
+
+      rafId = requestAnimationFrame(updateActionBarLimit)
+    }
+
+    const resizeObserver = new ResizeObserver(scheduleActionBarLimitUpdate)
+    resizeObserver.observe(tableContainer)
+    resizeObserver.observe(actionBar)
+    if (actionBar.parentElement) resizeObserver.observe(actionBar.parentElement)
+    if (scrollContainer) resizeObserver.observe(scrollContainer)
+
+    const scrollTarget: HTMLElement | Window = scrollContainer ?? window
+    scrollTarget.addEventListener('scroll', scheduleActionBarLimitUpdate, { passive: true })
+    window.addEventListener('resize', scheduleActionBarLimitUpdate)
+    scheduleActionBarLimitUpdate()
+
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      resizeObserver.disconnect()
+      scrollTarget.removeEventListener('scroll', scheduleActionBarLimitUpdate)
+      window.removeEventListener('resize', scheduleActionBarLimitUpdate)
+      actionBar.style.removeProperty('--scenario-design-action-bar-y')
+      actionBar.removeAttribute('data-scenario-design-action-bar-sticky')
+    }
+  }, [])
 
   const handleAddCriteriaMenuClose = () => {
     setAddCriteriaMenuOpen(false)
@@ -1131,7 +1195,7 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
           <Typography fontSize="18px" fontWeight={600} color="contentText.Black" padding="4px 8px">
             분기 항목 및 분기 기준 검토
           </Typography>
-          <Stack position="relative" width="100%" minWidth={0}>
+          <Stack ref={criteriaTableContainerRef} position="relative" width="100%" minWidth={0}>
             <Stack position="relative" width="100%" minWidth={0}>
               <NextGenMIStickyTable<DesignScenarioRow>
                 columns={columns}
@@ -1323,7 +1387,42 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
           </Stack>
           <ScenarioDesignReviewErrorPanel errors={reviewErrorItems} />
 
-          <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px" padding="12px 0">
+          <Stack
+            ref={criteriaActionBarRef}
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            minHeight="60px"
+            position="sticky"
+            bottom="0px"
+            zIndex={8}
+            bgcolor="commonColor.White"
+            sx={{
+              transform: 'translateY(var(--scenario-design-action-bar-y, 0px))',
+              boxShadow: 'none',
+              clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
+              transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: 0,
+                height: '1px',
+                bgcolor: '#DEE2E6',
+                opacity: 0,
+                pointerEvents: 'none',
+                zIndex: 1,
+                transition: `opacity ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+              },
+              '&[data-scenario-design-action-bar-sticky]': {
+                boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
+              },
+              '&[data-scenario-design-action-bar-sticky]::before': {
+                opacity: 1,
+              },
+            }}
+          >
             <MIBaseButton
               variant="outlined"
               prefix={<ReplayRoundedIcon sx={{ fontSize: '20px' }} />}

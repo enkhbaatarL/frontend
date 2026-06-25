@@ -13,6 +13,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -28,6 +29,12 @@ import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import useSnackbar from '@/hooks/useSnackbar'
+import {
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
+  NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
+  NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
+} from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import {
   getScenarioDesignColumnDisplayValue,
@@ -1488,7 +1495,7 @@ const ScenarioDesignReviewScenarioCard = ({
         transition: cardResizeDragging ? 'none' : 'width 180ms ease, flex-basis 180ms ease',
       }}
     >
-      <Stack gap="6px" padding="6px 8px 12px" minHeight="95px">
+      <Stack data-scenario-design-review-card-title="true" gap="6px" padding="6px 8px 12px" minHeight="95px">
         <Stack direction="row" alignItems="center" gap="4px">
           <MIChip label="시나리오" color="gray" size="h20" disableHover sx={{ padding: '2px 6px', borderRadius: '8px' }} />
           {row.baseCase && (
@@ -1699,6 +1706,7 @@ const ScenarioDesignOneViewStep = ({
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
   const scenarioReviewRootRef = useRef<HTMLDivElement | null>(null)
   const scenarioReviewScrollRef = useRef<HTMLDivElement | null>(null)
+  const scenarioReviewActionBarRef = useRef<HTMLDivElement | null>(null)
   const scenarioReviewScrollAnimationFrameRef = useRef(0)
   const scenarioCardRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const scenarioCardWidthDraftAnimationFrameRef = useRef(0)
@@ -1903,6 +1911,62 @@ const ScenarioDesignOneViewStep = ({
       resizeObserver.disconnect()
     }
   }, [columns.length, loading, rows.length])
+
+  useLayoutEffect(() => {
+    const actionBar = scenarioReviewActionBarRef.current
+    if (!actionBar) return undefined
+
+    const scrollContainer = document.getElementById('main-scroll-wrapper')
+    let rafId: number | null = null
+
+    const updateActionBarStickyState = () => {
+      rafId = null
+
+      const scrollContainerRect = scrollContainer?.getBoundingClientRect()
+      const scrollBottom = scrollContainerRect?.bottom ?? window.innerHeight
+      const actionBarStickyTop = scrollBottom - actionBar.offsetHeight
+      const reviewCardTitle = scenarioReviewRootRef.current?.querySelector('[data-scenario-design-review-card-title]')
+      const reviewCardTitleBottom =
+        reviewCardTitle instanceof HTMLElement ? reviewCardTitle.getBoundingClientRect().bottom : actionBarStickyTop
+      const offsetY = Math.max(0, Math.ceil(reviewCardTitleBottom - actionBarStickyTop))
+      const previousElement = actionBar.previousElementSibling
+      const parentStyle = actionBar.parentElement ? getComputedStyle(actionBar.parentElement) : null
+      const parentRowGap = parentStyle ? Number.parseFloat(parentStyle.rowGap) || 0 : 0
+      const actionBarNaturalTop =
+        previousElement instanceof HTMLElement
+          ? previousElement.getBoundingClientRect().bottom + parentRowGap
+          : actionBar.getBoundingClientRect().top
+
+      actionBar.style.setProperty('--scenario-design-review-action-bar-y', `${offsetY}px`)
+      actionBar.toggleAttribute('data-scenario-design-action-bar-sticky', actionBarNaturalTop > actionBarStickyTop + offsetY + 0.5)
+    }
+
+    const scheduleActionBarStickyStateUpdate = () => {
+      if (rafId !== null) return
+
+      rafId = requestAnimationFrame(updateActionBarStickyState)
+    }
+
+    const resizeObserver = new ResizeObserver(scheduleActionBarStickyStateUpdate)
+    resizeObserver.observe(actionBar)
+    if (actionBar.parentElement) resizeObserver.observe(actionBar.parentElement)
+    if (scenarioReviewRootRef.current) resizeObserver.observe(scenarioReviewRootRef.current)
+    if (scrollContainer) resizeObserver.observe(scrollContainer)
+
+    const scrollTarget: HTMLElement | Window = scrollContainer ?? window
+    scrollTarget.addEventListener('scroll', scheduleActionBarStickyStateUpdate, { passive: true })
+    window.addEventListener('resize', scheduleActionBarStickyStateUpdate)
+    scheduleActionBarStickyStateUpdate()
+
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      resizeObserver.disconnect()
+      scrollTarget.removeEventListener('scroll', scheduleActionBarStickyStateUpdate)
+      window.removeEventListener('resize', scheduleActionBarStickyStateUpdate)
+      actionBar.style.removeProperty('--scenario-design-review-action-bar-y')
+      actionBar.removeAttribute('data-scenario-design-action-bar-sticky')
+    }
+  }, [loading, rows.length])
 
   const handlePossibilityChange = (rowId: number, value: string) => {
     if (!/^\d{0,3}$/.test(value)) return
@@ -2374,7 +2438,42 @@ const ScenarioDesignOneViewStep = ({
                   )}
                 </Stack>
 
-                <Stack direction="row" alignItems="center" justifyContent="space-between" minHeight="60px">
+                <Stack
+                  ref={scenarioReviewActionBarRef}
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  minHeight="60px"
+                  position="sticky"
+                  bottom="0px"
+                  zIndex={8}
+                  bgcolor="commonColor.White"
+                  sx={{
+                    transform: 'translateY(var(--scenario-design-review-action-bar-y, 0px))',
+                    boxShadow: 'none',
+                    clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
+                    transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: '1px',
+                      bgcolor: '#DEE2E6',
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                      transition: `opacity ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+                    },
+                    '&[data-scenario-design-action-bar-sticky]': {
+                      boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
+                    },
+                    '&[data-scenario-design-action-bar-sticky]::before': {
+                      opacity: 1,
+                    },
+                  }}
+                >
                   <Stack direction="row" alignItems="center" gap="12px" minWidth={0}>
                     <MIBaseButton
                       variant="outlined"

@@ -1509,7 +1509,7 @@ const ScenarioDesignPage = () => {
 
   return (
     <>
-      <Stack maxWidth="1380px" margin="auto" padding="12px 12px 0px" position="relative" sx={{ overflowX: 'hidden' }}>
+      <Stack maxWidth="1380px" margin="auto" padding="12px 12px 0px" position="relative" sx={{ overflowX: 'clip' }}>
         {scenarioDesignGenerationFailure ? (
           <ScenarioDesignGenerationFailureState
             reason={scenarioDesignGenerationFailure.reason}
