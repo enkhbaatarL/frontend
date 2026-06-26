@@ -21,7 +21,6 @@ import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextG
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
-import { probabilityToLikelihoodLabel } from '@/pages/mi/nextGenMI/utils/probabilityFormatting'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
 const SCENARIO_DETAIL_SIDEBAR_WIDTH = '360px'
@@ -751,10 +750,7 @@ const ScenarioGroupDetailSection = ({
                 <Skeleton variant="rounded" sx={{ flex: 1, borderRadius: '10px' }} />
               ) : (
                 <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="20px 16px">
-                  <ScenarioPossibilityGauge probability={scenarioProbability ?? 0} hideBackground hideTooltip />
-                  <Typography fontSize="15px" fontWeight={500} lineHeight={1.6} color="contentText.Black">
-                    {typeof scenarioProbability === 'number' ? probabilityToLikelihoodLabel(scenarioProbability / 100) : '-'}
-                  </Typography>
+                  <ScenarioPossibilityGauge probability={scenarioProbability ?? 0} hideHoverBackground />
                 </Stack>
               )}
             </Stack>

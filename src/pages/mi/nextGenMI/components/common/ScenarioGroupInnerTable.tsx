@@ -295,11 +295,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         cellSx: tableCellSx,
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center">
-            <ScenarioPossibilityGauge
-              probability={row.adjustedProbability ?? row.probability}
-              disabled={isDiscardedScenario(row.status)}
-              mode="percent"
-            />
+            <ScenarioPossibilityGauge probability={row.adjustedProbability ?? row.probability} disabled={isDiscardedScenario(row.status)} />
           </Stack>
         ),
       },
