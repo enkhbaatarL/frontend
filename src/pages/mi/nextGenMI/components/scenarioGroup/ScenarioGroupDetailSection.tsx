@@ -22,6 +22,7 @@ import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/m
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
+import SignpostDefinitionDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostDefinitionDetailDialog'
 import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
@@ -353,17 +354,21 @@ const SIGNPOST_FIRST_HEADER_CELL_SX = {
   fontSize: '14px',
 } as const
 
-const RATIONALE_WRAP_CELL_SX = {
+const SIGNPOST_RATIONALE_LINE_CLAMP = 3
+
+const SIGNPOST_RATIONALE_CELL_SX = {
   whiteSpace: 'normal',
   wordBreak: 'break-word',
+  verticalAlign: 'top',
 } as const
 
 interface SignpostDefinitionTableProps {
   definitions: IScenarioSignpostDefinition[]
   loading?: boolean
+  onRowClick?: (definition: IScenarioSignpostDefinition) => void
 }
 
-const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefinitionTableProps) => {
+const SignpostDefinitionTable = ({ definitions, loading = false, onRowClick }: SignpostDefinitionTableProps) => {
   const columns = useMemo<NextGenMIStickyTableColumn<IScenarioSignpostDefinition>[]>(
     () => [
       {
@@ -394,10 +399,11 @@ const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefin
       {
         field: 'rationale',
         headerName: '핵심 근거',
-        width: 'max-content',
-        minWidth: '376px',
-        cellSx: RATIONALE_WRAP_CELL_SX,
-        renderCell: ({ row }) => <NextGenMITableBodyText value={row.rationale} color="contentText.Black" sx={RATIONALE_WRAP_CELL_SX} />,
+        width: '316px',
+        cellSx: SIGNPOST_RATIONALE_CELL_SX,
+        renderCell: ({ row }) => (
+          <NextGenMITableBodyText value={row.rationale} color="contentText.Black" lineClamp={SIGNPOST_RATIONALE_LINE_CLAMP} />
+        ),
       },
     ],
     [],
@@ -409,11 +415,12 @@ const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefin
       rows={definitions}
       getRowKey={(row, index) => `${row.label}-${index}`}
       headerFontSize="13px"
-      rowHeight="40px"
+      rowHeight="auto"
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."
       containerShell={false}
+      onRowClick={onRowClick ? (row) => onRowClick(row) : undefined}
     />
   )
 }
@@ -464,10 +471,11 @@ const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonit
       {
         field: 'rationale',
         headerName: '상세 내역 (Signpost 매칭 근거)',
-        width: 'max-content',
-        minWidth: '356px',
-        cellSx: RATIONALE_WRAP_CELL_SX,
-        renderCell: ({ row }) => <NextGenMITableBodyText value={row.rationale} color="contentText.Black" sx={RATIONALE_WRAP_CELL_SX} />,
+        width: '296px',
+        cellSx: SIGNPOST_RATIONALE_CELL_SX,
+        renderCell: ({ row }) => (
+          <NextGenMITableBodyText value={row.rationale} color="contentText.Black" lineClamp={SIGNPOST_RATIONALE_LINE_CLAMP} />
+        ),
       },
     ],
     [],
@@ -479,7 +487,7 @@ const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonit
       rows={monitorings}
       getRowKey={(row, index) => `${row.updatedAt}-${index}`}
       headerFontSize="13px"
-      rowHeight="40px"
+      rowHeight="auto"
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."
@@ -521,6 +529,7 @@ const ScenarioGroupDetailSection = ({
   const scrollSkeletonHoldTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
   const scrollSkeletonHoldGenerationRef = useRef(0)
   const [scrollSkeletonHoldScenarioId, setScrollSkeletonHoldScenarioId] = useState<number | null>(null)
+  const [selectedSignpostDefinition, setSelectedSignpostDefinition] = useState<IScenarioSignpostDefinition | null>(null)
   const rightHeaderPinned = useScenarioDetailStickyPinned(rightHeaderRef, stickyTopPx)
   const hasHeadingSlot = Boolean(headingSlot)
   const { data, isLoading } = useQuery({
@@ -665,6 +674,18 @@ const ScenarioGroupDetailSection = ({
     [],
   )
 
+  useEffect(() => {
+    setSelectedSignpostDefinition(null)
+  }, [selectedScenarioId])
+
+  const handleSignpostDefinitionRowClick = useCallback((definition: IScenarioSignpostDefinition) => {
+    setSelectedSignpostDefinition(definition)
+  }, [])
+
+  const handleSignpostDefinitionDialogClose = useCallback(() => {
+    setSelectedSignpostDefinition(null)
+  }, [])
+
   return (
     <Stack
       ref={sectionRootRef}
@@ -770,7 +791,11 @@ const ScenarioGroupDetailSection = ({
 
           <Stack gap="12px">
             <SubHeading label="Signpost 정의" />
-            <SignpostDefinitionTable definitions={data?.signpostDefinitions ?? []} loading={detailLoading} />
+            <SignpostDefinitionTable
+              definitions={data?.signpostDefinitions ?? []}
+              loading={detailLoading}
+              onRowClick={handleSignpostDefinitionRowClick}
+            />
           </Stack>
 
           <Stack gap="12px">
@@ -779,6 +804,12 @@ const ScenarioGroupDetailSection = ({
           </Stack>
         </Stack>
       </Stack>
+
+      <SignpostDefinitionDetailDialog
+        open={selectedSignpostDefinition !== null}
+        definition={selectedSignpostDefinition}
+        onClose={handleSignpostDefinitionDialogClose}
+      />
     </Stack>
   )
 }
