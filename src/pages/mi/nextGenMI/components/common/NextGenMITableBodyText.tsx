@@ -98,7 +98,7 @@ const NextGenMITableBodyText = ({
       variant={variant}
       color={color}
       noWrap={noWrap && !useSingleLineClamp && !useMultilineClamp}
-      title={tooltipWhenTruncated ? undefined : value}
+      // title={tooltipWhenTruncated ? undefined : value}
       sx={mergedSx}
       onClick={onClick}
     >
