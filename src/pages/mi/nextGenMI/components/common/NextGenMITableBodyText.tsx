@@ -21,10 +21,21 @@ const ellipsisTypographySx = {
   textOverflow: 'ellipsis',
 } as const
 
+const multilineEllipsisTypographySx = (lineClamp: number) =>
+  ({
+    display: '-webkit-box',
+    WebkitLineClamp: lineClamp,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
+  }) as const
+
 export interface NextGenMITableBodyTextProps extends Omit<TypographyProps, 'children'> {
   value: string
   tooltipWhenTruncated?: boolean
   tooltipTitle?: ReactNode
+  lineClamp?: number
   onClick?: MouseEventHandler<HTMLElement>
 }
 
@@ -32,6 +43,7 @@ const NextGenMITableBodyText = ({
   value,
   tooltipWhenTruncated = false,
   tooltipTitle,
+  lineClamp,
   variant = NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT,
   color = 'contentText.Normal',
   sx,
@@ -45,7 +57,7 @@ const NextGenMITableBodyText = ({
       width: '100%',
       minWidth: 0,
       lineHeight: NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT,
-      ...ellipsisTypographySx,
+      ...(lineClamp !== undefined ? multilineEllipsisTypographySx(lineClamp) : ellipsisTypographySx),
     },
     ...(onClick
       ? [

@@ -53,6 +53,7 @@ type NextGenMIStickyTableProps<T> = {
   containerShell?: boolean
   scrollContainerRef?: { current: HTMLDivElement | null }
   rightScrollEdgeOffset?: string
+  onRowClick?: (row: T, rowIndex: number) => void
 }
 
 // 피그마: 행 컨테이너 px-8 + 셀 px-6 구조 → 외곽 14px(8+6) / 셀 사이 12px(6+6). 8px가 첫/마지막 컬럼에 붙는 엣지 인셋.
@@ -222,6 +223,7 @@ const NextGenMIStickyTable = <T,>({
   containerShell = true,
   scrollContainerRef,
   rightScrollEdgeOffset = '0px',
+  onRowClick,
 }: NextGenMIStickyTableProps<T>) => {
   const tableRootRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -731,7 +733,8 @@ const NextGenMIStickyTable = <T,>({
             borderBottom: isBottomRow ? 'none' : '1px solid',
             borderColor: 'contentBorder.Normal',
             verticalAlign: 'middle',
-            height: rowHeight,
+            height: rowHeight === 'auto' ? 'auto' : rowHeight,
+            minHeight: rowHeight === 'auto' ? '40px' : undefined,
             lineHeight: bodyLineHeight,
             whiteSpace: 'nowrap',
             overflow: isFixedColumn ? 'visible' : 'hidden',
@@ -892,8 +895,10 @@ const NextGenMIStickyTable = <T,>({
                   <Box
                     component="tr"
                     key={getRowKey(row, rowIndex)}
+                    onClick={onRowClick ? () => onRowClick(row, rowIndex) : undefined}
                     sx={{
                       transition: 'background-color 120ms ease',
+                      ...(onRowClick ? { cursor: 'pointer' } : {}),
                       '&:hover:not(:has([data-merged-fixed-column="true"]:hover)) td:not([data-merged-fixed-column="true"])': {
                         backgroundColor: 'gray.10',
                       },
