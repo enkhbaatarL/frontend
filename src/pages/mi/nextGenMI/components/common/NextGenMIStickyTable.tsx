@@ -38,6 +38,7 @@ type NextGenMIStickyTableProps<T> = {
   hideHeader?: boolean
   loading?: boolean
   noRowMessage?: string
+  noRowMinHeight?: string
   maxHeight?: string
   rowHeight?: string
   headerHeight?: string
@@ -214,6 +215,7 @@ const NextGenMIStickyTable = <T,>({
   hideHeader = false,
   loading = false,
   noRowMessage = '표시할 데이터가 없습니다.',
+  noRowMinHeight,
   maxHeight,
   rowHeight = '48px',
   headerHeight = '38px',
@@ -594,6 +596,7 @@ const NextGenMIStickyTable = <T,>({
     top: !hideHeader && leftAlignedHeaderSticky ? headerHeight : 0,
     bottom: scrollLayoutState.horizontal ? '18px' : 0,
   }
+  const noRowContentMinHeight = noRowMinHeight ?? rowHeight
   const renderFixedColumnResizeHandle = (side: Exclude<FixedColumnResizeSide, null>, columnIndex: number) => {
     const active = fixedColumnResizeSide === side
     const halfWidth = `${FIXED_COLUMN_RESIZE_HANDLE_WIDTH / 2}px`
@@ -922,9 +925,9 @@ const NextGenMIStickyTable = <T,>({
                   <Box
                     component="td"
                     colSpan={columns.length}
-                    sx={{ height: rowHeight, borderBottom: 'none', borderColor: 'contentBorder.Normal' }}
+                    sx={{ height: noRowContentMinHeight, borderBottom: 'none', borderColor: 'contentBorder.Normal' }}
                   >
-                    <Stack height={rowHeight} alignItems="center" justifyContent="center">
+                    <Stack minHeight={noRowContentMinHeight} alignItems="center" justifyContent="center">
                       <Typography variant="body2M14" color="contentText.Normal">
                         {noRowMessage}
                       </Typography>

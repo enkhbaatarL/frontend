@@ -355,6 +355,7 @@ const SIGNPOST_FIRST_HEADER_CELL_SX = {
 } as const
 
 const SIGNPOST_RATIONALE_LINE_CLAMP = 3
+const SIGNPOST_NO_ROW_MIN_HEIGHT = '120px'
 
 const SIGNPOST_RATIONALE_CELL_SX = {
   whiteSpace: 'normal',
@@ -419,6 +420,7 @@ const SignpostDefinitionTable = ({ definitions, loading = false, onRowClick }: S
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."
+      noRowMinHeight={SIGNPOST_NO_ROW_MIN_HEIGHT}
       containerShell={false}
       onRowClick={onRowClick ? (row) => onRowClick(row) : undefined}
     />
@@ -491,6 +493,7 @@ const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonit
       loading={loading}
       skeletonRowCount={4}
       noRowMessage="데이터를 수집 중입니다."
+      noRowMinHeight={SIGNPOST_NO_ROW_MIN_HEIGHT}
       containerShell={false}
     />
   )
