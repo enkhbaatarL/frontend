@@ -31,6 +31,7 @@ export interface IScenarioRow {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
+  displayOrder: number
   dimensions: IScenarioDimension[]
   probability: number
   adjustedProbability: number
@@ -72,6 +73,7 @@ export interface IScenarioIndividualItem {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
+  displayOrder: number
   createdAt: string
   updatedAt: string
   group: IScenarioGroupRef
@@ -110,6 +112,7 @@ export interface IScenarioGroupDetailRow {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
+  displayOrder: number
   dimensions: IScenarioDimension[]
   probability: number
   adjustedProbability: number
@@ -138,6 +141,7 @@ export interface IScenarioSignpostDefinition {
   strength: ScenarioSignpostStrength
   strengthLabel: string
   rationale: string
+  displayOrder: number
 }
 
 /** 시나리오 상세 - Signpost 모니터링 이력 */
@@ -154,6 +158,7 @@ export interface IScenarioDetailViewRes {
   scenarioGroupId: number
   scenarioName: string
   baseCase: boolean
+  displayOrder: number
   createdAt: string
   updatedAt: string
   narrative: string
@@ -176,6 +181,7 @@ export interface IScenarioGraphSeries {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
+  displayOrder: number
   executed: boolean
   modelRunning: boolean
   /** 판정 상태 (대기/실현/폐기). 폐기 필터 기준 */

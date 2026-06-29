@@ -122,13 +122,15 @@ const ScenarioDesignCriteriaHeaderLabel = ({ label }: { label: string }) => {
       ref={ref}
       component="span"
       sx={{
-        display: 'block',
+        display: '-webkit-box',
         minWidth: 0,
         maxWidth: '100%',
         boxSizing: 'border-box',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
+        whiteSpace: 'normal',
+        WebkitBoxOrient: 'vertical',
+        WebkitLineClamp: 1,
         typography: 'body2M14',
         color: 'contentText.Normal',
       }}

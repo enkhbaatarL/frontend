@@ -64,11 +64,8 @@ const STICKY_COLUMN_EDGE_SHADOW_VERTICAL_MASK_IMAGE =
   'linear-gradient(to bottom, transparent 0%, #000 20px, #000 calc(100% - 20px), transparent 100%)'
 
 const STICKY_LEFT_COLUMN_EDGE_SHADOW_OVERLAY_SX = {
-  gridArea: '1 / 1',
-  position: 'sticky',
-  alignSelf: 'stretch',
-  left: 'var(--next-gen-mi-sticky-left-column-shadow-inset)',
-  marginLeft: 'var(--next-gen-mi-sticky-left-column-shadow-inset)',
+  position: 'absolute',
+  left: 'var(--next-gen-mi-sticky-left-column-shadow-left)',
   width: '16px',
   pointerEvents: 'none',
   background: 'linear-gradient(to right, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
@@ -80,12 +77,8 @@ const STICKY_LEFT_COLUMN_EDGE_SHADOW_OVERLAY_SX = {
 } as const
 
 const STICKY_RIGHT_COLUMN_EDGE_SHADOW_OVERLAY_SX = {
-  gridArea: '1 / 1',
-  position: 'sticky',
-  alignSelf: 'stretch',
-  right: 'var(--next-gen-mi-sticky-right-column-shadow-inset)',
-  justifySelf: 'end',
-  marginRight: 'var(--next-gen-mi-sticky-right-column-shadow-inset)',
+  position: 'absolute',
+  right: 'var(--next-gen-mi-sticky-right-column-shadow-right)',
   width: '16px',
   pointerEvents: 'none',
   background: 'linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
@@ -141,6 +134,9 @@ const getColumnStickyWidth = <T,>(
 const queryColumnElement = (scrollRoot: HTMLDivElement, selector: string) =>
   scrollRoot.querySelector<HTMLElement>(`thead ${selector}`) ?? scrollRoot.querySelector<HTMLElement>(selector)
 
+const getFixedColumnWidth = (scrollRoot: HTMLDivElement, selector: string) =>
+  Array.from(scrollRoot.querySelectorAll<HTMLElement>(selector)).reduce((sum, column) => sum + column.getBoundingClientRect().width, 0)
+
 const isLastFixedLeftColumnSticky = (scrollRoot: HTMLDivElement) => {
   const lastFixedColumn = queryColumnElement(scrollRoot, '[data-last-fixed-left-column="true"]')
   if (!lastFixedColumn) return false
@@ -163,8 +159,16 @@ const isFirstFixedRightColumnSticky = (scrollRoot: HTMLDivElement) => {
   return stickyOffset <= 1
 }
 
-const getFixedColumnWidth = (scrollRoot: HTMLDivElement, selector: string) =>
-  Array.from(scrollRoot.querySelectorAll<HTMLElement>(selector)).reduce((sum, column) => sum + column.getBoundingClientRect().width, 0)
+const getFixedColumnShadowOffsets = (scrollRoot: HTMLDivElement, root: HTMLDivElement) => {
+  const rootRect = root.getBoundingClientRect()
+  const lastFixedLeftColumn = queryColumnElement(scrollRoot, '[data-last-fixed-left-column="true"]')
+  const firstFixedRightColumn = queryColumnElement(scrollRoot, '[data-first-fixed-right-column="true"]')
+
+  return {
+    left: lastFixedLeftColumn ? lastFixedLeftColumn.getBoundingClientRect().right - rootRect.left : null,
+    right: firstFixedRightColumn ? rootRect.right - firstFixedRightColumn.getBoundingClientRect().left : null,
+  }
+}
 
 const getFixedColumnResizeMaxWidth = (
   scrollRoot: HTMLDivElement | null,
@@ -381,6 +385,7 @@ const NextGenMIStickyTable = <T,>({
       const right = scrollLeft < maxLeft - 1
       const fixedLeftColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-left-column="true"]') : 0
       const fixedRightColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-right-column="true"]') : 0
+      const fixedColumnShadowOffsets = getFixedColumnShadowOffsets(el, root)
       const fixedLeftColumnShadow =
         left && fixedLeftColumnIndexList.length > 0 && (canInsetHorizontalScrollbar || isLastFixedLeftColumnSticky(el))
       const fixedRightColumnShadow =
@@ -391,6 +396,8 @@ const NextGenMIStickyTable = <T,>({
       lastActiveAxisRef.current = nextActiveAxis
       root.style.setProperty('--next-gen-mi-sticky-left-column-shadow-opacity', fixedLeftColumnShadow ? '1' : '0')
       root.style.setProperty('--next-gen-mi-sticky-right-column-shadow-opacity', fixedRightColumnShadow ? '1' : '0')
+      root.style.setProperty('--next-gen-mi-sticky-left-column-shadow-left', `${fixedColumnShadowOffsets.left ?? 0}px`)
+      root.style.setProperty('--next-gen-mi-sticky-right-column-shadow-right', `${fixedColumnShadowOffsets.right ?? 0}px`)
       root.style.setProperty('--next-gen-mi-scroll-left-edge-opacity', left ? '1' : '0')
       root.style.setProperty('--next-gen-mi-scroll-right-edge-opacity', right ? '1' : '0')
       root.style.setProperty('--next-gen-mi-scroll-right-edge-transition-duration', right ? '180ms' : '360ms')
@@ -581,7 +588,10 @@ const NextGenMIStickyTable = <T,>({
   const horizontalScrollbarRightWidth =
     (canUseInsetHorizontalScrollbar ? scrollLayoutState.fixedRightColumnWidth : 0) + (scrollLayoutState.vertical ? 18 : 0)
   const horizontalScrollbarRight = horizontalScrollbarRightWidth > 0 ? `${horizontalScrollbarRightWidth}px` : 0
-  const stickyColumnShadowVerticalSx = !hideHeader && leftAlignedHeaderSticky ? { mt: headerHeight } : {}
+  const stickyColumnShadowOverlaySx = {
+    top: !hideHeader && leftAlignedHeaderSticky ? headerHeight : 0,
+    bottom: scrollLayoutState.horizontal ? '18px' : 0,
+  }
   const renderFixedColumnResizeHandle = (side: Exclude<FixedColumnResizeSide, null>, columnIndex: number) => {
     const active = fixedColumnResizeSide === side
     const halfWidth = `${FIXED_COLUMN_RESIZE_HANDLE_WIDTH / 2}px`
@@ -775,8 +785,8 @@ const NextGenMIStickyTable = <T,>({
         overflow: 'hidden',
         '--next-gen-mi-sticky-left-column-shadow-opacity': 0,
         '--next-gen-mi-sticky-right-column-shadow-opacity': 0,
-        '--next-gen-mi-sticky-left-column-shadow-inset': fixedLeftColumnsWidth,
-        '--next-gen-mi-sticky-right-column-shadow-inset': fixedRightColumnsWidth,
+        '--next-gen-mi-sticky-left-column-shadow-left': fixedLeftColumnsWidth,
+        '--next-gen-mi-sticky-right-column-shadow-right': fixedRightColumnsWidth,
         '--next-gen-mi-scroll-left-edge-opacity': 0,
         '--next-gen-mi-scroll-right-edge-opacity': 0,
         '--next-gen-mi-scroll-right-edge-transition-duration': '360ms',
@@ -919,28 +929,28 @@ const NextGenMIStickyTable = <T,>({
               )}
             </Box>
           </Box>
-
-          {fixedLeftColumnIndexList.length > 0 && (
-            <Box
-              aria-hidden
-              sx={{
-                ...STICKY_LEFT_COLUMN_EDGE_SHADOW_OVERLAY_SX,
-                ...stickyColumnShadowVerticalSx,
-              }}
-            />
-          )}
-
-          {fixedRightColumnIndexList.length > 0 && (
-            <Box
-              aria-hidden
-              sx={{
-                ...STICKY_RIGHT_COLUMN_EDGE_SHADOW_OVERLAY_SX,
-                ...stickyColumnShadowVerticalSx,
-              }}
-            />
-          )}
         </Box>
       </Box>
+
+      {fixedLeftColumnIndexList.length > 0 && (
+        <Box
+          aria-hidden
+          sx={{
+            ...STICKY_LEFT_COLUMN_EDGE_SHADOW_OVERLAY_SX,
+            ...stickyColumnShadowOverlaySx,
+          }}
+        />
+      )}
+
+      {fixedRightColumnIndexList.length > 0 && (
+        <Box
+          aria-hidden
+          sx={{
+            ...STICKY_RIGHT_COLUMN_EDGE_SHADOW_OVERLAY_SX,
+            ...stickyColumnShadowOverlaySx,
+          }}
+        />
+      )}
 
       {resizableFixedColumns && lastFixedLeftColumnIndex !== undefined && renderFixedColumnResizeHandle('left', lastFixedLeftColumnIndex)}
 

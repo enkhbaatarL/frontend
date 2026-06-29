@@ -5,14 +5,15 @@ import { useNavigate } from 'react-router-dom'
 import type { IScenarioDimension, IScenarioGroupRef, IScenarioIndividualItem } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
-/** 시나리오 셀 상단 메타: 그룹명 칩 + (baseCase면 BC) + 생성일시 */
-const GroupRefMeta = ({ group, baseCase }: { group: IScenarioGroupRef; baseCase: boolean }) => (
+/** 시나리오 셀 상단 메타: 그룹명 칩 + 표시 순서 + (baseCase면 BC) + 생성일시 */
+const GroupRefMeta = ({ group, displayOrder, baseCase }: { group: IScenarioGroupRef; displayOrder: number; baseCase: boolean }) => (
   <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
     <Stack
       component="span"
@@ -37,6 +38,13 @@ const GroupRefMeta = ({ group, baseCase }: { group: IScenarioGroupRef; baseCase:
         {group.groupName}
       </Typography>
     </Stack>
+    <NextGenMIDisplayOrderBadge
+      value={displayOrder}
+      height="20px"
+      borderRadius="4px"
+      border="0.5px solid"
+      borderColor="contentBorder.Normal"
+    />
     {baseCase && <NextGenMIBaseCaseChip />}
     <Typography color="contentText.Subtext" noWrap sx={{ fontSize: '11px', fontWeight: 500, lineHeight: 1.4, letterSpacing: '-0.22px' }}>
       {formatNextGenMIDateTime(group.createdAt)}
@@ -81,7 +89,7 @@ const ScenarioIndividualTable = ({ scenarios, loading, skeletonRowCount }: Scena
         align: 'left',
         renderCell: ({ row }) => (
           <Stack gap="4px" minWidth={0}>
-            <GroupRefMeta group={row.group} baseCase={row.baseCase} />
+            <GroupRefMeta group={row.group} displayOrder={row.displayOrder} baseCase={row.baseCase} />
             <NextGenMIHoverLinkCell
               value={row.scenarioName}
               variant="body1SB16"

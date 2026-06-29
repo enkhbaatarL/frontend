@@ -17,7 +17,7 @@ interface UseCodeDataReturn {
 const defaultOptions = {
   staleTime: 60 * 60 * 1000, // 1시간 캐시 유지
   gcTime: 60 * 60 * 1000, // 1시간 메모리에 보관
-  retry: 3,
+  retry: 1,
   enabled: false,
 }
 
@@ -25,6 +25,12 @@ const marketCategoryKey = 'nws_mrkt_ctgr_cd'
 const regionCategoryKey = 'nws_rgn_spt_cd'
 const industrySectorKey = 'nws_ind_sctr_cd'
 const economicCalendarCategoryKey = 'ecnmc_cal_type_cd'
+
+const refetchIfNeeded = (query: { data: unknown; isFetching: boolean; isFetchedAfterMount: boolean; refetch: () => Promise<unknown> }) => {
+  if (query.data === undefined && !query.isFetching && !query.isFetchedAfterMount) {
+    query.refetch().then()
+  }
+}
 
 /**
  * 코드 데이터를 지연 로딩으로 불러오는 훅
@@ -65,33 +71,23 @@ const useCodeData = (): UseCodeDataReturn => {
   return useMemo(
     () => ({
       get marketCategoryCodeList() {
-        if (!marketQuery.data && !marketQuery.isLoading) {
-          marketQuery.refetch().then()
-        }
+        refetchIfNeeded(marketQuery)
         return marketQuery.data
       },
       get regionCategoryCodeList() {
-        if (!regionQuery.data && !regionQuery.isLoading) {
-          regionQuery.refetch().then()
-        }
+        refetchIfNeeded(regionQuery)
         return regionQuery.data
       },
       get industrySectorCodeList() {
-        if (!industryQuery.data && !industryQuery.isLoading) {
-          industryQuery.refetch().then()
-        }
+        refetchIfNeeded(industryQuery)
         return industryQuery.data
       },
       get economicCalendarCategoryCodeList() {
-        if (!economicCalendarCategoryQuery.data && !economicCalendarCategoryQuery.isLoading) {
-          economicCalendarCategoryQuery.refetch().then()
-        }
+        refetchIfNeeded(economicCalendarCategoryQuery)
         return economicCalendarCategoryQuery.data
       },
       get nextGenMIEventTypeL1List() {
-        if (!nextGenMIEventTypeL1Query.data && !nextGenMIEventTypeL1Query.isLoading) {
-          nextGenMIEventTypeL1Query.refetch().then()
-        }
+        refetchIfNeeded(nextGenMIEventTypeL1Query)
         return nextGenMIEventTypeL1Query.data
       },
       get isLoading() {

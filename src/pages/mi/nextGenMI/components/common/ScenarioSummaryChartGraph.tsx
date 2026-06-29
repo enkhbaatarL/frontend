@@ -41,6 +41,7 @@ type ScenarioSummaryChartData = ChartData & {
   visibilityKey?: string
   isDashed?: boolean
   badge?: 'BC' | 'UA'
+  displayOrder?: number
 }
 
 interface ScenarioSummaryChartGraphProps {
@@ -70,6 +71,7 @@ type DatasetMeta = {
   resultDates?: string[]
   startDates?: string[]
   badge?: 'BC' | 'UA'
+  displayOrder?: number
 }
 
 type ScenarioLineDataset = ChartDataset<'line', Point[]> & {
@@ -557,6 +559,7 @@ const ScenarioSummaryChartGraph = ({
             resultDates: chart.resultDates,
             startDates: chart.startDates,
             badge: chart.badge,
+            displayOrder: chart.displayOrder,
           },
         }
       }),

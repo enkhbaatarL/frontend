@@ -23,18 +23,19 @@ import type { DesignConfirmSignpost, DesignScenarioRow, ScenarioSignpostStrength
 
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import MIChip from '@/components/common/chip/MIChip'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
 import MIMenu from '@/components/common/menu/MIMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import useSnackbar from '@/hooks/useSnackbar'
+import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import {
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
   NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
+import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import {
   getScenarioDesignColumnDisplayValue,
@@ -1497,21 +1498,8 @@ const ScenarioDesignReviewScenarioCard = ({
     >
       <Stack data-scenario-design-review-card-title="true" gap="6px" padding="6px 8px 12px" minHeight="95px">
         <Stack direction="row" alignItems="center" gap="4px">
-          <MIChip label="시나리오" color="gray" size="h20" disableHover sx={{ padding: '2px 6px', borderRadius: '8px' }} />
-          {row.baseCase && (
-            <MIChip
-              label="BC"
-              color="purple"
-              size="h20"
-              disableHover
-              sx={{
-                padding: '2px 6px',
-                borderRadius: '8px',
-                backgroundColor: 'mari.Primary',
-                color: 'contentText.White',
-              }}
-            />
-          )}
+          {row.displayOrder !== undefined && <NextGenMIDisplayOrderBadge value={row.displayOrder} height="21px" />}
+          {row.baseCase && <NextGenMIBaseCaseChip height="21px" padding="2px 6px" />}
         </Stack>
         <Typography
           fontSize="18px"

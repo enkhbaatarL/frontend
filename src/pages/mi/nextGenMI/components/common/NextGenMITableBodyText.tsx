@@ -16,9 +16,16 @@ export const NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT = 'body2M14' as const
 export const NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT = 1.4
 
 const ellipsisTypographySx = {
-  whiteSpace: 'nowrap',
+  display: 'block',
+} as const
+
+const singleLineClampSx = {
+  display: '-webkit-box',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  whiteSpace: 'normal',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 1,
 } as const
 
 export interface NextGenMITableBodyTextProps extends Omit<TypographyProps, 'children'> {
@@ -34,18 +41,23 @@ const NextGenMITableBodyText = ({
   tooltipTitle,
   variant = NEXT_GEN_MI_TABLE_BODY_TEXT_VARIANT,
   color = 'contentText.Normal',
+  noWrap = true,
   sx,
   onClick,
   ...typographyProps
 }: NextGenMITableBodyTextProps) => {
   const { ref, isEllipsis } = useEllipsisDetection(value)
+  const useSingleLineClamp = noWrap && tooltipWhenTruncated
 
   const mergedSx: TypographyProps['sx'] = [
     {
       width: '100%',
       minWidth: 0,
+      maxWidth: '100%',
+      flexShrink: 1,
+      boxSizing: 'border-box',
       lineHeight: NEXT_GEN_MI_TABLE_BODY_LINE_HEIGHT,
-      ...ellipsisTypographySx,
+      ...(useSingleLineClamp ? singleLineClampSx : ellipsisTypographySx),
     },
     ...(onClick
       ? [
@@ -72,6 +84,7 @@ const NextGenMITableBodyText = ({
       component={typographyProps.component ?? 'div'}
       variant={variant}
       color={color}
+      noWrap={noWrap && !useSingleLineClamp}
       title={tooltipWhenTruncated ? undefined : value}
       sx={mergedSx}
       onClick={onClick}

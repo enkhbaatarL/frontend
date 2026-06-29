@@ -7,6 +7,7 @@ import type { IScenarioDimension, IScenarioDimensionColumn, ScenarioJudgementSta
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import { NextGenMIBaseCaseChip, NextGenMIDiscardedBadge } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
@@ -171,6 +172,7 @@ export type ScenarioGroupInnerTableRow = {
   scenarioId: string | number
   scenarioName: string
   baseCase: boolean
+  displayOrder: number
   dimensions?: IScenarioDimension[]
   probability: number
   adjustedProbability?: number
@@ -236,8 +238,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
 
           return (
             <Stack width="100%" alignItems="center" justifyContent="center">
-              {discarded && <NextGenMIDiscardedBadge />}
-              {!discarded && row.baseCase && <NextGenMIBaseCaseChip />}
+              {row.baseCase ? <NextGenMIBaseCaseChip disabled={discarded} /> : discarded && <NextGenMIDiscardedBadge />}
             </Stack>
           )
         },
@@ -258,11 +259,16 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
               ? () => navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId, row.scenarioId))
               : undefined
 
-          if (handleScenarioClick && !discarded) {
-            return <NextGenMIHoverLinkCell value={row.scenarioName} onClick={handleScenarioClick} />
-          }
-
-          return <NextGenMITableBodyText value={row.scenarioName} variant="body1SB16" color={textColor} tooltipWhenTruncated />
+          return (
+            <Stack direction="row" alignItems="center" gap="8px" minWidth={0} maxWidth="100%">
+              <NextGenMIDisplayOrderBadge value={row.displayOrder} disabled={discarded} />
+              {handleScenarioClick && !discarded ? (
+                <NextGenMIHoverLinkCell value={row.scenarioName} onClick={handleScenarioClick} />
+              ) : (
+                <NextGenMITableBodyText value={row.scenarioName} variant="body1SB16" color={textColor} tooltipWhenTruncated />
+              )}
+            </Stack>
+          )
         },
       },
       ...dimensionColumns.map(

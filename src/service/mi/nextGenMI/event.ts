@@ -147,6 +147,7 @@ export interface RelatedScenario {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
+  displayOrder: number
   dimensions?: IScenarioDimension[]
   probability: number
   adjustedProbability?: number

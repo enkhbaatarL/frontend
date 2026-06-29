@@ -17,6 +17,7 @@ export type ScenarioGroupGraphChart = ChartData & {
   visibilityKey: string
   isDashed?: boolean
   badge?: 'BC' | 'UA'
+  displayOrder?: number
 }
 
 export type ScenarioGroupGraphLegendVariant = 'line' | 'nonExecuted' | 'discarded'
@@ -24,6 +25,7 @@ export type ScenarioGroupGraphLegendVariant = 'line' | 'nonExecuted' | 'discarde
 export interface ScenarioGroupGraphLegendItem {
   visibilityKey: string
   name: string
+  displayOrder?: number
   color: string
   hasUA: boolean
   variant: ScenarioGroupGraphLegendVariant
@@ -151,6 +153,7 @@ const buildChart = (
   startDates: string[],
   isDashed: boolean,
   badge?: 'BC' | 'UA',
+  displayOrder?: number,
 ): ScenarioGroupGraphChart => ({
   goodsDataSourceName: name,
   goodsDataSourceNo: 0,
@@ -163,6 +166,7 @@ const buildChart = (
   visibilityKey,
   isDashed,
   badge,
+  displayOrder,
   series: [
     {
       seriesId: 'main',
@@ -213,6 +217,7 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
       return {
         visibilityKey: bcKey,
         name: series.scenarioName,
+        displayOrder: series.displayOrder,
         color: DISABLED_LEGEND_COLOR,
         hasUA: false,
         variant: isDiscarded ? 'discarded' : 'nonExecuted',
@@ -228,13 +233,35 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
     const toggleKeys: string[] = []
     if (hasBC) {
       charts.push(
-        buildChart(series.scenarioName, bcKey, series.baseCaseValues ?? [], data.unit, timestamps, resultDates, startDates, false, 'BC'),
+        buildChart(
+          series.scenarioName,
+          bcKey,
+          series.baseCaseValues ?? [],
+          data.unit,
+          timestamps,
+          resultDates,
+          startDates,
+          false,
+          'BC',
+          series.displayOrder,
+        ),
       )
       toggleKeys.push(bcKey)
     }
     if (hasUA) {
       charts.push(
-        buildChart(series.scenarioName, uaKey, series.userAdjustedValues ?? [], data.unit, timestamps, resultDates, startDates, true, 'UA'),
+        buildChart(
+          series.scenarioName,
+          uaKey,
+          series.userAdjustedValues ?? [],
+          data.unit,
+          timestamps,
+          resultDates,
+          startDates,
+          true,
+          'UA',
+          series.displayOrder,
+        ),
       )
       toggleKeys.push(uaKey)
     }
@@ -244,6 +271,7 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
     return {
       visibilityKey: hasBC ? bcKey : uaKey,
       name: series.scenarioName,
+      displayOrder: series.displayOrder,
       color,
       hasUA,
       variant: 'line',

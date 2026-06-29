@@ -10,12 +10,14 @@ import type {
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
+import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
   NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
+import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
@@ -110,17 +112,15 @@ const ScenarioSelectSidebar = ({
             '&:hover': { bgcolor: isSelected ? 'contentBG.Active' : isDiscarded ? 'transparent' : 'gray.10' },
           }}
         >
-          {scenario.baseCase && <ScenarioSelectBadge label="BC" />}
-          <Typography
+          <NextGenMIDisplayOrderBadge value={scenario.displayOrder} disabled={isDiscarded} />
+          {scenario.baseCase && <NextGenMIBaseCaseChip disabled={isDiscarded} />}
+          <NextGenMITableBodyText
+            value={scenario.scenarioName}
             variant={isSelected ? 'body1SB16' : 'body1M16'}
             color={isDiscarded && !isSelected ? 'contentText.Disabled' : isSelected ? 'contentText.Black' : 'contentText.Normal'}
-            flex={1}
-            minWidth={0}
-            noWrap
-            title={scenario.scenarioName}
-          >
-            {scenario.scenarioName}
-          </Typography>
+            tooltipWhenTruncated
+            sx={{ flex: '1 1 0%' }}
+          />
           {isDiscarded && <ScenarioSelectBadge label={scenario.statusLabel || '폐기'} disabled />}
         </Stack>,
       )
@@ -418,10 +418,10 @@ const SignpostDefinitionTable = ({ definitions, loading = false }: SignpostDefin
   )
 }
 
-const formatProbabilityUpdate = (probability: number, delta: number) => {
-  const sign = delta > 0 ? '+' : ''
-  return `${probability}% (${sign}${delta}%)`
-}
+// const formatProbabilityUpdate = (probability: number, delta: number) => {
+//   const sign = delta > 0 ? '+' : ''
+//   return `${probability}% (${sign}${delta}%)`
+// }
 
 interface SignpostMonitoringTableProps {
   monitorings: IScenarioSignpostMonitoring[]
@@ -447,20 +447,20 @@ const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonit
         width: '400px',
         renderCell: ({ row }) => <NextGenMITableBodyText value={row.eventSummary} color="contentText.Black" tooltipWhenTruncated />,
       },
-      {
-        field: 'probability',
-        headerName: '시나리오 확률 업데이트',
-        width: '160px',
-        align: 'center',
-        headerAlign: 'center',
-        renderCell: ({ row }) => (
-          <NextGenMITableBodyText
-            value={formatProbabilityUpdate(row.probability, row.probabilityDelta)}
-            color="contentText.Black"
-            align="center"
-          />
-        ),
-      },
+      // {
+      //   field: 'probability',
+      //   headerName: '시나리오 확률 업데이트',
+      //   width: '160px',
+      //   align: 'center',
+      //   headerAlign: 'center',
+      //   renderCell: ({ row }) => (
+      //     <NextGenMITableBodyText
+      //       value={formatProbabilityUpdate(row.probability, row.probabilityDelta)}
+      //       color="contentText.Black"
+      //       align="center"
+      //     />
+      //   ),
+      // },
       {
         field: 'rationale',
         headerName: '상세 내역 (Signpost 매칭 근거)',
@@ -722,9 +722,16 @@ const ScenarioGroupDetailSection = ({
               <Typography fontSize="14px" fontWeight={500} color="contentText.Normal">
                 Scenario
               </Typography>
-              <Typography fontSize="22px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
-                {data?.scenarioName ?? '-'}
-              </Typography>
+              <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
+                {data?.displayOrder !== undefined && (
+                  <Box component="span" display="inline-flex" position="relative" top="1px">
+                    <NextGenMIDisplayOrderBadge value={data.displayOrder} height="24px" />
+                  </Box>
+                )}
+                <Typography fontSize="22px" fontWeight={700} lineHeight={1.4} color="contentText.Black" minWidth={0}>
+                  {data?.scenarioName ?? '-'}
+                </Typography>
+              </Stack>
             </>
           )}
         </Stack>
@@ -749,7 +756,7 @@ const ScenarioGroupDetailSection = ({
               {detailLoading ? (
                 <Skeleton variant="rounded" sx={{ flex: 1, borderRadius: '10px' }} />
               ) : (
-                <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="20px 16px">
+                <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="16px">
                   <ScenarioPossibilityGauge probability={scenarioProbability ?? 0} hideHoverBackground />
                 </Stack>
               )}

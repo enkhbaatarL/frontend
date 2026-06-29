@@ -10,6 +10,7 @@ import type {
 import AdjustedLineIcon from '@/components/common/icons/AdjustedLineIcon'
 import BaseCaseLineIcon from '@/components/common/icons/BaseCaseLineIcon'
 import VisibilityOffIcon from '@/components/common/icons/VisibilityOffIcon'
+import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioGroupGraphFilterMenu from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphFilterMenu'
 
@@ -190,6 +191,7 @@ const ScenarioGroupGraphLegend = ({
       const showEye = interactive && ((isHovered && hoveredIcon === item.visibilityKey) || isHidden)
       const executing = isNonExecuted && item.scenarioId !== undefined && executingScenarioIds.has(item.scenarioId)
       const showExecuteButton = isNonExecuted && hoveredAction === item.visibilityKey && !executing
+      const itemTextEnabled = interactive || (isNonExecuted && isHovered && !executing)
 
       return (
         <Stack
@@ -255,15 +257,16 @@ const ScenarioGroupGraphLegend = ({
               <LegendIndicator item={item} />
             )}
           </Stack>
-          <NextGenMITableBodyText
-            value={item.name}
-            variant="body1M16"
-            color={
-              interactive ? 'contentText.Black' : isNonExecuted && isHovered && !executing ? 'contentText.Normal' : 'contentText.Disabled'
-            }
-            tooltipWhenTruncated
-            sx={{ flex: '1 1 0%', userSelect: 'none' }}
-          />
+          <Stack direction="row" alignItems="center" gap="8px" minWidth={0} sx={{ flex: '1 1 0%', userSelect: 'none' }}>
+            {item.displayOrder !== undefined && <NextGenMIDisplayOrderBadge value={item.displayOrder} disabled={!itemTextEnabled} />}
+            <NextGenMITableBodyText
+              value={item.name}
+              variant="body1M16"
+              color={itemTextEnabled ? (interactive ? 'contentText.Black' : 'contentText.Normal') : 'contentText.Disabled'}
+              tooltipWhenTruncated
+              sx={{ flex: '1 1 0%' }}
+            />
+          </Stack>
           {isNonExecuted ? (
             executing ? (
               <ExecutingBadge />

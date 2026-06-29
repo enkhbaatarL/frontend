@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 
 import AdjustedLineIcon from '@/components/common/icons/AdjustedLineIcon'
 import BaseCaseLineIcon from '@/components/common/icons/BaseCaseLineIcon'
+import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import { formatValue } from '@/utils/number'
 
 export interface ScenarioSummaryTooltipContent {
@@ -17,6 +18,7 @@ export interface ScenarioSummaryTooltipContent {
   goodsDataSourceNo?: number
   visibilityKey?: string
   badge?: 'BC' | 'UA'
+  displayOrder?: number
 }
 
 interface ScenarioSummaryChartTooltipProps {
@@ -54,6 +56,36 @@ const chunkItems = <T,>(list: T[], size: number): T[][] => {
 const isBaseTooltipItem = (item: ScenarioSummaryTooltipContent) => item.visibilityKey?.trim().startsWith('base:') === true
 
 const isScenarioTooltipItem = (item: ScenarioSummaryTooltipContent) => item.visibilityKey?.trim().startsWith('scenario:') === true
+
+const ScenarioSummaryTooltipBadge = ({ label, dimmed = false }: { label: 'BC' | 'UA'; dimmed?: boolean }) => (
+  <Box
+    display="inline-flex"
+    alignItems="center"
+    justifyContent="center"
+    flexShrink={0}
+    height="16px"
+    padding="0 4px"
+    border="1px solid"
+    borderColor="gray.70"
+    borderRadius="4px"
+    boxSizing="border-box"
+    color="gray.70"
+    sx={{ opacity: dimmed ? 0.5 : 1, transition: 'opacity 0.15s ease' }}
+  >
+    <Typography
+      color="inherit"
+      sx={{
+        fontSize: '11px',
+        fontWeight: 500,
+        lineHeight: 1,
+        letterSpacing: '-0.22px',
+        fontVariantNumeric: 'lining-nums tabular-nums',
+      }}
+    >
+      {label}
+    </Typography>
+  </Box>
+)
 
 const buildTooltipDisplayRows = (items: ScenarioSummaryTooltipContent[]): TooltipDisplayRow[] => {
   if (!items.some(isBaseTooltipItem) || !items.some(isScenarioTooltipItem)) {
@@ -215,30 +247,10 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
                       >
                         {item.badge === 'UA' ? <AdjustedLineIcon /> : <BaseCaseLineIcon />}
                       </Box>
-                      {item.badge ? (
-                        <Box
-                          flexShrink={0}
-                          padding="2px 4px"
-                          borderRadius="4px"
-                          bgcolor="gray.5"
-                          border="1px solid"
-                          borderColor="contentBorder.Normal"
-                          sx={{ opacity: rowDimmed ? 0.5 : 1, transition: 'opacity 0.15s ease' }}
-                        >
-                          <Typography
-                            color="contentText.Disabled"
-                            sx={{
-                              fontSize: '11px',
-                              fontWeight: 500,
-                              lineHeight: 1.4,
-                              letterSpacing: '-0.22px',
-                              fontVariantNumeric: 'lining-nums tabular-nums',
-                            }}
-                          >
-                            {item.badge}
-                          </Typography>
-                        </Box>
+                      {item.displayOrder !== undefined ? (
+                        <NextGenMIDisplayOrderBadge value={item.displayOrder} height="16px" borderRadius="4px" />
                       ) : null}
+                      {item.badge ? <ScenarioSummaryTooltipBadge label={item.badge} dimmed={rowDimmed} /> : null}
                       <Typography
                         color={rowDimmed ? 'contentText.Subtext' : 'contentText.Black'}
                         sx={{
