@@ -13,6 +13,7 @@ export interface MISlidingSegmentedControlProps extends Omit<StackProps, 'option
   onChange: (value: string) => void
   disabled?: boolean
   fullWidth?: boolean
+  equalWidth?: boolean
 }
 
 const getTextFromLabelNode = (label: ReactNode): string => {
@@ -40,6 +41,7 @@ const MISlidingSegmented = ({
   onChange,
   disabled = false,
   fullWidth = false,
+  equalWidth = false,
   sx,
   ...props
 }: Readonly<MISlidingSegmentedControlProps>) => {
@@ -128,7 +130,7 @@ const MISlidingSegmented = ({
       {options.map(({ value: optionValue, label, disabled: optionDisabled }) => {
         const isSelected = value === optionValue
         const isDisabled = disabled || optionDisabled
-        const widthWeight = getOptionWidthWeight(label)
+        const widthWeight = equalWidth ? 1 : getOptionWidthWeight(label)
         let textColor = 'contentText.Subtext'
 
         if (isDisabled) textColor = 'contentText.Disabled'

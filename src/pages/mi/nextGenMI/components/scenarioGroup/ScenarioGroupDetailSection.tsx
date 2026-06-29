@@ -8,8 +8,10 @@ import type {
   IScenarioSignpostDefinition,
   IScenarioSignpostMonitoring,
 } from '@/service/mi/nextGenMI/scenarioGroup'
+import type { IPaginationResponse } from '@/types/api'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
+import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import {
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
@@ -357,6 +359,8 @@ const SIGNPOST_FIRST_HEADER_CELL_SX = {
 
 const SIGNPOST_RATIONALE_LINE_CLAMP = 3
 const SIGNPOST_NO_ROW_MIN_HEIGHT = '120px'
+const SIGNPOST_DEFAULT_PAGE_SIZE = 10
+const SIGNPOST_PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
 
 const SIGNPOST_RATIONALE_CELL_SX = {
   whiteSpace: 'normal',
@@ -364,13 +368,62 @@ const SIGNPOST_RATIONALE_CELL_SX = {
   verticalAlign: 'top',
 } as const
 
+const useSignpostClientPagination = <T,>(rows: T[], resetKey?: number) => {
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<number>(SIGNPOST_DEFAULT_PAGE_SIZE)
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(rows.length / pageSize)), [pageSize, rows.length])
+  const safePage = Math.min(page, totalPages)
+
+  useEffect(() => {
+    setPage(1)
+  }, [resetKey])
+
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage)
+  }, [page, safePage])
+
+  const paginatedRows = useMemo(() => {
+    const start = (safePage - 1) * pageSize
+    return rows.slice(start, start + pageSize)
+  }, [pageSize, rows, safePage])
+
+  const handlePageSizeChange = useCallback((size: number) => {
+    setPageSize(size)
+    setPage(1)
+  }, [])
+
+  const paginationData = useMemo<IPaginationResponse<T> | undefined>(() => {
+    if (rows.length <= SIGNPOST_DEFAULT_PAGE_SIZE) return undefined
+
+    return {
+      detail: paginatedRows,
+      currentPage: safePage,
+      totalPages,
+      totalElements: rows.length,
+      numberOfElements: paginatedRows.length,
+      size: pageSize,
+      isFirst: safePage === 1,
+      isLast: safePage === totalPages,
+      hasPrevious: safePage > 1,
+      hasNext: safePage < totalPages,
+    }
+  }, [pageSize, paginatedRows, rows.length, safePage, totalPages])
+
+  return { paginatedRows, paginationData, pageSize, setPage, handlePageSizeChange }
+}
+
 interface SignpostDefinitionTableProps {
   definitions: IScenarioSignpostDefinition[]
   loading?: boolean
+  paginationResetKey?: number
   onRowClick?: (definition: IScenarioSignpostDefinition) => void
 }
 
-const SignpostDefinitionTable = ({ definitions, loading = false, onRowClick }: SignpostDefinitionTableProps) => {
+const SignpostDefinitionTable = ({ definitions, loading = false, paginationResetKey, onRowClick }: SignpostDefinitionTableProps) => {
+  const { paginatedRows, paginationData, pageSize, setPage, handlePageSizeChange } = useSignpostClientPagination(
+    definitions,
+    paginationResetKey,
+  )
   const columns = useMemo<NextGenMIStickyTableColumn<IScenarioSignpostDefinition>[]>(
     () => [
       {
@@ -412,19 +465,31 @@ const SignpostDefinitionTable = ({ definitions, loading = false, onRowClick }: S
   )
 
   return (
-    <NextGenMIStickyTable<IScenarioSignpostDefinition>
-      columns={columns}
-      rows={definitions}
-      getRowKey={(row, index) => `${row.label}-${index}`}
-      headerFontSize="13px"
-      rowHeight="auto"
-      loading={loading}
-      skeletonRowCount={4}
-      noRowMessage="데이터를 수집 중입니다."
-      noRowMinHeight={SIGNPOST_NO_ROW_MIN_HEIGHT}
-      containerShell={false}
-      onRowClick={onRowClick ? (row) => onRowClick(row) : undefined}
-    />
+    <Stack width="100%">
+      <NextGenMIStickyTable<IScenarioSignpostDefinition>
+        columns={columns}
+        rows={paginatedRows}
+        getRowKey={(row, index) => `${row.label}-${index}`}
+        headerFontSize="13px"
+        rowHeight="auto"
+        loading={loading}
+        skeletonRowCount={4}
+        noRowMessage="데이터를 수집 중입니다."
+        noRowMinHeight={SIGNPOST_NO_ROW_MIN_HEIGHT}
+        containerShell={false}
+        onRowClick={onRowClick ? (row) => onRowClick(row) : undefined}
+      />
+      {!loading && paginationData && (
+        <MIPaginationSecondary<IScenarioSignpostDefinition>
+          data={paginationData}
+          size={pageSize}
+          sizeList={[...SIGNPOST_PAGE_SIZE_LIST]}
+          paddingTop="12px"
+          onPageChange={setPage}
+          onSizeChange={handlePageSizeChange}
+        />
+      )}
+    </Stack>
   )
 }
 
@@ -436,10 +501,15 @@ const SignpostDefinitionTable = ({ definitions, loading = false, onRowClick }: S
 interface SignpostMonitoringTableProps {
   monitorings: IScenarioSignpostMonitoring[]
   loading?: boolean
+  paginationResetKey?: number
   onRowClick?: (monitoring: IScenarioSignpostMonitoring) => void
 }
 
-const SignpostMonitoringTable = ({ monitorings, loading = false, onRowClick }: SignpostMonitoringTableProps) => {
+const SignpostMonitoringTable = ({ monitorings, loading = false, paginationResetKey, onRowClick }: SignpostMonitoringTableProps) => {
+  const { paginatedRows, paginationData, pageSize, setPage, handlePageSizeChange } = useSignpostClientPagination(
+    monitorings,
+    paginationResetKey,
+  )
   const columns = useMemo<NextGenMIStickyTableColumn<IScenarioSignpostMonitoring>[]>(
     () => [
       {
@@ -486,19 +556,31 @@ const SignpostMonitoringTable = ({ monitorings, loading = false, onRowClick }: S
   )
 
   return (
-    <NextGenMIStickyTable<IScenarioSignpostMonitoring>
-      columns={columns}
-      rows={monitorings}
-      getRowKey={(row, index) => `${row.updatedAt}-${index}`}
-      headerFontSize="13px"
-      rowHeight="auto"
-      loading={loading}
-      skeletonRowCount={4}
-      noRowMessage="데이터를 수집 중입니다."
-      noRowMinHeight={SIGNPOST_NO_ROW_MIN_HEIGHT}
-      containerShell={false}
-      onRowClick={onRowClick ? (row) => onRowClick(row) : undefined}
-    />
+    <Stack width="100%">
+      <NextGenMIStickyTable<IScenarioSignpostMonitoring>
+        columns={columns}
+        rows={paginatedRows}
+        getRowKey={(row, index) => `${row.updatedAt}-${index}`}
+        headerFontSize="13px"
+        rowHeight="auto"
+        loading={loading}
+        skeletonRowCount={4}
+        noRowMessage="데이터를 수집 중입니다."
+        noRowMinHeight={SIGNPOST_NO_ROW_MIN_HEIGHT}
+        containerShell={false}
+        onRowClick={onRowClick ? (row) => onRowClick(row) : undefined}
+      />
+      {!loading && paginationData && (
+        <MIPaginationSecondary<IScenarioSignpostMonitoring>
+          data={paginationData}
+          size={pageSize}
+          sizeList={[...SIGNPOST_PAGE_SIZE_LIST]}
+          paddingTop="12px"
+          onPageChange={setPage}
+          onSizeChange={handlePageSizeChange}
+        />
+      )}
+    </Stack>
   )
 }
 
@@ -806,6 +888,7 @@ const ScenarioGroupDetailSection = ({
             <SignpostDefinitionTable
               definitions={data?.signpostDefinitions ?? []}
               loading={detailLoading}
+              paginationResetKey={selectedScenarioId}
               onRowClick={handleSignpostDefinitionRowClick}
             />
           </Stack>
@@ -815,6 +898,7 @@ const ScenarioGroupDetailSection = ({
             <SignpostMonitoringTable
               monitorings={data?.signpostMonitorings ?? []}
               loading={detailLoading}
+              paginationResetKey={selectedScenarioId}
               onRowClick={handleSignpostMonitoringRowClick}
             />
           </Stack>

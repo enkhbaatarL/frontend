@@ -232,6 +232,7 @@ const ScenarioGroupGraphView = ({
                 options={INDEX_OPTIONS}
                 onChange={(value) => setIndexName(value as NextGenMIIndexName)}
                 fullWidth
+                equalWidth
               />
 
               {render && (
