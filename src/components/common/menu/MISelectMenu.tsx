@@ -263,7 +263,27 @@ const MISelectMenu = <T,>({
 
   const renderSuffix = (isSelected: boolean, itemDisabled?: boolean): ReactNode => {
     if (selectType === 'switch') {
-      return <Switch checked={isSelected} size="small" disabled={itemDisabled} style={{ margin: '0 4px 0 8px' }} />
+      return (
+        <Box
+          component="span"
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          width="32px"
+          height="20px"
+          ml="8px"
+          mr="4px"
+        >
+          <Switch
+            checked={isSelected}
+            size="small"
+            disabled={itemDisabled}
+            tabIndex={-1}
+            slotProps={{ input: { readOnly: true, tabIndex: -1 } }}
+            sx={{ margin: 0, pointerEvents: 'none', flexShrink: 0 }}
+          />
+        </Box>
+      )
     }
     return undefined
   }
