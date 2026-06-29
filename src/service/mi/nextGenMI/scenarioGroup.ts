@@ -366,7 +366,37 @@ const nextGenMIScenarioGroupService = {
       `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/scenarios/${encodeURIComponent(String(scenarioId))}`,
     )
 
-    return response.data.data
+    const data = response.data.data
+
+    if (data.signpostMonitorings.length > 0) return data
+
+    // TODO: Signpost 모니터링 API 데이터 확인 후 제거 예정
+    return {
+      ...data,
+      signpostMonitorings: [
+        {
+          updatedAt: '2026-06-24T09:30:00+09:00',
+          eventSummary: '동북아 폭염 예보 확대로 발전용 LNG 수요 상향 가능성이 부각되었습니다.',
+          probability: 62,
+          probabilityDelta: 5,
+          rationale: '기온 전망 상향과 전력 피크 수요 증가 신호가 동시에 확인되어 해당 시나리오의 수요 증가 Signpost와 매칭되었습니다.',
+        },
+        {
+          updatedAt: '2026-06-21T15:10:00+09:00',
+          eventSummary: '호주 주요 LNG 설비 정비 일정 연장 가능성이 보도되었습니다.',
+          probability: 57,
+          probabilityDelta: 3,
+          rationale: '공급 차질 가능성을 높이는 설비 이슈가 확인되어 공급 축소 방향의 Signpost 조건에 부합합니다.',
+        },
+        {
+          updatedAt: '2026-06-18T11:40:00+09:00',
+          eventSummary: '파나마 운하 통항 지연이 완화되며 운송 리스크가 일부 낮아졌습니다.',
+          probability: 54,
+          probabilityDelta: -2,
+          rationale: '물류 병목 완화는 가격 상승 압력을 낮추는 요인으로 분류되어 기존 리스크 Signpost의 강도를 일부 약화시켰습니다.',
+        },
+      ],
+    }
   },
 
   /**

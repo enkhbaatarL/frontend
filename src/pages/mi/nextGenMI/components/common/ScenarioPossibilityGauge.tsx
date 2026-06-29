@@ -1,14 +1,20 @@
-import { Divider, Stack, Typography } from '@mui/material'
+import { Divider, Stack, Typography, type TypographyProps } from '@mui/material'
 
 type ScenarioPossibilityGaugeProps = {
   /** 발생 확률 (0~100 정수) */
   probability: number
   disabled?: boolean
   hideHoverBackground?: boolean
+  fontSize?: TypographyProps['fontSize']
 }
 
 /** 발생가능성 퍼센트 */
-const ScenarioPossibilityGauge = ({ probability, disabled = false, hideHoverBackground = false }: ScenarioPossibilityGaugeProps) => (
+const ScenarioPossibilityGauge = ({
+  probability,
+  disabled = false,
+  hideHoverBackground = false,
+  fontSize,
+}: ScenarioPossibilityGaugeProps) => (
   <Stack
     direction="row"
     display="inline-flex"
@@ -24,7 +30,7 @@ const ScenarioPossibilityGauge = ({ probability, disabled = false, hideHoverBack
     {disabled ? (
       <Divider sx={{ width: '20px', borderColor: 'contentText.Disabled' }} />
     ) : (
-      <Typography variant="body2M14" color="contentText.Black" whiteSpace="nowrap">
+      <Typography variant="body2M14" color="contentText.Black" fontSize={fontSize} whiteSpace="nowrap">
         {Number.isFinite(probability) ? `${Math.round(Math.min(100, Math.max(0, probability)))}%` : '-'}
       </Typography>
     )}

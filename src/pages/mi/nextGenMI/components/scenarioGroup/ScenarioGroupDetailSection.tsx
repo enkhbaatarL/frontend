@@ -23,6 +23,7 @@ import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextG
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import SignpostDefinitionDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostDefinitionDetailDialog'
+import SignpostMonitoringDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostMonitoringDetailDialog'
 import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
@@ -435,9 +436,10 @@ const SignpostDefinitionTable = ({ definitions, loading = false, onRowClick }: S
 interface SignpostMonitoringTableProps {
   monitorings: IScenarioSignpostMonitoring[]
   loading?: boolean
+  onRowClick?: (monitoring: IScenarioSignpostMonitoring) => void
 }
 
-const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonitoringTableProps) => {
+const SignpostMonitoringTable = ({ monitorings, loading = false, onRowClick }: SignpostMonitoringTableProps) => {
   const columns = useMemo<NextGenMIStickyTableColumn<IScenarioSignpostMonitoring>[]>(
     () => [
       {
@@ -445,7 +447,7 @@ const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonit
         headerName: '업데이트 일시',
         width: '110px',
         // headerCellSx: SIGNPOST_FIRST_HEADER_CELL_SX,
-        align: 'center',
+        // align: 'center',
         renderCell: ({ row }) => (
           <NextGenMITableBodyText value={formatNextGenMIDateTime(row.updatedAt, 'YYYY-MM-DD')} color="contentText.Black" />
         ),
@@ -495,6 +497,7 @@ const SignpostMonitoringTable = ({ monitorings, loading = false }: SignpostMonit
       noRowMessage="데이터를 수집 중입니다."
       noRowMinHeight={SIGNPOST_NO_ROW_MIN_HEIGHT}
       containerShell={false}
+      onRowClick={onRowClick ? (row) => onRowClick(row) : undefined}
     />
   )
 }
@@ -533,6 +536,7 @@ const ScenarioGroupDetailSection = ({
   const scrollSkeletonHoldGenerationRef = useRef(0)
   const [scrollSkeletonHoldScenarioId, setScrollSkeletonHoldScenarioId] = useState<number | null>(null)
   const [selectedSignpostDefinition, setSelectedSignpostDefinition] = useState<IScenarioSignpostDefinition | null>(null)
+  const [selectedSignpostMonitoring, setSelectedSignpostMonitoring] = useState<IScenarioSignpostMonitoring | null>(null)
   const rightHeaderPinned = useScenarioDetailStickyPinned(rightHeaderRef, stickyTopPx)
   const hasHeadingSlot = Boolean(headingSlot)
   const { data, isLoading } = useQuery({
@@ -679,6 +683,7 @@ const ScenarioGroupDetailSection = ({
 
   useEffect(() => {
     setSelectedSignpostDefinition(null)
+    setSelectedSignpostMonitoring(null)
   }, [selectedScenarioId])
 
   const handleSignpostDefinitionRowClick = useCallback((definition: IScenarioSignpostDefinition) => {
@@ -687,6 +692,14 @@ const ScenarioGroupDetailSection = ({
 
   const handleSignpostDefinitionDialogClose = useCallback(() => {
     setSelectedSignpostDefinition(null)
+  }, [])
+
+  const handleSignpostMonitoringRowClick = useCallback((monitoring: IScenarioSignpostMonitoring) => {
+    setSelectedSignpostMonitoring(monitoring)
+  }, [])
+
+  const handleSignpostMonitoringDialogClose = useCallback(() => {
+    setSelectedSignpostMonitoring(null)
   }, [])
 
   return (
@@ -747,11 +760,7 @@ const ScenarioGroupDetailSection = ({
                 Scenario
               </Typography>
               <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
-                {data?.displayOrder !== undefined && (
-                  <Box component="span" display="inline-flex" position="relative" top="1px">
-                    <NextGenMIDisplayOrderBadge value={data.displayOrder} height="24px" />
-                  </Box>
-                )}
+                {data?.displayOrder !== undefined && <NextGenMIDisplayOrderBadge value={data.displayOrder} height="24px" />}
                 <Typography fontSize="22px" fontWeight={700} lineHeight={1.4} color="contentText.Black" minWidth={0}>
                   {data?.scenarioName ?? '-'}
                 </Typography>
@@ -781,7 +790,7 @@ const ScenarioGroupDetailSection = ({
                 <Skeleton variant="rounded" sx={{ flex: 1, borderRadius: '10px' }} />
               ) : (
                 <Stack flex={1} alignItems="flex-start" gap="4px" bgcolor="gray.5" borderRadius="10px" padding="16px">
-                  <ScenarioPossibilityGauge probability={scenarioProbability ?? 0} hideHoverBackground />
+                  <ScenarioPossibilityGauge probability={scenarioProbability ?? 0} fontSize="16px" hideHoverBackground />
                 </Stack>
               )}
             </Stack>
@@ -803,7 +812,11 @@ const ScenarioGroupDetailSection = ({
 
           <Stack gap="12px">
             <SubHeading label="Signpost 모니터링 현황" />
-            <SignpostMonitoringTable monitorings={data?.signpostMonitorings ?? []} loading={detailLoading} />
+            <SignpostMonitoringTable
+              monitorings={data?.signpostMonitorings ?? []}
+              loading={detailLoading}
+              onRowClick={handleSignpostMonitoringRowClick}
+            />
           </Stack>
         </Stack>
       </Stack>
@@ -812,6 +825,11 @@ const ScenarioGroupDetailSection = ({
         open={selectedSignpostDefinition !== null}
         definition={selectedSignpostDefinition}
         onClose={handleSignpostDefinitionDialogClose}
+      />
+      <SignpostMonitoringDetailDialog
+        open={selectedSignpostMonitoring !== null}
+        monitoring={selectedSignpostMonitoring}
+        onClose={handleSignpostMonitoringDialogClose}
       />
     </Stack>
   )

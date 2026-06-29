@@ -66,7 +66,7 @@ interface ScenarioGroupAccordionRowProps {
 }
 
 const ChevronCell = ({ expanded }: { expanded: boolean }) => (
-  <Stack width="32px" flexShrink={0} alignItems="center" justifyContent="center">
+  <Stack width="32px" flexShrink={0} alignItems="center" justifyContent="center" px="6px" boxSizing="border-box" overflow="hidden">
     <KeyboardArrowDownRounded
       sx={{
         fontSize: '20px',
@@ -118,14 +118,19 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle, chartBackgroundC
       }}
     >
       <ChevronCell expanded={expanded} />
-      <Box px="6px" minWidth={0}>
+      <Box px="6px" minWidth={0} overflow="hidden" boxSizing="border-box">
         <NextGenMITableBodyText value={dateLabel} variant="body2M14" color="contentText.Black" />
       </Box>
-      <Box />
-      <NextGenMIHoverLinkCell value={group.groupName} onClick={navigateToGroupDetail} />
+      <Box px="6px" minWidth={0} overflow="hidden" boxSizing="border-box" />
+      <Box px="6px" minWidth={0} overflow="hidden" boxSizing="border-box">
+        <NextGenMIHoverLinkCell value={group.groupName} onClick={navigateToGroupDetail} />
+      </Box>
       <Stack
         minWidth={0}
         justifyContent="center"
+        px="6px"
+        boxSizing="border-box"
+        overflow="hidden"
         sx={{
           opacity: expanded ? 0 : 1,
           pointerEvents: expanded ? 'none' : 'auto',
@@ -134,7 +139,7 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle, chartBackgroundC
       >
         <NextGenMITableBodyText value={group.summary} variant="body2M14" color="contentText.Black" tooltipWhenTruncated />
       </Stack>
-      <Stack minWidth={0} alignItems="flex-end" px="24px">
+      <Stack minWidth={0} alignItems="flex-end" px="24px" boxSizing="border-box" overflow="hidden">
         <Typography
           variant="body2M14"
           color="contentText.Black"
@@ -153,7 +158,7 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle, chartBackgroundC
         direction="row"
         alignItems="center"
         position="absolute"
-        right="20px"
+        right="24px"
         top="50%"
         onClick={(event) => event.stopPropagation()}
         sx={{
