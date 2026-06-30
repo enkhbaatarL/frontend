@@ -10,6 +10,7 @@ import ScenarioDetailIcon from '@/components/common/icons/ScenarioDetailIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import NextGenMIDetailHeader, {
+  NextGenMIDetailCollapsedSummary,
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type NextGenMIDetailHeaderSection,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
@@ -80,6 +81,7 @@ interface ScenarioGroupDetailHeaderContent {
   backLabel: string
   onBack: () => void
   titleSlot: ReactNode
+  collapsedSummarySlot?: ReactNode
   rightAction?: ReactNode
   pendingScrollSectionId?: string
   pendingScrollKey?: string | number
@@ -115,6 +117,7 @@ const ScenarioGroupDetailHeaderView = () => {
       backLabel={content.backLabel}
       onBack={content.onBack}
       titleSlot={content.titleSlot}
+      collapsedSummarySlot={content.collapsedSummarySlot}
       rightAction={content.rightAction}
       pendingScrollSectionId={content.pendingScrollSectionId}
       pendingScrollKey={content.pendingScrollKey}
@@ -286,6 +289,11 @@ const ScenarioGroupDetailPage = () => {
     [groupName, scenarioGroupId],
   )
 
+  const headerCollapsedSummarySlot = useMemo(
+    () => <NextGenMIDetailCollapsedSummary typeLabel="Scenario Group" title={groupName || '시나리오 그룹 상세'} />,
+    [groupName],
+  )
+
   const shouldFocusDetailSection =
     hasViewableQueryScenarioId && !isLoading && Boolean(data) && (arrivedWithScenarioId || detailScrollRequestSeq > 0)
   const focusDetailSectionId = shouldFocusDetailSection ? SCENARIO_GROUP_DETAIL_SECTIONS[3].id : undefined
@@ -296,11 +304,12 @@ const ScenarioGroupDetailPage = () => {
       backLabel: 'Scenario Group List',
       onBack: () => navigate(getNextGenMITabPath('scenarios')),
       titleSlot: headerTitleSlot,
+      collapsedSummarySlot: headerCollapsedSummarySlot,
       rightAction: headerRightAction,
       pendingScrollSectionId: focusDetailSectionId,
       pendingScrollKey: focusDetailScrollKey,
     })
-  }, [focusDetailScrollKey, focusDetailSectionId, headerRightAction, headerTitleSlot, navigate])
+  }, [focusDetailScrollKey, focusDetailSectionId, headerCollapsedSummarySlot, headerRightAction, headerTitleSlot, navigate])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioGroupDetailHeaderView />, {

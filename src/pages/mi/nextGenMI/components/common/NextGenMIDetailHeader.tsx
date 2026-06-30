@@ -1,4 +1,4 @@
-import { Box, Collapse, Stack, Tab, Tabs } from '@mui/material'
+import { Box, Collapse, Stack, Tab, Tabs, Typography } from '@mui/material'
 import { type ReactNode, type SyntheticEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
@@ -48,6 +48,7 @@ interface NextGenMIDetailHeaderProps {
   backIcon?: ReactNode
   onBack?: () => void
   titleSlot: ReactNode
+  collapsedSummarySlot?: ReactNode
   rightAction?: ReactNode
   sections: NextGenMIDetailHeaderSection[]
   sectionSlot?: ReactNode
@@ -66,6 +67,7 @@ const NextGenMIDetailHeader = ({
   backIcon,
   onBack,
   titleSlot,
+  collapsedSummarySlot,
   rightAction,
   sections,
   sectionSlot,
@@ -78,6 +80,7 @@ const NextGenMIDetailHeader = ({
 }: NextGenMIDetailHeaderProps) => {
   const { patchStickyHeaderOptions } = useStickyHeader()
   const isEmbedded = scrollContainer !== undefined
+  const hasCollapsedSummary = !isEmbedded && Boolean(collapsedSummarySlot)
 
   const getScrollEl = useCallback(() => {
     if (isEmbedded) return scrollContainer ?? null
@@ -126,6 +129,21 @@ const NextGenMIDetailHeader = ({
     if (!el) return
     const h = el.getBoundingClientRect().height
     if (h < 1) return
+    if (hasCollapsedSummary) {
+      setStickyHeightsPx((prev) => {
+        const next = isMainScrolledRef.current
+          ? { expanded: prev.expanded, collapsed: Math.round(h) }
+          : { expanded: Math.round(h), collapsed: 78 + 62 }
+        if (
+          Math.abs(prev.expanded - next.expanded) < STICKY_HEIGHT_MEASURE_EPS_PX &&
+          Math.abs(prev.collapsed - next.collapsed) < STICKY_HEIGHT_MEASURE_EPS_PX
+        ) {
+          return prev
+        }
+        return next
+      })
+      return
+    }
     const nav = NEXT_GEN_MI_DETAIL_NAV_ROW_PX
     const next = isMainScrolledRef.current
       ? { expanded: Math.round(h + nav), collapsed: Math.round(h) }
@@ -139,7 +157,7 @@ const NextGenMIDetailHeader = ({
       }
       return next
     })
-  }, [])
+  }, [hasCollapsedSummary])
 
   const getStickySectionAlignY = useCallback(
     (scrollEl: HTMLElement) => {
@@ -376,9 +394,6 @@ const NextGenMIDetailHeader = ({
     <Box
       ref={rootRef}
       {...(isEmbedded && { 'data-sticky-header': true })}
-      maxWidth="1380px"
-      margin="auto"
-      px="12px"
       width="100%"
       sx={{
         ...(isEmbedded && {
@@ -389,10 +404,10 @@ const NextGenMIDetailHeader = ({
         }),
       }}
     >
-      <Stack bgcolor="commonColor.White">
-        {!hideBackButton && (
+      <Stack bgcolor="commonColor.White" width="100%">
+        {hasCollapsedSummary && (
           <Collapse
-            in={!isMainScrolled}
+            in={isMainScrolled}
             appear={false}
             timeout={{
               appear: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS,
@@ -404,104 +419,194 @@ const NextGenMIDetailHeader = ({
               transition: `height ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS}ms ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING}`,
             }}
           >
-            <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" py="8px">
-              <Box flex={1} minWidth={0} display="flex" alignItems="flex-end" minHeight="36px">
-                <MIBaseButton
-                  variant="outlined"
-                  prefix={
-                    <Box component="span" display="inline-flex" color="contentIcon.Enabled">
-                      {backIcon ?? <MoveToParentPageIcon />}
-                    </Box>
-                  }
-                  onClick={onBack}
-                  enableHoverBackground
-                  sx={{
-                    height: '36px',
-                    color: 'contentText.Normal',
-                  }}
-                >
-                  {backLabel}
-                </MIBaseButton>
-              </Box>
+            <Stack alignItems="center" justifyContent="center" minHeight="78px" bgcolor="gray.5" padding="12px 0" boxSizing="border-box">
+              <Stack width="100%" maxWidth="1380px" minWidth={0} boxSizing="border-box" paddingRight="56px">
+                {collapsedSummarySlot}
+              </Stack>
             </Stack>
           </Collapse>
         )}
 
-        {titleSlot}
-
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          width="100%"
-          sx={{
-            position: 'relative',
-            mt: '4px',
-            bgcolor: 'commonColor.White',
-            overflow: 'visible',
-            boxShadow: isMainScrolled ? NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
-            clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_TOP,
-            transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: '1px',
-              bgcolor: '#DEE2E6',
-              pointerEvents: 'none',
-              zIndex: 1,
-            },
-          }}
-        >
-          {sectionSlot ?? (
-            <Tabs
-              value={activeSection}
-              onChange={handleTabChange}
-              slotProps={{
-                scroller: {
-                  style: { overflow: 'visible' },
-                },
+        <Stack maxWidth="1380px" margin="auto" px="12px" width="100%">
+          {!hideBackButton && (
+            <Collapse
+              in={!isMainScrolled}
+              appear={false}
+              timeout={{
+                appear: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS,
+                enter: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS,
+                exit: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS,
               }}
+              easing={{ enter: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING, exit: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING }}
               sx={{
-                flex: 1,
-                minWidth: 0,
-                borderBottom: 'none',
-                position: 'relative',
-                zIndex: 3,
-                overflow: 'visible',
-                '& .MuiTabs-flexContainer': { alignItems: 'flex-end' },
-                '.MuiTabs-indicator': {
-                  backgroundColor: 'commonColor.Black',
-                  height: '2px',
-                  minHeight: '2px',
-                  bottom: 0,
-                  zIndex: 2,
-                },
-                '& .MuiTab-root': {
-                  fontWeight: 600,
-                  fontSize: '16px',
-                  lineHeight: 1.4,
-                  color: 'contentText.Black',
-                  minHeight: 62,
-                  padding: '20px',
-                  textTransform: 'none',
-                  '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 600 },
-                },
+                transition: `height ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS}ms ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING}`,
               }}
             >
-              {sections.map((section, index) => (
-                <Tab key={section.id} label={section.label} disableRipple onClick={() => handleTabClick(index)} />
-              ))}
-            </Tabs>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%" py="8px">
+                <Box flex={1} minWidth={0} display="flex" alignItems="flex-end" minHeight="36px">
+                  <MIBaseButton
+                    variant="outlined"
+                    prefix={
+                      <Box component="span" display="inline-flex" color="contentIcon.Enabled">
+                        {backIcon ?? <MoveToParentPageIcon />}
+                      </Box>
+                    }
+                    onClick={onBack}
+                    enableHoverBackground
+                    sx={{
+                      height: '36px',
+                      color: 'contentText.Normal',
+                    }}
+                  >
+                    {backLabel}
+                  </MIBaseButton>
+                </Box>
+              </Stack>
+            </Collapse>
           )}
 
-          {rightAction}
+          {hasCollapsedSummary ? (
+            <Collapse
+              in={!isMainScrolled}
+              appear={false}
+              timeout={{
+                appear: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS,
+                enter: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS,
+                exit: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS,
+              }}
+              easing={{ enter: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING, exit: NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING }}
+              sx={{
+                transition: `height ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS}ms ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING}`,
+              }}
+            >
+              {titleSlot}
+            </Collapse>
+          ) : (
+            titleSlot
+          )}
+
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            width="100%"
+            sx={{
+              position: 'relative',
+              mt: hasCollapsedSummary && isMainScrolled ? 0 : '4px',
+              bgcolor: 'commonColor.White',
+              overflow: 'visible',
+              boxShadow: isMainScrolled ? NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED : 'none',
+              clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_TOP,
+              transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: '1px',
+                bgcolor: '#DEE2E6',
+                pointerEvents: 'none',
+                zIndex: 1,
+              },
+            }}
+          >
+            {sectionSlot ?? (
+              <Tabs
+                value={activeSection}
+                onChange={handleTabChange}
+                slotProps={{
+                  scroller: {
+                    style: { overflow: 'visible' },
+                  },
+                }}
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  borderBottom: 'none',
+                  position: 'relative',
+                  zIndex: 3,
+                  overflow: 'visible',
+                  '& .MuiTabs-flexContainer': { alignItems: 'flex-end' },
+                  '.MuiTabs-indicator': {
+                    backgroundColor: 'commonColor.Black',
+                    height: '2px',
+                    minHeight: '2px',
+                    bottom: 0,
+                    zIndex: 2,
+                  },
+                  '& .MuiTab-root': {
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    lineHeight: 1.4,
+                    color: 'contentText.Black',
+                    minHeight: 62,
+                    padding: '20px',
+                    textTransform: 'none',
+                    '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 600 },
+                  },
+                }}
+              >
+                {sections.map((section, index) => (
+                  <Tab key={section.id} label={section.label} disableRipple onClick={() => handleTabClick(index)} />
+                ))}
+              </Tabs>
+            )}
+
+            {rightAction}
+          </Stack>
         </Stack>
       </Stack>
     </Box>
   )
 }
+
+export interface NextGenMIDetailCollapsedSummaryProps {
+  typeLabel: string
+  title: string
+  metaItems?: { label: string; value: string }[]
+}
+
+export const NextGenMIDetailCollapsedSummary = ({ typeLabel, title, metaItems = [] }: NextGenMIDetailCollapsedSummaryProps) => (
+  <Stack direction="row" alignItems="center" gap="24px" width="100%" minWidth={0}>
+    <Stack direction="row" alignItems="center" gap="10px" flex={1} minWidth={0}>
+      <Box
+        component="span"
+        display="inline-flex"
+        alignItems="center"
+        justifyContent="center"
+        padding="2px 6px"
+        borderRadius="4px"
+        border="1px solid"
+        borderColor="contentBorder.Normal"
+        bgcolor="gray.20"
+        boxSizing="border-box"
+        flexShrink={0}
+      >
+        <Typography component="span" variant="body2SB14" color="contentText.Normal" lineHeight={1.4} noWrap>
+          {typeLabel}
+        </Typography>
+      </Box>
+      <Typography variant="body1SB16" color="contentText.Black" fontSize="18px" lineHeight={1.4} noWrap>
+        {title}
+      </Typography>
+    </Stack>
+
+    {metaItems.length > 0 && (
+      <Stack direction="row" alignItems="center" flexShrink={0}>
+        {metaItems.map((item) => (
+          <Stack key={item.label} direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
+            <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4} noWrap>
+              {item.label}
+            </Typography>
+            <Typography variant="body3M12" color="contentText.Black" lineHeight={1.4} noWrap>
+              {item.value}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+    )}
+  </Stack>
+)
 
 export default NextGenMIDetailHeader

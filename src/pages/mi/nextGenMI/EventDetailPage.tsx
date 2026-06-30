@@ -14,6 +14,7 @@ import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMINoiseSignalBadge } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import { nextGenMIIsEventNoiseSignal } from '@/pages/mi/nextGenMI/components/common/nextGenMIClassificationChip'
 import NextGenMIDetailHeader, {
+  NextGenMIDetailCollapsedSummary,
   NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   type NextGenMIDetailHeaderSection,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
@@ -126,6 +127,7 @@ interface EventDetailHeaderContent {
   backLabel: string
   onBack: () => void
   titleSlot: ReactNode
+  collapsedSummarySlot?: ReactNode
   rightAction?: ReactNode
 }
 
@@ -158,6 +160,7 @@ const EventDetailHeaderView = () => {
       backLabel={content.backLabel}
       onBack={content.onBack}
       titleSlot={content.titleSlot}
+      collapsedSummarySlot={content.collapsedSummarySlot}
       rightAction={content.rightAction}
     />
   )
@@ -425,15 +428,30 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     [detail?.signalType, detail?.signalTypeLabel, detailLoading, generatedAtLabel, title, updatedAtLabel],
   )
 
+  const headerCollapsedSummarySlot = useMemo(
+    () => (
+      <NextGenMIDetailCollapsedSummary
+        typeLabel="Event"
+        title={title}
+        metaItems={[
+          { label: '생성', value: generatedAtLabel },
+          { label: '갱신', value: updatedAtLabel },
+        ]}
+      />
+    ),
+    [generatedAtLabel, title, updatedAtLabel],
+  )
+
   useLayoutEffect(() => {
     if (embedded) return
     publishEventDetailHeaderContent({
       backLabel: 'Event List',
       onBack: () => navigate(getNextGenMITabPath('events')),
       titleSlot: headerTitleSlot,
+      collapsedSummarySlot: headerCollapsedSummarySlot,
       rightAction: eventDetailHeaderTabActions,
     })
-  }, [embedded, eventDetailHeaderTabActions, headerTitleSlot, navigate])
+  }, [embedded, eventDetailHeaderTabActions, headerCollapsedSummarySlot, headerTitleSlot, navigate])
 
   useLayoutEffect(() => {
     if (embedded) return undefined
