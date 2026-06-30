@@ -142,29 +142,29 @@ const DesignScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) =
     gap="6px"
     sx={{
       ...tableButtonBaseSx,
-      color: 'mari.Primary',
+      color: 'contentIcon.Enabled',
       '&::before': {
         ...tableButtonBaseSx['&::before'],
-        borderColor: 'mari.Primary',
+        borderColor: 'contentBorder.Normal',
         backgroundColor: 'commonColor.White',
       },
       '&:hover:not(:disabled), &:focus-visible': {
         borderColor: 'transparent',
         backgroundColor: 'transparent',
-        color: 'contentText.White',
+        color: 'commonColor.White',
         '&::before': {
-          borderColor: 'mari.Primary',
-          backgroundColor: 'mari.Primary',
+          borderColor: 'contentIcon.ActivePrimary',
+          backgroundColor: 'contentIcon.ActivePrimary',
         },
       },
       '&:active:not(:disabled)': {
         borderColor: 'transparent',
         backgroundColor: 'transparent',
-        color: 'contentText.White',
+        color: 'commonColor.White',
         '&::before': {
-          borderColor: 'mari.Primary',
-          backgroundColor: 'mari.Primary',
-          backgroundImage: 'linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(0deg, #364FC7, #364FC7)',
+          borderColor: 'contentIcon.ActivePrimary',
+          backgroundColor: 'contentIcon.ActivePrimary',
+          backgroundImage: 'linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(0deg, #2E3F5E, #2E3F5E)',
         },
       },
     }}
