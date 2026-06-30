@@ -100,19 +100,23 @@ export const convertElementToImageCanvas = async ({
 
     // 2) html2canvas는 overflow 클리핑/text-overflow:ellipsis를 텍스트에 제대로 적용하지 못한다.
     //    화면 실측 폭에 맞춰 텍스트를 직접 잘라 "…"를 붙여 화면과 동일하게 보이도록 한다.
-    const isEllipsis = computed.textOverflow === 'ellipsis' && computed.whiteSpace === 'nowrap'
+    const isEllipsis = computed.textOverflow === 'ellipsis' && computed.whiteSpace === 'nowrap' && computed.display !== 'inline'
     const isTextOnly = liveElement.childElementCount === 0 && (liveElement.textContent ?? '').trim().length > 0
     if (measureContext && isEllipsis && isTextOnly) {
-      const availableWidth = liveElement.clientWidth - parseFloat(computed.paddingLeft || '0') - parseFloat(computed.paddingRight || '0')
+      const availableWidth =
+        (liveElement.clientWidth || liveElement.getBoundingClientRect().width) -
+        parseFloat(computed.paddingLeft || '0') -
+        parseFloat(computed.paddingRight || '0')
+      if (availableWidth <= 0) return
       const text = liveElement.textContent ?? ''
       measureContext.font = `${computed.fontStyle} ${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`
       const textStyleContext = measureContext as CanvasRenderingContext2D & { letterSpacing?: string }
       if ('letterSpacing' in textStyleContext) {
         textStyleContext.letterSpacing = computed.letterSpacing
       }
-      if (measureContext.measureText(text).width > availableWidth) {
+      if (measureContext.measureText(text).width > availableWidth + 1) {
         let truncated = text
-        while (truncated.length > 1 && measureContext.measureText(`${truncated}…`).width > availableWidth) {
+        while (truncated.length > 1 && measureContext.measureText(`${truncated}…`).width > availableWidth + 1) {
           truncated = truncated.slice(0, -1)
         }
         clonedChild.textContent = `${truncated}…`
