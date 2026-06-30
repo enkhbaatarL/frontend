@@ -4,6 +4,7 @@ import { type ReactNode, type SyntheticEvent, useCallback, useEffect, useLayoutE
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MoveToParentPageIcon from '@/components/common/icons/MoveToParentPageIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
+import useAuthStore from '@/store/useAuthStore'
 
 const NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS = 220
 const NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
@@ -79,6 +80,9 @@ const NextGenMIDetailHeader = ({
   pendingScrollKey,
 }: NextGenMIDetailHeaderProps) => {
   const { patchStickyHeaderOptions } = useStickyHeader()
+  const hasMariButton = useAuthStore(
+    (state) => state.accessCompanyInfo?.floating?.some((floating) => floating.screenElementCd === 'MARI') ?? false,
+  )
   const isEmbedded = scrollContainer !== undefined
   const hasCollapsedSummary = !isEmbedded && Boolean(collapsedSummarySlot)
 
@@ -419,8 +423,15 @@ const NextGenMIDetailHeader = ({
               transition: `height ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS}ms ${NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_EASING}`,
             }}
           >
-            <Stack alignItems="center" justifyContent="center" minHeight="78px" bgcolor="gray.5" padding="12px 0" boxSizing="border-box">
-              <Stack width="100%" maxWidth="1380px" minWidth={0} boxSizing="border-box" paddingRight="56px">
+            <Stack
+              alignItems="center"
+              justifyContent="center"
+              minHeight={hasMariButton ? '78px' : '49px'}
+              bgcolor="gray.5"
+              padding="12px 0"
+              boxSizing="border-box"
+            >
+              <Stack width="100%" maxWidth="1380px" minWidth={0} boxSizing="border-box" paddingRight={hasMariButton ? '56px' : '0px'}>
                 {collapsedSummarySlot}
               </Stack>
             </Stack>

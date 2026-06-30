@@ -15,6 +15,8 @@ import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextG
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import { NEXT_GEN_MI_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
+import EventDetailSummaryCell from '@/pages/mi/nextGenMI/components/event/EventDetailSummaryCell'
+import EventDetailSummaryDialog from '@/pages/mi/nextGenMI/components/event/EventDetailSummaryDialog'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
 
@@ -65,6 +67,7 @@ const EventDetailMiRecordsTable = ({
   const navigate = useNavigate()
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
   const [shakingRowKeys, setShakingRowKeys] = useState<Set<string>>(new Set())
+  const [selectedRecord, setSelectedRecord] = useState<EventRelatedRecord | null>(null)
 
   const isServerMode = serverPagination !== undefined
 
@@ -86,6 +89,10 @@ const EventDetailMiRecordsTable = ({
         return next
       })
     }, 400)
+  }, [])
+
+  const handleSummaryDialogClose = useCallback(() => {
+    setSelectedRecord(null)
   }, [])
 
   const totalPages = useMemo(() => {
@@ -213,13 +220,14 @@ const EventDetailMiRecordsTable = ({
       {
         field: 'summary',
         headerName: '요약',
-        width: paginatedRows.length > 0 ? '100%' : 'auto',
+        width: paginatedRows.length > 0 ? '652px' : 'auto',
         minWidth: paginatedRows.length > 0 ? '652px' : '0px',
-        maxWidth: 'none',
-        renderCell: ({ row }) => row.summary ?? '',
+        maxWidth: paginatedRows.length > 0 ? '652px' : 'none',
+        renderCell: ({ row }) => <EventDetailSummaryCell value={row.summary} />,
         cellSx: {
-          overflow: 'visible',
-          textOverflow: 'clip',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          verticalAlign: 'top',
         },
       },
     ],
@@ -247,8 +255,9 @@ const EventDetailMiRecordsTable = ({
               leftAlignedHeaderSticky
               getRowKey={getEventRelatedRecordRowKey}
               noRowMessage="표시할 데이터가 없습니다."
-              rowHeight={paginatedRows.length === 0 ? '400px' : undefined}
+              rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
               containerShell={false}
+              onRowClick={(row) => setSelectedRecord(row)}
             />
             {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
               <MIPaginationSecondary<EventRelatedRecord>
@@ -269,6 +278,18 @@ const EventDetailMiRecordsTable = ({
           </>
         )}
       </Box>
+      <EventDetailSummaryDialog
+        open={selectedRecord !== null}
+        title="MI Records"
+        summaryLabel="요약"
+        summary={selectedRecord?.summary}
+        infoItems={[
+          { label: '일자', value: selectedRecord?.publishedAt },
+          { label: '종류', value: selectedRecord?.recordType },
+          { label: '제목', value: selectedRecord?.title, fullWidth: true },
+        ]}
+        onClose={handleSummaryDialogClose}
+      />
     </Stack>
   )
 }

@@ -58,7 +58,10 @@ const SignpostDefinitionDetailDialog = ({ open, definition, onClose }: SignpostD
         },
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="flex-end" padding="12px 20px" flexShrink={0}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" padding="12px 20px" flexShrink={0}>
+        <Typography color="contentText.Black" fontSize="18px" fontWeight={600} lineHeight={1.4}>
+          Signpost 정의
+        </Typography>
         <MIBaseButton
           aria-label="닫기"
           variant="text"

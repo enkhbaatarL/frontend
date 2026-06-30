@@ -1,6 +1,6 @@
 import DescriptionIcon from '@mui/icons-material/Description'
 import { Box, Stack } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { EventInstitutionOutlook } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
@@ -10,6 +10,8 @@ import NextGenMIEventDetailBlockSkeleton from '@/pages/mi/nextGenMI/components/c
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import { NEXT_GEN_MI_TABLE_CONTAINER_PADDING } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
+import EventDetailSummaryCell from '@/pages/mi/nextGenMI/components/event/EventDetailSummaryCell'
+import EventDetailSummaryDialog from '@/pages/mi/nextGenMI/components/event/EventDetailSummaryDialog'
 
 const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
 
@@ -31,6 +33,7 @@ const EventDetailInstitutionalOutlookTable = ({
   compact = false,
 }: EventDetailInstitutionalOutlookTableProps) => {
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
+  const [selectedOutlook, setSelectedOutlook] = useState<EventInstitutionOutlook | null>(null)
 
   const isServerMode = serverPagination !== undefined
 
@@ -77,6 +80,10 @@ const EventDetailInstitutionalOutlookTable = ({
     }
   }, [isServerMode, paginatedRows, pagination.size, rows.length, safePage, serverPagination, totalPages])
 
+  const handleSummaryDialogClose = useCallback(() => {
+    setSelectedOutlook(null)
+  }, [])
+
   const columns = useMemo<NextGenMIStickyTableColumn<EventInstitutionOutlook>[]>(
     () => [
       {
@@ -89,13 +96,14 @@ const EventDetailInstitutionalOutlookTable = ({
       {
         field: 'outlookSummary',
         headerName: '전망 요약',
-        width: paginatedRows.length > 0 ? '100%' : 'auto',
+        width: paginatedRows.length > 0 ? '852px' : 'auto',
         minWidth: paginatedRows.length > 0 ? '852px' : '0px',
-        maxWidth: 'none',
-        renderCell: ({ row }) => row.outlookSummary ?? '',
+        maxWidth: paginatedRows.length > 0 ? '852px' : 'none',
+        renderCell: ({ row }) => <EventDetailSummaryCell value={row.outlookSummary} />,
         cellSx: {
-          overflow: 'visible',
-          textOverflow: 'clip',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          verticalAlign: 'top',
         },
       },
     ],
@@ -123,8 +131,9 @@ const EventDetailInstitutionalOutlookTable = ({
               leftAlignedHeaderSticky
               getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
               noRowMessage="표시할 데이터가 없습니다."
-              rowHeight={paginatedRows.length === 0 ? '400px' : undefined}
+              rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
               containerShell={false}
+              onRowClick={(row) => setSelectedOutlook(row)}
             />
             {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
               <MIPaginationSecondary<EventInstitutionOutlook>
@@ -145,6 +154,17 @@ const EventDetailInstitutionalOutlookTable = ({
           </>
         )}
       </Box>
+      <EventDetailSummaryDialog
+        open={selectedOutlook !== null}
+        title="기관 전망"
+        summaryLabel="전망 요약"
+        summary={selectedOutlook?.outlookSummary}
+        infoItems={[
+          { label: '일자', value: selectedOutlook?.viewDate },
+          { label: '기관', value: selectedOutlook?.institutionName },
+        ]}
+        onClose={handleSummaryDialogClose}
+      />
     </Stack>
   )
 }
