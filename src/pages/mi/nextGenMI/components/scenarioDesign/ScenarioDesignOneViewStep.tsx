@@ -6,6 +6,7 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Collapse, Dialog, DialogActions, DialogContent, Divider, Stack, Typography, type TypographyProps } from '@mui/material'
 import {
   type ChangeEvent,
+  type ClipboardEvent as ReactClipboardEvent,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -221,6 +222,8 @@ const getScenarioDesignReviewResizedCardWidths = (
 const getScenarioDesignReviewPossibilityTotal = (possibilities: Record<number, string>) =>
   Object.values(possibilities).reduce((total, value) => total + (Number(value) || 0), 0)
 
+const getScenarioDesignReviewSingleLineValue = (value: string) => value.replace(/[\r\n]+/g, ' ')
+
 const getScenarioDesignReviewPixelValue = (value?: string) => {
   const pixelValue = value ? Number.parseFloat(value) : Number.NaN
   return Number.isFinite(pixelValue) ? pixelValue : undefined
@@ -330,6 +333,7 @@ const ScenarioDesignReviewResizableTextarea = ({
   fontWeight = 500,
   padding = '20px',
   hoverBgcolor,
+  preventLineBreak,
   onBlur,
   onChange,
 }: {
@@ -348,6 +352,7 @@ const ScenarioDesignReviewResizableTextarea = ({
   fontWeight?: number
   padding?: string
   hoverBgcolor?: string
+  preventLineBreak?: boolean
   onBlur?: () => void
   onChange?: (value: string) => void
 }) => {
@@ -426,6 +431,35 @@ const ScenarioDesignReviewResizableTextarea = ({
     globalThis.addEventListener('pointerup', handlePointerUp, { once: true })
   }
 
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    onChange?.(preventLineBreak ? getScenarioDesignReviewSingleLineValue(event.target.value) : event.target.value)
+  }
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (!preventLineBreak || event.key !== 'Enter' || event.nativeEvent.isComposing) return
+
+    event.preventDefault()
+    event.currentTarget.blur()
+  }
+
+  const handlePaste = (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
+    if (!preventLineBreak || !onChange) return
+
+    const pastedValue = event.clipboardData.getData('text')
+    const nextPastedValue = getScenarioDesignReviewSingleLineValue(pastedValue)
+    if (pastedValue === nextPastedValue) return
+
+    event.preventDefault()
+
+    const textarea = event.currentTarget
+    const selectionStart = textarea.selectionStart
+    const selectionEnd = textarea.selectionEnd
+    const availableLength = Math.max(maxLength - (value.length - (selectionEnd - selectionStart)), 0)
+    const insertedValue = nextPastedValue.slice(0, availableLength)
+
+    onChange(`${value.slice(0, selectionStart)}${insertedValue}${value.slice(selectionEnd)}`)
+  }
+
   return (
     <Stack
       className="scenario-design-review-resizable-textarea"
@@ -463,7 +497,9 @@ const ScenarioDesignReviewResizableTextarea = ({
         maxLength={maxLength}
         disabled={disabled}
         onBlur={onBlur}
-        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange?.(event.target.value)}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         sx={{
           width: '100%',
           height: '100%',
@@ -619,6 +655,7 @@ const ScenarioDesignReviewParagraphField = ({
   errorMessage,
   ariaLabel,
   resetKey,
+  preventLineBreak,
   onBlur,
   onChange,
 }: {
@@ -632,6 +669,7 @@ const ScenarioDesignReviewParagraphField = ({
   errorMessage?: string
   ariaLabel?: string
   resetKey?: number
+  preventLineBreak?: boolean
   onBlur?: () => void
   onChange?: (value: string) => void
 }) => (
@@ -649,6 +687,7 @@ const ScenarioDesignReviewParagraphField = ({
         fontSize={fontSize}
         fontWeight={500}
         hoverBgcolor="contentBG.Hover"
+        preventLineBreak={preventLineBreak}
         onBlur={onBlur}
         onChange={onChange}
       />
@@ -703,6 +742,7 @@ const ScenarioDesignReviewTextSection = ({
   editable,
   errorMessage,
   resetKey,
+  preventLineBreak,
   onBlur,
   onChange,
   onReset,
@@ -715,6 +755,7 @@ const ScenarioDesignReviewTextSection = ({
   editable?: boolean
   errorMessage?: string
   resetKey?: number
+  preventLineBreak?: boolean
   onBlur?: () => void
   onChange?: (value: string) => void
   onReset?: () => void
@@ -749,6 +790,7 @@ const ScenarioDesignReviewTextSection = ({
       fontSize="16px"
       editable={editable}
       errorMessage={errorMessage}
+      preventLineBreak={preventLineBreak}
       onBlur={onBlur}
       onChange={onChange}
     />
@@ -1676,9 +1718,10 @@ const ScenarioDesignOneViewStep = ({
   const defaultScenarioPossibilities = useMemo(() => createScenarioDesignReviewInitialPossibilities(rows), [rows])
   const defaultScenarioNarratives = useMemo(() => createScenarioDesignReviewInitialNarratives(rows), [rows])
   const defaultScenarioSignposts = useMemo(() => createScenarioDesignReviewInitialSignposts(rows), [rows])
-  const previousGroupNameRef = useRef(groupName)
+  const defaultScenarioGroupName = useMemo(() => getScenarioDesignReviewSingleLineValue(groupName), [groupName])
+  const previousGroupNameRef = useRef(defaultScenarioGroupName)
   const previousGroupDescriptionRef = useRef(groupDescription)
-  const [scenarioGroupName, setScenarioGroupName] = useState(groupName)
+  const [scenarioGroupName, setScenarioGroupName] = useState(defaultScenarioGroupName)
   const [scenarioGroupDescription, setScenarioGroupDescription] = useState(groupDescription)
   const [scenarioNarratives, setScenarioNarratives] = useState<Record<number, string>>(() => defaultScenarioNarratives)
   const [scenarioPossibilities, setScenarioPossibilities] = useState<Record<number, string>>(() => defaultScenarioPossibilities)
@@ -1707,7 +1750,7 @@ const ScenarioDesignOneViewStep = ({
   const scenarioReviewScrollLayoutStateRef = useRef(scenarioReviewScrollLayoutState)
   const [isScenarioReviewScrollHovered, setIsScenarioReviewScrollHovered] = useState(false)
   const [isScenarioReviewScrollbarDragging, setIsScenarioReviewScrollbarDragging] = useState(false)
-  const scenarioGroupNameModified = scenarioGroupName !== groupName
+  const scenarioGroupNameModified = scenarioGroupName !== defaultScenarioGroupName
   const scenarioGroupDescriptionModified = scenarioGroupDescription !== groupDescription
   const scenarioReviewResetDisabled = useMemo(
     () =>
@@ -1781,7 +1824,7 @@ const ScenarioDesignOneViewStep = ({
 
     setScenarioGroupName((currentName) => {
       if (currentName !== previousGroupName) return currentName
-      return groupName
+      return defaultScenarioGroupName
     })
     setScenarioGroupDescription((currentDescription) => {
       if (currentDescription !== previousGroupDescription) return currentDescription
@@ -1809,9 +1852,9 @@ const ScenarioDesignOneViewStep = ({
 
       return nextSignposts
     })
-    previousGroupNameRef.current = groupName
+    previousGroupNameRef.current = defaultScenarioGroupName
     previousGroupDescriptionRef.current = groupDescription
-  }, [defaultScenarioNarratives, defaultScenarioSignposts, groupDescription, groupName, rows])
+  }, [defaultScenarioGroupName, defaultScenarioNarratives, defaultScenarioSignposts, groupDescription, rows])
 
   useEffect(() => {
     setScenarioPossibilities((currentPossibilities) => {
@@ -2154,7 +2197,7 @@ const ScenarioDesignOneViewStep = ({
   }
 
   const handleReset = () => {
-    setScenarioGroupName(groupName)
+    setScenarioGroupName(defaultScenarioGroupName)
     setScenarioGroupDescription(groupDescription)
     setScenarioNarratives(defaultScenarioNarratives)
     setScenarioPossibilities(defaultScenarioPossibilities)
@@ -2186,7 +2229,7 @@ const ScenarioDesignOneViewStep = ({
     if (!canCreateScenarioGroup || !canCreateScenarioNarratives || !canCreateScenarioPossibilities) return
 
     onCreate({
-      scenarioGroupName: scenarioGroupName.trim(),
+      scenarioGroupName: getScenarioDesignReviewSingleLineValue(scenarioGroupName).trim(),
       scenarioGroupSummary: groupSummary,
       scenarioGroupDescription: scenarioGroupDescription.trim(),
       scenarioNarratives: rows.map((row, index) => {
@@ -2256,10 +2299,11 @@ const ScenarioDesignOneViewStep = ({
                 editable
                 errorMessage={scenarioGroupNameErrorMessage}
                 resetKey={resetKey}
+                preventLineBreak
                 onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: true }))}
-                onChange={setScenarioGroupName}
+                onChange={(value) => setScenarioGroupName(getScenarioDesignReviewSingleLineValue(value))}
                 onReset={() => {
-                  setScenarioGroupName(groupName)
+                  setScenarioGroupName(defaultScenarioGroupName)
                   setTouchedFieldNames((current) => ({ ...current, scenarioGroupName: false }))
                 }}
               />

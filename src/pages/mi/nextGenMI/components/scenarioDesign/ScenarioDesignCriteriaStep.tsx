@@ -46,8 +46,8 @@ import {
   SCENARIO_DESIGN_SELECT_COMMON_ACTIONS,
   type ScenarioDesignColumn,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
+import ScenarioDesignOutlineStatusBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOutlineStatusBadge'
 import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
-import ScenarioDesignStatusBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignStatusBadge'
 
 type ScenarioDesignReviewButtonStatus = 'loading' | 'completed' | null
 type ScenarioDesignCriteriaConfirmType = 'reset' | 'deleteRow' | 'deleteCriteriaColumn'
@@ -1022,7 +1022,7 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
             <Typography variant="body2M14" color="contentText.Normal">
               시나리오 목록
             </Typography>
-            <ScenarioDesignStatusBadge label="3개 이상 구성 권장" />
+            <ScenarioDesignOutlineStatusBadge label="3개 이상 구성 권장" />
           </Stack>
         ),
         width: '300px',

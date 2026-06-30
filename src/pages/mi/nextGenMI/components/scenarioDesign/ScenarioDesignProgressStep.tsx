@@ -8,10 +8,10 @@ type ScenarioDesignProgressStepProps = {
   completed?: boolean
   number: number
   label: string
-  stateLabel?: string
+  inProgress?: boolean
 }
 
-const ScenarioDesignProgressStep = ({ active, completed, number, label, stateLabel }: ScenarioDesignProgressStepProps) => (
+const ScenarioDesignProgressStep = ({ active, completed, number, label, inProgress }: ScenarioDesignProgressStepProps) => (
   <Stack direction="row" alignItems="center" gap="6px" height="40px" padding="8px 12px" borderRadius="10px" minWidth={0}>
     <Stack
       alignItems="center"
@@ -36,7 +36,7 @@ const ScenarioDesignProgressStep = ({ active, completed, number, label, stateLab
     <Typography variant={active ? 'body1SB16' : 'body1M16'} color={active ? 'mari.Primary' : 'contentText.Normal'} noWrap>
       {label}
     </Typography>
-    {stateLabel && <ScenarioDesignStatusBadge label={stateLabel} />}
+    {inProgress && <ScenarioDesignStatusBadge />}
   </Stack>
 )
 

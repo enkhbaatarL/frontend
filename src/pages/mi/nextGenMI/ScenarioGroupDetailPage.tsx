@@ -159,6 +159,26 @@ const ScenarioGroupDetailPage = () => {
     gcTime: 0,
   })
 
+  const refetchDetailPageQueries = useCallback(() => {
+    if (!scenarioGroupId) return
+
+    const scenarioGroupIdNumber = Number(scenarioGroupId)
+    const refetches = [
+      queryClient.refetchQueries({ queryKey: groupDetailQueryKey, exact: true, type: 'active' }),
+      queryClient.refetchQueries({ queryKey: ['nextGenMIScenarioGroupScenarioDetail', scenarioGroupId], type: 'active' }),
+      queryClient.refetchQueries({ queryKey: ['nextGenMIScenarioGroupGraphCmeBenchmark'], type: 'active' }),
+    ]
+
+    if (Number.isFinite(scenarioGroupIdNumber)) {
+      refetches.push(
+        queryClient.refetchQueries({ queryKey: ['nextGenMIScenarioGroupGraph', scenarioGroupIdNumber], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['nextGenMIScenarioGroupGraphRunStatus', scenarioGroupIdNumber], type: 'active' }),
+      )
+    }
+
+    void Promise.all(refetches)
+  }, [groupDetailQueryKey, queryClient, scenarioGroupId])
+
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
 
   const queryScenarioId = searchParams.get('scenarioId')
@@ -208,7 +228,7 @@ const ScenarioGroupDetailPage = () => {
     mutationFn: ({ scenarioId, status }: { scenarioId: number; status: ScenarioJudgementStatus }) =>
       nextGenMIScenarioGroupService.updateScenarioStatus(scenarioGroupId ?? '', scenarioId, { status }),
     onSuccess: (_, { status }) => {
-      void queryClient.invalidateQueries({ queryKey: groupDetailQueryKey })
+      refetchDetailPageQueries()
       showSnackbar(JUDGEMENT_SUCCESS_MESSAGE[status], { variant: 'success' })
       setJudgementTarget(null)
     },

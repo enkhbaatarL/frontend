@@ -1377,14 +1377,14 @@ const ScenarioDesignPage = () => {
           completed={currentStep === 'oneView'}
           number={1}
           label="시나리오 분기항목 및 분기기준 검토"
-          stateLabel={currentStep === 'criteria' ? (isCurrentCriteriaReviewed ? '검토 완료' : '진행 중') : undefined}
+          inProgress={currentStep === 'criteria' && !isCurrentCriteriaReviewed}
         />
         <Divider sx={{ width: '40px', borderColor: 'gray.20', flexShrink: 0 }} />
         <ScenarioDesignProgressStep
           active={currentStep === 'oneView'}
           number={2}
           label="시나리오 One-view 검토"
-          stateLabel={currentStep === 'oneView' ? '진행 중' : undefined}
+          inProgress={currentStep === 'oneView'}
         />
       </Stack>
     ),
