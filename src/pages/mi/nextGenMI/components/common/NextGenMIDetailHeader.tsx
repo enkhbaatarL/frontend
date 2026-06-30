@@ -83,6 +83,7 @@ const NextGenMIDetailHeader = ({
   const hasMariButton = useAuthStore(
     (state) => state.accessCompanyInfo?.floating?.some((floating) => floating.screenElementCd === 'MARI') ?? false,
   )
+  const collapsedSummaryHeightPx = hasMariButton ? 78 : 49
   const isEmbedded = scrollContainer !== undefined
   const hasCollapsedSummary = !isEmbedded && Boolean(collapsedSummarySlot)
 
@@ -137,7 +138,7 @@ const NextGenMIDetailHeader = ({
       setStickyHeightsPx((prev) => {
         const next = isMainScrolledRef.current
           ? { expanded: prev.expanded, collapsed: Math.round(h) }
-          : { expanded: Math.round(h), collapsed: 78 + 62 }
+          : { expanded: Math.round(h), collapsed: collapsedSummaryHeightPx + 62 }
         if (
           Math.abs(prev.expanded - next.expanded) < STICKY_HEIGHT_MEASURE_EPS_PX &&
           Math.abs(prev.collapsed - next.collapsed) < STICKY_HEIGHT_MEASURE_EPS_PX
@@ -161,7 +162,7 @@ const NextGenMIDetailHeader = ({
       }
       return next
     })
-  }, [hasCollapsedSummary])
+  }, [collapsedSummaryHeightPx, hasCollapsedSummary])
 
   const getStickySectionAlignY = useCallback(
     (scrollEl: HTMLElement) => {
@@ -426,7 +427,7 @@ const NextGenMIDetailHeader = ({
             <Stack
               alignItems="center"
               justifyContent="center"
-              minHeight={hasMariButton ? '78px' : '49px'}
+              minHeight={`${collapsedSummaryHeightPx}px`}
               bgcolor="gray.5"
               padding="12px 0"
               boxSizing="border-box"
