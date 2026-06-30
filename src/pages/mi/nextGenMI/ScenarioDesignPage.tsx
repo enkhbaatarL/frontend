@@ -1377,7 +1377,7 @@ const ScenarioDesignPage = () => {
           completed={currentStep === 'oneView'}
           number={1}
           label="시나리오 분기항목 및 분기기준 검토"
-          inProgress={currentStep === 'criteria' && !isCurrentCriteriaReviewed}
+          inProgress={currentStep === 'criteria'}
         />
         <Divider sx={{ width: '40px', borderColor: 'gray.20', flexShrink: 0 }} />
         <ScenarioDesignProgressStep
@@ -1388,7 +1388,7 @@ const ScenarioDesignPage = () => {
         />
       </Stack>
     ),
-    [currentStep, isCurrentCriteriaReviewed],
+    [currentStep],
   )
 
   const headerRightAction = useMemo(() => <NextGenMIUserFeedback pageTitle="Scenario Design" />, [])
