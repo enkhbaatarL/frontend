@@ -22,13 +22,14 @@ const TagChip: FC<TagChipProps> = ({ items, onItemSelected, ellipsisRange, disab
 
   const visibleItems = ellipsisRange ? items.slice(0, ellipsisRange) : items
   const collapsedItems = ellipsisRange ? items.slice(ellipsisRange) : []
+  const isItemClickable = !!onItemSelected && !disabled
 
   const handleToggle = () => {
     setIsOpen(!isOpen)
   }
 
   const handleItemSelect = (item: ITagChipItem) => {
-    if (!disabled) {
+    if (isItemClickable) {
       onItemSelected?.(item)
     }
     setIsOpen(false)
@@ -51,8 +52,8 @@ const TagChip: FC<TagChipProps> = ({ items, onItemSelected, ellipsisRange, disab
           sx={{
             backgroundColor: '#E9ECEF',
             border: '0.5px solid transparent',
-            cursor: disabled ? 'default' : 'pointer',
-            ...(!disabled && {
+            cursor: isItemClickable ? 'pointer' : 'default',
+            ...(isItemClickable && {
               '&:hover': {
                 border: '0.5px solid #495057',
               },
@@ -60,7 +61,7 @@ const TagChip: FC<TagChipProps> = ({ items, onItemSelected, ellipsisRange, disab
             transition: 'all 0.2s ease',
             userSelect: 'none',
           }}
-          onClick={() => onItemSelected?.(item)}
+          onClick={isItemClickable ? () => handleItemSelect(item) : undefined}
         >
           <Typography
             variant="body2"
@@ -138,14 +139,14 @@ const TagChip: FC<TagChipProps> = ({ items, onItemSelected, ellipsisRange, disab
                     px="10px"
                     height={23}
                     sx={{
-                      cursor: disabled ? 'default' : 'pointer',
-                      ...(!disabled && {
+                      cursor: isItemClickable ? 'pointer' : 'default',
+                      ...(isItemClickable && {
                         '&:hover': {
                           backgroundColor: '#F8F9FA',
                         },
                       }),
                     }}
-                    onClick={() => handleItemSelect(collapsedItem)}
+                    onClick={isItemClickable ? () => handleItemSelect(collapsedItem) : undefined}
                   >
                     <Typography
                       variant="body3"

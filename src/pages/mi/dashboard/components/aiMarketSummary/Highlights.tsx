@@ -152,7 +152,6 @@ const HighlightsItem = ({ item, selectedOption, borderBottom = true, onRelatedNe
               }
               ellipsisRange={2}
               padding="6px 20px"
-              onItemSelected={onRelatedNewsItemSelected}
             />
           </Stack>
         </Collapse>
@@ -238,7 +237,6 @@ const Highlights = ({ highlights }: Props) => {
                           }
                           ellipsisRange={2}
                           py="4px"
-                          onItemSelected={handleRelatedNewsItemSelected}
                         />
                       </Stack>
                     </Stack>
