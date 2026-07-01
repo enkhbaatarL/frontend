@@ -86,41 +86,15 @@ export const convertElementToImageCanvas = async ({
   // html2canvas 렌더링 보정 (클론과 실제 DOM은 구조가 동일하므로 인덱스로 매칭)
   const liveElements = targetElement.querySelectorAll<HTMLElement>('*')
   const clonedElements = clonedElement.querySelectorAll<HTMLElement>('*')
-  const measureContext = document.createElement('canvas').getContext('2d')
 
   liveElements.forEach((liveElement, index) => {
     const clonedChild = clonedElements[index]
     if (!clonedChild) return
     const computed = window.getComputedStyle(liveElement)
 
-    // 1) box-shadow는 html2canvas가 회색 얼룩으로 렌더하므로 제거한다. (예: 세그먼트 탭의 선택 pill)
+    // box-shadow는 html2canvas가 회색 얼룩으로 렌더하므로 제거한다. (예: 세그먼트 탭의 선택 pill)
     if (computed.boxShadow && computed.boxShadow !== 'none') {
       clonedChild.style.boxShadow = 'none'
-    }
-
-    // 2) html2canvas는 overflow 클리핑/text-overflow:ellipsis를 텍스트에 제대로 적용하지 못한다.
-    //    화면 실측 폭에 맞춰 텍스트를 직접 잘라 "…"를 붙여 화면과 동일하게 보이도록 한다.
-    const isEllipsis = computed.textOverflow === 'ellipsis' && computed.whiteSpace === 'nowrap' && computed.display !== 'inline'
-    const isTextOnly = liveElement.childElementCount === 0 && (liveElement.textContent ?? '').trim().length > 0
-    if (measureContext && isEllipsis && isTextOnly) {
-      const availableWidth =
-        (liveElement.clientWidth || liveElement.getBoundingClientRect().width) -
-        parseFloat(computed.paddingLeft || '0') -
-        parseFloat(computed.paddingRight || '0')
-      if (availableWidth <= 0) return
-      const text = liveElement.textContent ?? ''
-      measureContext.font = `${computed.fontStyle} ${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`
-      const textStyleContext = measureContext as CanvasRenderingContext2D & { letterSpacing?: string }
-      if ('letterSpacing' in textStyleContext) {
-        textStyleContext.letterSpacing = computed.letterSpacing
-      }
-      if (measureContext.measureText(text).width > availableWidth + 1) {
-        let truncated = text
-        while (truncated.length > 1 && measureContext.measureText(`${truncated}…`).width > availableWidth + 1) {
-          truncated = truncated.slice(0, -1)
-        }
-        clonedChild.textContent = `${truncated}…`
-      }
     }
   })
 
@@ -212,20 +186,24 @@ export const convertElementToImageCanvas = async ({
     ctx.fillRect(0, 0, totalWidth, totalHeight)
   }
 
-  const finalTempCanvas = document.createElement('canvas')
-  finalTempCanvas.width = outputContentWidth
-  finalTempCanvas.height = outputContentHeight
+  const outputContentCanvas =
+    canvas.width === outputContentWidth && canvas.height === outputContentHeight ? canvas : document.createElement('canvas')
 
-  // Pica를 사용한 고품질 리사이징
-  await pica.resize(canvas, finalTempCanvas, {
-    unsharpAmount: 102,
-    unsharpRadius: 1.5,
-    unsharpThreshold: 255,
-  })
+  if (outputContentCanvas !== canvas) {
+    outputContentCanvas.width = outputContentWidth
+    outputContentCanvas.height = outputContentHeight
+
+    // Pica를 사용한 고품질 리사이징
+    await pica.resize(canvas, outputContentCanvas, {
+      unsharpAmount: 102,
+      unsharpRadius: 1.5,
+      unsharpThreshold: 255,
+    })
+  }
 
   if (ctx) {
-    if (finalTempCanvas && finalTempCanvas.width > 0 && finalTempCanvas.height > 0) {
-      ctx.drawImage(finalTempCanvas, outputPadding, outputPadding)
+    if (outputContentCanvas.width > 0 && outputContentCanvas.height > 0) {
+      ctx.drawImage(outputContentCanvas, outputPadding, outputPadding)
     }
   }
 
