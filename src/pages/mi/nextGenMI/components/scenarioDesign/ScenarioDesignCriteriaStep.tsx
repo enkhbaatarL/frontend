@@ -8,7 +8,7 @@ import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { Box, Divider, Skeleton, Stack, Typography } from '@mui/material'
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, type Ref, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import type { DesignScenarioRow } from '@/service/mi/nextGenMI/scenarioDesign'
 
@@ -48,17 +48,90 @@ import {
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
 import ScenarioDesignOutlineStatusBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOutlineStatusBadge'
 import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
+import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 
 type ScenarioDesignReviewButtonStatus = 'loading' | 'completed' | null
 type ScenarioDesignCriteriaConfirmType = 'reset' | 'deleteRow' | 'deleteCriteriaColumn'
 
 export type ScenarioDesignReviewIssueSeverity = 'error' | 'warning'
 
+const SCENARIO_DESIGN_REVIEW_PANEL_HEIGHT_TRANSITION_MS = 220
+
 export type ScenarioDesignReviewErrorItem = {
   label: string
   message: string
   severity?: ScenarioDesignReviewIssueSeverity
   actionLabel?: string
+}
+
+type ScenarioDesignReviewPanelScrollResult = {
+  target: HTMLElement | Window
+  animated: boolean
+  scrollTop?: number
+}
+
+const getScenarioDesignReviewVisibleTop = (scrollContainer?: HTMLElement | null) => {
+  const scrollContainerTop = scrollContainer?.getBoundingClientRect().top ?? 0
+  const stickyHeader =
+    document.querySelector<HTMLElement>('.main-header [data-sticky-header]') ??
+    scrollContainer?.querySelector<HTMLElement>('[data-sticky-header]')
+  const stickyBottom = stickyHeader?.getBoundingClientRect().bottom ?? scrollContainerTop
+
+  return Math.max(scrollContainerTop, stickyBottom) + 16
+}
+
+const scrollScenarioDesignReviewPanelIntoView = (
+  panel: HTMLElement,
+  scrollTargetElement: HTMLElement | null,
+  actionBar: HTMLElement | null,
+): ScenarioDesignReviewPanelScrollResult => {
+  const scrollContainer = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
+  const behavior: ScrollBehavior = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  const targetElement = scrollTargetElement ?? panel
+
+  if (!scrollContainer) {
+    const panelRect = panel.getBoundingClientRect()
+    const targetRect = targetElement.getBoundingClientRect()
+    const visibleTop = getScenarioDesignReviewVisibleTop()
+    const visibleBottom = window.innerHeight - (actionBar?.offsetHeight ?? 0) - 16
+    const panelVisible = panelRect.top >= visibleTop && panelRect.bottom <= visibleBottom
+    const targetNearVisibleTop = targetRect.top >= visibleTop && targetRect.top <= visibleTop + 80
+    if (panelVisible && targetNearVisibleTop) return { target: window, animated: false }
+
+    const scrollTarget = Math.max(0, window.scrollY + targetRect.top - visibleTop)
+    window.scrollTo({ top: scrollTarget, behavior })
+    return { target: window, animated: behavior === 'smooth' && Math.abs(scrollTarget - window.scrollY) > 1, scrollTop: scrollTarget }
+  }
+
+  const scrollContainerRect = scrollContainer.getBoundingClientRect()
+  const panelRect = panel.getBoundingClientRect()
+  const targetRect = targetElement.getBoundingClientRect()
+  const panelHeight = panel.scrollHeight || panelRect.height
+  const visibleTop = getScenarioDesignReviewVisibleTop(scrollContainer)
+  const visibleBottom = scrollContainerRect.bottom - (actionBar?.offsetHeight ?? 0) - 16
+  const visibleHeight = Math.max(0, visibleBottom - visibleTop)
+  const panelFits = panelHeight <= visibleHeight
+  const panelVisible = panelFits
+    ? panelRect.top >= visibleTop && panelRect.top + panelHeight <= visibleBottom
+    : panelRect.top >= visibleTop && panelRect.top <= visibleBottom
+  const targetNearVisibleTop = targetRect.top >= visibleTop && targetRect.top <= visibleTop + 80
+
+  if (panelVisible && targetNearVisibleTop) return { target: scrollContainer, animated: false, scrollTop: scrollContainer.scrollTop }
+
+  const scrollTarget = Math.min(
+    Math.max(0, scrollContainer.scrollTop + targetRect.top - visibleTop),
+    Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight),
+  )
+  scrollContainer.scrollTo({
+    top: scrollTarget,
+    behavior,
+  })
+
+  return {
+    target: scrollContainer,
+    animated: behavior === 'smooth' && Math.abs(scrollTarget - scrollContainer.scrollTop) > 1,
+    scrollTop: scrollTarget,
+  }
 }
 
 const getScenarioDesignCriteriaConfirmContent = (type: ScenarioDesignCriteriaConfirmType) => {
@@ -591,6 +664,7 @@ const getScenarioDesignReviewIssueStyle = (severity: ScenarioDesignReviewIssueSe
       hoverBgcolor: '#ffedd5',
       textColor: '#ea580c',
       actionColor: '#9a3412',
+      emphasisColor: '#F97316',
     }
   }
 
@@ -601,10 +675,11 @@ const getScenarioDesignReviewIssueStyle = (severity: ScenarioDesignReviewIssueSe
     hoverBgcolor: '#fff9f9',
     textColor: 'contentText.Error',
     actionColor: '#b42318',
+    emphasisColor: '#B42318',
   }
 }
 
-const ScenarioDesignReviewIssueRow = ({ issue }: { issue: ScenarioDesignReviewErrorItem }) => {
+const ScenarioDesignReviewIssueRow = ({ issue, emphasized = false }: { issue: ScenarioDesignReviewErrorItem; emphasized?: boolean }) => {
   const severity = issue.severity ?? 'error'
   const issueStyle = getScenarioDesignReviewIssueStyle(severity)
 
@@ -622,6 +697,8 @@ const ScenarioDesignReviewIssueRow = ({ issue }: { issue: ScenarioDesignReviewEr
       bgcolor={issueStyle.bgcolor}
       boxSizing="border-box"
       sx={{
+        boxShadow: emphasized ? `0 0 0 3px ${issueStyle.emphasisColor}24, 0 2px 8px ${issueStyle.emphasisColor}24` : 'none',
+        transition: 'background-color 220ms ease, box-shadow 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
         '&:hover': {
           bgcolor: issueStyle.hoverBgcolor,
         },
@@ -644,7 +721,17 @@ const ScenarioDesignReviewIssueRow = ({ issue }: { issue: ScenarioDesignReviewEr
   )
 }
 
-const ScenarioDesignReviewErrorPanel = ({ errors }: { errors: ScenarioDesignReviewErrorItem[] }) => {
+const ScenarioDesignReviewErrorPanel = ({
+  errors,
+  rootRef,
+  guideRef,
+  emphasisKey,
+}: {
+  errors: ScenarioDesignReviewErrorItem[]
+  rootRef?: Ref<HTMLDivElement>
+  guideRef?: Ref<HTMLDivElement>
+  emphasisKey: number
+}) => {
   const displayErrors = useMemo(
     () =>
       errors.flatMap((error) =>
@@ -655,13 +742,36 @@ const ScenarioDesignReviewErrorPanel = ({ errors }: { errors: ScenarioDesignRevi
     [errors],
   )
   const contentRef = useRef<HTMLDivElement | null>(null)
+  const appliedEmphasisKeyRef = useRef(0)
   const [visibleErrors, setVisibleErrors] = useState(displayErrors)
   const [height, setHeight] = useState('0px')
+  const [emphasized, setEmphasized] = useState(false)
   const open = displayErrors.length > 0
 
   useLayoutEffect(() => {
     if (open) setVisibleErrors(displayErrors)
   }, [displayErrors, open])
+
+  useEffect(() => {
+    if (!open || emphasisKey === 0 || appliedEmphasisKeyRef.current === emphasisKey) {
+      setEmphasized(false)
+      return undefined
+    }
+
+    appliedEmphasisKeyRef.current = emphasisKey
+    setEmphasized(false)
+    const frame = globalThis.requestAnimationFrame(() => {
+      setEmphasized(true)
+    })
+    const timer = globalThis.setTimeout(() => {
+      setEmphasized(false)
+    }, 1300)
+
+    return () => {
+      globalThis.cancelAnimationFrame(frame)
+      globalThis.clearTimeout(timer)
+    }
+  }, [emphasisKey, open])
 
   useEffect(() => {
     const frame = globalThis.requestAnimationFrame(() => {
@@ -693,11 +803,13 @@ const ScenarioDesignReviewErrorPanel = ({ errors }: { errors: ScenarioDesignRevi
 
   return (
     <Box
+      ref={rootRef}
       aria-hidden={!open}
       height={height}
       overflow="hidden"
       sx={{
-        transition: 'height 220ms ease',
+        borderRadius: '10px',
+        transition: `height ${SCENARIO_DESIGN_REVIEW_PANEL_HEIGHT_TRANSITION_MS}ms ease`,
       }}
       onTransitionEnd={(event) => {
         if (event.target !== event.currentTarget || open) return
@@ -706,14 +818,20 @@ const ScenarioDesignReviewErrorPanel = ({ errors }: { errors: ScenarioDesignRevi
     >
       {visibleErrors.length > 0 && (
         <Stack ref={contentRef} gap="4px" padding="12px 0px" boxSizing="border-box">
-          <Stack direction="row" alignItems="center" gap="4px" padding="4px" borderRadius="8px">
+          <Stack ref={guideRef} direction="row" alignItems="center" gap="4px" padding="4px" borderRadius="8px">
             <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4} noWrap>
               변경사항 검토 결과를 확인해 주세요
             </Typography>
           </Stack>
-          {visibleErrors.map((error) => (
-            <ScenarioDesignReviewIssueRow key={`${error.severity ?? 'error'}-${error.label}-${error.message}`} issue={error} />
-          ))}
+          <Stack gap="4px" padding="6px" borderRadius="10px" boxSizing="border-box">
+            {visibleErrors.map((error) => (
+              <ScenarioDesignReviewIssueRow
+                key={`${error.severity ?? 'error'}-${error.label}-${error.message}`}
+                issue={error}
+                emphasized={emphasized}
+              />
+            ))}
+          </Stack>
         </Stack>
       )}
     </Box>
@@ -819,13 +937,24 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
   const [criteriaConfirmType, setCriteriaConfirmType] = useState<ScenarioDesignCriteriaConfirmType | null>(null)
   const [deleteRowId, setDeleteRowId] = useState<number | null>(null)
   const [deleteCriteriaColumnKey, setDeleteCriteriaColumnKey] = useState<string | null>(null)
+  const [reviewErrorPanelEmphasisKey, setReviewErrorPanelEmphasisKey] = useState(0)
   const criteriaTableContainerRef = useRef<HTMLDivElement | null>(null)
   const criteriaActionBarRef = useRef<HTMLDivElement | null>(null)
+  const reviewErrorPanelRef = useRef<HTMLDivElement | null>(null)
+  const reviewErrorPanelGuideRef = useRef<HTMLDivElement | null>(null)
+  const previousReviewErrorItemsSignatureRef = useRef('')
   const criteriaEditingDisabled = isLoading || reviewPending
   const reviewButtonDisabled = criteriaEditingDisabled || reviewCompletedVisible || (reviewed && canCompleteScenarioDesignReview)
   const reviewButtonStatusColor = reviewCompletedVisible ? 'point.green1' : 'contentText.Disabled'
   const reviewButtonStatus: ScenarioDesignReviewButtonStatus = reviewPending ? 'loading' : reviewCompletedVisible ? 'completed' : null
   const criteriaConfirmContent = criteriaConfirmType ? getScenarioDesignCriteriaConfirmContent(criteriaConfirmType) : null
+  const reviewErrorItemsSignature = useMemo(
+    () =>
+      reviewErrorItems
+        .map((item) => [item.severity ?? 'error', item.label, item.message, item.actionLabel ?? ''].join('\u001f'))
+        .join('\u001e'),
+    [reviewErrorItems],
+  )
   const initialScenarioDesignColumnKeys = useMemo(
     () => new Set(initialScenarioDesignColumns.map((column) => column.key)),
     [initialScenarioDesignColumns],
@@ -850,12 +979,120 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
     setDeleteCriteriaColumnKey(null)
   }, [criteriaEditingDisabled])
 
+  useEffect(() => {
+    if (reviewPending || reviewErrorItemsSignature.length === 0) {
+      previousReviewErrorItemsSignatureRef.current = reviewErrorItemsSignature
+      return undefined
+    }
+
+    if (previousReviewErrorItemsSignatureRef.current === reviewErrorItemsSignature) return undefined
+
+    previousReviewErrorItemsSignatureRef.current = reviewErrorItemsSignature
+
+    let disposed = false
+    let frame: number | null = null
+    let scrollStartTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+    let scrollWatchFrame: number | null = null
+    let emphasisTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+    let scrollFallbackTimer: ReturnType<typeof globalThis.setTimeout> | null = null
+    let settled = false
+
+    const clearTimers = () => {
+      if (scrollStartTimer) globalThis.clearTimeout(scrollStartTimer)
+      if (emphasisTimer) globalThis.clearTimeout(emphasisTimer)
+      if (scrollFallbackTimer) globalThis.clearTimeout(scrollFallbackTimer)
+      scrollStartTimer = null
+      emphasisTimer = null
+      scrollFallbackTimer = null
+    }
+
+    const startEmphasisAfterDelay = () => {
+      emphasisTimer = globalThis.setTimeout(() => {
+        emphasisTimer = null
+        if (!disposed) setReviewErrorPanelEmphasisKey((currentKey) => currentKey + 1)
+      }, 300)
+    }
+
+    const clearScrollWatch = () => {
+      if (scrollWatchFrame !== null) globalThis.cancelAnimationFrame(scrollWatchFrame)
+      if (scrollFallbackTimer) globalThis.clearTimeout(scrollFallbackTimer)
+      scrollWatchFrame = null
+      scrollFallbackTimer = null
+    }
+
+    const settleScroll = () => {
+      if (settled) return
+
+      settled = true
+      clearScrollWatch()
+      startEmphasisAfterDelay()
+    }
+
+    const watchScrollCompletion = (target: HTMLElement | Window, scrollTop?: number) => {
+      const readScrollTop = () => (target instanceof HTMLElement ? target.scrollTop : window.scrollY)
+      let previousScrollTop = readScrollTop()
+      let hasMoved = false
+      let stableFrameCount = 0
+
+      const watch = () => {
+        if (disposed || settled) return
+
+        const currentScrollTop = readScrollTop()
+        const targetReached = scrollTop !== undefined && Math.abs(currentScrollTop - scrollTop) <= 1
+        const moved = Math.abs(currentScrollTop - previousScrollTop) > 0.5
+
+        if (moved) {
+          hasMoved = true
+          stableFrameCount = 0
+          previousScrollTop = currentScrollTop
+        } else if (hasMoved || targetReached) {
+          stableFrameCount += 1
+        }
+
+        if (targetReached || (hasMoved && stableFrameCount >= 3)) {
+          settleScroll()
+          return
+        }
+
+        scrollWatchFrame = globalThis.requestAnimationFrame(watch)
+      }
+
+      scrollWatchFrame = globalThis.requestAnimationFrame(watch)
+      scrollFallbackTimer = globalThis.setTimeout(settleScroll, 900)
+    }
+
+    scrollStartTimer = globalThis.setTimeout(() => {
+      scrollStartTimer = null
+      frame = globalThis.requestAnimationFrame(() => {
+        frame = null
+        const panel = reviewErrorPanelRef.current
+        if (!panel) return
+
+        const scrollResult = scrollScenarioDesignReviewPanelIntoView(panel, reviewErrorPanelGuideRef.current, criteriaActionBarRef.current)
+
+        if (!scrollResult.animated) {
+          startEmphasisAfterDelay()
+          return
+        }
+
+        watchScrollCompletion(scrollResult.target, scrollResult.scrollTop)
+      })
+    }, SCENARIO_DESIGN_REVIEW_PANEL_HEIGHT_TRANSITION_MS + 40)
+
+    return () => {
+      disposed = true
+      if (frame !== null) globalThis.cancelAnimationFrame(frame)
+      clearScrollWatch()
+      clearTimers()
+    }
+  }, [reviewErrorItemsSignature, reviewPending])
+
   useLayoutEffect(() => {
     const actionBar = criteriaActionBarRef.current
     const tableContainer = criteriaTableContainerRef.current
     if (!actionBar || !tableContainer) return undefined
 
-    const scrollContainer = document.getElementById('main-scroll-wrapper')
+    const scrollContainer = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
     let rafId: number | null = null
 
     const updateActionBarLimit = () => {
@@ -1387,7 +1624,12 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
               message={isLoading ? '시나리오 설계를 불러오는 중입니다.' : '변경사항을 검토하고 있습니다.'}
             />
           </Stack>
-          <ScenarioDesignReviewErrorPanel errors={reviewErrorItems} />
+          <ScenarioDesignReviewErrorPanel
+            rootRef={reviewErrorPanelRef}
+            guideRef={reviewErrorPanelGuideRef}
+            errors={reviewErrorItems}
+            emphasisKey={reviewErrorPanelEmphasisKey}
+          />
 
           <Stack
             ref={criteriaActionBarRef}
