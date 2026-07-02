@@ -201,6 +201,24 @@ const getDimensionCellValue = <TRow extends ScenarioGroupInnerTableRow>(row: TRo
   return '-'
 }
 
+const getDimensionSortValue = <TRow extends ScenarioGroupInnerTableRow>(row: TRow, column: IScenarioDimensionColumn) =>
+  row.dimensions?.find((item) => item.key === column.key)?.valueLabel
+
+const compareDimensionCellValue = <TRow extends ScenarioGroupInnerTableRow>(
+  firstRow: TRow,
+  secondRow: TRow,
+  column: IScenarioDimensionColumn,
+) => {
+  const firstValue = getDimensionSortValue(firstRow, column)
+  const secondValue = getDimensionSortValue(secondRow, column)
+
+  if (firstValue === secondValue) return 0
+  if (firstValue === null || firstValue === undefined) return 1
+  if (secondValue === null || secondValue === undefined) return -1
+
+  return firstValue.localeCompare(secondValue, 'ko', { numeric: true, sensitivity: 'base' })
+}
+
 const ScenarioJudgementStatusLabel = ({ label, realized = false }: { label: string; realized?: boolean }) => (
   <Typography variant="body2M14" color={realized ? 'mari.Primary' : 'contentText.Disabled'} noWrap>
     {label}
@@ -279,6 +297,9 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           align: 'left',
           headerCellSx: tableCellSx,
           cellSx: tableCellSx,
+          sortable: true,
+          sortComparator: (firstRow, secondRow) => compareDimensionCellValue(firstRow, secondRow, column),
+          tooltipWhenHeaderTruncated: true,
           renderCell: ({ row }) => {
             const discarded = isDiscardedScenario(row.status)
 
@@ -299,6 +320,9 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         align: 'center',
         headerCellSx: tableCellSx,
         cellSx: tableCellSx,
+        sortable: true,
+        sortComparator: (firstRow, secondRow) =>
+          (firstRow.adjustedProbability ?? firstRow.probability) - (secondRow.adjustedProbability ?? secondRow.probability),
         renderCell: ({ row }) => (
           <Stack width="100%" alignItems="center">
             <ScenarioPossibilityGauge probability={row.adjustedProbability ?? row.probability} disabled={isDiscardedScenario(row.status)} />

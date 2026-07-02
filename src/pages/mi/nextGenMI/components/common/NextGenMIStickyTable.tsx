@@ -1,14 +1,19 @@
 import { Box, Skeleton, Stack, Typography, type SxProps, type Theme } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 
+import ArrowUpward from '@/components/common/icons/ArrowUpward'
+import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import {
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 
 type NextGenMIStickyTableAlign = 'left' | 'center' | 'right'
+type NextGenMIStickyTableSortDirection = 'asc' | 'desc'
 type ScrollAxis = 'horizontal' | 'vertical' | null
 type FixedColumnResizeSide = 'left' | 'right' | null
+type NextGenMIStickyTableSortState = { field: string; direction: NextGenMIStickyTableSortDirection } | null
 
 export type NextGenMIStickyTableColumn<T> = {
   field: string
@@ -21,6 +26,10 @@ export type NextGenMIStickyTableColumn<T> = {
   renderCell: (params: { row: T; rowIndex: number; column: NextGenMIStickyTableColumn<T> }) => ReactNode
   shouldRenderCell?: (params: { row: T; rowIndex: number; column: NextGenMIStickyTableColumn<T> }) => boolean
   getRowSpan?: (params: { row: T; rowIndex: number; column: NextGenMIStickyTableColumn<T> }) => number
+  sortable?: boolean
+  sortComparator?: (firstRow: T, secondRow: T, column: NextGenMIStickyTableColumn<T>) => number
+  tooltipWhenHeaderTruncated?: boolean
+  headerTooltipTitle?: ReactNode
   cellSx?: SxProps<Theme>
   headerCellSx?: SxProps<Theme>
   headerContentSx?: SxProps<Theme>
@@ -118,6 +127,58 @@ const normalizeFixedRightColumnIndexes = (indexes: number[] | undefined, columnC
 const toCssCalc = (parts: string[]) => (parts.length > 0 ? `calc(${parts.join(' + ')})` : '0px')
 
 const getColumnAlign = <T,>(column: NextGenMIStickyTableColumn<T>) => column.align ?? 'left'
+
+const getNextSortState = (current: NextGenMIStickyTableSortState, field: string): NextGenMIStickyTableSortState => {
+  if (current?.field !== field) return { field, direction: 'asc' }
+  if (current.direction === 'asc') return { field, direction: 'desc' }
+  return null
+}
+
+const compareSortValues = (firstValue: unknown, secondValue: unknown) => {
+  if (firstValue === secondValue) return 0
+  if (firstValue === null || firstValue === undefined) return 1
+  if (secondValue === null || secondValue === undefined) return -1
+
+  if (typeof firstValue === 'number' && typeof secondValue === 'number') return firstValue - secondValue
+
+  return String(firstValue).localeCompare(String(secondValue), 'ko', { numeric: true, sensitivity: 'base' })
+}
+
+const getDefaultSortValue = <T,>(row: T, field: string) => (row as Record<string, unknown>)[field]
+
+const NextGenMIStickyTableHeaderLabel = ({
+  label,
+  tooltipTitle,
+  tooltipWhenTruncated = false,
+}: {
+  label: ReactNode
+  tooltipTitle?: ReactNode
+  tooltipWhenTruncated?: boolean
+}) => {
+  const { ref, isEllipsis } = useEllipsisDetection(label)
+
+  const content = (
+    <Box
+      ref={ref}
+      component="span"
+      sx={{
+        display: 'block',
+        flex: '1 1 0%',
+        minWidth: 0,
+        maxWidth: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </Box>
+  )
+
+  if (!tooltipWhenTruncated || !isEllipsis) return content
+
+  return <NextGenMIFollowCursorTooltip title={tooltipTitle ?? label}>{content}</NextGenMIFollowCursorTooltip>
+}
 
 const getPixelValue = (value?: string) => {
   const pixelValue = value ? Number.parseFloat(value) : Number.NaN
@@ -237,6 +298,7 @@ const NextGenMIStickyTable = <T,>({
   const lastActiveAxisRef = useRef<ScrollAxis>(null)
   const pendingAxisUpdateRef = useRef(false)
   const scrollAnimationFrameRef = useRef(0)
+  const sortSkeletonTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const fixedLeftColumnIndexList = useMemo(
     () => normalizeFixedColumnIndexes(fixedLeftColumnIndexes, columns.length),
     [columns.length, fixedLeftColumnIndexes],
@@ -257,6 +319,8 @@ const NextGenMIStickyTable = <T,>({
   const lastFixedLeftColumnIndex = fixedLeftColumnIndexList.at(-1)
   const firstFixedRightColumnIndex = fixedRightColumnIndexList.at(0)
   const [resizedFixedColumnWidths, setResizedFixedColumnWidths] = useState<Record<number, number>>({})
+  const [sortState, setSortState] = useState<NextGenMIStickyTableSortState>(null)
+  const [sortSkeletonVisible, setSortSkeletonVisible] = useState(false)
   const fixedLeftColumnLeftMap = useMemo(() => {
     const next = new Map<number, string | number>()
     const widthParts: string[] = []
@@ -286,6 +350,25 @@ const NextGenMIStickyTable = <T,>({
 
     return next
   }, [columns, fixedRightColumnIndexList, resizedFixedColumnWidths])
+  const sortedRows = useMemo(() => {
+    if (!sortState) return rows
+
+    const activeColumn = columns.find((column) => column.field === sortState.field && column.sortable)
+    if (!activeColumn) return rows
+
+    return rows
+      .map((row, index) => ({ row, index }))
+      .sort((first, second) => {
+        const comparison =
+          activeColumn.sortComparator?.(first.row, second.row, activeColumn) ??
+          compareSortValues(getDefaultSortValue(first.row, activeColumn.field), getDefaultSortValue(second.row, activeColumn.field))
+        const normalizedComparison = Number.isFinite(comparison) ? comparison : 0
+
+        if (normalizedComparison === 0) return first.index - second.index
+        return sortState.direction === 'asc' ? normalizedComparison : -normalizedComparison
+      })
+      .map(({ row }) => row)
+  }, [columns, rows, sortState])
   const fixedLeftColumnsWidthParts = useMemo(
     () =>
       fixedLeftColumnIndexList.flatMap((columnIndex) => {
@@ -304,6 +387,8 @@ const NextGenMIStickyTable = <T,>({
   )
   const fixedLeftColumnsWidth = fixedLeftColumnsWidthParts.length > 0 ? toCssCalc(fixedLeftColumnsWidthParts) : '0px'
   const fixedRightColumnsWidth = fixedRightColumnsWidthParts.length > 0 ? toCssCalc(fixedRightColumnsWidthParts) : '0px'
+  const showSkeletonRows = loading || sortSkeletonVisible
+  const activeSkeletonRowCount = loading ? skeletonRowCount : rows.length
   // 고정-좌측 컬럼이 있으면 sticky 라벨은 첫 컬럼이 아니므로 엣지 인셋이 없는 cellPaddingX 만 더한다.
   // 고정-좌측 컬럼이 없으면 sticky 라벨이 첫 컬럼(외곽)일 수 있으므로 엣지 인셋(8px)을 포함한 14px를 적용한다.
   const leftAlignedHeaderStickyLeft =
@@ -359,6 +444,13 @@ const NextGenMIStickyTable = <T,>({
     [scrollContainerRef],
   )
 
+  const clearSortSkeletonTimer = useCallback(() => {
+    if (sortSkeletonTimerRef.current !== undefined) {
+      clearTimeout(sortSkeletonTimerRef.current)
+      sortSkeletonTimerRef.current = undefined
+    }
+  }, [])
+
   useEffect(() => {
     setResizedFixedColumnWidths((current) => {
       const fixedColumnIndexes = new Set([...fixedLeftColumnIndexList, ...fixedRightColumnIndexList])
@@ -369,6 +461,20 @@ const NextGenMIStickyTable = <T,>({
       return Object.keys(next).length === Object.keys(current).length ? current : next
     })
   }, [fixedLeftColumnIndexList, fixedRightColumnIndexList, resizableFixedColumns])
+
+  useEffect(() => {
+    setSortState((current) => {
+      if (!current || columns.some((column) => column.field === current.field && column.sortable)) return current
+      return null
+    })
+  }, [columns])
+
+  useEffect(
+    () => () => {
+      clearSortSkeletonTimer()
+    },
+    [clearSortSkeletonTimer],
+  )
 
   useEffect(() => {
     const el = scrollRef.current
@@ -638,8 +744,23 @@ const NextGenMIStickyTable = <T,>({
     )
   }
 
+  const handleSortableHeaderClick = (field: string) => {
+    setSortState((current) => getNextSortState(current, field))
+
+    if (loading || rows.length === 0) return
+
+    clearSortSkeletonTimer()
+    setSortSkeletonVisible(true)
+    sortSkeletonTimerRef.current = setTimeout(() => {
+      setSortSkeletonVisible(false)
+      sortSkeletonTimerRef.current = undefined
+    }, 300)
+  }
+
   const renderHeaderCell = (column: NextGenMIStickyTableColumn<T>, columnIndex: number) => {
     const align = column.headerAlign ?? getColumnAlign(column)
+    const sortable = Boolean(column.sortable)
+    const sortDirection = sortState?.field === column.field ? sortState.direction : null
     const isFixedLeftColumn = fixedLeftColumnIndexSet.has(columnIndex)
     const isFixedRightColumn = fixedRightColumnIndexSet.has(columnIndex)
     const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
@@ -652,6 +773,7 @@ const NextGenMIStickyTable = <T,>({
       <Box
         key={column.field}
         component="th"
+        aria-sort={sortable ? (sortDirection === 'asc' ? 'ascending' : sortDirection === 'desc' ? 'descending' : 'none') : undefined}
         data-next-gen-mi-sticky-table-column-index={columnIndex}
         data-fixed-column={isFixedColumn ? 'true' : undefined}
         data-fixed-left-column={isFixedLeftColumn ? 'true' : undefined}
@@ -669,6 +791,7 @@ const NextGenMIStickyTable = <T,>({
             borderBottom: '0.5px solid',
             borderColor: 'contentBorder.Active',
             whiteSpace: 'nowrap',
+            userSelect: 'none',
             ...getColumnWidthSx(column, columnIndex, isFixedColumn),
             boxSizing: 'border-box',
             bgcolor: 'commonColor.White',
@@ -687,26 +810,84 @@ const NextGenMIStickyTable = <T,>({
           ...toSxArray(column.headerCellSx),
         ]}
       >
-        <Box
-          component="span"
-          sx={[
-            {
-              display: 'block',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            },
-            shouldStickyLeftAlignedHeader && {
-              position: 'sticky',
-              left: leftAlignedHeaderStickyLeft,
-              width: 'fit-content',
-              maxWidth: '100%',
-            },
-            ...toSxArray(column.headerContentSx),
-          ]}
-        >
-          {column.headerName}
-        </Box>
+        {sortable ? (
+          <Box
+            component="button"
+            type="button"
+            aria-label={`${typeof column.headerName === 'string' ? column.headerName : column.field} 정렬`}
+            onClick={() => handleSortableHeaderClick(column.field)}
+            sx={[
+              {
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start',
+                gap: '4px',
+                width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
+                padding: 0,
+                border: 0,
+                overflow: 'hidden',
+                bgcolor: 'transparent',
+                color: sortDirection ? 'contentText.Black' : 'inherit',
+                font: 'inherit',
+                fontWeight: 'inherit',
+                textAlign: align,
+                cursor: 'pointer',
+                userSelect: 'none',
+                '&:hover': { color: 'contentText.Black' },
+              },
+              shouldStickyLeftAlignedHeader && {
+                position: 'sticky',
+                left: leftAlignedHeaderStickyLeft,
+                width: 'fit-content',
+                maxWidth: '100%',
+              },
+              ...toSxArray(column.headerContentSx),
+            ]}
+          >
+            <NextGenMIStickyTableHeaderLabel
+              label={column.headerName}
+              tooltipTitle={column.headerTooltipTitle}
+              tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
+            />
+            <Box
+              component="span"
+              aria-hidden
+              sx={{
+                display: 'inline-flex',
+                flexShrink: 0,
+                color: sortDirection ? 'mari.Primary' : 'gray.50',
+                opacity: sortDirection ? 1 : 0.5,
+                transform: sortDirection === 'desc' ? 'rotate(180deg)' : undefined,
+                transition: 'transform 120ms ease, color 120ms ease, opacity 120ms ease',
+              }}
+            >
+              <ArrowUpward />
+            </Box>
+          </Box>
+        ) : (
+          <Box
+            component="span"
+            sx={[
+              {
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              },
+              shouldStickyLeftAlignedHeader && {
+                position: 'sticky',
+                left: leftAlignedHeaderStickyLeft,
+                width: 'fit-content',
+                maxWidth: '100%',
+              },
+              ...toSxArray(column.headerContentSx),
+            ]}
+          >
+            {column.headerName}
+          </Box>
+        )}
       </Box>
     )
   }
@@ -722,7 +903,7 @@ const NextGenMIStickyTable = <T,>({
     const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
     const rowSpan = column.getRowSpan?.({ row, rowIndex, column }) ?? 1
     const isMergedFixedColumn = isFixedColumn && rowSpan > 1
-    const isBottomRow = rowIndex + rowSpan - 1 === rows.length - 1
+    const isBottomRow = rowIndex + rowSpan - 1 === sortedRows.length - 1
 
     return (
       <Box
@@ -851,9 +1032,9 @@ const NextGenMIStickyTable = <T,>({
             )}
 
             <Box component="tbody">
-              {loading &&
-                Array.from({ length: skeletonRowCount }).map((_, rowIndex) => {
-                  const isLastSkeletonRow = rowIndex === skeletonRowCount - 1
+              {showSkeletonRows &&
+                Array.from({ length: activeSkeletonRowCount }).map((_, rowIndex) => {
+                  const isLastSkeletonRow = rowIndex === activeSkeletonRowCount - 1
                   return (
                     <Box component="tr" key={`event-detail-sticky-table-skeleton-${rowIndex}`}>
                       {columns.map((column, columnIndex) => {
@@ -903,8 +1084,8 @@ const NextGenMIStickyTable = <T,>({
                     </Box>
                   )
                 })}
-              {!loading &&
-                rows.map((row, rowIndex) => (
+              {!showSkeletonRows &&
+                sortedRows.map((row, rowIndex) => (
                   <Box
                     component="tr"
                     key={getRowKey(row, rowIndex)}
@@ -920,7 +1101,7 @@ const NextGenMIStickyTable = <T,>({
                     {columns.map((column, columnIndex) => renderBodyCell(row, rowIndex, column, columnIndex))}
                   </Box>
                 ))}
-              {!loading && rows.length === 0 && (
+              {!showSkeletonRows && sortedRows.length === 0 && (
                 <Box component="tr">
                   <Box
                     component="td"
