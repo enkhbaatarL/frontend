@@ -41,10 +41,12 @@ const NextGenMIScenarioCellBadge = ({
   variant,
   height = '20px',
   padding = '2px 6px',
+  borderRadius = '8px',
 }: {
   variant: ScenarioCellBadgeVariant
   height?: string
   padding?: string
+  borderRadius?: string
 }) => {
   const palette = SCENARIO_CELL_BADGE_STYLE[variant]
 
@@ -56,7 +58,7 @@ const NextGenMIScenarioCellBadge = ({
       justifyContent="center"
       height={height}
       padding={padding}
-      borderRadius="8px"
+      borderRadius={borderRadius}
       boxSizing="border-box"
       lineHeight={0}
       sx={{ verticalAlign: 'middle' }}
@@ -80,10 +82,12 @@ export const NextGenMIBaseCaseChip = ({
   disabled = false,
   height = '20px',
   padding = '2px 6px',
+  borderRadius = '8px',
 }: {
   disabled?: boolean
   height?: string
   padding?: string
-}) => <NextGenMIScenarioCellBadge variant={disabled ? 'bcDisabled' : 'bc'} height={height} padding={padding} />
+  borderRadius?: string
+}) => <NextGenMIScenarioCellBadge variant={disabled ? 'bcDisabled' : 'bc'} height={height} padding={padding} borderRadius={borderRadius} />
 
 export const NextGenMIDiscardedBadge = () => <NextGenMIScenarioCellBadge variant="discarded" />
