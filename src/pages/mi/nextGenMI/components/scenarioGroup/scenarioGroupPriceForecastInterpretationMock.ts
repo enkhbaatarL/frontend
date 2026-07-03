@@ -54,6 +54,52 @@ export const PREVIEW_INTERPRETATION_SCENARIOS = [
   { scenarioId: 903, scenarioName: 'Scenario', displayOrder: 3, baseCase: true },
 ] as const
 
+/** #DELETE DEV 페이지네이션 미리보기용 시나리오 (displayOrder 1~12) */
+export const PREVIEW_INTERPRETATION_PAGINATION_SCENARIOS = Array.from({ length: 12 }, (_, index) => ({
+  scenarioId: 901 + index,
+  scenarioName: 'Scenario',
+  displayOrder: index + 1,
+  baseCase: index + 1 === 3,
+}))
+
+/** #DELETE DEV 퍼블리싱 - 페이지네이션 확인용 해석 시나리오 개수 */
+export const DEV_PUBLISHING_PAGINATION_SCENARIO_COUNT = 9
+
+const DEV_SYNTHETIC_SCENARIO_ID_BASE = 990_000
+
+/** 폐기 제외 시나리오를 displayOrder 오름차순으로 반환 */
+export const getOrderedActiveScenarios = (scenarioSeries: IScenarioGraphSeries[]) =>
+  [...scenarioSeries].filter((series) => series.status !== 'discarded').sort((a, b) => a.displayOrder - b.displayOrder)
+
+/** #DELETE DEV 퍼블리싱 - displayOrder 1~N 시나리오 (실데이터 없으면 합성) */
+export const buildDevPublishingPaginationScenarios = (scenarioSeries: IScenarioGraphSeries[]): IScenarioGraphSeries[] => {
+  const ordered = getOrderedActiveScenarios(scenarioSeries)
+  if (ordered.length === 0) return []
+
+  const template = ordered[0]
+  const byDisplayOrder = new Map(ordered.map((series) => [series.displayOrder, series]))
+
+  return Array.from({ length: DEV_PUBLISHING_PAGINATION_SCENARIO_COUNT }, (_, index) => {
+    const displayOrder = index + 1
+    const existing = byDisplayOrder.get(displayOrder)
+    if (existing) return { ...existing, executed: true, scenarioName: 'Scenario' }
+
+    return {
+      ...template,
+      scenarioId: DEV_SYNTHETIC_SCENARIO_ID_BASE + displayOrder,
+      scenarioName: 'Scenario',
+      baseCase: displayOrder === 3,
+      displayOrder,
+      executed: true,
+      modelRunning: false,
+      status: 'pending' as const,
+      statusLabel: '대기',
+      baseCaseValues: null,
+      userAdjustedValues: null,
+    }
+  })
+}
+
 /** 해석이 2개 이상이면 displayOrder 오름차순, 1개면 그대로 */
 export const sortInterpretedScenarioItems = <T extends { displayOrder: number }>(items: T[]): T[] => {
   if (items.length <= 1) return items
@@ -67,10 +113,6 @@ export const sortInterpretedScenarioIds = (scenarioIds: number[], displayOrderBy
     (a, b) => (displayOrderById.get(a) ?? Number.MAX_SAFE_INTEGER) - (displayOrderById.get(b) ?? Number.MAX_SAFE_INTEGER),
   )
 }
-
-/** 폐기 제외 시나리오를 displayOrder 오름차순으로 반환 */
-export const getOrderedActiveScenarios = (scenarioSeries: IScenarioGraphSeries[]) =>
-  [...scenarioSeries].filter((series) => series.status !== 'discarded').sort((a, b) => a.displayOrder - b.displayOrder)
 
 /**
  * 해석 생성 후 칩 정렬 - displayOrder 오름차순 (1, 2, 3, 5 ...)

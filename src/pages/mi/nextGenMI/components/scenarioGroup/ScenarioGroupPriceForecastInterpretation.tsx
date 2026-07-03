@@ -7,19 +7,21 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type FocusEven
 
 import type { IScenarioGraphSeries } from '@/service/mi/nextGenMI/scenarioGroup'
 
-import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
 import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import {
   buildInterpretationOrderAfterGenerate,
+  buildDevPublishingPaginationScenarios,
   DEV_ASSUMED_EXECUTED_SCENARIO_SLICE,
   fetchMockPriceForecastInterpretations,
   generateMockPriceForecastInterpretations,
   getOrderedActiveScenarios,
   MOCK_PRICE_FORECAST_INTERPRETATION_TEXT,
+  PREVIEW_INTERPRETATION_PAGINATION_SCENARIOS,
   PREVIEW_INTERPRETATION_SCENARIOS,
   PRICE_FORECAST_INTERPRETATION_MAX_LENGTH,
   PRICE_FORECAST_INTERPRETATION_PREVIEW_OPTIONS,
@@ -79,16 +81,21 @@ const PriceForecastInterpretationResetButton = ({ disabled, onClick }: { disable
     prefix={<ReplayRoundedIcon sx={{ fontSize: '20px', color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />}
     onClick={onClick}
     sx={{
+      flexShrink: 0,
       width: '36px',
       minWidth: '36px',
       height: '36px',
-      padding: '0px',
+      padding: '8px',
       borderRadius: '8px',
-      backgroundColor: disabled ? 'contentBG.Disabled' : 'contentBG.Disabled',
-      borderColor: 'transparent',
+      backgroundColor: disabled ? 'contentBG.Disabled' : 'commonColor.White',
+      borderColor: disabled ? 'transparent' : 'contentBorder.Normal',
+      '&.Mui-disabled': {
+        backgroundColor: 'contentBG.Disabled',
+        borderColor: 'transparent',
+      },
       '&:hover:not(:disabled)': {
         backgroundColor: 'contentBG.Hover',
-        borderColor: 'transparent',
+        borderColor: 'contentBorder.Normal',
       },
       '& > .MuiBox-root, & .MuiStack-root, & .MuiTypography-root': {
         alignItems: 'center',
@@ -120,6 +127,8 @@ const PriceForecastInterpretationScenarioChip = ({
       display: 'inline-flex',
       alignItems: 'center',
       gap: '4px',
+      boxSizing: 'border-box',
+      height: '32px',
       maxWidth: '260px',
       padding: '6px 10px',
       borderRadius: '100px',
@@ -128,6 +137,12 @@ const PriceForecastInterpretationScenarioChip = ({
       bgcolor: selected ? 'contentBG.PrimaryFade' : 'commonColor.White',
       cursor: 'pointer',
       flexShrink: 0,
+      ...(!selected && {
+        '&:hover': {
+          bgcolor: 'contentBG.Hover',
+          borderColor: 'contentBorder.Hover',
+        },
+      }),
     }}
   >
     <NextGenMIDisplayOrderBadge value={scenario.displayOrder} borderColor={selected ? 'contentText.Black' : undefined} />
@@ -353,6 +368,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const [originalInterpretations, setOriginalInterpretations] = useState<PriceForecastInterpretationMap>({})
   const [interpretationOrder, setInterpretationOrder] = useState<number[]>([])
   const [devSimulatedExecutedIds, setDevSimulatedExecutedIds] = useState<Set<number>>(() => new Set())
+  const [devExtraScenarioSeries, setDevExtraScenarioSeries] = useState<IScenarioGraphSeries[]>([])
   const [selectedScenarioId, setSelectedScenarioId] = useState<number | undefined>()
   const [draftText, setDraftText] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -376,9 +392,16 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const isDevDataPreview = isDevAutoPreview || isPublishingPreview
 
   const effectiveScenarioSeries = useMemo(() => {
-    if (!isDevDataPreview || devSimulatedExecutedIds.size === 0) return scenarioSeries
-    return scenarioSeries.map((series) => (devSimulatedExecutedIds.has(series.scenarioId) ? { ...series, executed: true } : series))
-  }, [devSimulatedExecutedIds, isDevDataPreview, scenarioSeries])
+    const baseSeries =
+      !isDevDataPreview || devSimulatedExecutedIds.size === 0
+        ? scenarioSeries
+        : scenarioSeries.map((series) => (devSimulatedExecutedIds.has(series.scenarioId) ? { ...series, executed: true } : series))
+
+    if (devExtraScenarioSeries.length === 0) return baseSeries
+
+    const existingIds = new Set(baseSeries.map((series) => series.scenarioId))
+    return [...baseSeries, ...devExtraScenarioSeries.filter((series) => !existingIds.has(series.scenarioId))]
+  }, [devExtraScenarioSeries, devSimulatedExecutedIds, isDevDataPreview, scenarioSeries])
 
   const orderedActiveScenarios = useMemo(() => getOrderedActiveScenarios(effectiveScenarioSeries), [effectiveScenarioSeries])
 
@@ -443,10 +466,18 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const previewInterpretedScenarios = useMemo<InterpretationScenarioItem[]>(() => {
     if (!isPreviewActive) return []
     if (!isPreviewCompleteMode(previewMode) && previewMode !== 'disabled') return []
+
+    const previewScenarios =
+      previewMode === 'interpreted-one'
+        ? [PREVIEW_INTERPRETATION_SCENARIOS[1]]
+        : previewMode === 'regeneratable'
+          ? PREVIEW_INTERPRETATION_SCENARIOS.slice(0, 2)
+          : PREVIEW_INTERPRETATION_PAGINATION_SCENARIOS
+
     return sortInterpretedScenarioItems(
-      PREVIEW_INTERPRETATION_SCENARIOS.filter((scenario) => previewInterpretedScenarioIds.includes(scenario.scenarioId)).map(
-        (scenario) => ({ ...scenario }),
-      ),
+      previewScenarios
+        .filter((scenario) => previewInterpretedScenarioIds.includes(scenario.scenarioId))
+        .map((scenario) => ({ ...scenario })),
     )
   }, [isPreviewActive, previewInterpretedScenarioIds, previewMode])
 
@@ -498,6 +529,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
     setSelectedScenarioId(undefined)
     setDraftText('')
     setDevSimulatedExecutedIds(new Set())
+    setDevExtraScenarioSeries([])
     devExecutionInitializedGroupRef.current = null
   }, [previewMode])
 
@@ -530,8 +562,8 @@ const ScenarioGroupPriceForecastInterpretation = ({
       return
     }
 
-    setPreviewInterpretedScenarioIds(PREVIEW_INTERPRETATION_SCENARIOS.map((scenario) => scenario.scenarioId))
-    setPreviewSelectedScenarioId(PREVIEW_INTERPRETATION_SCENARIOS[2].scenarioId)
+    setPreviewInterpretedScenarioIds(PREVIEW_INTERPRETATION_PAGINATION_SCENARIOS.map((scenario) => scenario.scenarioId))
+    setPreviewSelectedScenarioId(PREVIEW_INTERPRETATION_PAGINATION_SCENARIOS[0].scenarioId)
   }, [isPreviewActive, previewMode])
 
   // #DELETE DEV 미리보기 초기화 다이얼로그 자동 오픈
@@ -656,21 +688,38 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const handleGenerate = useCallback(async () => {
     if (!canGenerate) return
 
+    const publishingPaginationScenarios = publishingCanAddFirstScenario ? buildDevPublishingPaginationScenarios(scenarioSeries) : undefined
     const publishingScenarioToAdd =
-      publishingCanAddFirstScenario && firstUninterpretedActiveScenario ? firstUninterpretedActiveScenario : undefined
-    const scenariosToGenerate = publishingScenarioToAdd ? [publishingScenarioToAdd] : pendingInterpretationScenarios
+      !publishingPaginationScenarios && publishingCanAddFirstScenario && firstUninterpretedActiveScenario
+        ? firstUninterpretedActiveScenario
+        : undefined
+
+    const scenariosToGenerate = publishingPaginationScenarios
+      ? publishingPaginationScenarios.filter((series) => !interpretations[series.scenarioId]?.trim())
+      : publishingScenarioToAdd
+        ? [publishingScenarioToAdd]
+        : pendingInterpretationScenarios
 
     if (scenariosToGenerate.length === 0) return
 
-    if (publishingScenarioToAdd) {
+    if (publishingPaginationScenarios) {
+      const syntheticScenarios = publishingPaginationScenarios.filter(
+        (series) => !scenarioSeries.some((origin) => origin.scenarioId === series.scenarioId),
+      )
+      setDevExtraScenarioSeries(syntheticScenarios)
+      setDevSimulatedExecutedIds((prev) => new Set([...prev, ...publishingPaginationScenarios.map((series) => series.scenarioId)]))
+    } else if (publishingScenarioToAdd) {
       setDevSimulatedExecutedIds((prev) => new Set([...prev, publishingScenarioToAdd.scenarioId]))
     }
 
     const generatedScenarioIds = scenariosToGenerate.map((series) => series.scenarioId)
-    const displayOrderByIdForGenerate =
-      publishingScenarioToAdd && !executedDisplayOrderById.has(publishingScenarioToAdd.scenarioId)
-        ? new Map([...executedDisplayOrderById.entries(), [publishingScenarioToAdd.scenarioId, publishingScenarioToAdd.displayOrder]])
-        : executedDisplayOrderById
+    const displayOrderByIdForGenerate = new Map(executedDisplayOrderById)
+    scenariosToGenerate.forEach((series) => {
+      displayOrderByIdForGenerate.set(series.scenarioId, series.displayOrder)
+    })
+    publishingPaginationScenarios?.forEach((series) => {
+      displayOrderByIdForGenerate.set(series.scenarioId, series.displayOrder)
+    })
 
     setIsGenerating(true)
     try {
@@ -690,8 +739,10 @@ const ScenarioGroupPriceForecastInterpretation = ({
     executedDisplayOrderById,
     firstUninterpretedActiveScenario,
     interpretationOrder,
+    interpretations,
     pendingInterpretationScenarios,
     publishingCanAddFirstScenario,
+    scenarioSeries,
     showSnackbar,
   ])
 
@@ -817,24 +868,37 @@ const ScenarioGroupPriceForecastInterpretation = ({
       <Stack gap="4px" width="100%" position="relative">
         <Stack
           direction="row"
-          alignItems="flex-start"
+          alignItems="center"
           gap="12px"
           width="100%"
           sx={{ opacity: effectiveIsGenerating ? GENERATING_CONTENT_OPACITY : 1 }}
         >
-          <Box flex="1 1 0" minWidth={0}>
-            <ScrollWrapper scrollbarGap={4} thumbWidth={4} overscrollBehavior="auto" sx={{ width: '100%', padding: '8px 0' }}>
-              <Stack direction="row" alignItems="center" gap="5px" width="max-content" minWidth="100%">
-                {effectiveInterpretedScenarios.map((scenario) => (
-                  <PriceForecastInterpretationScenarioChip
-                    key={scenario.scenarioId}
-                    scenario={scenario}
-                    selected={scenario.scenarioId === effectiveSelectedScenarioId}
-                    onSelect={() => handleSelectScenario(scenario.scenarioId)}
-                  />
-                ))}
-              </Stack>
-            </ScrollWrapper>
+          <Box flex="1 1 0" minWidth={0} position="relative">
+            <HorizontalScrollContainer
+              gap="5px"
+              alignItems="center"
+              padding="8px 0"
+              gradientWidth={63}
+              scrollAmount={0.85}
+              alwaysShowScrollButtons
+              containerSx={{
+                width: '100%',
+                '& .scroll-button': {
+                  borderRadius: '100px',
+                  borderColor: 'contentBorder.Normal',
+                  boxShadow: '0px 0px 10px 0px rgba(0, 0, 0, 0.15)',
+                },
+              }}
+            >
+              {effectiveInterpretedScenarios.map((scenario) => (
+                <PriceForecastInterpretationScenarioChip
+                  key={scenario.scenarioId}
+                  scenario={scenario}
+                  selected={scenario.scenarioId === effectiveSelectedScenarioId}
+                  onSelect={() => handleSelectScenario(scenario.scenarioId)}
+                />
+              ))}
+            </HorizontalScrollContainer>
           </Box>
           <PriceForecastInterpretationResetButton
             disabled={effectiveIsDisabled || effectiveIsGenerating || !selectedScenario || !selectedScenarioHasModifications}
