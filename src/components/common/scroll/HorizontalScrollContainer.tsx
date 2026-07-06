@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { Box, IconButton, Stack, type StackProps } from '@mui/material'
-import { ReactNode, useRef, useState, useEffect, forwardRef, MouseEvent } from 'react'
+import { ReactNode, useRef, useState, useEffect, useLayoutEffect, forwardRef, MouseEvent } from 'react'
 
 type ScrollEndFeedback = 'left' | 'right' | null
 
@@ -41,12 +41,18 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
     const scrollRef = useRef<HTMLDivElement>(null)
     const [showLeftButton, setShowLeftButton] = useState(false)
     const [showRightButton, setShowRightButton] = useState(false)
+    const [isScrollable, setIsScrollable] = useState(false)
     const [scrollEndFeedback, setScrollEndFeedback] = useState<ScrollEndFeedback>(null)
     const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastButtonStateRef = useRef({ left: false, right: false })
+    const isScrollableRef = useRef(false)
     const wheelDeltaRef = useRef(0)
     const wheelRafRef = useRef<number | null>(null)
     const checkScrollButtonsRef = useRef<() => void>(() => {})
+    const getScrollLimitsRef = useRef<(element: HTMLDivElement) => { minScrollLeft: number; maxScrollLeft: number }>(() => ({
+      minScrollLeft: 0,
+      maxScrollLeft: 0,
+    }))
     const handleScrollRef = useRef<() => void>(() => {})
     const lastMousePositionRef = useRef({ x: 0, y: 0 })
     const scrollEndTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,19 +62,53 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
     const buttonPaddingRight = typeof buttonPadding === 'number' ? buttonPadding : (buttonPadding?.right ?? 0)
     const scrollEdgePaddingLeft = typeof scrollEdgePadding === 'number' ? scrollEdgePadding : (scrollEdgePadding?.left ?? 32)
     const scrollEdgePaddingRight = typeof scrollEdgePadding === 'number' ? scrollEdgePadding : (scrollEdgePadding?.right ?? 32)
+    const hasScrollEdgePadding = showScrollButtons && isScrollable
+
+    const getActiveScrollEdgePadding = () => ({
+      left: showScrollButtons && isScrollableRef.current ? scrollEdgePaddingLeft : 0,
+      right: showScrollButtons && isScrollableRef.current ? scrollEdgePaddingRight : 0,
+    })
+
+    const getScrollLimits = (element: HTMLDivElement) => {
+      const edgePadding = getActiveScrollEdgePadding()
+      const minScrollLeft = edgePadding.left
+      const maxScrollLeft = Math.max(minScrollLeft, element.scrollWidth - element.clientWidth - edgePadding.right)
+
+      return { minScrollLeft, maxScrollLeft }
+    }
+    getScrollLimitsRef.current = getScrollLimits
+
+    const syncButtonState = (left: boolean, right: boolean) => {
+      const last = lastButtonStateRef.current
+      if (left !== last.left || right !== last.right) {
+        lastButtonStateRef.current = { left, right }
+        setShowLeftButton(left)
+        setShowRightButton(right)
+      }
+    }
 
     const checkScrollButtons = () => {
-      if (scrollRef.current) {
-        const { scrollLeft: currentScrollLeft, scrollWidth, clientWidth } = scrollRef.current
-        const newShowLeft = currentScrollLeft > 1
-        const newShowRight = currentScrollLeft < scrollWidth - clientWidth - 1
-        const last = lastButtonStateRef.current
-        if (newShowLeft !== last.left || newShowRight !== last.right) {
-          lastButtonStateRef.current = { left: newShowLeft, right: newShowRight }
-          setShowLeftButton(newShowLeft)
-          setShowRightButton(newShowRight)
-        }
+      const element = scrollRef.current
+      if (!element) return
+
+      const edgePadding = getActiveScrollEdgePadding()
+      const nextIsScrollable = element.scrollWidth - edgePadding.left - edgePadding.right > element.clientWidth + 1
+      if (nextIsScrollable !== isScrollableRef.current) {
+        isScrollableRef.current = nextIsScrollable
+        setIsScrollable(nextIsScrollable)
+        if (!nextIsScrollable) syncButtonState(false, false)
+        return
       }
+
+      const { minScrollLeft, maxScrollLeft } = getScrollLimits(element)
+      let currentScrollLeft = element.scrollLeft
+      const nextScrollLeft = Math.min(Math.max(currentScrollLeft, minScrollLeft), maxScrollLeft)
+      if (Math.abs(nextScrollLeft - currentScrollLeft) > 1) {
+        element.scrollLeft = nextScrollLeft
+        currentScrollLeft = nextScrollLeft
+      }
+
+      syncButtonState(nextIsScrollable && currentScrollLeft > minScrollLeft + 1, nextIsScrollable && currentScrollLeft < maxScrollLeft - 1)
     }
     checkScrollButtonsRef.current = checkScrollButtons
 
@@ -108,34 +148,35 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
     }
 
     const scrollLeft = () => {
-      if (scrollRef.current) {
-        const scrollValue = scrollRef.current.clientWidth * scrollAmount
-        scrollRef.current.scrollBy({ left: -scrollValue, behavior: 'smooth' })
-        setTimeout(checkScrollButtons, 300)
-      }
+      const element = scrollRef.current
+      if (!element) return
+
+      const { minScrollLeft } = getScrollLimits(element)
+      const scrollValue = element.clientWidth * scrollAmount
+      element.scrollTo({ left: Math.max(element.scrollLeft - scrollValue, minScrollLeft), behavior: 'smooth' })
+      setTimeout(checkScrollButtons, 300)
     }
 
     const scrollRight = () => {
-      if (scrollRef.current) {
-        const { scrollLeft: currentScrollLeft, scrollWidth, clientWidth } = scrollRef.current
-        const maxScrollLeft = scrollWidth - clientWidth
+      const element = scrollRef.current
+      if (!element) return
 
-        if (currentScrollLeft >= maxScrollLeft - 10) {
-          scrollRef.current.scrollTo({ left: maxScrollLeft, behavior: 'smooth' })
-        } else {
-          const scrollValue = scrollRef.current.clientWidth * scrollAmount
-          scrollRef.current.scrollBy({ left: scrollValue, behavior: 'smooth' })
-        }
-        setTimeout(checkScrollButtons, 300)
-      }
+      const { maxScrollLeft } = getScrollLimits(element)
+      const scrollValue = element.clientWidth * scrollAmount
+      element.scrollTo({ left: Math.min(element.scrollLeft + scrollValue, maxScrollLeft), behavior: 'smooth' })
+      setTimeout(checkScrollButtons, 300)
     }
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       checkScrollButtons()
-      const timer = setTimeout(checkScrollButtons, 100)
+    })
+
+    useEffect(() => {
+      checkScrollButtonsRef.current()
+      const timer = setTimeout(() => checkScrollButtonsRef.current(), 100)
 
       const handleResize = () => {
-        setTimeout(checkScrollButtons, 100)
+        setTimeout(() => checkScrollButtonsRef.current(), 100)
       }
 
       const element = scrollRef.current
@@ -146,7 +187,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
           if (mutationTimeout) clearTimeout(mutationTimeout)
           mutationTimeout = setTimeout(() => {
             mutationTimeout = null
-            checkScrollButtons()
+            checkScrollButtonsRef.current()
           }, 50)
         })
       if (mutationObserver && element) {
@@ -199,16 +240,16 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
 
         if (delta === 0) return
 
-        const maxScrollLeft = element.scrollWidth - element.clientWidth
+        const { minScrollLeft, maxScrollLeft } = getScrollLimitsRef.current(element)
         const currentScrollLeft = element.scrollLeft
 
-        if (delta < 0 && currentScrollLeft <= 0) {
+        if (delta < 0 && currentScrollLeft <= minScrollLeft + 1) {
           triggerScrollEndFeedback('left')
         } else if (delta > 0 && currentScrollLeft >= maxScrollLeft - 1) {
           triggerScrollEndFeedback('right')
         }
 
-        element.scrollLeft = Math.min(Math.max(currentScrollLeft + delta, 0), maxScrollLeft)
+        element.scrollLeft = Math.min(Math.max(currentScrollLeft + delta, minScrollLeft), maxScrollLeft)
         handleScrollRef.current()
       }
 
@@ -255,15 +296,22 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
           ...(alwaysShowScrollButtons ? { '& .scroll-button': { opacity: 1 } } : { '&:hover .scroll-button': { opacity: 1 } }),
           ...containerSx,
           ...(scrollEndFeedback && {
-            '@keyframes scrollEndShake': {
+            '@keyframes scrollEndPullLeft': {
               '0%, 100%': { transform: 'translateX(0)' },
-              '20%': { transform: `translateX(${scrollEndFeedback === 'left' ? 4 : -4}px)` },
-              '40%': { transform: `translateX(${scrollEndFeedback === 'left' ? -3 : 3}px)` },
-              '60%': { transform: `translateX(${scrollEndFeedback === 'left' ? 2 : -2}px)` },
-              '80%': { transform: `translateX(${scrollEndFeedback === 'left' ? -1 : 1}px)` },
+              '20%': { transform: 'translateX(4px)' },
+              '40%': { transform: 'translateX(1px)' },
+              '60%': { transform: 'translateX(3px)' },
+              '80%': { transform: 'translateX(0)' },
+            },
+            '@keyframes scrollEndPullRight': {
+              '0%, 100%': { transform: 'translateX(0)' },
+              '20%': { transform: 'translateX(-4px)' },
+              '40%': { transform: 'translateX(-1px)' },
+              '60%': { transform: 'translateX(-3px)' },
+              '80%': { transform: 'translateX(0)' },
             },
             '& .scroll-content': {
-              animation: 'scrollEndShake 0.4s ease-out',
+              animation: `${scrollEndFeedback === 'left' ? 'scrollEndPullLeft' : 'scrollEndPullRight'} 0.4s ease-out`,
             },
           }),
         }}
@@ -337,8 +385,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
             boxSizing: 'border-box',
             position: 'relative',
             zIndex: 0,
-            ...(showLeftButton && { paddingLeft: `${scrollEdgePaddingLeft}px` }),
-            ...(showRightButton && { paddingRight: `${scrollEdgePaddingRight}px` }),
+            ...(hasScrollEdgePadding && { paddingLeft: `${scrollEdgePaddingLeft}px`, paddingRight: `${scrollEdgePaddingRight}px` }),
             '&::-webkit-scrollbar': {
               display: 'none',
             },
