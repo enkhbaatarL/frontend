@@ -2,6 +2,7 @@ import { Box, Skeleton, Stack, Typography } from '@mui/material'
 
 import type { IScenarioBaseEvent } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
@@ -9,6 +10,7 @@ interface ScenarioGroupSummarySectionProps {
   baseEvent?: IScenarioBaseEvent
   summary?: string
   loading?: boolean
+  onEventClick?: () => void
 }
 
 const BaseEventHeaderCell = ({ label, fixed = false }: { label: string; fixed?: boolean }) => (
@@ -29,7 +31,7 @@ const BaseEventHeaderCell = ({ label, fixed = false }: { label: string; fixed?: 
   </Typography>
 )
 
-const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false }: ScenarioGroupSummarySectionProps) => (
+const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false, onEventClick }: ScenarioGroupSummarySectionProps) => (
   <Stack gap="24px">
     <Stack gap="10px">
       <Typography fontSize="16px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
@@ -60,11 +62,13 @@ const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false }: Sc
           </Stack>
           <Stack direction="row" alignItems="center">
             <Box flex="3 1 0" maxWidth="700px" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
-              <NextGenMITableBodyText
+              <NextGenMIHoverLinkCell
                 value={baseEvent?.eventName ?? '-'}
-                variant="body1SB16"
-                color="contentText.Black"
-                tooltipWhenTruncated
+                variant="body1M16"
+                ariaLabel={`${baseEvent?.eventName ?? '이벤트'} 상세 보기`}
+                onClick={() => {
+                  onEventClick?.()
+                }}
               />
             </Box>
             <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>

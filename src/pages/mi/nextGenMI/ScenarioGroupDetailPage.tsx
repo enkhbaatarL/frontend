@@ -24,7 +24,7 @@ import ScenarioGroupDeleteMenu from '@/pages/mi/nextGenMI/components/scenarioGro
 import ScenarioGroupDetailSection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDetailSection'
 import ScenarioGroupGraphView from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphView'
 import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupSummarySection'
-import { getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { NEXT_GEN_MI_BASE_PATH, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIScenarioGroupService, {
   type IScenarioGroupDetailRow,
   type ScenarioJudgementStatus,
@@ -179,7 +179,16 @@ const ScenarioGroupDetailPage = () => {
     void Promise.all(refetches)
   }, [groupDetailQueryKey, queryClient, scenarioGroupId])
 
+  const baseEvent = data?.baseEvent
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
+
+  const handleBaseEventClick = useCallback(() => {
+    if (!baseEvent) return
+
+    navigate(`${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(baseEvent.eventId))}`, {
+      state: { eventName: baseEvent.eventName },
+    })
+  }, [baseEvent, navigate])
 
   const queryScenarioId = searchParams.get('scenarioId')
   const hasViewableQueryScenarioId = useMemo(() => {
@@ -347,7 +356,12 @@ const ScenarioGroupDetailPage = () => {
       <Stack gap="30px">
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} />
-          <ScenarioGroupSummarySection baseEvent={data?.baseEvent} summary={data?.summary} loading={isLoading} />
+          <ScenarioGroupSummarySection
+            baseEvent={baseEvent}
+            summary={data?.summary}
+            loading={isLoading}
+            onEventClick={handleBaseEventClick}
+          />
         </Stack>
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[1].id} gap="12px" py="20px">
