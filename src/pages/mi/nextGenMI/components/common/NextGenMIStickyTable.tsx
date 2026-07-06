@@ -63,6 +63,7 @@ type NextGenMIStickyTableProps<T> = {
   containerShell?: boolean
   scrollContainerRef?: { current: HTMLDivElement | null }
   rightScrollEdgeOffset?: string
+  disableHorizontalScroll?: boolean
   onRowClick?: (row: T, rowIndex: number) => void
 }
 
@@ -290,6 +291,7 @@ const NextGenMIStickyTable = <T,>({
   containerShell = true,
   scrollContainerRef,
   rightScrollEdgeOffset = '0px',
+  disableHorizontalScroll = false,
   onRowClick,
 }: NextGenMIStickyTableProps<T>) => {
   const tableRootRef = useRef<HTMLDivElement | null>(null)
@@ -488,11 +490,11 @@ const NextGenMIStickyTable = <T,>({
       const deltaLeft = Math.abs(scrollLeft - lastScrollPositionRef.current.left)
       const deltaTop = Math.abs(scrollTop - lastScrollPositionRef.current.top)
       const activeAxis = resolveActiveScrollAxis(updateAxis, deltaLeft, deltaTop)
-      const horizontal = maxLeft > 1
+      const horizontal = !disableHorizontalScroll && maxLeft > 1
       const vertical = maxTop > 1
       const nextActiveAxis = horizontal || vertical ? (activeAxis ?? lastActiveAxisRef.current) : null
-      const left = scrollLeft > 1
-      const right = scrollLeft < maxLeft - 1
+      const left = horizontal && scrollLeft > 1
+      const right = horizontal && scrollLeft < maxLeft - 1
       const fixedLeftColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-left-column="true"]') : 0
       const fixedRightColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-right-column="true"]') : 0
       const fixedColumnShadowOffsets = getFixedColumnShadowOffsets(el, root)
@@ -591,6 +593,7 @@ const NextGenMIStickyTable = <T,>({
   }, [
     columns.length,
     canInsetHorizontalScrollbar,
+    disableHorizontalScroll,
     fixedLeftColumnIndexList.length,
     fixedRightColumnIndexList.length,
     firstFixedRightColumnIndex,
@@ -702,6 +705,16 @@ const NextGenMIStickyTable = <T,>({
     top: !hideHeader && leftAlignedHeaderSticky ? headerHeight : 0,
     bottom: scrollLayoutState.horizontal ? '18px' : 0,
   }
+  const tableWidthSx = disableHorizontalScroll
+    ? {
+      width: '100%',
+      minWidth: 0,
+      maxWidth: '100%',
+    }
+    : {
+      width: 'max-content',
+      minWidth: '100%',
+    }
   const noRowContentMinHeight = noRowMinHeight ?? rowHeight
   const renderFixedColumnResizeHandle = (side: Exclude<FixedColumnResizeSide, null>, columnIndex: number) => {
     const active = fixedColumnResizeSide === side
@@ -990,30 +1003,28 @@ const NextGenMIStickyTable = <T,>({
         sx={{
           width: '100%',
           ...(maxHeight ? { maxHeight } : {}),
-          overflowX: 'auto',
+          overflowX: disableHorizontalScroll ? 'hidden' : 'auto',
           overflowY: 'auto',
           scrollbarWidth: 'none',
           pr: scrollLayoutState.vertical ? '16px' : 0,
-          pb: scrollLayoutState.horizontal ? '18px' : 0,
+          pb: scrollLayoutState.horizontal && !disableHorizontalScroll ? '18px' : 0,
           '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
         <Box
           sx={{
             display: 'grid',
-            width: 'max-content',
-            minWidth: '100%',
+            ...tableWidthSx,
           }}
         >
           <Box
             component="table"
             sx={{
               gridArea: '1 / 1',
-              width: 'max-content',
-              minWidth: '100%',
+              ...tableWidthSx,
               borderCollapse: 'separate',
               borderSpacing: 0,
-              tableLayout: 'auto',
+              tableLayout: disableHorizontalScroll ? 'fixed' : 'auto',
             }}
           >
             {!hideHeader && (

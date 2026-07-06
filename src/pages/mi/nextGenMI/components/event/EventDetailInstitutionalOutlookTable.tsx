@@ -96,9 +96,9 @@ const EventDetailInstitutionalOutlookTable = ({
       {
         field: 'outlookSummary',
         headerName: '전망 요약',
-        width: paginatedRows.length > 0 ? '852px' : 'auto',
-        minWidth: paginatedRows.length > 0 ? '852px' : '0px',
-        maxWidth: paginatedRows.length > 0 ? '852px' : 'none',
+        width: compact || paginatedRows.length === 0 ? 'auto' : '852px',
+        minWidth: compact || paginatedRows.length === 0 ? '0px' : '852px',
+        maxWidth: compact || paginatedRows.length === 0 ? 'none' : '852px',
         renderCell: ({ row }) => <EventDetailSummaryCell value={row.outlookSummary} />,
         cellSx: {
           whiteSpace: 'normal',
@@ -107,7 +107,7 @@ const EventDetailInstitutionalOutlookTable = ({
         },
       },
     ],
-    [paginatedRows.length],
+    [compact, paginatedRows.length],
   )
 
   return (
@@ -133,6 +133,7 @@ const EventDetailInstitutionalOutlookTable = ({
               noRowMessage="표시할 데이터가 없습니다."
               rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
               containerShell={false}
+              disableHorizontalScroll={compact}
               onRowClick={(row) => setSelectedOutlook(row)}
             />
             {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (

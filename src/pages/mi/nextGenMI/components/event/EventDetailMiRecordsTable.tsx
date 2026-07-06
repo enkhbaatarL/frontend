@@ -220,9 +220,9 @@ const EventDetailMiRecordsTable = ({
       {
         field: 'summary',
         headerName: '요약',
-        width: paginatedRows.length > 0 ? '652px' : 'auto',
-        minWidth: paginatedRows.length > 0 ? '652px' : '0px',
-        maxWidth: paginatedRows.length > 0 ? '652px' : 'none',
+        width: compact || paginatedRows.length === 0 ? 'auto' : '652px',
+        minWidth: compact || paginatedRows.length === 0 ? '0px' : '652px',
+        maxWidth: compact || paginatedRows.length === 0 ? 'none' : '652px',
         renderCell: ({ row }) => <EventDetailSummaryCell value={row.summary} />,
         cellSx: {
           whiteSpace: 'normal',
@@ -231,7 +231,7 @@ const EventDetailMiRecordsTable = ({
         },
       },
     ],
-    [handleLockedTitleClick, handleTitleClick, paginatedRows.length, shakingRowKeys],
+    [compact, handleLockedTitleClick, handleTitleClick, paginatedRows.length, shakingRowKeys],
   )
 
   return (
@@ -257,6 +257,7 @@ const EventDetailMiRecordsTable = ({
               noRowMessage="표시할 데이터가 없습니다."
               rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
               containerShell={false}
+              disableHorizontalScroll={compact}
               onRowClick={(row) => setSelectedRecord(row)}
             />
             {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
