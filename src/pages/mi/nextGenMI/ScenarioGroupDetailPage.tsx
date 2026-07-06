@@ -23,6 +23,7 @@ import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUser
 import ScenarioGroupDeleteMenu from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDeleteMenu'
 import ScenarioGroupDetailSection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDetailSection'
 import ScenarioGroupGraphView from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphView'
+import ScenarioGroupPriceForecastInterpretation from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupPriceForecastInterpretation'
 import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupSummarySection'
 import { NEXT_GEN_MI_BASE_PATH, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import nextGenMIScenarioGroupService, {
@@ -31,7 +32,7 @@ import nextGenMIScenarioGroupService, {
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
 type ScenarioGroupDetailSectionItem = NextGenMIDetailHeaderSection & {
-  icon: ReactNode
+  icon?: ReactNode
 }
 
 const JUDGEMENT_SUCCESS_MESSAGE: Record<ScenarioJudgementStatus, string> = {
@@ -52,6 +53,7 @@ const SCENARIO_GROUP_DETAIL_SECTIONS: ScenarioGroupDetailSectionItem[] = [
       </Box>
     ),
   },
+  { id: 'scenario-group-detail-section-price-forecast-interpretation', label: '가격전망 해석' },
   {
     id: 'scenario-group-detail-section-detail',
     label: '시나리오 상세',
@@ -69,7 +71,7 @@ const SectionHeading = ({ sectionId }: { sectionId: NextGenMIDetailHeaderSection
 
   return (
     <Stack direction="row" alignItems="center" gap="8px" sx={{ color: 'contentText.Black' }}>
-      {section.icon}
+      {section.icon ?? null}
       <Typography fontSize={20} fontWeight={600} color="contentText.Black">
         {section.label}
       </Typography>
@@ -325,7 +327,7 @@ const ScenarioGroupDetailPage = () => {
 
   const shouldFocusDetailSection =
     hasViewableQueryScenarioId && !isLoading && Boolean(data) && (arrivedWithScenarioId || detailScrollRequestSeq > 0)
-  const focusDetailSectionId = shouldFocusDetailSection ? SCENARIO_GROUP_DETAIL_SECTIONS[3].id : undefined
+  const focusDetailSectionId = shouldFocusDetailSection ? SCENARIO_GROUP_DETAIL_SECTIONS[4].id : undefined
   const focusDetailScrollKey = shouldFocusDetailSection ? `${queryScenarioId ?? 'fallback'}:${detailScrollRequestSeq}` : undefined
 
   useLayoutEffect(() => {
@@ -389,12 +391,16 @@ const ScenarioGroupDetailPage = () => {
         </Stack>
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} py="20px">
+          <ScenarioGroupPriceForecastInterpretation scenarioGroupId={Number(scenarioGroupId)} enabled={Boolean(scenarioGroupId)} />
+        </Stack>
+
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} py="20px">
           <ScenarioGroupDetailSection
             scenarioGroupId={scenarioGroupId ?? ''}
             scenarios={scenarios}
             selectedScenarioId={selectedScenarioId}
             scenarioCount={data?.scenarioCount}
-            headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} />}
+            headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} />}
             listLoading={isLoading}
             onSelectScenario={handleSelectScenario}
           />

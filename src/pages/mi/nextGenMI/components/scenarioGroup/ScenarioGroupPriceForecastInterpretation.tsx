@@ -2,6 +2,7 @@ import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Box, CircularProgress, Stack, Typography } from '@mui/material'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { debounce } from 'lodash-es'
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type FocusEvent } from 'react'
 
@@ -13,6 +14,7 @@ import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import { scenarioGroupGraphQueryKey } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import {
   buildInterpretationOrderAfterGenerate,
   buildDevPublishingPaginationScenarios,
@@ -35,10 +37,11 @@ import {
   type PriceForecastInterpretationPreviewMode,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupPriceForecastInterpretationMock'
 import ScenarioGroupPriceForecastInterpretationResetDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupPriceForecastInterpretationResetDialog'
+import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
 interface ScenarioGroupPriceForecastInterpretationProps {
   scenarioGroupId: number
-  scenarioSeries?: IScenarioGraphSeries[]
+  enabled?: boolean
 }
 
 interface InterpretationScenarioItem {
@@ -358,11 +361,19 @@ const PriceForecastInterpretationPreviewToolbar = ({
   </Stack>
 )
 
-const ScenarioGroupPriceForecastInterpretation = ({
-  scenarioGroupId,
-  scenarioSeries = [],
-}: ScenarioGroupPriceForecastInterpretationProps) => {
+const ScenarioGroupPriceForecastInterpretation = ({ scenarioGroupId, enabled = true }: ScenarioGroupPriceForecastInterpretationProps) => {
   const { showSnackbar } = useSnackbar()
+
+  const graphQuery = useQuery({
+    queryKey: scenarioGroupGraphQueryKey(scenarioGroupId, 'JKM', 'monthly'),
+    queryFn: () => nextGenMIScenarioGroupService.getScenarioGroupGraph(scenarioGroupId, 'JKM', 'monthly'),
+    enabled: enabled && Boolean(scenarioGroupId),
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
+  })
+
+  // 수급모델 실행 상태 폴링은 ScenarioGroupGraphView에서만 수행. 완료 시 graph 쿼리가 refetch되면 여기 scenarioSeries도 함께 갱신된다.
+  const scenarioSeries = graphQuery.data?.scenarioSeries ?? []
   const [previewMode, setPreviewMode] = useState<PriceForecastInterpretationPreviewMode>('publishing')
   const [interpretations, setInterpretations] = useState<PriceForecastInterpretationMap>({})
   const [originalInterpretations, setOriginalInterpretations] = useState<PriceForecastInterpretationMap>({})
@@ -963,7 +974,6 @@ const ScenarioGroupPriceForecastInterpretation = ({
       <Stack
         gap="4px"
         width="100%"
-        padding="24px 0 0"
         bgcolor="commonColor.White"
         sx={
           effectiveIsDisabled
