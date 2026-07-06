@@ -20,7 +20,6 @@ import {
   scenarioGroupGraphCmeBenchmarkQueryKey,
   scenarioGroupGraphQueryKey,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
-import ScenarioGroupPriceForecastInterpretation from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupPriceForecastInterpretation'
 import ScenarioModelExecutionButton from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionButton'
 import ScenarioModelExecutionPopup, {
   type ScenarioModelExecutionPopupRef,
@@ -253,8 +252,6 @@ const ScenarioGroupGraphView = ({
             </Stack>
           </Stack>
         </Box>
-
-        <ScenarioGroupPriceForecastInterpretation scenarioGroupId={scenarioGroupId} scenarioSeries={graphData?.scenarioSeries} />
       </Stack>
 
       <ScenarioModelExecutionPopup
