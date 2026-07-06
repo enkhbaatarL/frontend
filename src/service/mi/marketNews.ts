@@ -9,7 +9,10 @@ export interface INewsSummaryData {
   dataRegistrationSn: number
   firstCreated: string
   title: string
+  storyTitle: string
   story: string
+  summaryTitle: string
+  summary: string
   provider: string
   tagList: string[]
 }

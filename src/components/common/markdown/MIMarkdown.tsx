@@ -1,4 +1,4 @@
-import { Box } from '@mui/material'
+import { Box, type BoxProps } from '@mui/material'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 
@@ -7,6 +7,7 @@ import { markdownRemarkPlugins } from '@/utils/markdown'
 
 interface MIMarkdownProps {
   children?: string | null
+  sx?: BoxProps['sx']
 }
 
 const markdownComponents: Components = {
@@ -21,8 +22,8 @@ const markdownComponents: Components = {
   ),
 }
 
-const MIMarkdown = ({ children }: Readonly<MIMarkdownProps>) => (
-  <Box className={style.markdownContent}>
+const MIMarkdown = ({ children, sx }: Readonly<MIMarkdownProps>) => (
+  <Box className={style.markdownContent} sx={sx}>
     <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
       {children ?? ''}
     </ReactMarkdown>

@@ -1,10 +1,9 @@
-import { Box, Grid2 as Grid, Typography } from '@mui/material'
+import { Box, Divider, Grid2 as Grid, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import TagChip from '@/components/common/chip/TagChip'
-import MILine from '@/components/common/divider/MILine'
 import MIMarkdown from '@/components/common/markdown/MIMarkdown'
 import MISkeleton from '@/components/mi/MISkeleton'
 import marketNewsService from '@/service/mi/marketNews'
@@ -37,14 +36,14 @@ const NewsDetailPage = () => {
             <Typography color="contentText.Subtext" variant="subtext1">
               {newsSummaryData?.firstCreated && dayjs(newsSummaryData?.firstCreated).format('MMMM D, YYYY')}
             </Typography>
-            <MILine length={14} margin="0 14px" direction="vertical" backgroundColor="gray.50" />
+            <Divider orientation="vertical" flexItem sx={{ margin: '0 14px', borderColor: 'gray.50' }} />
             <Typography color="contentText.Subtext" variant="subtext1">
               {newsSummaryData?.provider}
             </Typography>
           </Grid>
         </Box>
       </Box>
-      <Box boxSizing={'border-box'} minWidth={'1380px'} width={'1380px'} borderTop="1px solid" borderColor="gray.30" margin={'auto'}></Box>
+      <Divider sx={{ minWidth: '1380px', width: '1380px', margin: 'auto', borderColor: 'gray.30' }} />
       <Box boxSizing={'border-box'} minWidth={'1440px'} width={'1440px'} margin={'auto'} paddingTop={10} paddingX={7.5}>
         <Grid
           sx={{
@@ -54,10 +53,33 @@ const NewsDetailPage = () => {
           container
           gap={6}
         >
-          <Grid container direction="column" flexGrow={1} gap={10}>
-            <MIMarkdown>{newsSummaryData?.story}</MIMarkdown>
+          <Stack flexGrow={1} gap="46px" minWidth={0}>
+            {(newsSummaryData?.summaryTitle || newsSummaryData?.summary) && (
+              <Stack gap="16px">
+                {newsSummaryData?.summaryTitle && (
+                  <Typography color="contentText.Black" component="h2" variant="body1B16">
+                    {newsSummaryData.summaryTitle}
+                  </Typography>
+                )}
+                <MIMarkdown sx={{ '& > :first-child': { marginTop: 0 }, '& > :last-child': { marginBottom: 0 } }}>
+                  {newsSummaryData?.summary}
+                </MIMarkdown>
+              </Stack>
+            )}
+            {(newsSummaryData?.storyTitle || newsSummaryData?.story) && (
+              <Stack gap="16px">
+                {newsSummaryData?.storyTitle && (
+                  <Typography color="contentText.Black" component="h2" variant="body1B16">
+                    {newsSummaryData.storyTitle}
+                  </Typography>
+                )}
+                <Typography color="contentText.Black" component="div" variant="subtext1" whiteSpace="pre-wrap">
+                  {newsSummaryData?.story}
+                </Typography>
+              </Stack>
+            )}
             <TagChip items={newsSummaryData?.tagList?.map((value) => ({ name: value })) ?? []} disabled />
-          </Grid>
+          </Stack>
           <Grid
             sx={{
               width: '286px',
