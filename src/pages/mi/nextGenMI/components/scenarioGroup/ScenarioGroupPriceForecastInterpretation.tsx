@@ -4,7 +4,7 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { debounce } from 'lodash-es'
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type FocusEvent } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { IScenarioGraphSeries } from '@/service/mi/nextGenMI/scenarioGroup'
 
@@ -13,6 +13,7 @@ import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScro
 import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
+import NextGenMIResizableTextarea from '@/pages/mi/nextGenMI/components/common/NextGenMIResizableTextarea'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { scenarioGroupGraphQueryKey } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import {
@@ -52,8 +53,6 @@ interface InterpretationScenarioItem {
 }
 
 const EMPTY_MESSAGE_HEIGHT = '300px'
-const INTERPRETATION_TEXTAREA_MIN_HEIGHT = '160px'
-const INTERPRETATION_TEXTAREA_MAX_HEIGHT = '200px'
 
 const PriceForecastInterpretationGenerateButton = ({ disabled, onClick }: { disabled: boolean; onClick: () => void }) => (
   <MIBaseButton
@@ -221,99 +220,6 @@ const PriceForecastInterpretationSavedMessage = () => (
     수정 사항이 저장되었습니다.
   </Typography>
 )
-
-interface PriceForecastInterpretationEditorProps {
-  value: string
-  disabled?: boolean
-  readOnly?: boolean
-  forceFocused?: boolean
-  savedMessageVisible?: boolean
-  ariaLabel: string
-  onChange: (value: string) => void
-  onCommit: () => void
-}
-
-const PriceForecastInterpretationEditor = ({
-  value,
-  disabled = false,
-  readOnly = false,
-  forceFocused = false,
-  savedMessageVisible = false,
-  ariaLabel,
-  onChange,
-  onCommit,
-}: PriceForecastInterpretationEditorProps) => {
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const [isFocused, setIsFocused] = useState(false)
-
-  useEffect(() => {
-    if (!forceFocused) return
-    textareaRef.current?.focus()
-  }, [forceFocused])
-
-  const handleBlur = (event: FocusEvent<HTMLTextAreaElement>) => {
-    setIsFocused(false)
-    if (event.relatedTarget && event.currentTarget.parentElement?.contains(event.relatedTarget as Node)) return
-    onCommit()
-  }
-
-  const showFocusedBorder = isFocused || forceFocused
-
-  return (
-    <Stack gap="4px" width="100%">
-      <Box
-        bgcolor={showFocusedBorder ? 'gray.5' : 'commonColor.White'}
-        border="1px solid"
-        borderColor={showFocusedBorder ? 'contentBorder.Primaryactive' : 'contentBorder.Normal'}
-        borderRadius="10px"
-        padding="20px"
-        boxSizing="border-box"
-        sx={{
-          transition: 'border-color 120ms ease, background-color 120ms ease',
-        }}
-      >
-        <Box
-          ref={textareaRef}
-          component="textarea"
-          value={value}
-          maxLength={PRICE_FORECAST_INTERPRETATION_MAX_LENGTH}
-          onChange={(event) => onChange(event.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={handleBlur}
-          disabled={disabled}
-          readOnly={readOnly}
-          aria-label={ariaLabel}
-          sx={{
-            width: '100%',
-            minHeight: INTERPRETATION_TEXTAREA_MIN_HEIGHT,
-            maxHeight: INTERPRETATION_TEXTAREA_MAX_HEIGHT,
-            border: 'none',
-            outline: 'none',
-            resize: 'vertical',
-            padding: 0,
-            margin: 0,
-            bgcolor: 'transparent',
-            fontFamily: 'inherit',
-            fontSize: '16px',
-            fontWeight: 500,
-            lineHeight: 1.5,
-            color: 'contentText.Black',
-            overflow: 'auto',
-            display: 'block',
-          }}
-        />
-      </Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px" padding="0 8px" minHeight="18px">
-        <Box minWidth={0} flex="1 1 0">
-          {savedMessageVisible ? <PriceForecastInterpretationSavedMessage /> : null}
-        </Box>
-        <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.5} flexShrink={0}>
-          {value.length.toLocaleString()} / {PRICE_FORECAST_INTERPRETATION_MAX_LENGTH.toLocaleString()}
-        </Typography>
-      </Stack>
-    </Stack>
-  )
-}
 
 // #DELETE DEV 상태 미리보기 툴바
 const PriceForecastInterpretationPreviewToolbar = ({
@@ -510,7 +416,6 @@ const ScenarioGroupPriceForecastInterpretation = ({ scenarioGroupId, enabled = t
     : isPreviewActive && (isPreviewCompleteMode(previewMode) || previewMode === 'disabled')
       ? MOCK_PRICE_FORECAST_INTERPRETATION_TEXT
       : draftText
-  const effectiveForceTextareaFocused = isPreviewActive && previewMode === 'editing'
   const effectiveSavedMessageVisible = isPreviewActive && previewMode === 'saved' ? true : savedMessageVisible
 
   const selectedScenario = useMemo(
@@ -918,16 +823,31 @@ const ScenarioGroupPriceForecastInterpretation = ({ scenarioGroupId, enabled = t
         </Stack>
 
         <Box sx={{ opacity: effectiveIsGenerating ? GENERATING_CONTENT_OPACITY : 1 }}>
-          <PriceForecastInterpretationEditor
-            value={effectiveDraftText}
-            disabled={effectiveIsDisabled || effectiveIsGenerating || !selectedScenario}
-            readOnly={isPreviewActive && !isPreviewEditable}
-            forceFocused={effectiveForceTextareaFocused}
-            savedMessageVisible={effectiveSavedMessageVisible}
-            ariaLabel={`${selectedScenario?.scenarioName ?? '시나리오'} 가격전망 해석`}
-            onChange={handleDraftChange}
-            onCommit={commitDraft}
-          />
+          {selectedScenario ? (
+            <Stack gap="4px" width="100%">
+              <NextGenMIResizableTextarea
+                ariaLabel={`${selectedScenario.scenarioName} 가격전망 해석`}
+                value={effectiveDraftText}
+                maxLength={PRICE_FORECAST_INTERPRETATION_MAX_LENGTH}
+                minHeight="160px"
+                minResizeHeight="160px"
+                maxHeight="200px"
+                fontSize="16px"
+                hoverBgcolor="contentBG.Hover"
+                disabled={effectiveIsDisabled || effectiveIsGenerating || (isPreviewActive && !isPreviewEditable)}
+                onBlur={commitDraft}
+                onChange={handleDraftChange}
+              />
+              <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px" height="18px" padding="0 8px">
+                <Box minWidth={0} flex="1 1 0">
+                  {effectiveSavedMessageVisible ? <PriceForecastInterpretationSavedMessage /> : null}
+                </Box>
+                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.5} flexShrink={0} noWrap>
+                  {effectiveDraftText.length.toLocaleString()} / {PRICE_FORECAST_INTERPRETATION_MAX_LENGTH.toLocaleString()}
+                </Typography>
+              </Stack>
+            </Stack>
+          ) : null}
         </Box>
 
         {effectiveIsGenerating ? <PriceForecastInterpretationGeneratingOverlay /> : null}
