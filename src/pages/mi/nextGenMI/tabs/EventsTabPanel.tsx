@@ -226,7 +226,7 @@ const EventsTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderCell: (params) => <EventStatusBadge status={params.row.status} statusLabel={params.row.statusLabel} />,
+        renderCell: (params) => <EventStatusBadge status={params.row.status} />,
       },
       {
         field: 'latestRecordFirstCreated',
