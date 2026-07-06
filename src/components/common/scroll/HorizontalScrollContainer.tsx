@@ -10,10 +10,13 @@ interface HorizontalScrollContainerProps extends Omit<StackProps, 'children' | '
   showGradient?: boolean
   gradientWidth?: number
   showScrollButtons?: boolean
+  alwaysShowScrollButtons?: boolean
   enableWheelScroll?: boolean
   buttonPadding?: number | { left?: number; right?: number }
+  scrollEdgePadding?: number | { left?: number; right?: number }
   onScrollEnd?: (elementUnderCursor: Element | null) => void
   scrollEndDelay?: number
+  containerSx?: StackProps['sx']
 }
 
 const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollContainerProps>(
@@ -24,10 +27,13 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
       showGradient = true,
       gradientWidth = 50,
       showScrollButtons = true,
+      alwaysShowScrollButtons = false,
       enableWheelScroll = true,
       buttonPadding,
+      scrollEdgePadding,
       onScrollEnd,
       scrollEndDelay = 400,
+      containerSx,
       ...props
     },
     ref,
@@ -48,6 +54,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
 
     const buttonPaddingLeft = typeof buttonPadding === 'number' ? buttonPadding : (buttonPadding?.left ?? 0)
     const buttonPaddingRight = typeof buttonPadding === 'number' ? buttonPadding : (buttonPadding?.right ?? 0)
+    const scrollEdgePaddingLeft = typeof scrollEdgePadding === 'number' ? scrollEdgePadding : (scrollEdgePadding?.left ?? 32)
+    const scrollEdgePaddingRight = typeof scrollEdgePadding === 'number' ? scrollEdgePadding : (scrollEdgePadding?.right ?? 32)
 
     const checkScrollButtons = () => {
       if (scrollRef.current) {
@@ -244,9 +252,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
         onMouseLeave={handleMouseLeave}
         sx={{
           overflow: 'hidden',
-          '&:hover .scroll-button': {
-            opacity: 1,
-          },
+          ...(alwaysShowScrollButtons ? { '& .scroll-button': { opacity: 1 } } : { '&:hover .scroll-button': { opacity: 1 } }),
+          ...containerSx,
           ...(scrollEndFeedback && {
             '@keyframes scrollEndShake': {
               '0%, 100%': { transform: 'translateX(0)' },
@@ -277,7 +284,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
               width: 32,
               height: 32,
-              opacity: 0,
+              opacity: alwaysShowScrollButtons ? 1 : 0,
               transition: 'opacity 0.2s ease-in-out',
               '&:hover': {
                 backgroundColor: 'rgba(255, 255, 255, 1)',
@@ -304,7 +311,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
               width: 32,
               height: 32,
-              opacity: 0,
+              opacity: alwaysShowScrollButtons ? 1 : 0,
               transition: 'opacity 0.2s ease-in-out',
               '&:hover': {
                 backgroundColor: 'rgba(255, 255, 255, 1)',
@@ -330,6 +337,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
             boxSizing: 'border-box',
             position: 'relative',
             zIndex: 0,
+            ...(showLeftButton && { paddingLeft: `${scrollEdgePaddingLeft}px` }),
+            ...(showRightButton && { paddingRight: `${scrollEdgePaddingRight}px` }),
             '&::-webkit-scrollbar': {
               display: 'none',
             },
