@@ -61,11 +61,11 @@ const LoginPage = () => {
       return
     }
 
-    const skGasTokenLabel = ['skgas', '낳ㅁㄴ', 'gas1', 'ㅎㅁㄴ1'].includes(inputValue)
+    const skGasTokenLabel = ['migas', 'ㅡㅑㅎㅁㄴ', 'migas1', 'ㅡㅑㅎㅁㄴ1'].includes(inputValue)
       ? 'SK Gas'
-      : ['gas2', 'ㅎㅁㄴ2'].includes(inputValue)
+      : ['migas2', 'ㅡㅑㅎㅁㄴ2'].includes(inputValue)
         ? 'SK Gas 2'
-        : ['gas3', 'ㅎㅁㄴ3'].includes(inputValue)
+        : ['migas3', 'ㅡㅑㅎㅁㄴ3'].includes(inputValue)
           ? 'SK Gas 3'
           : null
 
