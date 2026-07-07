@@ -113,7 +113,7 @@ const renderEventDetailHeaderTabActions = ({
 
   return (
     <Stack direction="row" alignItems="center" gap="12px">
-      <NextGenMIUserFeedback pageTitle={pageTitle} />
+      <NextGenMIUserFeedback feedbackSectionNm="Event" pageTitle={pageTitle} />
       {scenarioDesignDisabled && scenarioDesignDisabledTooltipTitle ? (
         <NextGenMIFollowCursorTooltip title={scenarioDesignDisabledTooltipTitle}>{scenarioDesignButton}</NextGenMIFollowCursorTooltip>
       ) : (

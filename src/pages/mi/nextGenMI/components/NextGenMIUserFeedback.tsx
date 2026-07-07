@@ -7,21 +7,36 @@ import UserFeedbackIcon from '@/components/common/icons/UserFeedbackIcon'
 import MIMaskInput from '@/components/common/input/MIMaskInput'
 import MIMenu from '@/components/common/menu/MIMenu'
 import useSnackbar from '@/hooks/useSnackbar'
-import userFeedbackService from '@/service/common/userFeedback'
+import userFeedbackService, { UserFeedbackTypeCd } from '@/service/common/userFeedback'
 
 const FEEDBACK_MAX_LENGTH = 2000
 
+const FEEDBACK_TYPE_OPTIONS: ReadonlyArray<{ value: UserFeedbackTypeCd; label: string }> = [
+  { value: 'agent_output', label: 'Agent Output' },
+  { value: 'ux_ui', label: 'UX/UI' },
+  { value: 'feature_suggestion', label: '기능 제안' },
+  { value: 'etc', label: '기타' },
+]
+
 interface NextGenMIUserFeedbackProps {
   pageTitle: string
+  feedbackSectionNm?: string
 }
 
-const NextGenMIUserFeedback = ({ pageTitle }: NextGenMIUserFeedbackProps) => {
+const NextGenMIUserFeedback = ({ pageTitle, feedbackSectionNm }: NextGenMIUserFeedbackProps) => {
   const { showSnackbar } = useSnackbar()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [feedbackTypeCd, setFeedbackTypeCd] = useState<UserFeedbackTypeCd>('agent_output')
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const trimmedComment = comment.trim()
+  const isAtMaxLength = comment.length >= FEEDBACK_MAX_LENGTH
+  const isOverMaxLength = comment.length > FEEDBACK_MAX_LENGTH
+  const canSubmit = trimmedComment.length > 0 && !isOverMaxLength && !isSubmitting
+
   const resetFeedback = useCallback(() => {
+    setFeedbackTypeCd('agent_output')
     setComment('')
   }, [])
 
@@ -31,22 +46,24 @@ const NextGenMIUserFeedback = ({ pageTitle }: NextGenMIUserFeedbackProps) => {
   }, [resetFeedback])
 
   const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return
+
     try {
       setIsSubmitting(true)
-      const feedbackContent = comment.trim() || undefined
       await userFeedbackService.createUserFeedback({
         feedbackPageNm: pageTitle,
-        feedbackTypeCd: 'etc',
-        feedbackContent,
+        feedbackSectionNm,
+        feedbackTypeCd,
+        feedbackContent: trimmedComment,
       })
-      showSnackbar('피드백이 전송되었습니다.', { variant: 'success' })
+      showSnackbar('피드백이 등록되었습니다.', { variant: 'success' })
       closeFeedbackMenu()
     } catch {
       showSnackbar('피드백 전송에 실패했습니다.', { variant: 'error' })
     } finally {
       setIsSubmitting(false)
     }
-  }, [closeFeedbackMenu, comment, pageTitle, showSnackbar])
+  }, [canSubmit, closeFeedbackMenu, feedbackSectionNm, feedbackTypeCd, pageTitle, showSnackbar, trimmedComment])
 
   return (
     <MIMenu
@@ -115,6 +132,49 @@ const NextGenMIUserFeedback = ({ pageTitle }: NextGenMIUserFeedbackProps) => {
             </Stack>
           </Stack>
 
+          <Stack gap="8px" alignItems="flex-start">
+            <Typography variant="body2SB14" color="contentText.Normal">
+              피드백 유형
+            </Typography>
+            <Stack direction="row" alignItems="center" flexWrap="wrap" gap="5px">
+              {FEEDBACK_TYPE_OPTIONS.map((option) => {
+                const isSelected = feedbackTypeCd === option.value
+                return (
+                  <MIBaseButton
+                    key={option.value}
+                    variant="outlined"
+                    onClick={() => setFeedbackTypeCd(option.value)}
+                    disabled={isSubmitting}
+                    sx={{
+                      height: '32px',
+                      padding: '6px 10px',
+                      borderRadius: '100px',
+                      borderColor: isSelected ? 'contentBorder.Primaryactive' : 'contentBorder.Normal',
+                      bgcolor: isSelected ? 'contentBG.PrimaryFade' : 'commonColor.White',
+                      color: isSelected ? 'contentText.Black' : 'contentText.Normal',
+                      fontWeight: isSelected ? 600 : 500,
+                      ...(isSelected
+                        ? {
+                          '&:hover:not(:disabled)': {
+                            bgcolor: 'contentBG.PrimaryFade',
+                            borderColor: 'contentBorder.Primaryactive',
+                          },
+                        }
+                        : {
+                          '&:hover:not(:disabled)': {
+                            bgcolor: 'contentBG.Hover',
+                            borderColor: 'transparent',
+                          },
+                        }),
+                    }}
+                  >
+                    {option.label}
+                  </MIBaseButton>
+                )
+              })}
+            </Stack>
+          </Stack>
+
           <MIMaskInput
             label="의견 내용"
             value={comment}
@@ -122,10 +182,12 @@ const NextGenMIUserFeedback = ({ pageTitle }: NextGenMIUserFeedbackProps) => {
             multiline
             rows={12}
             maxLength={FEEDBACK_MAX_LENGTH}
+            error={isAtMaxLength}
+            helperText={isAtMaxLength ? '최대 2,000자까지 입력할 수 있습니다.' : undefined}
             onChange={(event) => {
-              setComment(event.target.value.slice(0, FEEDBACK_MAX_LENGTH))
+              setComment(event.target.value)
             }}
-            onUpdateValue={(value) => setComment((value ?? '').slice(0, FEEDBACK_MAX_LENGTH))}
+            onUpdateValue={(value) => setComment(value ?? '')}
           />
         </Stack>
 
@@ -146,7 +208,7 @@ const NextGenMIUserFeedback = ({ pageTitle }: NextGenMIUserFeedbackProps) => {
               variant="contained"
               color="primary"
               onClick={() => void handleSubmit()}
-              disabled={isSubmitting}
+              disabled={!canSubmit}
               isLoading={isSubmitting}
               sx={{ height: '32px', padding: '6px 10px', borderRadius: '8px' }}
             >

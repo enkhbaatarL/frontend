@@ -3,7 +3,7 @@ import { AxiosResponse } from 'axios'
 import api from '@/lib/axios'
 import { ICommonResponse } from '@/types/api'
 
-export type UserFeedbackTypeCd = 'data_error' | 'ui_improvement' | 'feature_suggestion' | 'etc'
+export type UserFeedbackTypeCd = 'agent_output' | 'ux_ui' | 'feature_suggestion' | 'etc'
 
 export interface ICreateUserFeedbackReq {
   feedbackPageNm?: string
