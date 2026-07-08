@@ -147,6 +147,7 @@ const ScenarioDesignBaseEventSection = ({
           onServerSizeChange={(size) => setOutlooksPagination({ size, page: 1 })}
           loading={outlooksLoading}
           compact
+          institutionViewSynthesis={detail?.institutionViewSynthesis}
         />
       )
     }

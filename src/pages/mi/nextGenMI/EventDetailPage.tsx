@@ -188,7 +188,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const { setStickyHeader } = useStickyHeader()
   const popupContext = useMIMorphingPopupContext()
   const popupScrollContainer = embedded ? (popupContext?.scrollContainer ?? null) : null
-
   useEffect(() => {
     if (embedded) return
     const scrollEl = document.getElementById('main-scroll-wrapper')
@@ -241,17 +240,17 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     gcTime: 0,
   })
 
-  useEffect(() => {
-    if (!detailError) return
-    showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
-  }, [detailError, showSnackbar])
-
   const title = useMemo(() => {
     const fromApi = detail?.eventName
     if (fromApi) return fromApi
     if (eventNameFromState) return eventNameFromState
     return eventId ? `이벤트 ${eventId}` : '이벤트'
   }, [detail?.eventName, eventId, eventNameFromState])
+
+  useEffect(() => {
+    if (!detailError) return
+    showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+  }, [detailError, showSnackbar])
 
   const generatedAtLabel = formatEventDetailTimestampLabel(detail?.createdAt)
   const updatedAtLabel = formatEventDetailTimestampLabel(detail?.updatedAt)
@@ -511,6 +510,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             onServerPageChange={(page) => setOutlooksPagination((p) => ({ ...p, page }))}
             onServerSizeChange={(size) => setOutlooksPagination({ size, page: 1 })}
             loading={outlooksLoading}
+            institutionViewSynthesis={detail?.institutionViewSynthesis}
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.records}>

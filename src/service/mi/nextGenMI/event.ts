@@ -203,6 +203,7 @@ export interface EventDetail {
   aiInsights?: EventAiInsights | null
   impactAnalysis?: EventImpactAnalysis | null
   driverTreeScoreboard?: EventDriverTreeIndex[]
+  institutionViewSynthesis?: string | null
   fundamentalDeepdive?: INextGenMIEventFundamentalDeepdive | INextGenMIEventFundamental
   relatedEventScenario?: RelatedEventScenario | null
 }

@@ -1,5 +1,5 @@
 import DescriptionIcon from '@mui/icons-material/Description'
-import { Box, Stack } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { EventInstitutionOutlook } from '@/service/mi/nextGenMI/event'
@@ -22,6 +22,7 @@ interface EventDetailInstitutionalOutlookTableProps {
   onServerSizeChange?: (size: number) => void
   loading?: boolean
   compact?: boolean
+  institutionViewSynthesis?: string | null
 }
 
 const EventDetailInstitutionalOutlookTable = ({
@@ -31,6 +32,7 @@ const EventDetailInstitutionalOutlookTable = ({
   onServerSizeChange,
   loading = false,
   compact = false,
+  institutionViewSynthesis,
 }: EventDetailInstitutionalOutlookTableProps) => {
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
   const [selectedOutlook, setSelectedOutlook] = useState<EventInstitutionOutlook | null>(null)
@@ -119,6 +121,22 @@ const EventDetailInstitutionalOutlookTable = ({
           tooltipTitle=""
         />
       )}
+      {!loading && institutionViewSynthesis?.trim() ? (
+        <Box
+          bgcolor="contentBG.PrimaryFade"
+          borderRadius="10px"
+          padding="16px 20px"
+          boxSizing="border-box"
+          sx={{ border: '1px solid', borderColor: 'contentBorder.Normal' }}
+        >
+          <Typography color="contentText.Normal" fontSize="12px" fontWeight={600} lineHeight={1.4}>
+            기관 전망 종합 분석
+          </Typography>
+          <Typography mt="8px" color="contentText.Normal" fontSize="14px" fontWeight={400} lineHeight={1.4}>
+            {institutionViewSynthesis}
+          </Typography>
+        </Box>
+      ) : null}
       <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
         {loading ? (
           <NextGenMIEventDetailBlockSkeleton height="400px" />
