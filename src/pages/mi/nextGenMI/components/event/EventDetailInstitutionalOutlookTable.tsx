@@ -1,5 +1,5 @@
 import DescriptionIcon from '@mui/icons-material/Description'
-import { Box, Stack } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { EventInstitutionOutlook } from '@/service/mi/nextGenMI/event'
@@ -24,6 +24,7 @@ interface EventDetailInstitutionalOutlookTableProps {
   compact?: boolean
   stickyTopPx?: number
   tableStickyTopPx?: number
+  institutionViewSynthesis?: string | null
 }
 
 const EventDetailInstitutionalOutlookTable = ({
@@ -35,6 +36,7 @@ const EventDetailInstitutionalOutlookTable = ({
   compact = false,
   stickyTopPx,
   tableStickyTopPx,
+  institutionViewSynthesis,
 }: EventDetailInstitutionalOutlookTableProps) => {
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
   const [selectedOutlook, setSelectedOutlook] = useState<EventInstitutionOutlook | null>(null)
@@ -115,8 +117,11 @@ const EventDetailInstitutionalOutlookTable = ({
   )
 
   const hasRows = paginatedRows.length > 0
+  const institutionViewSynthesisText = institutionViewSynthesis?.trim()
+  const shouldShowInstitutionViewSynthesis = !loading && !!institutionViewSynthesisText
   const sectionHeaderStickyTopPx = hasRows ? stickyTopPx : undefined
-  const shouldGroupPageStickyHeader = hasRows && !loading && !compact && stickyTopPx !== undefined && tableStickyTopPx !== undefined
+  const shouldGroupPageStickyHeader =
+    hasRows && !loading && !compact && !shouldShowInstitutionViewSynthesis && stickyTopPx !== undefined && tableStickyTopPx !== undefined
   const renderSectionHeader = (headerStickyTopPx?: number) => (
     <EventDetailSectionHeader
       icon={<DescriptionIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
@@ -146,6 +151,23 @@ const EventDetailInstitutionalOutlookTable = ({
   return (
     <Stack width="100%" gap={shouldGroupPageStickyHeader ? '0px' : '12px'} py={compact ? '0px' : '20px'}>
       {!compact && !shouldGroupPageStickyHeader && renderSectionHeader(sectionHeaderStickyTopPx)}
+      {shouldShowInstitutionViewSynthesis ? (
+        <Box
+          bgcolor="contentBG.PrimaryFade"
+          border="1px solid"
+          borderColor="contentBorder.Normal"
+          borderRadius="10px"
+          padding="16px 20px"
+          boxSizing="border-box"
+        >
+          <Typography color="contentText.Normal" fontSize="12px" fontWeight={600} lineHeight={1.4}>
+            기관 전망 종합 분석
+          </Typography>
+          <Typography mt="8px" color="contentText.Normal" fontSize="14px" fontWeight={400} lineHeight={1.4}>
+            {institutionViewSynthesisText}
+          </Typography>
+        </Box>
+      ) : null}
       {loading ? (
         <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
           <NextGenMIEventDetailBlockSkeleton height="400px" />

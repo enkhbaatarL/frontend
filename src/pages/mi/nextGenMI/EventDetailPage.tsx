@@ -246,17 +246,17 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     gcTime: 0,
   })
 
-  useEffect(() => {
-    if (!detailError) return
-    showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
-  }, [detailError, showSnackbar])
-
   const title = useMemo(() => {
     const fromApi = detail?.eventName
     if (fromApi) return fromApi
     if (eventNameFromState) return eventNameFromState
     return eventId ? `이벤트 ${eventId}` : '이벤트'
   }, [detail?.eventName, eventId, eventNameFromState])
+
+  useEffect(() => {
+    if (!detailError) return
+    showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
+  }, [detailError, showSnackbar])
 
   const generatedAtLabel = formatEventDetailTimestampLabel(detail?.createdAt)
   const updatedAtLabel = formatEventDetailTimestampLabel(detail?.updatedAt)
@@ -523,6 +523,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             loading={outlooksLoading}
             stickyTopPx={detailContentStickyTopPx}
             tableStickyTopPx={detailTableStickyTopPx}
+            institutionViewSynthesis={detail?.institutionViewSynthesis}
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.records}>
