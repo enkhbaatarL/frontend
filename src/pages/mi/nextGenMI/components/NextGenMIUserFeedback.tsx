@@ -184,9 +184,7 @@ const NextGenMIUserFeedback = ({ pageTitle, feedbackSectionNm }: NextGenMIUserFe
             maxLength={FEEDBACK_MAX_LENGTH}
             error={isAtMaxLength}
             helperText={isAtMaxLength ? '최대 2,000자까지 입력할 수 있습니다.' : undefined}
-            onChange={(event) => {
-              setComment(event.target.value)
-            }}
+            immediateUpdateOnInput
             onUpdateValue={(value) => setComment(value ?? '')}
           />
         </Stack>

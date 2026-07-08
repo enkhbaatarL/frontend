@@ -10,6 +10,7 @@ import {
   useEffect,
   useLayoutEffect,
   KeyboardEvent,
+  PointerEvent as ReactPointerEvent,
   forwardRef,
   useImperativeHandle,
   type InputHTMLAttributes,
@@ -28,6 +29,7 @@ export interface MIMaskInputProps extends Omit<TextFieldProps, 'value' | 'inputP
   onUpdateValue?: (value?: string) => void
   onUpdateBlurValue?: (value?: string) => void
   updateTiming?: 'onInput' | 'onBlur'
+  immediateUpdateOnInput?: boolean
   label?: string
   required?: boolean
   error?: boolean
@@ -94,6 +96,7 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
       onUpdateValue,
       onUpdateBlurValue,
       updateTiming = 'onInput',
+      immediateUpdateOnInput = false,
       sx,
       onInput,
       onBlur,
@@ -120,12 +123,21 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
 
     const mergedSlotProps = useMemo((): TextFieldProps['slotProps'] => {
       const slotInput = typeof propsSlotProps?.input === 'object' && propsSlotProps?.input !== null ? propsSlotProps.input : {}
+      const slotHtmlInput =
+        typeof propsSlotProps?.htmlInput === 'object' && propsSlotProps?.htmlInput !== null ? propsSlotProps.htmlInput : {}
       const fromLegacy = typeof legacyInputProps === 'object' && legacyInputProps !== null ? legacyInputProps : {}
-      const otherSlotProps = propsSlotProps ? Object.fromEntries(Object.entries(propsSlotProps).filter(([key]) => key !== 'input')) : {}
+      const otherSlotProps = propsSlotProps
+        ? Object.fromEntries(Object.entries(propsSlotProps).filter(([key]) => key !== 'input' && key !== 'htmlInput'))
+        : {}
       return {
         ...otherSlotProps,
         input: {
           ...slotInput,
+          ...(maxLength === undefined ? {} : { maxLength }),
+          readOnly,
+        },
+        htmlInput: {
+          ...slotHtmlInput,
           ...fromLegacy,
           ...(maxLength === undefined ? {} : { maxLength }),
           readOnly,
@@ -134,11 +146,14 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
     }, [propsSlotProps, legacyInputProps, maxLength, readOnly])
 
     const inputRef = useRef<HTMLDivElement>(null)
-    const inputElementRef = useRef<HTMLInputElement | null>(null)
+    const inputElementRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
     const cursorPositionRef = useRef<number | null>(null)
+    const scrollbarTrackRef = useRef<HTMLSpanElement | null>(null)
+    const scrollbarSyncFrameRef = useRef(0)
 
     const [innerValue, setInnerValue] = useState<string>(value ?? '')
     const [hasUserInput, setHasUserInput] = useState(false)
+    const [scrollbarState, setScrollbarState] = useState({ visible: false, thumbHeight: 0, thumbTop: 0 })
 
     const fontFamily = useMemo(() => getCurrentFontFamily(), [])
 
@@ -178,10 +193,10 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
 
         let formattedValue: string
 
-        if (mask.format) {
-          formattedValue = mask.format(newValue)
-        } else {
-          formattedValue = newValue
+        formattedValue = mask.format ? mask.format(newValue) : newValue
+
+        if (maxLength !== undefined && formattedValue.length > maxLength) {
+          formattedValue = formattedValue.slice(0, maxLength)
         }
 
         setInnerValue(formattedValue)
@@ -195,12 +210,17 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
         if (updateTiming === 'onInput') {
           // 타이핑 도중에는 폼이 미완성이라 isValid가 false일 수 있음
           // 이때 undefined를 반환하면 데이터가 날아가므로 타이핑된 상태유지
-          debouncedOnUpdateValue(formattedValue)
+          if (immediateUpdateOnInput) {
+            debouncedOnUpdateValue.cancel()
+            onUpdateValueRef.current?.(formattedValue)
+          } else {
+            debouncedOnUpdateValue(formattedValue)
+          }
         }
 
         return { formattedValue, isValid }
       },
-      [mask, updateTiming, debouncedOnUpdateValue],
+      [mask, maxLength, updateTiming, immediateUpdateOnInput, debouncedOnUpdateValue],
     )
 
     useLayoutEffect(() => {
@@ -271,8 +291,81 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
       }
     }, [value, hasUserInput])
 
+    useEffect(() => {
+      if (!multiline) return undefined
+
+      const inputElement = inputElementRef.current
+      if (!inputElement || inputElement.tagName !== 'TEXTAREA') return undefined
+
+      const syncScrollbar = () => {
+        const scrollableHeight = inputElement.scrollHeight - inputElement.clientHeight
+        const trackHeight = scrollbarTrackRef.current?.clientHeight ?? 0
+        const visible = scrollableHeight > 1 && trackHeight > 0
+        const thumbHeight = visible ? Math.max((inputElement.clientHeight / inputElement.scrollHeight) * trackHeight, 20) : 0
+        const thumbTop = visible ? (inputElement.scrollTop / scrollableHeight) * Math.max(trackHeight - thumbHeight, 0) : 0
+
+        setScrollbarState((current) =>
+          current.visible === visible && current.thumbHeight === thumbHeight && current.thumbTop === thumbTop
+            ? current
+            : { visible, thumbHeight, thumbTop },
+        )
+      }
+
+      const scheduleSync = () => {
+        if (scrollbarSyncFrameRef.current) return
+
+        scrollbarSyncFrameRef.current = globalThis.requestAnimationFrame(() => {
+          scrollbarSyncFrameRef.current = 0
+          syncScrollbar()
+        })
+      }
+
+      syncScrollbar()
+      inputElement.addEventListener('scroll', scheduleSync, { passive: true })
+      const resizeObserver = new ResizeObserver(scheduleSync)
+      resizeObserver.observe(inputElement)
+
+      return () => {
+        if (scrollbarSyncFrameRef.current) {
+          globalThis.cancelAnimationFrame(scrollbarSyncFrameRef.current)
+          scrollbarSyncFrameRef.current = 0
+        }
+        inputElement.removeEventListener('scroll', scheduleSync)
+        resizeObserver.disconnect()
+      }
+    }, [innerValue, multiline])
+
+    const handleScrollbarThumbPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+      const inputElement = inputElementRef.current
+      const track = scrollbarTrackRef.current
+      if (!inputElement || inputElement.tagName !== 'TEXTAREA' || !track) return
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      const startY = event.clientY
+      const startScrollTop = inputElement.scrollTop
+      const scrollableHeight = Math.max(0, inputElement.scrollHeight - inputElement.clientHeight)
+      const maxThumbTop = Math.max(1, track.clientHeight - event.currentTarget.clientHeight)
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        inputElement.scrollTop = startScrollTop + ((moveEvent.clientY - startY) / maxThumbTop) * scrollableHeight
+      }
+
+      const handlePointerUp = () => {
+        globalThis.removeEventListener('pointermove', handlePointerMove)
+        globalThis.removeEventListener('pointerup', handlePointerUp)
+      }
+
+      globalThis.addEventListener('pointermove', handlePointerMove)
+      globalThis.addEventListener('pointerup', handlePointerUp, { once: true })
+    }, [])
+
     const shouldShowError = offInitialError ? hasUserInput && error : error
     const shouldShowHelperText = offInitialError ? hasUserInput && helperText : helperText
+    const isMaxLengthReached = maxLength !== undefined && innerValue.length >= maxLength
+    const helperTextToShow =
+      shouldShowHelperText || (isMaxLengthReached ? `최대 ${maxLength.toLocaleString()}자까지 입력할 수 있습니다.` : undefined)
 
     const inputWrapperBoxSx = useMemo(
       () =>
@@ -309,6 +402,14 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
                 lineHeight: embedded && !multiline ? '20px' : '1.4',
                 color: '#495057',
                 ...(embedded && !multiline ? { paddingTop: 0, paddingBottom: 0, height: '20px' as const } : {}),
+                ...(multiline
+                  ? {
+                    scrollbarWidth: 'none' as const,
+                    '&::-webkit-scrollbar': {
+                      display: 'none' as const,
+                    },
+                  }
+                  : {}),
               },
             },
           },
@@ -385,9 +486,9 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
         fontWeight: 400,
         fontSize: '12px',
         lineHeight: '1.4',
-        color: shouldShowError ? '#F03E3E' : '#868E96',
+        color: shouldShowError || isMaxLengthReached ? '#F03E3E' : '#868E96',
       }),
-      [fontFamily, shouldShowError],
+      [fontFamily, shouldShowError, isMaxLengthReached],
     )
 
     const maxLengthTypographySx = useMemo(
@@ -396,10 +497,10 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
         fontWeight: 400,
         fontSize: '12px',
         lineHeight: '1.4',
-        color: '#868E96',
+        color: isMaxLengthReached ? '#F03E3E' : '#868E96',
         marginLeft: 'auto' as const,
       }),
-      [fontFamily],
+      [fontFamily, isMaxLengthReached],
     )
 
     const containerSx = useMemo(
@@ -504,18 +605,51 @@ const MIMaskInput = forwardRef<MIMaskInputRef, MIMaskInputProps>(
                 <Typography sx={placeholderSuffixTypographySx}>{placeholderSuffix}</Typography>
               </Stack>
             )}
+            {multiline && (
+              <Stack
+                component="span"
+                ref={scrollbarTrackRef}
+                aria-hidden
+                position="absolute"
+                top="4px"
+                right="-10px"
+                bottom="4px"
+                width="14px"
+                sx={{
+                  opacity: scrollbarState.visible ? 1 : 0,
+                  pointerEvents: scrollbarState.visible ? 'auto' : 'none',
+                  transition: 'opacity 120ms ease',
+                }}
+              >
+                <Stack
+                  component="span"
+                  onPointerDown={handleScrollbarThumbPointerDown}
+                  position="absolute"
+                  top={`${scrollbarState.thumbTop}px`}
+                  right="5px"
+                  width="4px"
+                  height={`${scrollbarState.thumbHeight}px`}
+                  borderRadius="4px"
+                  bgcolor="#CED4DA"
+                  sx={{
+                    cursor: 'grab',
+                    '&:hover': { bgcolor: '#ADB5BD' },
+                  }}
+                />
+              </Stack>
+            )}
           </Box>
         </Box>
       )
     }
 
     const renderLabeledHelperRow = () => {
-      if (!shouldShowHelperText && !(maxLength !== undefined && !readOnly)) {
+      if (!helperTextToShow && !(maxLength !== undefined && !readOnly)) {
         return null
       }
       return (
         <Box sx={HELPER_CONTAINER_SX}>
-          {shouldShowHelperText && <Typography sx={helperTextTypographySx}>{shouldShowHelperText}</Typography>}
+          {helperTextToShow && <Typography sx={helperTextTypographySx}>{helperTextToShow}</Typography>}
           {maxLength !== undefined && (
             <Typography sx={maxLengthTypographySx}>
               {innerValue.length.toLocaleString()} / {maxLength.toLocaleString()}
