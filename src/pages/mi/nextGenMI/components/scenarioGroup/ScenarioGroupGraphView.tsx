@@ -10,6 +10,7 @@ import type { ScenarioGroupGraphPeriodUnit } from '@/service/mi/nextGenMI/scenar
 
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
+import NextGenMIDetailStickySectionHeader from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailStickySectionHeader'
 import ScenarioSummaryChartGraph from '@/pages/mi/nextGenMI/components/common/ScenarioSummaryChartGraph'
 import ScenarioGroupGraphDownloadMenu from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphDownloadMenu'
 import ScenarioGroupGraphLegend from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphLegend'
@@ -44,6 +45,7 @@ interface ScenarioGroupGraphViewProps {
   height?: number
   defaultIndexName?: NextGenMIIndexName
   headingSlot?: ReactNode
+  headingStickyTopPx?: number
   chartBackgroundColor?: string
 }
 
@@ -53,6 +55,7 @@ const ScenarioGroupGraphView = ({
   height = 480,
   defaultIndexName = 'JKM',
   headingSlot,
+  headingStickyTopPx,
   chartBackgroundColor = 'commonColor.White',
 }: ScenarioGroupGraphViewProps) => {
   const [indexName, setIndexName] = useState<NextGenMIIndexName>(defaultIndexName)
@@ -164,7 +167,13 @@ const ScenarioGroupGraphView = ({
     <>
       <Stack gap="12px" width="100%" minWidth={0}>
         {headingSlot && (
-          <Stack direction="row" alignItems="center" justifyContent="space-between" gap="16px">
+          <NextGenMIDetailStickySectionHeader
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            gap="16px"
+            stickyTopPx={headingStickyTopPx}
+          >
             {headingSlot}
             <ScenarioModelExecutionButton
               options={scenarioOptions}
@@ -172,7 +181,7 @@ const ScenarioGroupGraphView = ({
               onExecute={handleExecute}
               onExecuteNew={handleExecuteNew}
             />
-          </Stack>
+          </NextGenMIDetailStickySectionHeader>
         )}
         <Box ref={chartWrapperRef} width="100%" minWidth={0}>
           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap="24px" width="100%" minWidth={0}>

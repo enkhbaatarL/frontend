@@ -14,7 +14,6 @@ import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import {
-  NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
   NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED,
@@ -24,6 +23,7 @@ import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/m
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
+import useNextGenMIDetailStickyTop from '@/pages/mi/nextGenMI/components/common/useNextGenMIDetailStickyTop'
 import SignpostDefinitionDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostDefinitionDetailDialog'
 import SignpostMonitoringDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostMonitoringDetailDialog'
 import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
@@ -32,7 +32,6 @@ import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 const SCENARIO_DETAIL_SIDEBAR_WIDTH = '360px'
 const SCENARIO_DETAIL_STICKY_GAP_PX = 20
 const SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX = 42
-const SCENARIO_DETAIL_STICKY_TOP_FALLBACK_PX = NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.collapsed + 80
 
 const ScenarioSelectBadge = ({ label, disabled = false }: { label: string; disabled?: boolean }) => (
   <Box
@@ -191,70 +190,6 @@ const ScenarioSelectSidebar = ({
       </Stack>
     </Stack>
   )
-}
-
-const useScenarioDetailStickyTop = () => {
-  const [stickyTopPx, setStickyTopPx] = useState(SCENARIO_DETAIL_STICKY_TOP_FALLBACK_PX)
-  const observedHeaderRef = useRef<HTMLElement | null>(null)
-  const resizeObserverRef = useRef<ResizeObserver | null>(null)
-
-  useLayoutEffect(() => {
-    let rafId = 0
-
-    let measure = () => {
-      rafId = 0
-    }
-
-    const scheduleMeasure = () => {
-      if (rafId !== 0) return
-      rafId = globalThis.requestAnimationFrame(measure)
-    }
-
-    const syncObservedHeader = (nextHeader: HTMLElement | null) => {
-      if (observedHeaderRef.current === nextHeader) return
-
-      if (observedHeaderRef.current) {
-        observedHeaderRef.current.removeEventListener('transitionend', scheduleMeasure)
-      }
-      resizeObserverRef.current?.disconnect()
-      observedHeaderRef.current = nextHeader
-
-      if (!nextHeader) return
-
-      resizeObserverRef.current = new ResizeObserver(scheduleMeasure)
-      resizeObserverRef.current.observe(nextHeader)
-      nextHeader.addEventListener('transitionend', scheduleMeasure)
-    }
-
-    measure = () => {
-      rafId = 0
-      const stickyHeader = document.querySelector<HTMLElement>('.main-header [data-sticky-header]')
-      syncObservedHeader(stickyHeader)
-
-      const nextTop = stickyHeader
-        ? Math.round(stickyHeader.getBoundingClientRect().bottom + SCENARIO_DETAIL_STICKY_GAP_PX)
-        : SCENARIO_DETAIL_STICKY_TOP_FALLBACK_PX
-
-      setStickyTopPx((current) => (Math.abs(current - nextTop) < 1 ? current : nextTop))
-    }
-
-    const scrollEl = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
-
-    measure()
-    rafId = globalThis.requestAnimationFrame(measure)
-    scrollEl?.addEventListener('scroll', scheduleMeasure, { passive: true })
-    globalThis.addEventListener('resize', scheduleMeasure)
-
-    return () => {
-      if (rafId !== 0) globalThis.cancelAnimationFrame(rafId)
-      scrollEl?.removeEventListener('scroll', scheduleMeasure)
-      globalThis.removeEventListener('resize', scheduleMeasure)
-      observedHeaderRef.current?.removeEventListener('transitionend', scheduleMeasure)
-      resizeObserverRef.current?.disconnect()
-    }
-  }, [])
-
-  return stickyTopPx
 }
 
 const useScenarioDetailStickyPinned = (stickyRef: RefObject<HTMLElement | null>, stickyTopPx: number) => {
@@ -609,7 +544,7 @@ const ScenarioGroupDetailSection = ({
   listLoading = false,
   onSelectScenario,
 }: ScenarioGroupDetailSectionProps) => {
-  const stickyTopPx = useScenarioDetailStickyTop()
+  const stickyTopPx = useNextGenMIDetailStickyTop({ gapPx: SCENARIO_DETAIL_STICKY_GAP_PX })
   const sectionRootRef = useRef<HTMLDivElement>(null)
   const rightHeaderRef = useRef<HTMLDivElement>(null)
   const pendingScrollScenarioIdRef = useRef<number | null>(null)

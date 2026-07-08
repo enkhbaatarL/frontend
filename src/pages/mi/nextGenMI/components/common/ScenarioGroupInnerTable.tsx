@@ -190,7 +190,6 @@ type ScenarioGroupInnerTableProps<TRow extends ScenarioGroupInnerTableRow> = {
   loading?: boolean
   skeletonRowCount?: number
   noRowMessage?: string
-  pageStickyHeaderTop?: number | string
   onScenarioClick?: (row: TRow) => void
   onJudgementChange?: (scenario: TRow, next: ScenarioJudgementStatus) => void
 }
@@ -236,7 +235,6 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
   loading = false,
   skeletonRowCount = 8,
   noRowMessage = '조건에 맞는 시나리오가 없습니다.',
-  pageStickyHeaderTop,
   onScenarioClick,
   onJudgementChange,
 }: ScenarioGroupInnerTableProps<TRow>) => {
@@ -411,7 +409,6 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         rowHeight="48px"
         headerFontSize="13px"
         containerShell={false}
-        pageStickyHeaderTop={pageStickyHeaderTop}
       />
     </Stack>
   )

@@ -54,6 +54,8 @@ interface EventDetailMiRecordsTableProps {
   onServerSizeChange?: (size: number) => void
   loading?: boolean
   compact?: boolean
+  stickyTopPx?: number
+  tableStickyTopPx?: number
 }
 
 const EventDetailMiRecordsTable = ({
@@ -63,6 +65,8 @@ const EventDetailMiRecordsTable = ({
   onServerSizeChange,
   loading = false,
   compact = false,
+  stickyTopPx,
+  tableStickyTopPx,
 }: EventDetailMiRecordsTableProps) => {
   const navigate = useNavigate()
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
@@ -234,51 +238,90 @@ const EventDetailMiRecordsTable = ({
     [compact, handleLockedTitleClick, handleTitleClick, paginatedRows.length, shakingRowKeys],
   )
 
+  const hasRows = paginatedRows.length > 0
+  const sectionHeaderStickyTopPx = hasRows ? stickyTopPx : undefined
+  const shouldGroupPageStickyHeader = hasRows && !loading && !compact && stickyTopPx !== undefined && tableStickyTopPx !== undefined
+  const renderSectionHeader = (headerStickyTopPx?: number) => (
+    <EventDetailSectionHeader
+      icon={<SourceIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+      title="MI Records"
+      tooltipTitle=""
+      stickyTopPx={headerStickyTopPx}
+    />
+  )
+  const paginationNode =
+    paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) ? (
+      <MIPaginationSecondary<EventRelatedRecord>
+        data={paginationData}
+        size={isServerMode ? serverPagination.size : pagination.size}
+        sizeList={[...PAGE_SIZE_LIST]}
+        paddingTop={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+        onPageChange={(page) => {
+          if (isServerMode) onServerPageChange?.(page)
+          else setPagination((p) => ({ ...p, page }))
+        }}
+        onSizeChange={(size) => {
+          if (isServerMode) onServerSizeChange?.(size)
+          else setPagination({ size, page: 1 })
+        }}
+      />
+    ) : null
+
   return (
-    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
-      {!compact && (
-        <EventDetailSectionHeader
-          icon={<SourceIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-          title="MI Records"
-          tooltipTitle=""
-        />
-      )}
-      <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
-        {loading ? (
+    <Stack width="100%" gap={shouldGroupPageStickyHeader ? '0px' : '12px'} py={compact ? '0px' : '20px'}>
+      {!compact && !shouldGroupPageStickyHeader && renderSectionHeader(sectionHeaderStickyTopPx)}
+      {loading ? (
+        <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
           <NextGenMIEventDetailBlockSkeleton height="400px" />
-        ) : (
-          <>
-            <NextGenMIStickyTable
-              columns={columns}
-              rows={paginatedRows}
-              fixedLeftColumnIndexes={[2]}
-              leftAlignedHeaderSticky
-              getRowKey={getEventRelatedRecordRowKey}
-              noRowMessage="표시할 데이터가 없습니다."
-              rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
-              containerShell={false}
-              disableHorizontalScroll={compact}
-              onRowClick={(row) => setSelectedRecord(row)}
-            />
-            {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
-              <MIPaginationSecondary<EventRelatedRecord>
-                data={paginationData}
-                size={isServerMode ? serverPagination.size : pagination.size}
-                sizeList={[...PAGE_SIZE_LIST]}
-                paddingTop={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
-                onPageChange={(page) => {
-                  if (isServerMode) onServerPageChange?.(page)
-                  else setPagination((p) => ({ ...p, page }))
-                }}
-                onSizeChange={(size) => {
-                  if (isServerMode) onServerSizeChange?.(size)
-                  else setPagination({ size, page: 1 })
-                }}
-              />
-            )}
-          </>
-        )}
-      </Box>
+        </Box>
+      ) : shouldGroupPageStickyHeader ? (
+        <>
+          <NextGenMIStickyTable
+            columns={columns}
+            rows={paginatedRows}
+            fixedLeftColumnIndexes={[2]}
+            leftAlignedHeaderSticky
+            getRowKey={getEventRelatedRecordRowKey}
+            noRowMessage="표시할 데이터가 없습니다."
+            rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
+            containerPadding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+            disableHorizontalScroll={compact}
+            pageStickyHeaderTop={stickyTopPx}
+            pageStickyHeaderBefore={renderSectionHeader()}
+            pageStickyHeaderGap="12px"
+            pageStickyHeaderReleaseOnLastRow
+            onRowClick={(row) => setSelectedRecord(row)}
+          />
+          {paginationNode && (
+            <Box
+              bgcolor="commonColor.White"
+              borderRadius="0 0 10px 10px"
+              padding={`0 ${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px ${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+              mt={`-${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+              boxSizing="border-box"
+            >
+              {paginationNode}
+            </Box>
+          )}
+        </>
+      ) : (
+        <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
+          <NextGenMIStickyTable
+            columns={columns}
+            rows={paginatedRows}
+            fixedLeftColumnIndexes={[2]}
+            leftAlignedHeaderSticky
+            getRowKey={getEventRelatedRecordRowKey}
+            noRowMessage="표시할 데이터가 없습니다."
+            rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
+            containerShell={false}
+            disableHorizontalScroll={compact}
+            pageStickyHeaderTop={hasRows ? tableStickyTopPx : undefined}
+            onRowClick={(row) => setSelectedRecord(row)}
+          />
+          {paginationNode}
+        </Box>
+      )}
       <EventDetailSummaryDialog
         open={selectedRecord !== null}
         title="MI Records"

@@ -12,6 +12,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
 import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
+import NextGenMIDetailStickySectionHeader from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailStickySectionHeader'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIResizableTextarea from '@/pages/mi/nextGenMI/components/common/NextGenMIResizableTextarea'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
@@ -43,6 +44,7 @@ import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 interface ScenarioGroupPriceForecastInterpretationProps {
   scenarioGroupId: number
   enabled?: boolean
+  stickyTopPx?: number
 }
 
 interface InterpretationScenarioItem {
@@ -267,7 +269,11 @@ const PriceForecastInterpretationPreviewToolbar = ({
   </Stack>
 )
 
-const ScenarioGroupPriceForecastInterpretation = ({ scenarioGroupId, enabled = true }: ScenarioGroupPriceForecastInterpretationProps) => {
+const ScenarioGroupPriceForecastInterpretation = ({
+  scenarioGroupId,
+  enabled = true,
+  stickyTopPx,
+}: ScenarioGroupPriceForecastInterpretationProps) => {
   const { showSnackbar } = useSnackbar()
 
   const graphQuery = useQuery({
@@ -905,7 +911,14 @@ const ScenarioGroupPriceForecastInterpretation = ({ scenarioGroupId, enabled = t
             : undefined
         }
       >
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap="16px" padding="8px">
+        <NextGenMIDetailStickySectionHeader
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap="16px"
+          padding="8px"
+          stickyTopPx={stickyTopPx}
+        >
           <Typography fontSize="18px" fontWeight={600} lineHeight={1.4} color="contentText.Black">
             시나리오별 가격전망 해석
           </Typography>
@@ -916,7 +929,7 @@ const ScenarioGroupPriceForecastInterpretation = ({ scenarioGroupId, enabled = t
               void handleGenerate()
             }}
           />
-        </Stack>
+        </NextGenMIDetailStickySectionHeader>
         {renderBody()}
       </Stack>
 

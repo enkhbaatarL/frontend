@@ -13,6 +13,7 @@ interface EventDetailAiInsightsSectionProps {
   detailedAnalysis: string
   loading?: boolean
   compact?: boolean
+  stickyTopPx?: number
 }
 
 const cardSubsectionTitleSx = {
@@ -78,6 +79,7 @@ const EventDetailAiInsightsSection = ({
   detailedAnalysis,
   loading = false,
   compact = false,
+  stickyTopPx,
 }: EventDetailAiInsightsSectionProps) =>
   loading ? (
     <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'} sx={constrainedStackSx}>
@@ -87,6 +89,7 @@ const EventDetailAiInsightsSection = ({
           title="AI Insights"
           titleGradient
           tooltipTitle=""
+          stickyTopPx={stickyTopPx}
         />
       )}
       <Stack gap="20px" sx={constrainedStackSx}>
@@ -112,6 +115,7 @@ const EventDetailAiInsightsSection = ({
           title="AI Insights"
           titleGradient
           tooltipTitle=""
+          stickyTopPx={stickyTopPx}
         />
       )}
       <Stack gap="12px" sx={constrainedStackSx}>

@@ -206,6 +206,7 @@ const EventDetailImpactAnalysisSection = ({
                 headerCellPx={NEXT_GEN_MI_TABLE_CELL_PX}
                 headerCellPy={NEXT_GEN_MI_TABLE_HEADER_CELL_PY}
                 headerLabelColor={NEXT_GEN_MI_TABLE_HEADER_LABEL_COLOR}
+                sx={{ bgcolor: 'gray.5' }}
               />
               <MIDataTableBody<EventDetailImpactIndex>
                 getRowKey={(row, index) => `${row.indexName ?? ''}-${index}`}

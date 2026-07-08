@@ -19,6 +19,7 @@ import NextGenMIDetailHeader, {
   type NextGenMIDetailHeaderSection,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
+import useNextGenMIDetailStickyTop from '@/pages/mi/nextGenMI/components/common/useNextGenMIDetailStickyTop'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
   findEventDesignAvailability,
@@ -74,6 +75,8 @@ const EVENT_DETAIL_HEADER_SECTIONS: NextGenMIDetailHeaderSection[] = EVENT_DETAI
   id: SECTION_SCROLL_IDS[tab.key],
   label: tab.label,
 }))
+
+const EVENT_DETAIL_STICKY_TABLE_HEADER_TOP_OFFSET_PX = 60
 
 const renderEventDetailHeaderTabActions = ({
   pageTitle,
@@ -188,6 +191,8 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const { setStickyHeader } = useStickyHeader()
   const popupContext = useMIMorphingPopupContext()
   const popupScrollContainer = embedded ? (popupContext?.scrollContainer ?? null) : null
+  const detailContentStickyTopPx = useNextGenMIDetailStickyTop({ scrollContainer: embedded ? popupScrollContainer : undefined })
+  const detailTableStickyTopPx = detailContentStickyTopPx + EVENT_DETAIL_STICKY_TABLE_HEADER_TOP_OFFSET_PX
 
   useEffect(() => {
     if (embedded) return
@@ -473,7 +478,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
       padding={embedded ? '0' : '20px 12px 0'}
       position="relative"
       sx={{
-        overflowX: embedded ? 'visible' : 'hidden',
+        overflowX: embedded ? 'visible' : 'clip',
       }}
     >
       {embedded && (
@@ -502,7 +507,12 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.driverTree}>
-          <EventDetailDriverTreeScoreboardSection driverTreeScoreboard={detail?.driverTreeScoreboard ?? []} loading={detailLoading} />
+          <EventDetailDriverTreeScoreboardSection
+            driverTreeScoreboard={detail?.driverTreeScoreboard ?? []}
+            loading={detailLoading}
+            stickyTopPx={detailContentStickyTopPx}
+            tableStickyTopPx={detailTableStickyTopPx}
+          />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.outlook}>
           <EventDetailInstitutionalOutlookTable
@@ -511,6 +521,8 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             onServerPageChange={(page) => setOutlooksPagination((p) => ({ ...p, page }))}
             onServerSizeChange={(size) => setOutlooksPagination({ size, page: 1 })}
             loading={outlooksLoading}
+            stickyTopPx={detailContentStickyTopPx}
+            tableStickyTopPx={detailTableStickyTopPx}
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.records}>
@@ -520,6 +532,8 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             onServerPageChange={(page) => setRecordsPagination((p) => ({ ...p, page }))}
             onServerSizeChange={(size) => setRecordsPagination({ size, page: 1 })}
             loading={recordsLoading}
+            stickyTopPx={detailContentStickyTopPx}
+            tableStickyTopPx={detailTableStickyTopPx}
           />
         </Stack>
         <Stack id={SECTION_SCROLL_IDS.related}>

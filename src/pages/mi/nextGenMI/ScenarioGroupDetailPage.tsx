@@ -394,13 +394,13 @@ const ScenarioGroupDetailPage = () => {
           <ScenarioGroupPriceForecastInterpretation scenarioGroupId={Number(scenarioGroupId)} enabled={Boolean(scenarioGroupId)} />
         </Stack>
 
-        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} py="20px">
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} gap="12px" py="20px">
+          <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} />
           <ScenarioGroupDetailSection
             scenarioGroupId={scenarioGroupId ?? ''}
             scenarios={scenarios}
             selectedScenarioId={selectedScenarioId}
             scenarioCount={data?.scenarioCount}
-            headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} />}
             listLoading={isLoading}
             onSelectScenario={handleSelectScenario}
           />

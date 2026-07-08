@@ -149,12 +149,16 @@ interface EventDetailDriverTreeScoreboardSectionProps {
   driverTreeScoreboard?: EventDriverTreeIndex[]
   loading?: boolean
   compact?: boolean
+  stickyTopPx?: number
+  tableStickyTopPx?: number
 }
 
 const EventDetailDriverTreeScoreboardSection = ({
   driverTreeScoreboard = [],
   loading = false,
   compact = false,
+  stickyTopPx,
+  tableStickyTopPx,
 }: EventDetailDriverTreeScoreboardSectionProps) => {
   const tableRows = useMemo<EventDriverTreeScoreboardTableRow[]>(
     () =>
@@ -241,31 +245,30 @@ const EventDetailDriverTreeScoreboardSection = ({
     ],
     [],
   )
+  const hasRows = tableRows.length > 0
+  const sectionHeaderStickyTopPx = hasRows ? stickyTopPx : undefined
+  const shouldGroupPageStickyHeader = hasRows && !compact && stickyTopPx !== undefined && tableStickyTopPx !== undefined
+  const renderSectionHeader = (headerStickyTopPx?: number) => (
+    <EventDetailSectionHeader
+      icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+      title="Index Driver별 영향도 분석"
+      tooltipTitle=""
+      stickyTopPx={headerStickyTopPx}
+    />
+  )
 
   if (loading) {
     return (
       <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
-        {!compact && (
-          <EventDetailSectionHeader
-            icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-            title="Index Driver별 영향도 분석"
-            tooltipTitle=""
-          />
-        )}
+        {!compact && renderSectionHeader(sectionHeaderStickyTopPx)}
         <NextGenMIEventDetailBlockSkeleton height="400px" />
       </Stack>
     )
   }
 
   return (
-    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
-      {!compact && (
-        <EventDetailSectionHeader
-          icon={<MarginRoundedIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-          title="Index Driver별 영향도 분석"
-          tooltipTitle=""
-        />
-      )}
+    <Stack width="100%" gap={shouldGroupPageStickyHeader ? '0px' : '12px'} py={compact ? '0px' : '20px'}>
+      {!compact && !shouldGroupPageStickyHeader && renderSectionHeader(sectionHeaderStickyTopPx)}
       <NextGenMIStickyTable
         columns={columns}
         rows={tableRows}
@@ -277,6 +280,10 @@ const EventDetailDriverTreeScoreboardSection = ({
         loading={loading}
         noRowMessage="표시할 데이터가 없습니다."
         rowHeight={tableRows.length === 0 ? '400px' : undefined}
+        pageStickyHeaderTop={hasRows ? (shouldGroupPageStickyHeader ? stickyTopPx : tableStickyTopPx) : undefined}
+        pageStickyHeaderBefore={shouldGroupPageStickyHeader ? renderSectionHeader() : undefined}
+        pageStickyHeaderGap="12px"
+        pageStickyHeaderReleaseOnLastRow={shouldGroupPageStickyHeader}
       />
     </Stack>
   )

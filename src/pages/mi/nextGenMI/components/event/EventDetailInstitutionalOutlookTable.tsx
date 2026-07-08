@@ -22,6 +22,8 @@ interface EventDetailInstitutionalOutlookTableProps {
   onServerSizeChange?: (size: number) => void
   loading?: boolean
   compact?: boolean
+  stickyTopPx?: number
+  tableStickyTopPx?: number
 }
 
 const EventDetailInstitutionalOutlookTable = ({
@@ -31,6 +33,8 @@ const EventDetailInstitutionalOutlookTable = ({
   onServerSizeChange,
   loading = false,
   compact = false,
+  stickyTopPx,
+  tableStickyTopPx,
 }: EventDetailInstitutionalOutlookTableProps) => {
   const [pagination, setPagination] = useState({ size: 10, page: 1 })
   const [selectedOutlook, setSelectedOutlook] = useState<EventInstitutionOutlook | null>(null)
@@ -110,51 +114,90 @@ const EventDetailInstitutionalOutlookTable = ({
     [compact, paginatedRows.length],
   )
 
+  const hasRows = paginatedRows.length > 0
+  const sectionHeaderStickyTopPx = hasRows ? stickyTopPx : undefined
+  const shouldGroupPageStickyHeader = hasRows && !loading && !compact && stickyTopPx !== undefined && tableStickyTopPx !== undefined
+  const renderSectionHeader = (headerStickyTopPx?: number) => (
+    <EventDetailSectionHeader
+      icon={<DescriptionIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
+      title="기관 전망"
+      tooltipTitle=""
+      stickyTopPx={headerStickyTopPx}
+    />
+  )
+  const paginationNode =
+    paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) ? (
+      <MIPaginationSecondary<EventInstitutionOutlook>
+        data={paginationData}
+        size={isServerMode ? serverPagination.size : pagination.size}
+        sizeList={[...PAGE_SIZE_LIST]}
+        paddingTop={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+        onPageChange={(page) => {
+          if (isServerMode) onServerPageChange?.(page)
+          else setPagination((p) => ({ ...p, page }))
+        }}
+        onSizeChange={(size) => {
+          if (isServerMode) onServerSizeChange?.(size)
+          else setPagination({ size, page: 1 })
+        }}
+      />
+    ) : null
+
   return (
-    <Stack width="100%" gap="12px" py={compact ? '0px' : '20px'}>
-      {!compact && (
-        <EventDetailSectionHeader
-          icon={<DescriptionIcon sx={{ fontSize: '30px', color: 'contentText.Normal' }} />}
-          title="기관 전망"
-          tooltipTitle=""
-        />
-      )}
-      <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
-        {loading ? (
+    <Stack width="100%" gap={shouldGroupPageStickyHeader ? '0px' : '12px'} py={compact ? '0px' : '20px'}>
+      {!compact && !shouldGroupPageStickyHeader && renderSectionHeader(sectionHeaderStickyTopPx)}
+      {loading ? (
+        <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
           <NextGenMIEventDetailBlockSkeleton height="400px" />
-        ) : (
-          <>
-            <NextGenMIStickyTable
-              columns={columns}
-              rows={paginatedRows}
-              fixedLeftColumnIndexes={[1]}
-              leftAlignedHeaderSticky
-              getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
-              noRowMessage="표시할 데이터가 없습니다."
-              rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
-              containerShell={false}
-              disableHorizontalScroll={compact}
-              onRowClick={(row) => setSelectedOutlook(row)}
-            />
-            {paginationData && paginationData.totalElements >= (PAGE_SIZE_LIST.at(0) ?? 0) && (
-              <MIPaginationSecondary<EventInstitutionOutlook>
-                data={paginationData}
-                size={isServerMode ? serverPagination.size : pagination.size}
-                sizeList={[...PAGE_SIZE_LIST]}
-                paddingTop={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
-                onPageChange={(page) => {
-                  if (isServerMode) onServerPageChange?.(page)
-                  else setPagination((p) => ({ ...p, page }))
-                }}
-                onSizeChange={(size) => {
-                  if (isServerMode) onServerSizeChange?.(size)
-                  else setPagination({ size, page: 1 })
-                }}
-              />
-            )}
-          </>
-        )}
-      </Box>
+        </Box>
+      ) : shouldGroupPageStickyHeader ? (
+        <>
+          <NextGenMIStickyTable
+            columns={columns}
+            rows={paginatedRows}
+            fixedLeftColumnIndexes={[1]}
+            leftAlignedHeaderSticky
+            getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
+            noRowMessage="표시할 데이터가 없습니다."
+            rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
+            containerPadding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+            disableHorizontalScroll={compact}
+            pageStickyHeaderTop={stickyTopPx}
+            pageStickyHeaderBefore={renderSectionHeader()}
+            pageStickyHeaderGap="12px"
+            pageStickyHeaderReleaseOnLastRow
+            onRowClick={(row) => setSelectedOutlook(row)}
+          />
+          {paginationNode && (
+            <Box
+              bgcolor="commonColor.White"
+              borderRadius="0 0 10px 10px"
+              padding={`0 ${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px ${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+              mt={`-${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`}
+              boxSizing="border-box"
+            >
+              {paginationNode}
+            </Box>
+          )}
+        </>
+      ) : (
+        <Box bgcolor="commonColor.White" borderRadius="10px" padding={`${NEXT_GEN_MI_TABLE_CONTAINER_PADDING}px`} boxSizing="border-box">
+          <NextGenMIStickyTable
+            columns={columns}
+            rows={paginatedRows}
+            fixedLeftColumnIndexes={[1]}
+            leftAlignedHeaderSticky
+            getRowKey={(row, index) => `${row.viewDate ?? ''}-${row.institutionName ?? ''}-${index}`}
+            noRowMessage="표시할 데이터가 없습니다."
+            rowHeight={paginatedRows.length === 0 ? '400px' : 'auto'}
+            containerShell={false}
+            disableHorizontalScroll={compact}
+            pageStickyHeaderTop={hasRows ? tableStickyTopPx : undefined}
+            onRowClick={(row) => setSelectedOutlook(row)}
+          />
+          {paginationNode}
+        </Box>
+      )}
       <EventDetailSummaryDialog
         open={selectedOutlook !== null}
         title="기관 전망"

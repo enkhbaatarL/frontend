@@ -1,9 +1,20 @@
 import { Box, Skeleton, Stack, Typography, type SxProps, type Theme } from '@mui/material'
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
 
 import ArrowUpward from '@/components/common/icons/ArrowUpward'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import {
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
+  NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
@@ -45,6 +56,16 @@ type NextGenMIStickyTableProps<T> = {
   leftAlignedHeaderSticky?: boolean
   /** 헤더(thead)를 렌더하지 않음 — 컬럼 헤더를 외부(페이지 sticky 슬롯 등)에서 따로 그릴 때 사용 */
   hideHeader?: boolean
+  /** 페이지 스크롤 기준으로 실제 테이블 헤더(thead)를 sticky 처리할 때 사용 */
+  pageStickyHeaderTop?: number | string
+  pageStickyHeaderZIndex?: number
+  /** 페이지 sticky 헤더와 함께 붙고 풀릴 상단 컨텐츠 */
+  pageStickyHeaderBefore?: ReactNode
+  pageStickyHeaderGap?: string
+  /** sticky 헤더가 마지막 행을 덮기 전 해제되도록 하단 경계를 앞당길 때 사용 */
+  pageStickyHeaderReleaseOffsetBottom?: number | string
+  /** 마지막 렌더 행 높이를 실측해 sticky 헤더 하단 경계로 사용 */
+  pageStickyHeaderReleaseOnLastRow?: boolean
   loading?: boolean
   noRowMessage?: string
   noRowMinHeight?: string
@@ -106,6 +127,8 @@ const toSxArray = (sx?: SxProps<Theme>) => {
   if (sx) return [sx]
   return []
 }
+
+const toCssLength = (value: number | string) => (typeof value === 'number' ? `${value}px` : value)
 
 const resolveActiveScrollAxis = (updateAxis: boolean, deltaLeft: number, deltaTop: number): ScrollAxis => {
   if (!updateAxis) return null
@@ -198,8 +221,20 @@ const getColumnStickyWidth = <T,>(
 const queryColumnElement = (scrollRoot: HTMLDivElement, selector: string) =>
   scrollRoot.querySelector<HTMLElement>(`thead ${selector}`) ?? scrollRoot.querySelector<HTMLElement>(selector)
 
-const getFixedColumnWidth = (scrollRoot: HTMLDivElement, selector: string) =>
-  Array.from(scrollRoot.querySelectorAll<HTMLElement>(selector)).reduce((sum, column) => sum + column.getBoundingClientRect().width, 0)
+const getFixedColumnWidth = (scrollRoot: HTMLDivElement, selector: string) => {
+  const selectedColumns = Array.from(scrollRoot.querySelectorAll<HTMLElement>(selector))
+  const fallbackSelector = selector.startsWith('thead ') ? selector.slice('thead '.length) : selector
+  const columns = selectedColumns.length > 0 ? selectedColumns : Array.from(scrollRoot.querySelectorAll<HTMLElement>(fallbackSelector))
+  const widthsByColumnIndex = new Map<string, number>()
+
+  columns.forEach((column) => {
+    const columnIndex = column.dataset.nextGenMiStickyTableColumnIndex ?? `column-${widthsByColumnIndex.size}`
+    if (widthsByColumnIndex.has(columnIndex)) return
+    widthsByColumnIndex.set(columnIndex, column.getBoundingClientRect().width)
+  })
+
+  return Array.from(widthsByColumnIndex.values()).reduce((sum, width) => sum + width, 0)
+}
 
 const isLastFixedLeftColumnSticky = (scrollRoot: HTMLDivElement) => {
   const lastFixedColumn = queryColumnElement(scrollRoot, '[data-last-fixed-left-column="true"]')
@@ -275,6 +310,12 @@ const NextGenMIStickyTable = <T,>({
   resizableFixedColumns = false,
   leftAlignedHeaderSticky = false,
   hideHeader = false,
+  pageStickyHeaderTop,
+  pageStickyHeaderZIndex = 24,
+  pageStickyHeaderBefore,
+  pageStickyHeaderGap = '0px',
+  pageStickyHeaderReleaseOffsetBottom,
+  pageStickyHeaderReleaseOnLastRow = false,
   loading = false,
   noRowMessage = '표시할 데이터가 없습니다.',
   noRowMinHeight,
@@ -296,10 +337,13 @@ const NextGenMIStickyTable = <T,>({
 }: NextGenMIStickyTableProps<T>) => {
   const tableRootRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const pageStickyHeaderScrollRef = useRef<HTMLDivElement | null>(null)
+  const stickyHorizontalScrollbarRef = useRef<HTMLDivElement | null>(null)
   const lastScrollPositionRef = useRef({ left: 0, top: 0 })
   const lastActiveAxisRef = useRef<ScrollAxis>(null)
   const pendingAxisUpdateRef = useRef(false)
   const scrollAnimationFrameRef = useRef(0)
+  const syncScrollVisualStateRef = useRef<(updateAxis?: boolean) => void>(() => undefined)
   const sortSkeletonTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const fixedLeftColumnIndexList = useMemo(
     () => normalizeFixedColumnIndexes(fixedLeftColumnIndexes, columns.length),
@@ -323,6 +367,8 @@ const NextGenMIStickyTable = <T,>({
   const [resizedFixedColumnWidths, setResizedFixedColumnWidths] = useState<Record<number, number>>({})
   const [sortState, setSortState] = useState<NextGenMIStickyTableSortState>(null)
   const [sortSkeletonVisible, setSortSkeletonVisible] = useState(false)
+  const [pageStickyHeaderLastRowHeightPx, setPageStickyHeaderLastRowHeightPx] = useState(0)
+  const [pageStickyHeaderColumnWidths, setPageStickyHeaderColumnWidths] = useState<Record<number, number>>({})
   const fixedLeftColumnLeftMap = useMemo(() => {
     const next = new Map<number, string | number>()
     const widthParts: string[] = []
@@ -391,6 +437,18 @@ const NextGenMIStickyTable = <T,>({
   const fixedRightColumnsWidth = fixedRightColumnsWidthParts.length > 0 ? toCssCalc(fixedRightColumnsWidthParts) : '0px'
   const showSkeletonRows = loading || sortSkeletonVisible
   const activeSkeletonRowCount = loading ? skeletonRowCount : rows.length
+  const hasPageStickyHeader = pageStickyHeaderTop !== undefined && !hideHeader
+  const showPageStickyHeader = hasPageStickyHeader
+  const hasPageStickyHeaderBefore = pageStickyHeaderBefore !== undefined && pageStickyHeaderBefore !== null
+  const pageStickyHeaderReleaseBottomGapPx = hasPageStickyHeaderBefore && containerShell ? (getPixelValue(containerPadding) ?? 0) : 0
+  const pageStickyHeaderMeasuredReleaseOffset =
+    pageStickyHeaderReleaseOnLastRow && pageStickyHeaderLastRowHeightPx > 0
+      ? `${pageStickyHeaderLastRowHeightPx + pageStickyHeaderReleaseBottomGapPx}px`
+      : undefined
+  const pageStickyHeaderReleaseOffset =
+    pageStickyHeaderReleaseOffsetBottom !== undefined
+      ? toCssLength(pageStickyHeaderReleaseOffsetBottom)
+      : pageStickyHeaderMeasuredReleaseOffset
   // 고정-좌측 컬럼이 있으면 sticky 라벨은 첫 컬럼이 아니므로 엣지 인셋이 없는 cellPaddingX 만 더한다.
   // 고정-좌측 컬럼이 없으면 sticky 라벨이 첫 컬럼(외곽)일 수 있으므로 엣지 인셋(8px)을 포함한 14px를 적용한다.
   const leftAlignedHeaderStickyLeft =
@@ -438,6 +496,33 @@ const NextGenMIStickyTable = <T,>({
   const [isScrollAreaHovered, setIsScrollAreaHovered] = useState(false)
   const [dragAxis, setDragAxis] = useState<ScrollAxis>(null)
   const [fixedColumnResizeSide, setFixedColumnResizeSide] = useState<FixedColumnResizeSide>(null)
+  const handleScrollAreaMouseEnter = () => setIsScrollAreaHovered(true)
+  const handleScrollAreaMouseLeave = () => setIsScrollAreaHovered(false)
+  const setElementScrollLeft = useCallback((element: HTMLDivElement, nextScrollLeft: number) => {
+    if (Math.abs(element.scrollLeft - nextScrollLeft) < 1) return
+    element.scrollLeft = nextScrollLeft
+    syncScrollVisualStateRef.current(true)
+  }, [])
+  const syncPageStickyHeaderScrollLeft = useCallback(
+    (source: HTMLDivElement, target: HTMLDivElement) => {
+      setElementScrollLeft(target, source.scrollLeft)
+    },
+    [setElementScrollLeft],
+  )
+  const handleBodyScrollLeft = useCallback(() => {
+    const bodyScrollEl = scrollRef.current
+    const headerScrollEl = pageStickyHeaderScrollRef.current
+    if (!showPageStickyHeader || !bodyScrollEl || !headerScrollEl) return
+
+    syncPageStickyHeaderScrollLeft(bodyScrollEl, headerScrollEl)
+  }, [showPageStickyHeader, syncPageStickyHeaderScrollLeft])
+  const handlePageStickyHeaderScrollLeft = useCallback(() => {
+    const bodyScrollEl = scrollRef.current
+    const headerScrollEl = pageStickyHeaderScrollRef.current
+    if (!showPageStickyHeader || !bodyScrollEl || !headerScrollEl) return
+
+    syncPageStickyHeaderScrollLeft(headerScrollEl, bodyScrollEl)
+  }, [showPageStickyHeader, syncPageStickyHeaderScrollLeft])
   const handleScrollContainerRef = useCallback(
     (element: HTMLDivElement | null) => {
       scrollRef.current = element
@@ -478,6 +563,107 @@ const NextGenMIStickyTable = <T,>({
     [clearSortSkeletonTimer],
   )
 
+  useLayoutEffect(() => {
+    if (!pageStickyHeaderReleaseOnLastRow || showSkeletonRows || sortedRows.length === 0) {
+      setPageStickyHeaderLastRowHeightPx(0)
+      return undefined
+    }
+
+    const root = tableRootRef.current
+    if (!root) {
+      setPageStickyHeaderLastRowHeightPx(0)
+      return undefined
+    }
+
+    let animationFrameId = 0
+
+    const measureLastRow = () => {
+      animationFrameId = 0
+      const bodyRows = root.querySelectorAll<HTMLElement>('tbody tr')
+      const lastRow = bodyRows.item(bodyRows.length - 1)
+      const nextHeight = lastRow ? Math.ceil(lastRow.getBoundingClientRect().height) : 0
+      setPageStickyHeaderLastRowHeightPx((current) => (current === nextHeight ? current : nextHeight))
+    }
+
+    const scheduleMeasure = () => {
+      if (animationFrameId !== 0) return
+      animationFrameId = globalThis.requestAnimationFrame(measureLastRow)
+    }
+
+    measureLastRow()
+
+    const resizeObserver = new ResizeObserver(scheduleMeasure)
+    resizeObserver.observe(root)
+    const bodyRows = root.querySelectorAll<HTMLElement>('tbody tr')
+    const lastRow = bodyRows.item(bodyRows.length - 1)
+    if (lastRow) resizeObserver.observe(lastRow)
+    globalThis.addEventListener('resize', scheduleMeasure)
+
+    return () => {
+      if (animationFrameId !== 0) globalThis.cancelAnimationFrame(animationFrameId)
+      resizeObserver.disconnect()
+      globalThis.removeEventListener('resize', scheduleMeasure)
+    }
+  }, [columns.length, pageStickyHeaderReleaseOnLastRow, showSkeletonRows, sortedRows])
+
+  useLayoutEffect(() => {
+    if (!showPageStickyHeader) {
+      setPageStickyHeaderColumnWidths({})
+      return undefined
+    }
+
+    const root = tableRootRef.current
+    if (!root) {
+      setPageStickyHeaderColumnWidths({})
+      return undefined
+    }
+
+    let animationFrameId = 0
+
+    const measureColumnWidths = () => {
+      animationFrameId = 0
+      const nextWidths: Record<number, number> = {}
+      const bodyCells = root.querySelectorAll<HTMLElement>('tbody [data-next-gen-mi-sticky-table-column-index]')
+
+      bodyCells.forEach((cell) => {
+        const columnIndex = Number(cell.dataset.nextGenMiStickyTableColumnIndex)
+        if (!Number.isInteger(columnIndex)) return
+
+        const width = Math.ceil(cell.getBoundingClientRect().width)
+        if (width <= 0) return
+
+        nextWidths[columnIndex] = Math.max(nextWidths[columnIndex] ?? 0, width)
+      })
+
+      setPageStickyHeaderColumnWidths((current) => {
+        const currentKeys = Object.keys(current)
+        const nextKeys = Object.keys(nextWidths)
+        const hasSameWidths =
+          currentKeys.length === nextKeys.length && nextKeys.every((key) => current[Number(key)] === nextWidths[Number(key)])
+
+        return hasSameWidths ? current : nextWidths
+      })
+    }
+
+    const scheduleMeasure = () => {
+      if (animationFrameId !== 0) return
+      animationFrameId = globalThis.requestAnimationFrame(measureColumnWidths)
+    }
+
+    measureColumnWidths()
+
+    const resizeObserver = new ResizeObserver(scheduleMeasure)
+    resizeObserver.observe(root)
+    root.querySelectorAll<HTMLElement>('tbody [data-next-gen-mi-sticky-table-column-index]').forEach((cell) => resizeObserver.observe(cell))
+    globalThis.addEventListener('resize', scheduleMeasure)
+
+    return () => {
+      if (animationFrameId !== 0) globalThis.cancelAnimationFrame(animationFrameId)
+      resizeObserver.disconnect()
+      globalThis.removeEventListener('resize', scheduleMeasure)
+    }
+  }, [columns.length, resizedFixedColumnWidths, showPageStickyHeader, showSkeletonRows, sortedRows])
+
   useEffect(() => {
     const el = scrollRef.current
     const root = tableRootRef.current
@@ -504,33 +690,47 @@ const NextGenMIStickyTable = <T,>({
         right && fixedRightColumnIndexList.length > 0 && (canInsetHorizontalScrollbar || isFirstFixedRightColumnSticky(el))
       const horizontalThumbWidth = horizontal ? getScrollThumbSizePercent(clientWidth, scrollWidth) : 0
       const verticalThumbHeight = vertical ? getScrollThumbSizePercent(clientHeight, scrollHeight) : 0
+      const applyScrollVisualState = (
+        target: HTMLElement,
+        columnShadowOffsets: ReturnType<typeof getFixedColumnShadowOffsets> = fixedColumnShadowOffsets,
+      ) => {
+        target.style.setProperty('--next-gen-mi-sticky-left-column-shadow-opacity', fixedLeftColumnShadow ? '1' : '0')
+        target.style.setProperty('--next-gen-mi-sticky-right-column-shadow-opacity', fixedRightColumnShadow ? '1' : '0')
+        target.style.setProperty('--next-gen-mi-sticky-left-column-shadow-left', `${columnShadowOffsets.left ?? 0}px`)
+        target.style.setProperty('--next-gen-mi-sticky-right-column-shadow-right', `${columnShadowOffsets.right ?? 0}px`)
+        target.style.setProperty('--next-gen-mi-scroll-left-edge-opacity', left ? '1' : '0')
+        target.style.setProperty('--next-gen-mi-scroll-right-edge-opacity', right ? '1' : '0')
+        target.style.setProperty('--next-gen-mi-scroll-right-edge-transition-duration', right ? '180ms' : '360ms')
+        target.style.setProperty(
+          '--next-gen-mi-scroll-top-edge-shadow',
+          nextActiveAxis === 'vertical' && scrollTop > 1 ? NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP : 'none',
+        )
+        target.style.setProperty(
+          '--next-gen-mi-scroll-bottom-edge-opacity',
+          nextActiveAxis === 'vertical' && scrollTop < maxTop - 1 ? '1' : '0',
+        )
+        target.style.setProperty('--next-gen-mi-horizontal-thumb-width', `${horizontalThumbWidth}%`)
+        target.style.setProperty(
+          '--next-gen-mi-horizontal-thumb-left',
+          `${getScrollThumbPositionPercent(scrollLeft, clientWidth, scrollWidth, horizontalThumbWidth)}%`,
+        )
+        target.style.setProperty('--next-gen-mi-vertical-thumb-height', `${verticalThumbHeight}%`)
+        target.style.setProperty(
+          '--next-gen-mi-vertical-thumb-top',
+          `${getScrollThumbPositionPercent(scrollTop, clientHeight, scrollHeight, verticalThumbHeight)}%`,
+        )
+      }
 
       lastActiveAxisRef.current = nextActiveAxis
-      root.style.setProperty('--next-gen-mi-sticky-left-column-shadow-opacity', fixedLeftColumnShadow ? '1' : '0')
-      root.style.setProperty('--next-gen-mi-sticky-right-column-shadow-opacity', fixedRightColumnShadow ? '1' : '0')
-      root.style.setProperty('--next-gen-mi-sticky-left-column-shadow-left', `${fixedColumnShadowOffsets.left ?? 0}px`)
-      root.style.setProperty('--next-gen-mi-sticky-right-column-shadow-right', `${fixedColumnShadowOffsets.right ?? 0}px`)
-      root.style.setProperty('--next-gen-mi-scroll-left-edge-opacity', left ? '1' : '0')
-      root.style.setProperty('--next-gen-mi-scroll-right-edge-opacity', right ? '1' : '0')
-      root.style.setProperty('--next-gen-mi-scroll-right-edge-transition-duration', right ? '180ms' : '360ms')
-      root.style.setProperty(
-        '--next-gen-mi-scroll-top-edge-shadow',
-        nextActiveAxis === 'vertical' && scrollTop > 1 ? NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP : 'none',
-      )
-      root.style.setProperty(
-        '--next-gen-mi-scroll-bottom-edge-opacity',
-        nextActiveAxis === 'vertical' && scrollTop < maxTop - 1 ? '1' : '0',
-      )
-      root.style.setProperty('--next-gen-mi-horizontal-thumb-width', `${horizontalThumbWidth}%`)
-      root.style.setProperty(
-        '--next-gen-mi-horizontal-thumb-left',
-        `${getScrollThumbPositionPercent(scrollLeft, clientWidth, scrollWidth, horizontalThumbWidth)}%`,
-      )
-      root.style.setProperty('--next-gen-mi-vertical-thumb-height', `${verticalThumbHeight}%`)
-      root.style.setProperty(
-        '--next-gen-mi-vertical-thumb-top',
-        `${getScrollThumbPositionPercent(scrollTop, clientHeight, scrollHeight, verticalThumbHeight)}%`,
-      )
+      applyScrollVisualState(root)
+
+      const pageStickyHeaderScrollEl = pageStickyHeaderScrollRef.current
+      if (pageStickyHeaderScrollEl) {
+        applyScrollVisualState(pageStickyHeaderScrollEl, getFixedColumnShadowOffsets(pageStickyHeaderScrollEl, pageStickyHeaderScrollEl))
+      }
+
+      const stickyHorizontalScrollbarEl = stickyHorizontalScrollbarRef.current
+      if (stickyHorizontalScrollbarEl) applyScrollVisualState(stickyHorizontalScrollbarEl)
 
       const next = {
         horizontal,
@@ -576,6 +776,7 @@ const NextGenMIStickyTable = <T,>({
     }
 
     sync()
+    syncScrollVisualStateRef.current = sync
     const handleScroll = () => scheduleSync(true)
     el.addEventListener('scroll', handleScroll, { passive: true })
     const ro = new ResizeObserver(() => scheduleSync())
@@ -587,6 +788,7 @@ const NextGenMIStickyTable = <T,>({
         globalThis.cancelAnimationFrame(scrollAnimationFrameRef.current)
         scrollAnimationFrameRef.current = 0
       }
+      if (syncScrollVisualStateRef.current === sync) syncScrollVisualStateRef.current = () => undefined
       el.removeEventListener('scroll', handleScroll)
       ro.disconnect()
     }
@@ -599,8 +801,38 @@ const NextGenMIStickyTable = <T,>({
     firstFixedRightColumnIndex,
     lastFixedLeftColumnIndex,
     loading,
+    pageStickyHeaderColumnWidths,
     rows.length,
+    showPageStickyHeader,
   ])
+
+  useEffect(() => {
+    if (!showPageStickyHeader) return undefined
+
+    const bodyScrollEl = scrollRef.current
+    const headerScrollEl = pageStickyHeaderScrollRef.current
+    if (!bodyScrollEl || !headerScrollEl) return undefined
+
+    const syncFromBody = () => syncPageStickyHeaderScrollLeft(bodyScrollEl, headerScrollEl)
+    const syncFromHeader = () => syncPageStickyHeaderScrollLeft(headerScrollEl, bodyScrollEl)
+
+    headerScrollEl.scrollLeft = bodyScrollEl.scrollLeft
+    bodyScrollEl.addEventListener('scroll', syncFromBody, { passive: true })
+    headerScrollEl.addEventListener('scroll', syncFromHeader, { passive: true })
+
+    return () => {
+      bodyScrollEl.removeEventListener('scroll', syncFromBody)
+      headerScrollEl.removeEventListener('scroll', syncFromHeader)
+    }
+  }, [showPageStickyHeader, syncPageStickyHeaderScrollLeft])
+
+  const setHorizontalScrollLeft = useCallback(
+    (nextScrollLeft: number) => {
+      if (scrollRef.current) setElementScrollLeft(scrollRef.current, nextScrollLeft)
+      if (showPageStickyHeader && pageStickyHeaderScrollRef.current) setElementScrollLeft(pageStickyHeaderScrollRef.current, nextScrollLeft)
+    },
+    [setElementScrollLeft, showPageStickyHeader],
+  )
 
   const handleScrollbarPointerDown = (axis: Exclude<ScrollAxis, null>) => (event: ReactPointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current
@@ -623,7 +855,7 @@ const NextGenMIStickyTable = <T,>({
       const nextScroll = startScroll + ((currentPosition - startPosition) / maxThumbTravel) * maxScroll
 
       if (axis === 'horizontal') {
-        el.scrollLeft = nextScroll
+        setHorizontalScrollLeft(nextScroll)
         return
       }
       el.scrollTop = nextScroll
@@ -701,10 +933,27 @@ const NextGenMIStickyTable = <T,>({
   const horizontalScrollbarRightWidth =
     (canUseInsetHorizontalScrollbar ? scrollLayoutState.fixedRightColumnWidth : 0) + (scrollLayoutState.vertical ? 18 : 0)
   const horizontalScrollbarRight = horizontalScrollbarRightWidth > 0 ? `${horizontalScrollbarRightWidth}px` : 0
+  const hasStickyHeaderRow = !hideHeader && leftAlignedHeaderSticky && !showPageStickyHeader
+  const showPageStickyHeaderFixedColumnShadow = hasPageStickyHeader && !leftAlignedHeaderSticky
   const stickyColumnShadowOverlaySx = {
-    top: !hideHeader && leftAlignedHeaderSticky ? headerHeight : 0,
+    top: hasStickyHeaderRow ? headerHeight : 0,
     bottom: scrollLayoutState.horizontal ? '18px' : 0,
   }
+  const initialScrollVisualStateSx = {
+    '--next-gen-mi-sticky-left-column-shadow-opacity': 0,
+    '--next-gen-mi-sticky-right-column-shadow-opacity': 0,
+    '--next-gen-mi-sticky-left-column-shadow-left': fixedLeftColumnsWidth,
+    '--next-gen-mi-sticky-right-column-shadow-right': fixedRightColumnsWidth,
+    '--next-gen-mi-scroll-left-edge-opacity': 0,
+    '--next-gen-mi-scroll-right-edge-opacity': 0,
+    '--next-gen-mi-scroll-right-edge-transition-duration': '360ms',
+    '--next-gen-mi-scroll-top-edge-shadow': 'none',
+    '--next-gen-mi-scroll-bottom-edge-opacity': 0,
+    '--next-gen-mi-horizontal-thumb-left': '0%',
+    '--next-gen-mi-horizontal-thumb-width': '0%',
+    '--next-gen-mi-vertical-thumb-top': '0%',
+    '--next-gen-mi-vertical-thumb-height': '0%',
+  } as const
   const tableWidthSx = disableHorizontalScroll
     ? {
       width: '100%',
@@ -715,6 +964,14 @@ const NextGenMIStickyTable = <T,>({
       width: 'max-content',
       minWidth: '100%',
     }
+  const pageStickyHeaderTableWidthPx = columns.reduce((sum, _, columnIndex) => sum + (pageStickyHeaderColumnWidths[columnIndex] ?? 0), 0)
+  const pageStickyHeaderTableWidthSx =
+    pageStickyHeaderTableWidthPx > 0
+      ? {
+        width: `${pageStickyHeaderTableWidthPx}px`,
+        minWidth: '100%',
+      }
+      : tableWidthSx
   const noRowContentMinHeight = noRowMinHeight ?? rowHeight
   const renderFixedColumnResizeHandle = (side: Exclude<FixedColumnResizeSide, null>, columnIndex: number) => {
     const active = fixedColumnResizeSide === side
@@ -770,7 +1027,7 @@ const NextGenMIStickyTable = <T,>({
     }, 300)
   }
 
-  const renderHeaderCell = (column: NextGenMIStickyTableColumn<T>, columnIndex: number) => {
+  const renderHeaderCell = (column: NextGenMIStickyTableColumn<T>, columnIndex: number, sticky: boolean) => {
     const align = column.headerAlign ?? getColumnAlign(column)
     const sortable = Boolean(column.sortable)
     const sortDirection = sortState?.field === column.field ? sortState.direction : null
@@ -779,8 +1036,20 @@ const NextGenMIStickyTable = <T,>({
     const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
     const isLastFixedLeftColumn = lastFixedLeftColumnIndex === columnIndex
     const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
+    const pageStickyHeaderColumnWidth = hasPageStickyHeader ? pageStickyHeaderColumnWidths[columnIndex] : undefined
+    const headerColumnWidthSx =
+      pageStickyHeaderColumnWidth !== undefined
+        ? {
+          width: `${pageStickyHeaderColumnWidth}px`,
+          minWidth: `${pageStickyHeaderColumnWidth}px`,
+          maxWidth: `${pageStickyHeaderColumnWidth}px`,
+        }
+        : getColumnWidthSx(column, columnIndex, isFixedColumn)
     const shouldStickyLeftAlignedHeader =
       !isFixedColumn && leftAlignedHeaderSticky && align === 'left' && columnIndex > (lastFixedLeftColumnIndex ?? -1)
+    const headerStickyTop = hasPageStickyHeader ? toCssLength(pageStickyHeaderTop!) : 0
+    const headerStickyZIndex = hasPageStickyHeader ? pageStickyHeaderZIndex : 3
+    const fixedHeaderStickyZIndex = hasPageStickyHeader ? pageStickyHeaderZIndex + 1 : 4
 
     return (
       <Box
@@ -805,19 +1074,57 @@ const NextGenMIStickyTable = <T,>({
             borderColor: 'contentBorder.Active',
             whiteSpace: 'nowrap',
             userSelect: 'none',
-            ...getColumnWidthSx(column, columnIndex, isFixedColumn),
+            ...headerColumnWidthSx,
             boxSizing: 'border-box',
             bgcolor: 'commonColor.White',
+          },
+          sticky && {
+            position: 'sticky',
+            top: headerStickyTop,
+            zIndex: headerStickyZIndex,
+            boxShadow: hasPageStickyHeader ? NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP : 'var(--next-gen-mi-scroll-top-edge-shadow)',
           },
           isFixedLeftColumn && {
             position: 'sticky',
             left: fixedLeftColumnLeftMap.get(columnIndex),
-            zIndex: 4,
+            zIndex: fixedHeaderStickyZIndex,
+          },
+          showPageStickyHeaderFixedColumnShadow &&
+            isLastFixedLeftColumn && {
+            overflow: 'visible',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: '-16px',
+              bottom: 0,
+              width: '16px',
+              pointerEvents: 'none',
+              background: 'linear-gradient(to right, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
+              opacity: 'var(--next-gen-mi-sticky-left-column-shadow-opacity)',
+              transition: 'opacity 180ms ease',
+            },
           },
           isFixedRightColumn && {
             position: 'sticky',
             right: fixedRightColumnRightMap.get(columnIndex),
-            zIndex: 4,
+            zIndex: fixedHeaderStickyZIndex,
+          },
+          showPageStickyHeaderFixedColumnShadow &&
+            isFirstFixedRightColumn && {
+            overflow: 'visible',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: '-16px',
+              bottom: 0,
+              width: '16px',
+              pointerEvents: 'none',
+              background: 'linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
+              opacity: 'var(--next-gen-mi-sticky-right-column-shadow-opacity)',
+              transition: 'opacity 180ms ease',
+            },
           },
           shouldStickyLeftAlignedHeader && { clipPath: 'inset(0)' },
           ...toSxArray(column.headerCellSx),
@@ -974,32 +1281,177 @@ const NextGenMIStickyTable = <T,>({
     )
   }
 
+  const renderTableHeader = (sticky: boolean) => (
+    <Box
+      component="thead"
+      sx={{
+        position: 'relative',
+        zIndex: sticky && hasPageStickyHeader ? pageStickyHeaderZIndex : 3,
+        ...(!sticky ? { boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP } : {}),
+        bgcolor: 'commonColor.White',
+      }}
+    >
+      <Box component="tr">{columns.map((column, columnIndex) => renderHeaderCell(column, columnIndex, sticky))}</Box>
+    </Box>
+  )
+
+  const renderHorizontalScrollbar = (sx?: SxProps<Theme>) =>
+    scrollLayoutState.horizontal ? (
+      <Box
+        aria-hidden
+        sx={[
+          {
+            position: 'absolute',
+            left: horizontalScrollbarLeft,
+            right: horizontalScrollbarRight,
+            bottom: '4px',
+            height: '10px',
+            borderRadius: '10px',
+            bgcolor: 'transparent',
+            opacity: showScrollbars ? 1 : 0,
+            pointerEvents: showScrollbars ? 'auto' : 'none',
+            transition: 'opacity 120ms ease',
+            zIndex: 6,
+          },
+          ...toSxArray(sx),
+        ]}
+      >
+        <Box
+          onPointerDown={handleScrollbarPointerDown('horizontal')}
+          sx={{
+            position: 'absolute',
+            top: '2px',
+            bottom: '2px',
+            left: 'var(--next-gen-mi-horizontal-thumb-left)',
+            width: 'var(--next-gen-mi-horizontal-thumb-width)',
+            borderRadius: '10px',
+            bgcolor: dragAxis === 'horizontal' ? '#868E96' : '#ADB5BD',
+            cursor: dragAxis === 'horizontal' ? 'grabbing' : 'grab',
+            '&:hover': { bgcolor: '#868E96' },
+          }}
+        />
+      </Box>
+    ) : null
+
+  const pageStickyHeaderTable = showPageStickyHeader ? (
+    <Box
+      ref={pageStickyHeaderScrollRef}
+      onMouseEnter={handleScrollAreaMouseEnter}
+      onMouseLeave={handleScrollAreaMouseLeave}
+      onScroll={handlePageStickyHeaderScrollLeft}
+      sx={{
+        position: 'relative',
+        width: '100%',
+        overflowX: disableHorizontalScroll ? 'hidden' : 'auto',
+        overflowY: 'hidden',
+        scrollbarWidth: 'none',
+        pr: scrollLayoutState.vertical ? '16px' : 0,
+        ...initialScrollVisualStateSx,
+        '&::-webkit-scrollbar': { display: 'none' },
+      }}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          ...pageStickyHeaderTableWidthSx,
+        }}
+      >
+        <Box
+          component="table"
+          sx={{
+            gridArea: '1 / 1',
+            ...pageStickyHeaderTableWidthSx,
+            borderCollapse: 'separate',
+            borderSpacing: 0,
+            tableLayout: disableHorizontalScroll ? 'fixed' : 'auto',
+          }}
+        >
+          {renderTableHeader(false)}
+        </Box>
+      </Box>
+    </Box>
+  ) : null
+
+  const stickyHorizontalScrollbar = scrollLayoutState.horizontal ? (
+    <Box
+      ref={stickyHorizontalScrollbarRef}
+      onMouseEnter={handleScrollAreaMouseEnter}
+      onMouseLeave={handleScrollAreaMouseLeave}
+      sx={{
+        position: 'sticky',
+        bottom: 0,
+        width: '100%',
+        height: '18px',
+        mt: '-18px',
+        pointerEvents: 'none',
+        zIndex: showPageStickyHeader ? pageStickyHeaderZIndex : 6,
+        ...initialScrollVisualStateSx,
+      }}
+    >
+      {renderHorizontalScrollbar({ zIndex: 1 })}
+    </Box>
+  ) : null
+
+  const pageStickyHeader = showPageStickyHeader ? (
+    <Box
+      sx={{
+        position: 'sticky',
+        top: toCssLength(pageStickyHeaderTop!),
+        zIndex: pageStickyHeaderZIndex,
+        minHeight: hasPageStickyHeaderBefore ? undefined : headerHeight,
+        bgcolor: 'commonColor.White',
+        transition: `top ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: hasPageStickyHeaderBefore ? '-20px' : '-12px',
+          height: hasPageStickyHeaderBefore ? '20px' : '12px',
+          bgcolor: 'commonColor.White',
+          pointerEvents: 'none',
+        },
+      }}
+    >
+      {hasPageStickyHeaderBefore ? (
+        <>
+          {pageStickyHeaderBefore}
+          <Box
+            sx={{
+              width: '100%',
+              minWidth: 0,
+              mt: pageStickyHeaderGap,
+              bgcolor: 'commonColor.White',
+              borderRadius: containerShell ? '10px 10px 0 0' : undefined,
+              padding: containerShell ? containerPadding : undefined,
+              paddingBottom: containerShell ? 0 : undefined,
+              boxSizing: 'border-box',
+            }}
+          >
+            {pageStickyHeaderTable}
+          </Box>
+        </>
+      ) : (
+        pageStickyHeaderTable
+      )}
+    </Box>
+  ) : null
+
   const tableContent = (
     <Box
       ref={tableRootRef}
-      onMouseEnter={() => setIsScrollAreaHovered(true)}
-      onMouseLeave={() => setIsScrollAreaHovered(false)}
+      onMouseEnter={handleScrollAreaMouseEnter}
+      onMouseLeave={handleScrollAreaMouseLeave}
       sx={{
         position: 'relative',
         width: '100%',
         overflow: 'hidden',
-        '--next-gen-mi-sticky-left-column-shadow-opacity': 0,
-        '--next-gen-mi-sticky-right-column-shadow-opacity': 0,
-        '--next-gen-mi-sticky-left-column-shadow-left': fixedLeftColumnsWidth,
-        '--next-gen-mi-sticky-right-column-shadow-right': fixedRightColumnsWidth,
-        '--next-gen-mi-scroll-left-edge-opacity': 0,
-        '--next-gen-mi-scroll-right-edge-opacity': 0,
-        '--next-gen-mi-scroll-right-edge-transition-duration': '360ms',
-        '--next-gen-mi-scroll-top-edge-shadow': 'none',
-        '--next-gen-mi-scroll-bottom-edge-opacity': 0,
-        '--next-gen-mi-horizontal-thumb-left': '0%',
-        '--next-gen-mi-horizontal-thumb-width': '0%',
-        '--next-gen-mi-vertical-thumb-top': '0%',
-        '--next-gen-mi-vertical-thumb-height': '0%',
+        ...initialScrollVisualStateSx,
       }}
     >
       <Box
         ref={handleScrollContainerRef}
+        onScroll={handleBodyScrollLeft}
         sx={{
           width: '100%',
           ...(maxHeight ? { maxHeight } : {}),
@@ -1027,20 +1479,7 @@ const NextGenMIStickyTable = <T,>({
               tableLayout: disableHorizontalScroll ? 'fixed' : 'auto',
             }}
           >
-            {!hideHeader && (
-              <Box
-                component="thead"
-                sx={{
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 3,
-                  bgcolor: 'commonColor.White',
-                  boxShadow: 'var(--next-gen-mi-scroll-top-edge-shadow)',
-                }}
-              >
-                <Box component="tr">{columns.map((column, columnIndex) => renderHeaderCell(column, columnIndex))}</Box>
-              </Box>
-            )}
+            {!hideHeader && !showPageStickyHeader && renderTableHeader(true)}
 
             <Box component="tbody">
               {showSkeletonRows &&
@@ -1179,7 +1618,7 @@ const NextGenMIStickyTable = <T,>({
           aria-hidden
           sx={{
             position: 'absolute',
-            top: leftAlignedHeaderSticky ? headerHeight : 0,
+            top: hasStickyHeaderRow ? headerHeight : 0,
             left: 0,
             bottom: scrollLayoutState.horizontal ? '18px' : 0,
             width: '100px',
@@ -1197,7 +1636,7 @@ const NextGenMIStickyTable = <T,>({
           aria-hidden
           sx={{
             position: 'absolute',
-            top: leftAlignedHeaderSticky ? headerHeight : 0,
+            top: hasStickyHeaderRow ? headerHeight : 0,
             right: scrollLayoutState.vertical ? '16px' : 0,
             bottom: scrollLayoutState.horizontal ? '18px' : 0,
             width: `calc(100px + ${rightScrollEdgeOffset})`,
@@ -1208,40 +1647,6 @@ const NextGenMIStickyTable = <T,>({
             zIndex: 5,
           }}
         />
-      )}
-
-      {scrollLayoutState.horizontal && (
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute',
-            left: horizontalScrollbarLeft,
-            right: horizontalScrollbarRight,
-            bottom: '4px',
-            height: '10px',
-            borderRadius: '10px',
-            bgcolor: 'transparent',
-            opacity: showScrollbars ? 1 : 0,
-            pointerEvents: showScrollbars ? 'auto' : 'none',
-            transition: 'opacity 120ms ease',
-            zIndex: 6,
-          }}
-        >
-          <Box
-            onPointerDown={handleScrollbarPointerDown('horizontal')}
-            sx={{
-              position: 'absolute',
-              top: '2px',
-              bottom: '2px',
-              left: 'var(--next-gen-mi-horizontal-thumb-left)',
-              width: 'var(--next-gen-mi-horizontal-thumb-width)',
-              borderRadius: '10px',
-              bgcolor: dragAxis === 'horizontal' ? '#868E96' : '#ADB5BD',
-              cursor: dragAxis === 'horizontal' ? 'grabbing' : 'grab',
-              '&:hover': { bgcolor: '#868E96' },
-            }}
-          />
-        </Box>
       )}
 
       {scrollLayoutState.vertical && (
@@ -1280,7 +1685,47 @@ const NextGenMIStickyTable = <T,>({
     </Box>
   )
 
-  if (!containerShell) return tableContent
+  const renderPageStickyTable = (bodyContent: ReactNode) => (
+    <Box
+      position="relative"
+      width="100%"
+      minWidth={0}
+      sx={pageStickyHeaderReleaseOffset ? { mb: pageStickyHeaderReleaseOffset, overflow: 'visible' } : undefined}
+    >
+      {pageStickyHeader}
+      {pageStickyHeaderReleaseOffset ? <Box sx={{ mb: `calc(0px - ${pageStickyHeaderReleaseOffset})` }}>{bodyContent}</Box> : bodyContent}
+    </Box>
+  )
+
+  const tableContentWithStickyHorizontalScrollbar = (
+    <>
+      {tableContent}
+      {stickyHorizontalScrollbar}
+    </>
+  )
+  const tableWithPageStickyHeader = showPageStickyHeader
+    ? renderPageStickyTable(tableContentWithStickyHorizontalScrollbar)
+    : tableContentWithStickyHorizontalScrollbar
+
+  if (!containerShell) return tableWithPageStickyHeader
+
+  if (showPageStickyHeader && hasPageStickyHeaderBefore) {
+    return renderPageStickyTable(
+      <Box
+        sx={{
+          width: '100%',
+          bgcolor: 'commonColor.White',
+          borderRadius: '0 0 10px 10px',
+          padding: containerPadding,
+          paddingTop: 0,
+          boxSizing: 'border-box',
+        }}
+      >
+        {tableContent}
+        {stickyHorizontalScrollbar}
+      </Box>,
+    )
+  }
 
   return (
     <Box
@@ -1292,7 +1737,7 @@ const NextGenMIStickyTable = <T,>({
         boxSizing: 'border-box',
       }}
     >
-      {tableContent}
+      {tableWithPageStickyHeader}
     </Box>
   )
 }

@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 
 import RotatingGradientClip from '@/components/common/gradient/RotatingGradientClip'
 import InfoTooltip from '@/pages/mi/dashboard/components/common/InfoTooltip'
+import NextGenMIDetailStickySectionHeader from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailStickySectionHeader'
 
 interface EventDetailSectionHeaderProps {
   icon: ReactNode
@@ -12,6 +13,9 @@ interface EventDetailSectionHeaderProps {
   tooltipTitle?: string
   /** AI Insights 섹션 - 타이틀|아이콘 그라데이션 */
   titleGradient?: boolean
+  stickyTopPx?: number
+  stickyZIndex?: number
+  stickyCoverBelowPx?: number
 }
 
 const AI_INSIGHTS_AUTO_AWESOME_MASK_IMAGE =
@@ -47,8 +51,24 @@ const AiInsightsTitle = ({ title }: { title: string }) => (
   <RotatingGradientClip sx={aiInsightsTitleGradientSx}>{title}</RotatingGradientClip>
 )
 
-const EventDetailSectionHeader = ({ icon, title, tooltipTitle, titleGradient = false }: EventDetailSectionHeaderProps) => (
-  <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%">
+const EventDetailSectionHeader = ({
+  icon,
+  title,
+  tooltipTitle,
+  titleGradient = false,
+  stickyTopPx,
+  stickyZIndex,
+  stickyCoverBelowPx,
+}: EventDetailSectionHeaderProps) => (
+  <NextGenMIDetailStickySectionHeader
+    direction="row"
+    alignItems="center"
+    justifyContent="space-between"
+    width="100%"
+    stickyTopPx={stickyTopPx}
+    stickyZIndex={stickyZIndex}
+    coverBelowPx={stickyCoverBelowPx}
+  >
     <Stack direction="row" alignItems="center" gap={0.75}>
       <Stack direction="row" alignItems="center" gap={0.75}>
         <BoxIconWrap>{titleGradient ? <AiInsightsTitleIcon /> : icon}</BoxIconWrap>
@@ -61,7 +81,7 @@ const EventDetailSectionHeader = ({ icon, title, tooltipTitle, titleGradient = f
       {tooltipTitle?.trim() ? <InfoTooltip title={tooltipTitle} /> : null}
     </Stack>
     <Stack width="36px" height="36px" flexShrink={0} />
-  </Stack>
+  </NextGenMIDetailStickySectionHeader>
 )
 
 export default EventDetailSectionHeader
