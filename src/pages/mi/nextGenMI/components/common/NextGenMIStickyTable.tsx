@@ -1070,8 +1070,6 @@ const NextGenMIStickyTable = <T,>({
             fontSize: headerFontSize,
             fontWeight: 600,
             color: 'contentText.Normal',
-            borderBottom: '0.5px solid',
-            borderColor: 'contentBorder.Active',
             whiteSpace: 'nowrap',
             userSelect: 'none',
             ...headerColumnWidthSx,
@@ -1369,6 +1367,19 @@ const NextGenMIStickyTable = <T,>({
           {renderTableHeader(false)}
         </Box>
       </Box>
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: `calc(${headerHeight} - 1px)`,
+          right: scrollLayoutState.vertical ? '16px' : 0,
+          left: 0,
+          height: '1px',
+          pointerEvents: 'none',
+          bgcolor: 'contentBorder.Active',
+          zIndex: pageStickyHeaderZIndex + 2,
+        }}
+      />
     </Box>
   ) : null
 
@@ -1570,6 +1581,22 @@ const NextGenMIStickyTable = <T,>({
           </Box>
         </Box>
       </Box>
+
+      {!hideHeader && !showPageStickyHeader && (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: `calc(${headerHeight} - 1px)`,
+            right: scrollLayoutState.vertical ? '16px' : 0,
+            left: 0,
+            height: '1px',
+            pointerEvents: 'none',
+            bgcolor: 'contentBorder.Active',
+            zIndex: 5,
+          }}
+        />
+      )}
 
       {fixedLeftColumnIndexList.length > 0 && (
         <Box

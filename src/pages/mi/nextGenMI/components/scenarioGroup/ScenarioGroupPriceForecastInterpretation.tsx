@@ -1,13 +1,13 @@
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
-import { Box, CircularProgress, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { debounce } from 'lodash-es'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { IScenarioGraphSeries } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -29,7 +29,6 @@ import {
   PREVIEW_INTERPRETATION_SCENARIOS,
   PRICE_FORECAST_INTERPRETATION_MAX_LENGTH,
   PRICE_FORECAST_INTERPRETATION_PREVIEW_OPTIONS,
-  PRICE_FORECAST_INTERPRETATION_SAVE_DEBOUNCE_MS,
   PRICE_FORECAST_INTERPRETATION_SAVED_MESSAGE_DURATION_MS,
   resetMockPriceForecastInterpretation,
   saveMockPriceForecastInterpretation,
@@ -178,7 +177,16 @@ const GENERATING_CONTENT_OPACITY = 0.1
 
 const PriceForecastInterpretationLoadingMessage = () => (
   <Stack height={EMPTY_MESSAGE_HEIGHT} alignItems="center" justifyContent="center" gap="10px" sx={{ userSelect: 'none' }}>
-    <CircularProgress size={24} sx={{ color: 'gray.60' }} />
+    <MIAgentSpinner
+      size={24}
+      tone="gray"
+      sx={{
+        '& svg': {
+          width: '24px',
+          height: '24px',
+        },
+      }}
+    />
     <Typography variant="body3SB12" color="gray.60" lineHeight={1.4}>
       가격전망 해석을 생성하고 있습니다
     </Typography>
@@ -197,7 +205,7 @@ const PriceForecastInterpretationGeneratingOverlay = () => (
     gap="10px"
     sx={{ userSelect: 'none', zIndex: 2, pointerEvents: 'none' }}
   >
-    <CircularProgress size={24} sx={{ color: 'gray.60' }} />
+    <MIAgentSpinner size={40} tone="gray" />
     <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
       가격전망 해석을 생성하고 있습니다
     </Typography>
@@ -298,6 +306,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const [isResetting, setIsResetting] = useState(false)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [savedMessageVisible, setSavedMessageVisible] = useState(false)
+  const [maxLengthWarningVisible, setMaxLengthWarningVisible] = useState(false)
   // #DELETE DEV 미리보기 전용 상태
   const [previewDraftText, setPreviewDraftText] = useState(MOCK_PRICE_FORECAST_INTERPRETATION_TEXT)
   const [previewSelectedScenarioId, setPreviewSelectedScenarioId] = useState<number>(PREVIEW_INTERPRETATION_SCENARIOS[2].scenarioId)
@@ -423,6 +432,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
       ? MOCK_PRICE_FORECAST_INTERPRETATION_TEXT
       : draftText
   const effectiveSavedMessageVisible = isPreviewActive && previewMode === 'saved' ? true : savedMessageVisible
+  const showMaxLengthWarning = maxLengthWarningVisible && !effectiveSavedMessageVisible
 
   const selectedScenario = useMemo(
     () => effectiveInterpretedScenarios.find((scenario) => scenario.scenarioId === effectiveSelectedScenarioId),
@@ -576,6 +586,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
   )
 
   const showSavedMessage = useCallback(() => {
+    setMaxLengthWarningVisible(false)
     setSavedMessageVisible(true)
     if (savedMessageTimerRef.current) {
       globalThis.clearTimeout(savedMessageTimerRef.current)
@@ -586,26 +597,9 @@ const ScenarioGroupPriceForecastInterpretation = ({
     }, PRICE_FORECAST_INTERPRETATION_SAVED_MESSAGE_DURATION_MS)
   }, [])
 
-  const debouncedSave = useMemo(
-    () =>
-      debounce((groupId: number, scenarioId: number, text: string, onSaved: () => void) => {
-        void saveMockPriceForecastInterpretation(groupId, scenarioId, text).then(onSaved)
-      }, PRICE_FORECAST_INTERPRETATION_SAVE_DEBOUNCE_MS),
-    [],
-  )
-
-  const debouncedShowSavedMessage = useMemo(
-    () => debounce(() => showSavedMessage(), PRICE_FORECAST_INTERPRETATION_SAVE_DEBOUNCE_MS),
-    [showSavedMessage],
-  )
-
-  useEffect(
-    () => () => {
-      debouncedSave.cancel()
-      debouncedShowSavedMessage.cancel()
-    },
-    [debouncedSave, debouncedShowSavedMessage],
-  )
+  useEffect(() => {
+    setMaxLengthWarningVisible(false)
+  }, [effectiveSelectedScenarioId])
 
   const handleGenerate = useCallback(async () => {
     if (!canGenerate) return
@@ -672,7 +666,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
     if (isPreviewEditable) {
       const trimmed = previewDraftText.trim()
       if (trimmed !== MOCK_PRICE_FORECAST_INTERPRETATION_TEXT.trim()) {
-        debouncedShowSavedMessage()
+        showSavedMessage()
       }
       return
     }
@@ -686,17 +680,8 @@ const ScenarioGroupPriceForecastInterpretation = ({
     if (trimmed === previous) return
 
     setInterpretations((prev) => ({ ...prev, [scenarioId]: trimmed }))
-    debouncedSave(scenarioGroupId, scenarioId, trimmed, showSavedMessage)
-  }, [
-    debouncedSave,
-    debouncedShowSavedMessage,
-    interpretations,
-    isPreviewActive,
-    isPreviewEditable,
-    previewDraftText,
-    scenarioGroupId,
-    showSavedMessage,
-  ])
+    void saveMockPriceForecastInterpretation(scenarioGroupId, scenarioId, trimmed).then(showSavedMessage)
+  }, [interpretations, isPreviewActive, isPreviewEditable, previewDraftText, scenarioGroupId, showSavedMessage])
 
   const handleSelectScenario = useCallback(
     (scenarioId: number) => {
@@ -729,13 +714,13 @@ const ScenarioGroupPriceForecastInterpretation = ({
         setPreviewDraftText(MOCK_PRICE_FORECAST_INTERPRETATION_TEXT)
       } else {
         const restoredText = originalInterpretations[targetScenarioId] ?? ''
-        debouncedSave.cancel()
         setInterpretations((prev) => ({ ...prev, [targetScenarioId]: restoredText }))
         setDraftText(restoredText)
         draftTextRef.current = restoredText
       }
 
       setSavedMessageVisible(false)
+      setMaxLengthWarningVisible(false)
       if (savedMessageTimerRef.current) {
         globalThis.clearTimeout(savedMessageTimerRef.current)
         savedMessageTimerRef.current = null
@@ -745,18 +730,13 @@ const ScenarioGroupPriceForecastInterpretation = ({
     } finally {
       setIsResetting(false)
     }
-  }, [
-    debouncedSave,
-    isPreviewActive,
-    originalInterpretations,
-    previewSelectedScenarioId,
-    scenarioGroupId,
-    selectedScenarioId,
-    showSnackbar,
-  ])
+  }, [isPreviewActive, originalInterpretations, previewSelectedScenarioId, scenarioGroupId, selectedScenarioId, showSnackbar])
 
   const handleDraftChange = useCallback(
     (nextValue: string) => {
+      if (nextValue.length < PRICE_FORECAST_INTERPRETATION_MAX_LENGTH) {
+        setMaxLengthWarningVisible(false)
+      }
       if (isPreviewEditable) {
         setPreviewDraftText(nextValue)
         return
@@ -766,6 +746,11 @@ const ScenarioGroupPriceForecastInterpretation = ({
     },
     [isPreviewActive, isPreviewEditable],
   )
+
+  const handleDraftMaxLengthExceeded = useCallback(() => {
+    setSavedMessageVisible(false)
+    setMaxLengthWarningVisible(true)
+  }, [])
 
   // #DELETE DEV 수급모델 시뮬레이션 핸들러
   const handleDevSimulateFirstSupplyModelExecution = useCallback(() => {
@@ -834,6 +819,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
               <NextGenMIResizableTextarea
                 ariaLabel={`${selectedScenario.scenarioName} 가격전망 해석`}
                 value={effectiveDraftText}
+                placeholder="가격전망 해석 내용을 입력해 주세요."
                 maxLength={PRICE_FORECAST_INTERPRETATION_MAX_LENGTH}
                 minHeight="160px"
                 minResizeHeight="160px"
@@ -843,12 +829,25 @@ const ScenarioGroupPriceForecastInterpretation = ({
                 disabled={effectiveIsDisabled || effectiveIsGenerating || (isPreviewActive && !isPreviewEditable)}
                 onBlur={commitDraft}
                 onChange={handleDraftChange}
+                onMaxLengthExceeded={handleDraftMaxLengthExceeded}
               />
               <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px" height="18px" padding="0 8px">
                 <Box minWidth={0} flex="1 1 0">
-                  {effectiveSavedMessageVisible ? <PriceForecastInterpretationSavedMessage /> : null}
+                  {showMaxLengthWarning ? (
+                    <Typography variant="body3M12" color="contentText.Error" lineHeight={1.5} noWrap>
+                      최대 {PRICE_FORECAST_INTERPRETATION_MAX_LENGTH.toLocaleString()}자까지 입력할 수 있습니다.
+                    </Typography>
+                  ) : effectiveSavedMessageVisible ? (
+                    <PriceForecastInterpretationSavedMessage />
+                  ) : null}
                 </Box>
-                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.5} flexShrink={0} noWrap>
+                <Typography
+                  variant="body3M12"
+                  color={showMaxLengthWarning ? 'contentText.Error' : 'contentText.Subtext'}
+                  lineHeight={1.5}
+                  flexShrink={0}
+                  noWrap
+                >
                   {effectiveDraftText.length.toLocaleString()} / {PRICE_FORECAST_INTERPRETATION_MAX_LENGTH.toLocaleString()}
                 </Typography>
               </Stack>

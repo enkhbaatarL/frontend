@@ -4,8 +4,6 @@ export const PRICE_FORECAST_INTERPRETATION_MAX_LENGTH = 2000
 
 export const PRICE_FORECAST_INTERPRETATION_GENERATE_DELAY_MS = 2000
 
-export const PRICE_FORECAST_INTERPRETATION_SAVE_DEBOUNCE_MS = 3000
-
 export const PRICE_FORECAST_INTERPRETATION_SAVED_MESSAGE_DURATION_MS = 5000
 
 /** API 연동 전 목 응답 - 시나리오별 해석 본문 */
@@ -152,11 +150,8 @@ export const generateMockPriceForecastInterpretations = async (
 }
 
 /** API 연동 전 목 수정 응답 */
-export const saveMockPriceForecastInterpretation = async (_scenarioGroupId: number, _scenarioId: number, _text: string): Promise<void> => {
-  await new Promise((resolve) => {
-    globalThis.setTimeout(resolve, 200)
-  })
-}
+export const saveMockPriceForecastInterpretation = (_scenarioGroupId: number, _scenarioId: number, _text: string): Promise<void> =>
+  Promise.resolve()
 
 /** API 연동 전 목 초기화 응답 - 서버에 저장된 본문을 최초 생성본으로 되돌림 */
 export const resetMockPriceForecastInterpretation = async (_scenarioGroupId: number, _scenarioId: number): Promise<void> => {

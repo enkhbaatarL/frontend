@@ -2,6 +2,7 @@ import { Stack } from '@mui/material'
 import {
   type ChangeEvent,
   type ClipboardEvent as ReactClipboardEvent,
+  type FormEvent as ReactFormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -104,6 +105,7 @@ const NextGenMIResizableTextarea = ({
   resetKey,
   disabled,
   ariaLabel,
+  placeholder,
   borderColor = 'contentBorder.Normal',
   bgcolor = 'commonColor.White',
   color = 'contentText.Normal',
@@ -114,6 +116,7 @@ const NextGenMIResizableTextarea = ({
   preventLineBreak,
   onBlur,
   onChange,
+  onMaxLengthExceeded,
 }: {
   value: string
   maxLength: number
@@ -123,6 +126,7 @@ const NextGenMIResizableTextarea = ({
   resetKey?: number
   disabled?: boolean
   ariaLabel?: string
+  placeholder?: string
   borderColor?: string
   bgcolor?: string
   color?: string
@@ -133,6 +137,7 @@ const NextGenMIResizableTextarea = ({
   preventLineBreak?: boolean
   onBlur?: () => void
   onChange?: (value: string) => void
+  onMaxLengthExceeded?: () => void
 }) => {
   const { height, isResizing, handleResizeStart } = useNextGenMIResizableHeight(minHeight, minResizeHeight, maxHeight, resetKey)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -213,6 +218,19 @@ const NextGenMIResizableTextarea = ({
     onChange?.(preventLineBreak ? getNextGenMISingleLineValue(event.target.value) : event.target.value)
   }
 
+  const handleBeforeInput = (event: ReactFormEvent<HTMLTextAreaElement>) => {
+    const nativeEvent = event.nativeEvent as InputEvent
+    if (nativeEvent.isComposing || !nativeEvent.inputType.startsWith('insert') || !nativeEvent.data) return
+
+    const textarea = event.currentTarget
+    const insertedValue = preventLineBreak ? getNextGenMISingleLineValue(nativeEvent.data) : nativeEvent.data
+    const selectionLength = textarea.selectionEnd - textarea.selectionStart
+
+    if (value.length - selectionLength + insertedValue.length > maxLength) {
+      onMaxLengthExceeded?.()
+    }
+  }
+
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (!preventLineBreak || event.key !== 'Enter' || event.nativeEvent.isComposing) return
 
@@ -221,18 +239,22 @@ const NextGenMIResizableTextarea = ({
   }
 
   const handlePaste = (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
-    if (!preventLineBreak || !onChange) return
-
     const pastedValue = event.clipboardData.getData('text')
-    const nextPastedValue = getNextGenMISingleLineValue(pastedValue)
-    if (pastedValue === nextPastedValue) return
-
-    event.preventDefault()
-
+    const nextPastedValue = preventLineBreak ? getNextGenMISingleLineValue(pastedValue) : pastedValue
     const textarea = event.currentTarget
     const selectionStart = textarea.selectionStart
     const selectionEnd = textarea.selectionEnd
     const availableLength = Math.max(maxLength - (value.length - (selectionEnd - selectionStart)), 0)
+
+    if (nextPastedValue.length > availableLength) {
+      onMaxLengthExceeded?.()
+    }
+
+    if (!preventLineBreak || !onChange) return
+    if (pastedValue === nextPastedValue) return
+
+    event.preventDefault()
+
     const insertedValue = nextPastedValue.slice(0, availableLength)
 
     onChange(`${value.slice(0, selectionStart)}${insertedValue}${value.slice(selectionEnd)}`)
@@ -272,9 +294,11 @@ const NextGenMIResizableTextarea = ({
         component="textarea"
         aria-label={ariaLabel}
         value={value}
+        placeholder={placeholder}
         maxLength={maxLength}
         disabled={disabled}
         onBlur={onBlur}
+        onBeforeInput={handleBeforeInput}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
