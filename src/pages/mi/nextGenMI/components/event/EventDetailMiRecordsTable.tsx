@@ -227,7 +227,7 @@ const EventDetailMiRecordsTable = ({
         width: compact || paginatedRows.length === 0 ? 'auto' : '652px',
         minWidth: compact || paginatedRows.length === 0 ? '0px' : '652px',
         maxWidth: compact || paginatedRows.length === 0 ? 'none' : '652px',
-        renderCell: ({ row }) => <EventDetailSummaryCell value={row.summary} />,
+        renderCell: ({ row }) => <EventDetailSummaryCell value={row.summary} sx={{ whiteSpace: 'pre-line' }} />,
         cellSx: {
           whiteSpace: 'normal',
           wordBreak: 'break-word',
