@@ -313,7 +313,7 @@ const ScenarioGroupDetailPage = () => {
   const headerRightAction = useMemo(
     () => (
       <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexShrink={0} minHeight="62px">
-        <NextGenMIUserFeedback pageTitle={groupName || '시나리오 그룹 상세'} />
+        <NextGenMIUserFeedback feedbackSectionNm="Scenario Group" pageTitle={groupName || '시나리오 그룹 상세'} />
         <ScenarioGroupDeleteMenu scenarioGroupId={scenarioGroupId ?? ''} />
       </Stack>
     ),
