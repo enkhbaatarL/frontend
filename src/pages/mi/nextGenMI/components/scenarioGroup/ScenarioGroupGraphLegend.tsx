@@ -189,7 +189,7 @@ const ScenarioGroupGraphLegend = ({
       const isHidden = interactive && item.toggleKeys.length > 0 && item.toggleKeys.every((key) => visibilityMap.get(key) === false)
       const isHovered = hoveredRow === item.visibilityKey
       const showEye = interactive && ((isHovered && hoveredIcon === item.visibilityKey) || isHidden)
-      const executing = isNonExecuted && item.scenarioId !== undefined && executingScenarioIds.has(item.scenarioId)
+      const executing = item.scenarioId !== undefined && executingScenarioIds.has(item.scenarioId)
       const showExecuteButton = isNonExecuted && hoveredAction === item.visibilityKey && !executing
       const itemTextEnabled = interactive || (isNonExecuted && isHovered && !executing)
 
@@ -267,22 +267,20 @@ const ScenarioGroupGraphLegend = ({
               sx={{ flex: '1 1 0%' }}
             />
           </Stack>
-          {isNonExecuted ? (
-            executing ? (
-              <ExecutingBadge />
-            ) : (
-              <Stack
-                flexShrink={0}
-                onMouseEnter={() => setHoveredAction(item.visibilityKey)}
-                onMouseLeave={() => setHoveredAction((current) => (current === item.visibilityKey ? null : current))}
-              >
-                {showExecuteButton ? (
-                  <ExecuteButton onClick={() => item.scenarioId !== undefined && onExecute(item.scenarioId)} />
-                ) : (
-                  <StatusBadge label="미실행" tone="nonExecuted" />
-                )}
-              </Stack>
-            )
+          {executing ? (
+            <ExecutingBadge />
+          ) : isNonExecuted ? (
+            <Stack
+              flexShrink={0}
+              onMouseEnter={() => setHoveredAction(item.visibilityKey)}
+              onMouseLeave={() => setHoveredAction((current) => (current === item.visibilityKey ? null : current))}
+            >
+              {showExecuteButton ? (
+                <ExecuteButton onClick={() => item.scenarioId !== undefined && onExecute(item.scenarioId)} />
+              ) : (
+                <StatusBadge label="미실행" tone="nonExecuted" />
+              )}
+            </Stack>
           ) : (
             item.statusLabel && <StatusBadge label={item.statusLabel} tone={item.realized ? 'realized' : 'discarded'} />
           )}

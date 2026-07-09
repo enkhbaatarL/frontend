@@ -6,6 +6,7 @@ import { useRef, useState } from 'react'
 import type { ScenarioModelExecutionOption } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
 
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import ScenarioModelExecutionRerunConfirmDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionRerunConfirmDialog'
 
 interface ScenarioModelExecutionButtonProps {
   options: ScenarioModelExecutionOption[]
@@ -61,7 +62,7 @@ const OptionExecutingLabel = () => (
   >
     <CircularProgress size={16} sx={{ color: 'contentText.Disabled' }} />
     <Typography sx={{ fontSize: '14px', fontWeight: 600, lineHeight: 1.4, color: 'contentText.Disabled', whiteSpace: 'nowrap' }}>
-      실행 중
+      실행 중...
     </Typography>
   </Box>
 )
@@ -70,10 +71,26 @@ const ScenarioModelExecutionButton = ({ options, executingScenarioIds, onExecute
   const anchorRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const [hoveredScenarioId, setHoveredScenarioId] = useState<number | null>(null)
+  const [rerunConfirmScenarioId, setRerunConfirmScenarioId] = useState<number | null>(null)
 
   const handleExecute = (scenarioId: number) => {
     onExecute(scenarioId)
     setOpen(false)
+  }
+
+  const handleRerunClick = (scenarioId: number) => {
+    setRerunConfirmScenarioId(scenarioId)
+    setOpen(false)
+  }
+
+  const handleRerunConfirm = () => {
+    if (rerunConfirmScenarioId === null) return
+    onExecute(rerunConfirmScenarioId)
+    setRerunConfirmScenarioId(null)
+  }
+
+  const handleRerunConfirmClose = () => {
+    setRerunConfirmScenarioId(null)
   }
 
   return (
@@ -184,7 +201,7 @@ const ScenarioModelExecutionButton = ({ options, executingScenarioIds, onExecute
                       <OptionStatusLabel label="폐기" />
                     ) : option.executed ? (
                       isHovered ? (
-                        <OptionActionButton label="재실행" onClick={() => handleExecute(option.scenarioId)} />
+                        <OptionActionButton label="재실행" onClick={() => handleRerunClick(option.scenarioId)} />
                       ) : (
                         <OptionStatusLabel label="완료" />
                       )
@@ -206,6 +223,12 @@ const ScenarioModelExecutionButton = ({ options, executingScenarioIds, onExecute
             </Stack>
           </Paper>
         </Popper>
+
+        <ScenarioModelExecutionRerunConfirmDialog
+          open={rerunConfirmScenarioId !== null}
+          onClose={handleRerunConfirmClose}
+          onConfirm={handleRerunConfirm}
+        />
       </Box>
     </ClickAwayListener>
   )

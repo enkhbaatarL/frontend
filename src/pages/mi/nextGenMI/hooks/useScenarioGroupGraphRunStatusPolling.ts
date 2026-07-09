@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { IScenarioGraphSeries, IScenarioGroupRunStatusRes } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import useSnackbar from '@/hooks/useSnackbar'
-import { scenarioGroupGraphRunStatusQueryKey } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
+import {
+  scenarioGroupDetailQueryKey,
+  scenarioGroupGraphRunStatusQueryKey,
+} from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
 const STATUS_POLL_INTERVAL_MS = 3000
@@ -82,6 +85,11 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     void queryClient.refetchQueries({ queryKey: ['nextGenMIScenarioGroupGraph', scenarioGroupId] })
   }, [queryClient, scenarioGroupId])
 
+  const refetchExecutionRelatedQueries = useCallback(() => {
+    refetchGraphQueries()
+    void queryClient.refetchQueries({ queryKey: scenarioGroupDetailQueryKey(scenarioGroupId), type: 'active' })
+  }, [queryClient, refetchGraphQueries, scenarioGroupId])
+
   useEffect(() => {
     if (!pollAfterExecution) return undefined
     const timer = setTimeout(() => {
@@ -96,10 +104,10 @@ export const useScenarioGroupGraphRunStatusPolling = ({
       if (handledCompletionKeyRef.current === completionKey) return
       handledCompletionKeyRef.current = completionKey
       showSnackbar('실행 완료되었습니다.', { variant: 'success' })
-      refetchGraphQueries()
+      refetchExecutionRelatedQueries()
       setPollAfterExecution(false)
     },
-    [refetchGraphQueries, showSnackbar],
+    [refetchExecutionRelatedQueries, showSnackbar],
   )
 
   useEffect(() => {
@@ -109,7 +117,7 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     const prevSnapshot = prevSnapshotRef.current
 
     if (prevSnapshot && !isSameRunStatusSnapshot(prevSnapshot, nextSnapshot)) {
-      refetchGraphQueries()
+      refetchExecutionRelatedQueries()
 
       const nextRunningSet = new Set(nextSnapshot.runningScenarioIds)
       prevSnapshot.runningScenarioIds.forEach((scenarioId) => {
@@ -120,7 +128,7 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     }
 
     prevSnapshotRef.current = nextSnapshot
-  }, [refetchGraphQueries, runStatus, settleExecution])
+  }, [refetchExecutionRelatedQueries, runStatus, settleExecution])
 
   const executingScenarioIds = useMemo(() => {
     const ids = new Set<number>()
@@ -146,6 +154,7 @@ export const useScenarioGroupGraphRunStatusPolling = ({
       handledCompletionKeyRef.current = null
       setPollAfterExecution(true)
       void queryClient.invalidateQueries({ queryKey: scenarioGroupGraphRunStatusQueryKey(scenarioGroupId) })
+      void queryClient.refetchQueries({ queryKey: scenarioGroupDetailQueryKey(scenarioGroupId), type: 'active' })
     },
     [queryClient, scenarioGroupId],
   )
