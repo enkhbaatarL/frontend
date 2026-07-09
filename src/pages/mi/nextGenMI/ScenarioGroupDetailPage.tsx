@@ -391,7 +391,12 @@ const ScenarioGroupDetailPage = () => {
         </Stack>
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} py="20px">
-          <ScenarioGroupPriceForecastInterpretation scenarioGroupId={Number(scenarioGroupId)} enabled={Boolean(scenarioGroupId)} />
+          <ScenarioGroupPriceForecastInterpretation
+            scenarioGroupId={Number(scenarioGroupId)}
+            enabled={Boolean(scenarioGroupId)}
+            initialSection={data?.priceInterpretation}
+            groupDetailLoading={isLoading}
+          />
         </Stack>
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} gap="12px" py="20px">
