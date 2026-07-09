@@ -6,6 +6,7 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Collapse, Dialog, DialogActions, DialogContent, Divider, Stack, Typography, type TypographyProps } from '@mui/material'
 import {
   type ChangeEvent,
+  type CompositionEvent as ReactCompositionEvent,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
@@ -47,6 +48,7 @@ const SCENARIO_DESIGN_REVIEW_CARD_DEFAULT_WIDTH = 400
 const SCENARIO_DESIGN_REVIEW_CARD_MIN_WIDTH = 320
 const SCENARIO_DESIGN_REVIEW_CARD_MAX_WIDTH = 720
 const SCENARIO_DESIGN_REVIEW_SPLITTER_WIDTH = 12
+const SCENARIO_DESIGN_REVIEW_SIGNPOST_LABEL_MAX_LENGTH = 100
 
 type ScenarioDesignReviewCreateValue = {
   scenarioGroupName: string
@@ -906,6 +908,7 @@ const ScenarioDesignReviewSignpost = ({
   const [draftEnabled, setDraftEnabled] = useState(enabled)
   const [draftLabel, setDraftLabel] = useState(label)
   const [draftImpact, setDraftImpact] = useState<ScenarioSignpostStrength>(impact)
+  const [draftLabelMaxLengthExceeded, setDraftLabelMaxLengthExceeded] = useState(false)
   const impactLabel = scenarioDesignReviewSignpostImpactItems.find((item) => item.value === impact)?.label ?? '높음'
   const displayLabel = label.trim() || 'Signpost'
   const draftChanged = draftEnabled !== enabled || draftLabel !== label || draftImpact !== impact
@@ -919,6 +922,7 @@ const ScenarioDesignReviewSignpost = ({
     setDraftEnabled(initialEnabled)
     setDraftLabel(initialLabel)
     setDraftImpact(initialImpact)
+    setDraftLabelMaxLengthExceeded(false)
     onModifiedChange?.(rowId, index, false)
     onValueChange(rowId, index, {
       signpostId: signpost.signpostId ?? null,
@@ -936,6 +940,7 @@ const ScenarioDesignReviewSignpost = ({
       setDraftEnabled(enabled)
       setDraftLabel(label)
       setDraftImpact(impact)
+      setDraftLabelMaxLengthExceeded(false)
     }
     setMenuOpen(open)
   }
@@ -944,6 +949,7 @@ const ScenarioDesignReviewSignpost = ({
     setDraftEnabled(enabled)
     setDraftLabel(label)
     setDraftImpact(impact)
+    setDraftLabelMaxLengthExceeded(false)
     setMenuOpen(false)
   }
 
@@ -954,6 +960,7 @@ const ScenarioDesignReviewSignpost = ({
     setEnabled(draftEnabled)
     setLabel(nextLabel)
     setImpact(draftImpact)
+    setDraftLabelMaxLengthExceeded(false)
     onModifiedChange?.(rowId, index, draftEnabled !== initialEnabled || nextLabel !== initialLabel || draftImpact !== initialImpact)
     onValueChange(rowId, index, {
       signpostId: signpost.signpostId ?? null,
@@ -965,6 +972,33 @@ const ScenarioDesignReviewSignpost = ({
       used: draftEnabled,
     })
     setMenuOpen(false)
+  }
+
+  const handleDraftLabelKeyDownCapture = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (
+      !(event.target instanceof HTMLTextAreaElement) ||
+      event.nativeEvent.isComposing ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      event.key.length !== 1
+    ) {
+      return
+    }
+
+    const selectionLength = event.target.selectionEnd - event.target.selectionStart
+    if (event.target.value.length - selectionLength >= SCENARIO_DESIGN_REVIEW_SIGNPOST_LABEL_MAX_LENGTH) {
+      setDraftLabelMaxLengthExceeded(true)
+    }
+  }
+
+  const handleDraftLabelCompositionStartCapture = (event: ReactCompositionEvent<HTMLElement>) => {
+    if (!(event.target instanceof HTMLTextAreaElement)) return
+
+    const selectionLength = event.target.selectionEnd - event.target.selectionStart
+    if (event.target.value.length - selectionLength >= SCENARIO_DESIGN_REVIEW_SIGNPOST_LABEL_MAX_LENGTH) {
+      setDraftLabelMaxLengthExceeded(true)
+    }
   }
 
   return (
@@ -1043,7 +1077,13 @@ const ScenarioDesignReviewSignpost = ({
                 <Typography variant="body2M14" color="contentText.Normal" lineHeight={1.4} flex={1} minWidth={0} noWrap>
                   Signpost 사용
                 </Typography>
-                <ScenarioDesignReviewSwitch checked={draftEnabled} onClick={() => setDraftEnabled((current) => !current)} />
+                <ScenarioDesignReviewSwitch
+                  checked={draftEnabled}
+                  onClick={() => {
+                    setDraftEnabled((current) => !current)
+                    setDraftLabelMaxLengthExceeded(false)
+                  }}
+                />
               </Stack>
               <ScenarioDesignReviewPanelDivider />
 
@@ -1052,31 +1092,65 @@ const ScenarioDesignReviewSignpost = ({
                   Signpost Label
                 </Typography>
                 <Stack gap="4px" width="100%">
-                  <NextGenMIResizableTextarea
-                    ariaLabel="Signpost Label"
-                    value={draftLabel}
-                    maxLength={100}
-                    minHeight="64px"
-                    minResizeHeight="48px"
-                    maxHeight="900px"
-                    resetKey={resetKey}
-                    disabled={!draftEnabled}
-                    borderColor={draftEnabled ? 'contentBorder.Normal' : 'contentBorder.Disabled'}
-                    bgcolor={draftEnabled ? 'commonColor.White' : 'contentBG.Disabled'}
-                    color={draftEnabled ? 'contentText.Normal' : 'contentText.Disabled'}
-                    padding="12px"
-                    hoverBgcolor="contentBG.Hover"
-                    onChange={setDraftLabel}
-                  />
+                  <Stack
+                    onCompositionStartCapture={handleDraftLabelCompositionStartCapture}
+                    onKeyDownCapture={handleDraftLabelKeyDownCapture}
+                    sx={
+                      draftLabelMaxLengthExceeded
+                        ? {
+                          '& .next-gen-mi-resizable-textarea, & .next-gen-mi-resizable-textarea:focus-within': {
+                            borderColor: 'contentBorder.Error',
+                          },
+                        }
+                        : undefined
+                    }
+                  >
+                    <NextGenMIResizableTextarea
+                      ariaLabel="Signpost Label"
+                      value={draftLabel}
+                      maxLength={SCENARIO_DESIGN_REVIEW_SIGNPOST_LABEL_MAX_LENGTH}
+                      minHeight="64px"
+                      minResizeHeight="48px"
+                      maxHeight="900px"
+                      resetKey={resetKey}
+                      disabled={!draftEnabled}
+                      borderColor={
+                        !draftEnabled
+                          ? 'contentBorder.Disabled'
+                          : draftLabelMaxLengthExceeded
+                            ? 'contentBorder.Error'
+                            : 'contentBorder.Normal'
+                      }
+                      bgcolor={draftEnabled ? 'commonColor.White' : 'contentBG.Disabled'}
+                      color={draftEnabled ? 'contentText.Normal' : 'contentText.Disabled'}
+                      padding="12px"
+                      hoverBgcolor="contentBG.Hover"
+                      onChange={(value) => {
+                        setDraftLabel(value)
+                        if (value.length < SCENARIO_DESIGN_REVIEW_SIGNPOST_LABEL_MAX_LENGTH) {
+                          setDraftLabelMaxLengthExceeded(false)
+                        }
+                      }}
+                      onMaxLengthExceeded={() => setDraftLabelMaxLengthExceeded(true)}
+                    />
+                  </Stack>
                   <Stack direction="row" alignItems="center" justifyContent="space-between" height="18px" padding="0 8px">
-                    <Stack width="58px" height="18px" flexShrink={0} />
+                    {draftLabelMaxLengthExceeded ? (
+                      <Typography variant="body3M12" color="contentText.Error" lineHeight={1.5} noWrap>
+                        최대 {SCENARIO_DESIGN_REVIEW_SIGNPOST_LABEL_MAX_LENGTH}자 입력 가능
+                      </Typography>
+                    ) : (
+                      <Stack width="58px" height="18px" flexShrink={0} />
+                    )}
                     <Typography
                       variant="body3M12"
-                      color={draftEnabled ? 'contentText.Subtext' : 'contentText.Disabled'}
+                      color={
+                        !draftEnabled ? 'contentText.Disabled' : draftLabelMaxLengthExceeded ? 'contentText.Error' : 'contentText.Subtext'
+                      }
                       lineHeight={1.5}
                       noWrap
                     >
-                      {draftLabel.length} / 100
+                      {draftLabel.length} / {SCENARIO_DESIGN_REVIEW_SIGNPOST_LABEL_MAX_LENGTH}
                     </Typography>
                   </Stack>
                 </Stack>

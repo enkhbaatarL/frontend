@@ -1333,38 +1333,46 @@ const NextGenMIStickyTable = <T,>({
 
   const pageStickyHeaderTable = showPageStickyHeader ? (
     <Box
-      ref={pageStickyHeaderScrollRef}
-      onMouseEnter={handleScrollAreaMouseEnter}
-      onMouseLeave={handleScrollAreaMouseLeave}
-      onScroll={handlePageStickyHeaderScrollLeft}
       sx={{
         position: 'relative',
         width: '100%',
-        overflowX: disableHorizontalScroll ? 'hidden' : 'auto',
-        overflowY: 'hidden',
-        scrollbarWidth: 'none',
-        pr: scrollLayoutState.vertical ? '16px' : 0,
-        ...initialScrollVisualStateSx,
-        '&::-webkit-scrollbar': { display: 'none' },
       }}
     >
       <Box
+        ref={pageStickyHeaderScrollRef}
+        onMouseEnter={handleScrollAreaMouseEnter}
+        onMouseLeave={handleScrollAreaMouseLeave}
+        onScroll={handlePageStickyHeaderScrollLeft}
         sx={{
-          display: 'grid',
-          ...pageStickyHeaderTableWidthSx,
+          position: 'relative',
+          width: '100%',
+          overflowX: disableHorizontalScroll ? 'hidden' : 'auto',
+          overflowY: 'hidden',
+          overscrollBehaviorX: 'none',
+          scrollbarWidth: 'none',
+          pr: scrollLayoutState.vertical ? '16px' : 0,
+          ...initialScrollVisualStateSx,
+          '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
         <Box
-          component="table"
           sx={{
-            gridArea: '1 / 1',
+            display: 'grid',
             ...pageStickyHeaderTableWidthSx,
-            borderCollapse: 'separate',
-            borderSpacing: 0,
-            tableLayout: disableHorizontalScroll ? 'fixed' : 'auto',
           }}
         >
-          {renderTableHeader(false)}
+          <Box
+            component="table"
+            sx={{
+              gridArea: '1 / 1',
+              ...pageStickyHeaderTableWidthSx,
+              borderCollapse: 'separate',
+              borderSpacing: 0,
+              tableLayout: disableHorizontalScroll ? 'fixed' : 'auto',
+            }}
+          >
+            {renderTableHeader(false)}
+          </Box>
         </Box>
       </Box>
       <Box
@@ -1468,6 +1476,7 @@ const NextGenMIStickyTable = <T,>({
           ...(maxHeight ? { maxHeight } : {}),
           overflowX: disableHorizontalScroll ? 'hidden' : 'auto',
           overflowY: 'auto',
+          overscrollBehaviorX: 'none',
           scrollbarWidth: 'none',
           pr: scrollLayoutState.vertical ? '16px' : 0,
           pb: scrollLayoutState.horizontal && !disableHorizontalScroll ? '18px' : 0,
