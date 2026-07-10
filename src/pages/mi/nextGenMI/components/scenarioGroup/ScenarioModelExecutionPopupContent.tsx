@@ -113,6 +113,8 @@ const ScenarioModelExecutionPopupContent = ({
     !hasRequiredFundamentalModelFiles(files) ||
     selectedScenarioId === null ||
     (selectedScenarioId !== null && executingScenarioIds.has(selectedScenarioId))
+  const selectedScenarioOption = scenarioOptions.find((option) => option.scenarioId === selectedScenarioId)
+  const submitLabel = selectedScenarioOption?.executed ? '재실행' : 'MI 수급모델 실행'
   const uploadDisabled = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES || isSubmitting
   const showFileError = files.length >= FUNDAMENTAL_UPLOAD_MAX_FILES && !hasRequiredFundamentalModelFiles(files)
 
@@ -236,7 +238,7 @@ const ScenarioModelExecutionPopupContent = ({
           onClick={onSubmit}
           sx={{ padding: '0 10px', height: '36px', borderRadius: '8px' }}
         >
-          MI 수급모델 실행
+          {submitLabel}
         </MIBaseButton>
       </Stack>
     </Stack>

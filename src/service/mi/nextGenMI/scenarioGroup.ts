@@ -1,8 +1,10 @@
+import { EventSourceMessage, fetchEventSource } from '@microsoft/fetch-event-source'
 import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
+import i18n from '@/lib/i18n'
 import { ListSort, NextGenMIIndexName } from '@/service/mi/nextGenMI/common'
-import { withCustomBaseUrl } from '@/store/useAuthStore'
+import useAuthStore, { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 /** 시나리오 판정 상태 (대기/실현/폐기) */
@@ -120,6 +122,58 @@ export interface IScenarioGroupDetailRow {
   statusLabel: string
 }
 
+export type PriceInterpretationStatus = 'generating' | 'generated' | 'failed'
+
+export interface IPriceInterpretationItem {
+  scenarioId: number
+  scenarioName: string
+  baseCase: boolean
+  displayOrder: number
+  status: PriceInterpretationStatus
+  statusLabel: string
+  content: string
+  revision?: number
+  updatedAt?: string
+}
+
+export interface IPriceInterpretationSection {
+  generatable: boolean
+  interpretations: IPriceInterpretationItem[]
+}
+
+export interface IPriceInterpretationGenerateTarget {
+  scenarioId: number
+  status: PriceInterpretationStatus
+  statusLabel: string
+}
+
+export interface IPriceInterpretationGenerate {
+  scenarioGroupId: number
+  targetScenarios: IPriceInterpretationGenerateTarget[]
+}
+
+export interface IPriceInterpretationEdit {
+  content: string
+}
+
+export interface IPriceInterpretation {
+  scenarioId: number
+  status: PriceInterpretationStatus
+  statusLabel: string
+  content: string
+  revision?: number
+  updatedAt?: string
+}
+
+export type PriceInterpretationStreamEventType = 'connected' | 'generation'
+
+export interface PriceInterpretationStreamEventData {
+  scenarioGroupId?: number
+  type?: 'generation'
+  result?: 'success' | 'failure'
+  reason?: string | null
+}
+
 export interface IScenarioGroupDetailRes {
   scenarioGroupId: number
   groupName: string
@@ -130,6 +184,7 @@ export interface IScenarioGroupDetailRes {
   scenarioCount: number
   dimensionColumns: IScenarioDimensionColumn[]
   scenarios: IScenarioGroupDetailRow[]
+  priceInterpretation?: IPriceInterpretationSection
 }
 
 /** 시나리오 상세 - Signpost 정의 */
@@ -238,6 +293,21 @@ export interface IScenarioStatusRes {
   statusLabel: string
   /** '폐기'로 자동 변경된 시나리오 ID 목록 (실현 변경 시에만, 그 외 빈 배열) */
   discardedScenarioIds?: number[]
+}
+
+const createPriceInterpretationStreamHeaders = () => {
+  const { token, user, accessCompanyInfo } = useAuthStore.getState()
+  const headers: Record<string, string> = {
+    Accept: 'text/event-stream',
+    'Accept-Language': i18n.language || 'ko',
+  }
+
+  if (token) headers.Authorization = `Bearer ${token}`
+  if (user?.isOtherServiceAccessPossible && accessCompanyInfo?.customerCompanyNo) {
+    headers['X-Company-No'] = accessCompanyInfo.customerCompanyNo.toString()
+  }
+
+  return headers
 }
 
 const nextGenMIScenarioGroupService = {
@@ -404,6 +474,84 @@ const nextGenMIScenarioGroupService = {
   async discardLastScenarioAndDeleteGroup(scenarioGroupId: string | number, scenarioId: number): Promise<void> {
     await this.updateScenarioStatus(scenarioGroupId, scenarioId, { status: 'discarded' })
     await this.deleteScenarioGroup(scenarioGroupId)
+  },
+
+  /**
+   * 시나리오별 가격전망 해석 section 조회 (SSE 수신 후 재조회 용도)
+   */
+  async getPriceInterpretations(scenarioGroupId: string | number): Promise<IPriceInterpretationSection> {
+    const response: AxiosResponse<ICommonResponse<IPriceInterpretationSection>> = await api.get(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/price-interpretations`,
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * 가격전망 해석 생성 요청 (비동기 - 결과는 SSE generation 수신 후 재조회)
+   */
+  async generatePriceInterpretations(scenarioGroupId: string | number): Promise<IPriceInterpretationGenerate> {
+    const response: AxiosResponse<ICommonResponse<IPriceInterpretationGenerate>> = await api.post(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/price-interpretations`,
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * 가격전망 해석 수정
+   */
+  async updatePriceInterpretation(
+    scenarioGroupId: string | number,
+    scenarioId: string | number,
+    payload: IPriceInterpretationEdit,
+  ): Promise<IPriceInterpretation> {
+    const response: AxiosResponse<ICommonResponse<IPriceInterpretation>> = await api.patch(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/scenarios/${encodeURIComponent(
+        String(scenarioId),
+      )}/price-interpretation`,
+      payload,
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * 가격전망 해석 초기화 (최초 생성본으로 복원)
+   */
+  async resetPriceInterpretation(scenarioGroupId: string | number, scenarioId: string | number): Promise<IPriceInterpretation> {
+    const response: AxiosResponse<ICommonResponse<IPriceInterpretation>> = await api.patch(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/scenarios/${encodeURIComponent(
+        String(scenarioId),
+      )}/price-interpretation/reset`,
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * 가격전망 해석 생성 진행 SSE 구독
+   */
+  async streamPriceInterpretations(
+    scenarioGroupId: string | number,
+    onMessage: (event: EventSourceMessage) => void,
+    signal: AbortSignal,
+  ): Promise<void> {
+    await fetchEventSource(
+      `/api/v1/mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/price-interpretations/stream`,
+      {
+        method: 'GET',
+        headers: createPriceInterpretationStreamHeaders(),
+        credentials: 'include',
+        openWhenHidden: true,
+        signal,
+        onmessage: onMessage,
+        async onopen(response) {
+          if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) return
+          throw new Error(`가격전망 해석 스트림 연결 실패: ${response.status} ${response.statusText}`)
+        },
+      },
+    )
   },
 }
 
