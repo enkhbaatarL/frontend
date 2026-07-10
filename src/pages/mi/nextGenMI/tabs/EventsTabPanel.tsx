@@ -21,6 +21,7 @@ import {
   findEventDesignAvailability,
   getEventDesignOccupiedMessage,
   hasCreatingEventDesignAvailability,
+  isEventDesignOccupiedByOther,
   isOwnEventDesignAvailability,
   mergeEventListItemDesignAvailability,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
@@ -346,6 +347,10 @@ const EventsTabPanel = () => {
             <EventScenarioGenerateButton
               recommended={params.row.isScenarioSuggested}
               scenarioAvailable={params.row.scenarioDesignStatus === 'created'}
+              designing={params.row.scenarioDesignStatus === 'creating'}
+              designingLocked={isEventDesignOccupiedByOther(params.row, currentUserNo)}
+              designStep={params.row.designStep}
+              designStepLabel={params.row.designStepLabel}
               disabled={
                 scenarioDesignUnavailable ||
                 (params.row.scenarioDesignStatus === 'created' &&
@@ -353,12 +358,13 @@ const EventsTabPanel = () => {
               }
               disabledTooltipTitle={scenarioDesignUnavailable ? EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE : undefined}
               onClick={() => handleScenarioClick(params.row)}
+              designingAlwaysExpanded
             />
           )
         },
       },
     ],
-    [handleEventNameClick, handleScenarioClick],
+    [currentUserNo, handleEventNameClick, handleScenarioClick],
   )
 
   const nextGenMIDatePresets = useMemo(() => buildNextGenMIDatePresets(), [])

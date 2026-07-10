@@ -14,6 +14,8 @@ export type EventSignalType = 'signal' | 'noise'
 
 export type EventScenarioDesignStatus = 'designable' | 'creating' | 'created' | 'unavailable'
 
+export type EventDesignStep = 'step1' | 'step2'
+
 export type EventImpactTerm = 'short' | 'mid_long'
 
 export type EventImpactMarketImpactLevel = MarketImpactLevel.LOW | MarketImpactLevel.MEDIUM | MarketImpactLevel.HIGH
@@ -50,6 +52,8 @@ export interface EventListItem {
   scenarioSuggestReason?: string | null
   scenarioDesignStatus?: EventScenarioDesignStatus
   scenarioDesignStatusLabel?: string
+  designStep?: EventDesignStep | string | null
+  designStepLabel?: string | null
   scenarioGroupId?: number | null
   occupied?: boolean
   occupantUserId?: number | null
@@ -88,6 +92,8 @@ export interface EventDesignAvailability {
   eventId?: number
   scenarioDesignStatus?: EventScenarioDesignStatus | string
   scenarioDesignStatusLabel?: string
+  designStep?: EventDesignStep | string | null
+  designStepLabel?: string | null
   occupied?: boolean
   occupantUserId?: number | null
   occupantUserName?: string | null
@@ -197,6 +203,8 @@ export interface EventDetail {
   scenarioSuggestReason?: string | null
   scenarioDesignStatus?: EventScenarioDesignStatus
   scenarioDesignStatusLabel?: string | null
+  designStep?: EventDesignStep | string | null
+  designStepLabel?: string | null
   latestRecordFirstCreated?: string
   createdAt: string
   updatedAt: string

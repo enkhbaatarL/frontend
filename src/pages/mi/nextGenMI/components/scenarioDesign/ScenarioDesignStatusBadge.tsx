@@ -60,7 +60,7 @@ const ScenarioDesignStatusBadge = () => (
       }}
     />
     <Typography variant="body3SB12" color="mari.Primary" lineHeight={1.4} noWrap>
-      진행중
+      진행 중
     </Typography>
   </Stack>
 )

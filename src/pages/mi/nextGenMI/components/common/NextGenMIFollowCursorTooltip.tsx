@@ -46,6 +46,8 @@ export interface NextGenMIFollowCursorTooltipProps {
   title: ReactNode
   children: ReactElement
   enterDelay?: number
+  followCursor?: boolean
+  placement?: ComponentProps<typeof Popper>['placement']
   tooltipSx?: SxProps<Theme>
   slotProps?: {
     popper?: { modifiers?: NonNullable<ComponentProps<typeof Popper>['modifiers']> }
@@ -54,9 +56,18 @@ export interface NextGenMIFollowCursorTooltipProps {
 
 type AnyChildProps = Record<string, unknown>
 
-const NextGenMIFollowCursorTooltip = ({ title, children, enterDelay = 100, tooltipSx, slotProps }: NextGenMIFollowCursorTooltipProps) => {
+const NextGenMIFollowCursorTooltip = ({
+  title,
+  children,
+  enterDelay = 100,
+  followCursor = true,
+  placement,
+  tooltipSx,
+  slotProps,
+}: NextGenMIFollowCursorTooltipProps) => {
   const theme = useTheme()
   const [open, setOpen] = useState(false)
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const posRef = useRef({ x: 0, y: 0 })
   const enterTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const popperJsRef = useRef<PopperJsInstance | null>(null)
@@ -102,20 +113,26 @@ const NextGenMIFollowCursorTooltip = ({ title, children, enterDelay = 100, toolt
 
   const handleMouseOver = useCallback(
     (e: MouseEvent) => {
-      posRef.current = { x: e.clientX, y: e.clientY }
+      if (followCursor) {
+        posRef.current = { x: e.clientX, y: e.clientY }
+      } else {
+        setAnchorEl(e.currentTarget as HTMLElement)
+      }
       scheduleOpen()
     },
-    [scheduleOpen],
+    [followCursor, scheduleOpen],
   )
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
+      if (!followCursor) return
+
       posRef.current = { x: e.clientX, y: e.clientY }
       if (open) {
         popperJsRef.current?.update?.()
       }
     },
-    [open],
+    [followCursor, open],
   )
 
   const handleMouseLeave = useCallback(() => {
@@ -127,8 +144,8 @@ const NextGenMIFollowCursorTooltip = ({ title, children, enterDelay = 100, toolt
 
   const modifiers = useMemo(() => {
     const extra = slotProps?.popper?.modifiers ?? []
-    return [{ name: 'offset', options: { offset: [-8, 8] } }, ...extra]
-  }, [slotProps?.popper?.modifiers])
+    return [{ name: 'offset', options: { offset: followCursor ? [-8, 8] : [0, 8] } }, ...extra]
+  }, [followCursor, slotProps?.popper?.modifiers])
 
   const child = children as ReactElement<AnyChildProps>
   const childProps = child.props
@@ -145,8 +162,8 @@ const NextGenMIFollowCursorTooltip = ({ title, children, enterDelay = 100, toolt
       {mergedChild}
       <Popper
         open={open}
-        anchorEl={virtualAnchor}
-        placement="top-start"
+        anchorEl={followCursor ? virtualAnchor : anchorEl}
+        placement={placement ?? (followCursor ? 'top-start' : 'top')}
         transition
         modifiers={modifiers}
         popperRef={(instance) => {
