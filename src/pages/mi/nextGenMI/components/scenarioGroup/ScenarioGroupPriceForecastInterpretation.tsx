@@ -21,7 +21,10 @@ import NextGenMIDetailStickySectionHeader from '@/pages/mi/nextGenMI/components/
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIResizableTextarea from '@/pages/mi/nextGenMI/components/common/NextGenMIResizableTextarea'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
-import { scenarioGroupGraphQueryKey } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
+import {
+  isScenarioGraphModelExecuted,
+  scenarioGroupGraphQueryKey,
+} from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import {
   PRICE_FORECAST_INTERPRETATION_MAX_LENGTH,
   PRICE_FORECAST_INTERPRETATION_SAVED_MESSAGE_DURATION_MS,
@@ -261,27 +264,31 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const showSnackbarRef = useRef(showSnackbar)
   const priceInterpretationStreamHasConnectedRef = useRef(false)
 
-  const executedScenarios = useMemo(
-    () => scenarioSeries.filter((series) => series.executed && series.status !== 'discarded'),
-    [scenarioSeries],
+  const executedScenarios = useMemo(() => scenarioSeries.filter(isScenarioGraphModelExecuted), [scenarioSeries])
+
+  const executedScenarioIdSet = useMemo(() => new Set(executedScenarios.map((series) => series.scenarioId)), [executedScenarios])
+
+  const activeInterpretationItems = useMemo(
+    () => interpretationItems.filter((item) => executedScenarioIdSet.has(item.scenarioId)),
+    [executedScenarioIdSet, interpretationItems],
   )
 
   const hasExecutedScenario = executedScenarios.length > 0
-  const hasInterpretation = interpretationItems.length > 0
+  const hasInterpretation = activeInterpretationItems.length > 0
 
   const visibleInterpretationScenarios = useMemo<InterpretationScenarioItem[]>(
     () =>
-      interpretationItems.map((item) => ({
+      activeInterpretationItems.map((item) => ({
         scenarioId: item.scenarioId,
         scenarioName: item.scenarioName,
         displayOrder: item.displayOrder,
         baseCase: item.baseCase,
       })),
-    [interpretationItems],
+    [activeInterpretationItems],
   )
 
-  const canGenerate = interpretationGeneratable && !isGenerating
-  const showScenarioInterpretationPanel = interpretationItems.length > 0
+  const canGenerate = interpretationGeneratable && hasExecutedScenario && !isGenerating
+  const showScenarioInterpretationPanel = activeInterpretationItems.length > 0
   const showMaxLengthWarning = maxLengthWarningVisible && !savedMessageVisible
 
   const selectedScenario = useMemo(
@@ -300,9 +307,9 @@ const ScenarioGroupPriceForecastInterpretation = ({
       return currentText !== baseline.trim()
     }
 
-    const interpretationItem = interpretationItems.find((item) => item.scenarioId === scenarioId)
+    const interpretationItem = activeInterpretationItems.find((item) => item.scenarioId === scenarioId)
     return (interpretationItem?.revision ?? 0) > 0
-  }, [draftText, interpretationItems, originalInterpretations, selectedScenario])
+  }, [activeInterpretationItems, draftText, originalInterpretations, selectedScenario])
 
   const applyPriceInterpretationSection = useCallback((section: IPriceInterpretationSection) => {
     const nextInterpretations: PriceForecastInterpretationMap = {}
@@ -595,7 +602,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
   }, [])
 
   const renderBody = () => {
-    if (!hasExecutedScenario && !interpretationGeneratable && !hasInterpretation) {
+    if (!hasExecutedScenario && !hasInterpretation) {
       return <PriceForecastInterpretationEmptyMessage icon="warning" message="MI 수급모델을 실행하면 가격전망 해석을 생성할 수 있습니다." />
     }
 

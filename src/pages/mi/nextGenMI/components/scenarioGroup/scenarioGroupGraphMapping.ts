@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 
 import type {
   IScenarioBaseSeries,
+  IScenarioGraphSeries,
   IScenarioGroupGraphCmeBenchmark,
   IScenarioGroupGraphRes,
   ScenarioGroupGraphPeriodUnit,
@@ -46,6 +47,13 @@ export interface ScenarioGroupGraphRender {
 export interface ScenarioGroupGraphFilter {
   showNonExecuted: boolean
   showDiscarded: boolean
+}
+
+/** 그래프 범례와 동일 - 수급모델 실행 후 가격 시리즈가 있는 시나리오만 실행 완료로 본다 */
+export const isScenarioGraphModelExecuted = (series: IScenarioGraphSeries): boolean => {
+  if (series.status === 'discarded') return false
+
+  return series.executed && (series.baseCaseValues !== null || series.userAdjustedValues !== null)
 }
 
 const SCENARIO_CHART_COLORS = ['#185FA5', '#0F8A72', '#E09A3A', '#C4407A', '#A32D2D', '#2B8EA6', '#7B52B8', '#B8960C', '#3D7D3F', '#6B6A65']
@@ -214,7 +222,7 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
     const hasBC = series.baseCaseValues !== null
     const hasUA = series.userAdjustedValues !== null
     const isDiscarded = series.status === 'discarded'
-    const isActive = !isDiscarded && series.executed && (hasBC || hasUA)
+    const isActive = isScenarioGraphModelExecuted(series)
 
     if (!isActive) {
       return {
