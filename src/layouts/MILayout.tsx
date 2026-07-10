@@ -254,7 +254,6 @@ const MILayout = () => {
             boxSizing: 'border-box',
           }}
         >
-          {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
           <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
             <MIHeaderMainLayout onMoveTab={(callback) => saveScroll(callback)} />
             {stickyHeader && (
@@ -277,7 +276,7 @@ const MILayout = () => {
               paddingTop,
               paddingBottom: `calc(${isScrolled ? headerTopHeight : 0}px + 136px)`,
               flex: 1,
-              overflowAnchor: 'none',
+              overflowAnchor: 'auto',
               transition: mainContentPaddingTransition,
             }}
           >
@@ -291,6 +290,9 @@ const MILayout = () => {
           <MIFooter />
         </div>
       </ScrollWrapper>
+
+      {/* 채팅창과 Portal 배경이 동일한 루트 stacking context를 사용하도록 ScrollWrapper 밖에 렌더링 */}
+      {showMiAgent && <MIAgentButton top={mariAgentTopPosition} />}
 
       {/* 공지사항 팝업 */}
       {noticeData && noticeDetailData && (
