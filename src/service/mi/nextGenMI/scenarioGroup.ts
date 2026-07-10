@@ -250,6 +250,8 @@ export interface IScenarioGraphSeries {
 
 export interface IScenarioGroupGraphRes {
   scenarioGroupId: number
+  /** 파라미터 제안 대상 여부 (true: 파라미터 제안, false: 파일 업로드) */
+  parameterProposalTarget: boolean
   indexName: NextGenMIIndexName
   periodUnit: ScenarioGroupGraphPeriodUnit
   periodUnitLabel: string

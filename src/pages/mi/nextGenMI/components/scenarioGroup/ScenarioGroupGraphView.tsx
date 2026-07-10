@@ -263,12 +263,15 @@ const ScenarioGroupGraphView = ({
         </Box>
       </Stack>
 
-      <ScenarioModelExecutionPopup
-        ref={executionPopupRef}
-        scenarioOptions={scenarioOptions}
-        executingScenarioIds={executingScenarioIds}
-        onAccepted={handleAccepted}
-      />
+      {graphData && (
+        <ScenarioModelExecutionPopup
+          ref={executionPopupRef}
+          scenarioOptions={scenarioOptions}
+          parameterProposalTarget={graphData.parameterProposalTarget}
+          executingScenarioIds={executingScenarioIds}
+          onAccepted={handleAccepted}
+        />
+      )}
     </>
   )
 }

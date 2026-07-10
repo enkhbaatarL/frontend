@@ -63,6 +63,14 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
     const scrollEdgePaddingLeft = typeof scrollEdgePadding === 'number' ? scrollEdgePadding : (scrollEdgePadding?.left ?? 32)
     const scrollEdgePaddingRight = typeof scrollEdgePadding === 'number' ? scrollEdgePadding : (scrollEdgePadding?.right ?? 32)
     const hasScrollEdgePadding = showScrollButtons && isScrollable
+    const scrollMaskImage =
+      showGradient && showLeftButton && showRightButton
+        ? `linear-gradient(to right, transparent 0, black ${gradientWidth}px, black calc(100% - ${gradientWidth}px), transparent 100%)`
+        : showGradient && showLeftButton
+          ? `linear-gradient(to right, transparent 0, black ${gradientWidth}px)`
+          : showGradient && showRightButton
+            ? `linear-gradient(to left, transparent 0, black ${gradientWidth}px)`
+            : undefined
 
     const getActiveScrollEdgePadding = () => ({
       left: showScrollButtons && isScrollableRef.current ? scrollEdgePaddingLeft : 0,
@@ -292,7 +300,7 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         sx={{
-          overflow: 'hidden',
+          overflow: 'visible',
           ...(alwaysShowScrollButtons ? { '& .scroll-button': { opacity: 1 } } : { '&:hover .scroll-button': { opacity: 1 } }),
           ...containerSx,
           ...(scrollEndFeedback && {
@@ -330,8 +338,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
               backgroundColor: 'rgba(255, 255, 255, 1)',
               border: '1px solid #DEE2E6',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-              width: 32,
-              height: 32,
+              width: '32px',
+              height: '32px',
               opacity: alwaysShowScrollButtons ? 1 : 0,
               transition: 'opacity 0.2s ease-in-out',
               '&:hover': {
@@ -357,8 +365,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
               backgroundColor: 'rgba(255, 255, 255, 1)',
               border: '1px solid #DEE2E6',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-              width: 32,
-              height: 32,
+              width: '32px',
+              height: '32px',
               opacity: alwaysShowScrollButtons ? 1 : 0,
               transition: 'opacity 0.2s ease-in-out',
               '&:hover': {
@@ -385,6 +393,8 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
             boxSizing: 'border-box',
             position: 'relative',
             zIndex: 0,
+            WebkitMaskImage: scrollMaskImage,
+            maskImage: scrollMaskImage,
             ...(hasScrollEdgePadding && { paddingLeft: `${scrollEdgePaddingLeft}px`, paddingRight: `${scrollEdgePaddingRight}px` }),
             '&::-webkit-scrollbar': {
               display: 'none',
@@ -396,39 +406,6 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
         >
           {children}
         </Stack>
-
-        {showGradient && showLeftButton && (
-          <Box
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: gradientWidth,
-              pointerEvents: 'none',
-              zIndex: 2,
-              background:
-                'linear-gradient(to right, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.85) 12%, rgba(255, 255, 255, 0.65) 28%, rgba(255, 255, 255, 0.4) 48%, rgba(255, 255, 255, 0.2) 68%, rgba(255, 255, 255, 0.06) 88%, transparent 100%)',
-            }}
-          />
-        )}
-        {showGradient && showRightButton && (
-          <Box
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: gradientWidth,
-              pointerEvents: 'none',
-              zIndex: 2,
-              background:
-                'linear-gradient(to left, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.85) 12%, rgba(255, 255, 255, 0.65) 28%, rgba(255, 255, 255, 0.4) 48%, rgba(255, 255, 255, 0.2) 68%, rgba(255, 255, 255, 0.06) 88%, transparent 100%)',
-            }}
-          />
-        )}
       </Box>
     )
   },
