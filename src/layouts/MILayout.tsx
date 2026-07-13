@@ -40,6 +40,7 @@ const MILayout = () => {
     ref: scrollRef,
   })
   const [isScrolled, setIsScrolled] = useState(() => currentScroll > 0)
+  const [scrollLeft, setScrollLeft] = useState(0)
   const { marketDataList, marketDataIsLoading } = useMarketData()
   const { stickyHeader, stickyHeaderOptions } = useStickyHeader()
   const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0)
@@ -64,6 +65,7 @@ const MILayout = () => {
     const handleScroll = () => {
       const y = currentRef?.scrollTop ?? 0
       setIsScrolled(y > 0)
+      setScrollLeft(currentRef?.scrollLeft ?? 0)
     }
     currentRef?.addEventListener('scroll', handleScroll)
     return () => currentRef?.removeEventListener('scroll', handleScroll)
@@ -242,6 +244,8 @@ const MILayout = () => {
           width: '10px',
         }}
         maxHeight={'100vh'}
+        overflowX="auto"
+        showHorizontalScrollbar
       >
         <div
           style={{
@@ -254,7 +258,13 @@ const MILayout = () => {
             boxSizing: 'border-box',
           }}
         >
-          <div className={`main-header ${isScrolled ? 'fixed-header' : ''}`}>
+          <div
+            className={`main-header ${isScrolled ? 'fixed-header' : ''}`}
+            style={{
+              left: `-${scrollLeft}px`,
+              width: 'max(100%, 1440px)',
+            }}
+          >
             <MIHeaderMainLayout onMoveTab={(callback) => saveScroll(callback)} />
             {stickyHeader && (
               <Box

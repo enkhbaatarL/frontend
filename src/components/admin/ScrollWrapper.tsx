@@ -47,6 +47,8 @@ interface ScrollWrapperProps {
   thumbWidth?: number
   thumbMaxHeight?: number
   overscrollBehavior?: CSSProperties['overscrollBehavior']
+  overflowX?: CSSProperties['overflowX']
+  showHorizontalScrollbar?: boolean
   showScrollbarOnHover?: boolean
   reserveScrollbarGap?: boolean
   showScrollEdgeShadow?: boolean
@@ -77,6 +79,8 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       thumbWidth = DEFAULT_THUMB_WIDTH_PX,
       thumbMaxHeight,
       overscrollBehavior = 'none',
+      overflowX = 'hidden',
+      showHorizontalScrollbar = false,
       showScrollbarOnHover = false,
       reserveScrollbarGap = false,
       showScrollEdgeShadow = false,
@@ -88,18 +92,29 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
     const thumbTopInset = thumbInsetTop ?? offsetTop
     const thumbBottomInset = thumbInsetBottom ?? offsetBottom
     const thumbRightPx = Math.max(0, (SCROLL_TRACK_WIDTH_PX - thumbWidth) / 2)
+    const horizontalThumbHeight = styScroll?.width ?? thumbWidth
+    const horizontalThumbBottom =
+      typeof horizontalThumbHeight === 'number'
+        ? `${Math.max(0, (SCROLL_TRACK_WIDTH_PX - horizontalThumbHeight) / 2)}px`
+        : `calc((${SCROLL_TRACK_WIDTH_PX}px - ${horizontalThumbHeight}) / 2)`
 
     const containerRef = useRef<HTMLDivElement>(null)
     const childrenRef = useRef<HTMLDivElement>(null)
+    const horizontalThumbRef = useRef<HTMLDivElement>(null)
 
     const { thumbRef, registerThumb, unregisterThumb } = useScrollThumbRegistry()
     const [thumbHeight, setThumbHeight] = useState(0)
     const [isScrollable, setIsScrollable] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
+    const [horizontalThumbWidth, setHorizontalThumbWidth] = useState(0)
+    const [isHorizontallyScrollable, setIsHorizontallyScrollable] = useState(false)
+    const [isHorizontalDragging, setIsHorizontalDragging] = useState(false)
     const [canScrollUp, setCanScrollUp] = useState(false)
     const [canScrollDown, setCanScrollDown] = useState(false)
     const [startY, setStartY] = useState(0)
     const [startScrollTop, setStartScrollTop] = useState(0)
+    const [startX, setStartX] = useState(0)
+    const [startScrollLeft, setStartScrollLeft] = useState(0)
     const syncThumbRafRef = useRef<number | undefined>(undefined)
     const prevContentKeyRef = useRef<number | string | undefined>(undefined)
 
@@ -129,6 +144,32 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       setCanScrollUp(scrollable && scrollTop > SCROLL_EDGE_EPSILON_PX)
       setCanScrollDown(scrollable && scrollTop + clientHeight < scrollHeight - SCROLL_EDGE_EPSILON_PX)
 
+      if (showHorizontalScrollbar) {
+        const scrollWidth = container.scrollWidth
+        const clientWidth = container.clientWidth
+        const scrollLeft = container.scrollLeft
+        const horizontallyScrollable = scrollWidth > clientWidth + SCROLL_EDGE_EPSILON_PX
+
+        setIsHorizontallyScrollable(horizontallyScrollable)
+
+        if (!horizontallyScrollable) {
+          setHorizontalThumbWidth(0)
+        } else {
+          const availableWidth = clientWidth - (scrollable ? SCROLL_TRACK_WIDTH_PX : 0)
+          const nextHorizontalThumbWidth = (clientWidth / scrollWidth) * availableWidth
+          setHorizontalThumbWidth(nextHorizontalThumbWidth)
+
+          const horizontalThumb = horizontalThumbRef.current
+
+          if (horizontalThumb) {
+            const maxScrollLeft = scrollWidth - clientWidth
+            const scrollRatio = maxScrollLeft > 0 ? scrollLeft / maxScrollLeft : 0
+            const maxThumbLeft = availableWidth - nextHorizontalThumbWidth
+            horizontalThumb.style.left = `${scrollRatio * maxThumbLeft}px`
+          }
+        }
+      }
+
       if (!scrollable) {
         setThumbHeight(0)
         setCanScrollUp(false)
@@ -151,7 +192,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         const thumbTop = thumbTopInset + scrollRatio * maxThumbTop
         thumb.style.top = `${thumbTop}px`
       }
-    }, [thumbTopInset, thumbBottomInset, thumbMaxHeight, thumbRef, onScrollableChange])
+    }, [thumbTopInset, thumbBottomInset, thumbMaxHeight, thumbRef, onScrollableChange, showHorizontalScrollbar])
 
     const scheduleSyncThumb = useCallback(() => {
       if (syncThumbRafRef.current) cancelAnimationFrame(syncThumbRafRef.current)
@@ -168,6 +209,10 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       },
       [],
     )
+
+    useEffect(() => {
+      if (showHorizontalScrollbar) scheduleSyncThumb()
+    }, [isHorizontallyScrollable, scheduleSyncThumb, showHorizontalScrollbar])
 
     // Handle mouse down on the thumb
     const handleMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {
@@ -214,6 +259,42 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       setIsDragging(false)
     }, [])
 
+    const handleHorizontalMouseDown = useCallback((e: MouseEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const container = containerRef.current
+
+      if (!container) return
+
+      setIsHorizontalDragging(true)
+      setStartX(e.clientX)
+      setStartScrollLeft(container.scrollLeft)
+    }, [])
+
+    const handleHorizontalMouseMove = useCallback(
+      (e: globalThis.MouseEvent) => {
+        if (!isHorizontalDragging) return
+
+        const container = containerRef.current
+
+        if (!container) return
+
+        const availableWidth = container.clientWidth - (isScrollable ? SCROLL_TRACK_WIDTH_PX : 0)
+        const maxScrollLeft = container.scrollWidth - container.clientWidth
+        const maxThumbTravel = Math.max(0, availableWidth - horizontalThumbWidth)
+
+        if (maxThumbTravel <= 0) return
+
+        const nextScrollLeft = startScrollLeft + (e.clientX - startX) * (maxScrollLeft / maxThumbTravel)
+        container.scrollLeft = Math.max(0, Math.min(nextScrollLeft, maxScrollLeft))
+      },
+      [horizontalThumbWidth, isHorizontalDragging, isScrollable, startScrollLeft, startX],
+    )
+
+    const handleHorizontalMouseUp = useCallback(() => {
+      setIsHorizontalDragging(false)
+    }, [])
+
     const handleWheel = useCallback(
       (e: WheelEvent) => {
         if (overscrollBehavior !== 'auto') return
@@ -241,6 +322,20 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         document.body.classList.remove('no-select')
       }
     }, [isDragging, handleMouseMove, handleMouseUp])
+
+    useEffect(() => {
+      if (!isHorizontalDragging) return () => {}
+
+      document.addEventListener('mousemove', handleHorizontalMouseMove)
+      document.addEventListener('mouseup', handleHorizontalMouseUp)
+      document.body.classList.add('no-select')
+
+      return () => {
+        document.removeEventListener('mousemove', handleHorizontalMouseMove)
+        document.removeEventListener('mouseup', handleHorizontalMouseUp)
+        document.body.classList.remove('no-select')
+      }
+    }, [isHorizontalDragging, handleHorizontalMouseMove, handleHorizontalMouseUp])
 
     // Set up scroll event listeners
     useEffect(() => {
@@ -325,18 +420,20 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
             boxSizing: 'border-box',
             ...(showScrollbarOnHover
               ? {
-                '& .scroll-wrapper-thumb, & .scroll-wrapper-track': {
-                  opacity: isDragging ? 1 : 0,
-                  transition: 'opacity 150ms ease',
-                  pointerEvents: isDragging ? 'auto' : 'none',
-                },
-                ...(isDragging
+                '& .scroll-wrapper-thumb, & .scroll-wrapper-track, & .scroll-wrapper-horizontal-thumb, & .scroll-wrapper-horizontal-track':
+                    {
+                      opacity: isDragging || isHorizontalDragging ? 1 : 0,
+                      transition: 'opacity 150ms ease',
+                      pointerEvents: isDragging || isHorizontalDragging ? 'auto' : 'none',
+                    },
+                ...(isDragging || isHorizontalDragging
                   ? {}
                   : {
-                    '&:hover .scroll-wrapper-thumb, &:hover .scroll-wrapper-track': {
-                      opacity: 1,
-                      pointerEvents: 'auto',
-                    },
+                    '&:hover .scroll-wrapper-thumb, &:hover .scroll-wrapper-track, &:hover .scroll-wrapper-horizontal-thumb, &:hover .scroll-wrapper-horizontal-track':
+                          {
+                            opacity: 1,
+                            pointerEvents: 'auto',
+                          },
                   }),
               }
               : {}),
@@ -360,7 +457,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                   boxSizing: 'border-box',
                 }),
               overflowY: 'auto',
-              overflowX: 'hidden',
+              overflowX,
               overscrollBehavior,
               position: 'relative',
               zIndex: 1,
@@ -395,6 +492,56 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
                 },
               }}
               className="scroll-wrapper-thumb"
+            />
+          )}
+          {showHorizontalScrollbar && isHorizontallyScrollable && (
+            <Box
+              ref={horizontalThumbRef}
+              onMouseDown={handleHorizontalMouseDown}
+              sx={{
+                position: 'absolute',
+                bottom: horizontalThumbBottom,
+                left: 0,
+                width: `${horizontalThumbWidth}px`,
+                height: horizontalThumbHeight,
+                backgroundColor: '#CED4DA',
+                borderRadius: '10px',
+                transition: isHorizontalDragging ? 'none' : 'left 0.1s, opacity 150ms ease',
+                cursor: 'pointer',
+                userSelect: 'none',
+                zIndex: 2,
+                ':hover': {
+                  backgroundColor: '#ADB5BD',
+                },
+              }}
+              className="scroll-wrapper-horizontal-thumb"
+            />
+          )}
+          {showHorizontalScrollbar && isHorizontallyScrollable && (
+            <button
+              type="button"
+              className="scroll-wrapper-horizontal-track"
+              style={{
+                position: 'absolute',
+                right: isScrollable ? SCROLL_TRACK_WIDTH_PX : 0,
+                bottom: 0,
+                left: 0,
+                height: SCROLL_TRACK_WIDTH_PX,
+                cursor: 'pointer',
+                zIndex: 1,
+                border: 'none',
+                background: 'transparent',
+                padding: 0,
+              }}
+              onClick={(e) => {
+                const container = containerRef.current
+
+                if (!container) return
+
+                const rect = e.currentTarget.getBoundingClientRect()
+                const clickRatio = (e.clientX - rect.left) / rect.width
+                container.scrollLeft = (container.scrollWidth - container.clientWidth) * clickRatio
+              }}
             />
           )}
           {isScrollable && (
