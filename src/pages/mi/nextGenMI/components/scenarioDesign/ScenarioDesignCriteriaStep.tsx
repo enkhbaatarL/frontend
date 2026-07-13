@@ -1,5 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
+import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded'
@@ -1510,14 +1512,23 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
                           type="button"
                           variant="text"
                           prefix={
-                            <CheckRoundedIcon
-                              sx={{
-                                fontSize: '20px',
-                                color: 'mari.Primary',
-                                opacity: selected ? 1 : 0,
-                                flexShrink: 0,
-                              }}
-                            />
+                            selected ? (
+                              <CheckBoxIcon
+                                sx={{
+                                  fontSize: '20px',
+                                  color: 'mari.Primary',
+                                  flexShrink: 0,
+                                }}
+                              />
+                            ) : (
+                              <CheckBoxOutlineBlankIcon
+                                sx={{
+                                  fontSize: '20px',
+                                  color: 'contentIcon.Disabled',
+                                  flexShrink: 0,
+                                }}
+                              />
+                            )
                           }
                           gap="8px"
                           disabled={criteriaEditingDisabled}
