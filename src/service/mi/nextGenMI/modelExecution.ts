@@ -183,17 +183,13 @@ const createModelParamProposalStreamHeaders = () => {
   return headers
 }
 
-const getModelParamProposalStreamUrl = (scenarioId: number) => {
-  const url = withCustomBaseUrl(`mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals/stream`)
-
-  if (/^https?:\/\//i.test(url)) return url
-  return `/api/v1${url.startsWith('/') ? url : `/${url}`}`
-}
+const getModelParamProposalStreamUrl = (scenarioId: number) =>
+  `/api/v1/mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals/stream`
 
 const nextGenMIModelExecutionService = {
   async getCurrentModelParamProposal(scenarioId: number): Promise<CurrentModelParamProposal> {
     const response: AxiosResponse<ICommonResponse<CurrentModelParamProposal>> = await api.get(
-      withCustomBaseUrl(`mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals`),
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals`,
     )
 
     return response.data.data
@@ -201,9 +197,7 @@ const nextGenMIModelExecutionService = {
 
   async getLatestConfirmedParameters(scenarioId: number): Promise<LatestModelParamProposalParameters> {
     const response: AxiosResponse<ICommonResponse<LatestModelParamProposalParameters>> = await api.get(
-      withCustomBaseUrl(
-        `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/latest/model-param-proposal/confirmed-parameters`,
-      ),
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/latest/model-param-proposal/confirmed-parameters`,
       {
         suppressGlobalErrorHandler: true,
       } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean },
@@ -214,9 +208,7 @@ const nextGenMIModelExecutionService = {
 
   async getLatestProposedParameters(scenarioId: number): Promise<LatestModelParamProposalParameters> {
     const response: AxiosResponse<ICommonResponse<LatestModelParamProposalParameters>> = await api.get(
-      withCustomBaseUrl(
-        `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/latest/model-param-proposal/proposed-parameters`,
-      ),
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/latest/model-param-proposal/proposed-parameters`,
       {
         suppressGlobalErrorHandler: true,
       } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean },
@@ -227,7 +219,7 @@ const nextGenMIModelExecutionService = {
 
   async createModelParamProposal(scenarioId: number): Promise<ModelParamProposalAccept> {
     const response: AxiosResponse<ICommonResponse<ModelParamProposalAccept>> = await api.post(
-      withCustomBaseUrl(`mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals`),
+      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals`,
       undefined,
       {
         suppressGlobalErrorHandler: true,
@@ -289,7 +281,7 @@ const nextGenMIModelExecutionService = {
 
   async getModelExecutionStatus(scenarioId: number, runId: string): Promise<FileModelExecutionStatusSnapshot> {
     const response: AxiosResponse<ICommonResponse<FileModelExecutionStatusSnapshot>> = await api.get(
-      withCustomBaseUrl(`mi/next-gen/scenarios/${scenarioId}/model-executions/${encodeURIComponent(runId)}`),
+      `mi/next-gen/scenarios/${scenarioId}/model-executions/${encodeURIComponent(runId)}`,
     )
 
     return response.data.data
