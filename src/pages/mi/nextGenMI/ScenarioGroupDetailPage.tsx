@@ -395,7 +395,6 @@ const ScenarioGroupDetailPage = () => {
             scenarioGroupId={Number(scenarioGroupId)}
             enabled={Boolean(scenarioGroupId)}
             initialSection={data?.priceInterpretation}
-            groupDetailLoading={isLoading}
           />
         </Stack>
 

@@ -24,6 +24,7 @@ import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextG
 import {
   isScenarioGraphModelExecuted,
   scenarioGroupGraphQueryKey,
+  scenarioGroupPriceInterpretationsQueryKey,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import {
   PRICE_FORECAST_INTERPRETATION_MAX_LENGTH,
@@ -38,7 +39,6 @@ interface ScenarioGroupPriceForecastInterpretationProps {
   enabled?: boolean
   stickyTopPx?: number
   initialSection?: IPriceInterpretationSection
-  groupDetailLoading?: boolean
 }
 
 const parsePriceInterpretationStreamEventData = (raw: string): PriceInterpretationStreamEventData | null => {
@@ -229,7 +229,6 @@ const ScenarioGroupPriceForecastInterpretation = ({
   enabled = true,
   stickyTopPx,
   initialSection,
-  groupDetailLoading = false,
 }: ScenarioGroupPriceForecastInterpretationProps) => {
   const { showSnackbar } = useSnackbar()
 
@@ -239,6 +238,14 @@ const ScenarioGroupPriceForecastInterpretation = ({
     enabled: enabled && Boolean(scenarioGroupId),
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
+  })
+
+  const priceInterpretationsQuery = useQuery({
+    queryKey: scenarioGroupPriceInterpretationsQueryKey(scenarioGroupId),
+    queryFn: () => nextGenMIScenarioGroupService.getPriceInterpretations(scenarioGroupId),
+    enabled: enabled && Boolean(scenarioGroupId),
+    initialData: initialSection,
+    refetchOnWindowFocus: false,
   })
 
   // 수급모델 실행 상태 폴링은 ScenarioGroupGraphView에서만 수행. 완료 시 graph 쿼리가 refetch되면 여기 scenarioSeries도 함께 갱신된다.
@@ -443,26 +450,10 @@ const ScenarioGroupPriceForecastInterpretation = ({
   }, [enabled, scenarioGroupId])
 
   useEffect(() => {
-    let cancelled = false
-
-    if (!groupDetailLoading) {
-      // 생성 요청 중에는 그룹 상세 embed(빈 interpretations)로 상태를 덮지 않는다.
-      if (priceInterpretationGeneratePendingRef.current) return undefined
-
-      if (initialSection) {
-        applyPriceInterpretationSection(initialSection)
-      } else {
-        void nextGenMIScenarioGroupService.getPriceInterpretations(scenarioGroupId).then((section) => {
-          if (cancelled) return
-          applyPriceInterpretationSection(section)
-        })
-      }
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [applyPriceInterpretationSection, groupDetailLoading, initialSection, scenarioGroupId])
+    // 생성 요청 중에는 빈 GET 응답으로 생성중 UI를 덮지 않는다.
+    if (!priceInterpretationsQuery.data || priceInterpretationGeneratePendingRef.current) return
+    applyPriceInterpretationSection(priceInterpretationsQuery.data)
+  }, [applyPriceInterpretationSection, priceInterpretationsQuery.data])
 
   useEffect(() => {
     if (visibleInterpretationScenarios.length === 0) {

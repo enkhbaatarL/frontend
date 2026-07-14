@@ -7,6 +7,7 @@ import useSnackbar from '@/hooks/useSnackbar'
 import {
   scenarioGroupDetailQueryKey,
   scenarioGroupGraphRunStatusQueryKey,
+  scenarioGroupPriceInterpretationsQueryKey,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
@@ -90,6 +91,10 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     void queryClient.refetchQueries({ queryKey: scenarioGroupDetailQueryKey(scenarioGroupId), type: 'active' })
   }, [queryClient, refetchGraphQueries, scenarioGroupId])
 
+  const refetchPriceInterpretations = useCallback(() => {
+    void queryClient.refetchQueries({ queryKey: scenarioGroupPriceInterpretationsQueryKey(scenarioGroupId), type: 'active' })
+  }, [queryClient, scenarioGroupId])
+
   useEffect(() => {
     if (!pollAfterExecution) return undefined
     const timer = setTimeout(() => {
@@ -105,9 +110,10 @@ export const useScenarioGroupGraphRunStatusPolling = ({
       handledCompletionKeyRef.current = completionKey
       showSnackbar('실행 완료되었습니다.', { variant: 'success' })
       refetchExecutionRelatedQueries()
+      refetchPriceInterpretations()
       setPollAfterExecution(false)
     },
-    [refetchExecutionRelatedQueries, showSnackbar],
+    [refetchExecutionRelatedQueries, refetchPriceInterpretations, showSnackbar],
   )
 
   useEffect(() => {

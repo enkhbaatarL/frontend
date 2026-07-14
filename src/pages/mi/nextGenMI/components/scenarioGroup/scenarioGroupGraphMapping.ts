@@ -74,6 +74,9 @@ export const scenarioGroupGraphRunStatusQueryKey = (scenarioGroupId: number) =>
 export const scenarioGroupDetailQueryKey = (scenarioGroupId: string | number) =>
   ['nextGenMIScenarioGroupDetail', String(scenarioGroupId)] as const
 
+export const scenarioGroupPriceInterpretationsQueryKey = (scenarioGroupId: number) =>
+  ['nextGenMIScenarioGroupPriceInterpretations', scenarioGroupId] as const
+
 export const baseSeriesVisibilityKey = (seriesId: string): string => `base:${seriesId}`
 
 export const scenarioBcVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}:BC`
