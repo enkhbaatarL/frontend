@@ -21,7 +21,10 @@ import NextGenMIDetailStickySectionHeader from '@/pages/mi/nextGenMI/components/
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIResizableTextarea from '@/pages/mi/nextGenMI/components/common/NextGenMIResizableTextarea'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
-import { scenarioGroupGraphQueryKey } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
+import {
+  isScenarioGraphModelExecuted,
+  scenarioGroupGraphQueryKey,
+} from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 import {
   PRICE_FORECAST_INTERPRETATION_MAX_LENGTH,
   PRICE_FORECAST_INTERPRETATION_SAVED_MESSAGE_DURATION_MS,
@@ -260,28 +263,34 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const handlePriceInterpretationStreamFailureRef = useRef<(reason?: string | null) => void>(() => undefined)
   const showSnackbarRef = useRef(showSnackbar)
   const priceInterpretationStreamHasConnectedRef = useRef(false)
+  // POST 이후 SSE generation 전까지 GET 이 [] 여도 로딩 상태를 유지하기 위한 플래그
+  const priceInterpretationGeneratePendingRef = useRef(false)
 
-  const executedScenarios = useMemo(
-    () => scenarioSeries.filter((series) => series.executed && series.status !== 'discarded'),
-    [scenarioSeries],
+  const executedScenarios = useMemo(() => scenarioSeries.filter(isScenarioGraphModelExecuted), [scenarioSeries])
+
+  const executedScenarioIdSet = useMemo(() => new Set(executedScenarios.map((series) => series.scenarioId)), [executedScenarios])
+
+  const activeInterpretationItems = useMemo(
+    () => interpretationItems.filter((item) => executedScenarioIdSet.has(item.scenarioId)),
+    [executedScenarioIdSet, interpretationItems],
   )
 
   const hasExecutedScenario = executedScenarios.length > 0
-  const hasInterpretation = interpretationItems.length > 0
+  const hasInterpretation = activeInterpretationItems.length > 0
 
   const visibleInterpretationScenarios = useMemo<InterpretationScenarioItem[]>(
     () =>
-      interpretationItems.map((item) => ({
+      activeInterpretationItems.map((item) => ({
         scenarioId: item.scenarioId,
         scenarioName: item.scenarioName,
         displayOrder: item.displayOrder,
         baseCase: item.baseCase,
       })),
-    [interpretationItems],
+    [activeInterpretationItems],
   )
 
-  const canGenerate = interpretationGeneratable && !isGenerating
-  const showScenarioInterpretationPanel = interpretationItems.length > 0
+  const canGenerate = interpretationGeneratable && hasExecutedScenario && !isGenerating
+  const showScenarioInterpretationPanel = activeInterpretationItems.length > 0
   const showMaxLengthWarning = maxLengthWarningVisible && !savedMessageVisible
 
   const selectedScenario = useMemo(
@@ -300,30 +309,47 @@ const ScenarioGroupPriceForecastInterpretation = ({
       return currentText !== baseline.trim()
     }
 
-    const interpretationItem = interpretationItems.find((item) => item.scenarioId === scenarioId)
+    const interpretationItem = activeInterpretationItems.find((item) => item.scenarioId === scenarioId)
     return (interpretationItem?.revision ?? 0) > 0
-  }, [draftText, interpretationItems, originalInterpretations, selectedScenario])
+  }, [activeInterpretationItems, draftText, originalInterpretations, selectedScenario])
 
   const applyPriceInterpretationSection = useCallback((section: IPriceInterpretationSection) => {
+    // POST 직후~SSE generation 전까지 BE GET 이 interpretations:[] 일 수 있다.
+    // 생성 pending 중이면 로딩만 유지하고, POST ack 로 목록을 만들지 않는다.
+    if (section.interpretations.length === 0) {
+      setInterpretationGeneratable(section.generatable)
+      if (priceInterpretationGeneratePendingRef.current) {
+        setIsGenerating(true)
+        return
+      }
+
+      setInterpretations({})
+      setOriginalInterpretations({})
+      setInterpretationItems([])
+      setIsGenerating(false)
+      return
+    }
+
     const nextInterpretations: PriceForecastInterpretationMap = {}
     const nextOriginalInterpretations: PriceForecastInterpretationMap = {}
-    const generatedItems: IPriceInterpretationItem[] = []
 
+    // GET 응답 interpretations 를 status(generating|generated|failed) 그대로 반영한다.
     section.interpretations.forEach((item) => {
-      if (item.status === 'generated' && item.content?.trim()) {
+      if (item.content?.trim()) {
         nextInterpretations[item.scenarioId] = item.content
         if ((item.revision ?? 0) === 0) {
           nextOriginalInterpretations[item.scenarioId] = item.content
         }
-        generatedItems.push(item)
       }
     })
 
+    const hasGenerating = section.interpretations.some((item) => item.status === 'generating')
+    priceInterpretationGeneratePendingRef.current = hasGenerating
     setInterpretations(nextInterpretations)
     setOriginalInterpretations(nextOriginalInterpretations)
-    setInterpretationItems(generatedItems)
+    setInterpretationItems(section.interpretations)
     setInterpretationGeneratable(section.generatable)
-    setIsGenerating(section.interpretations.some((item) => item.status === 'generating'))
+    setIsGenerating(hasGenerating)
   }, [])
 
   const refreshPriceInterpretations = useCallback(() => {
@@ -353,6 +379,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
 
   const handlePriceInterpretationStreamFailure = useCallback(
     (reason?: string | null) => {
+      priceInterpretationGeneratePendingRef.current = false
       setIsGenerating(false)
       showSnackbar('가격전망 해석 생성에 실패했습니다.', {
         variant: 'error',
@@ -384,7 +411,10 @@ const ScenarioGroupPriceForecastInterpretation = ({
 
           if (event === 'connected') {
             if (priceInterpretationStreamHasConnectedRef.current) {
-              refreshPriceInterpretationsRef.current()
+              // 재연결 재조회는 생성 pending 중이 아닐 때만 (빈 GET 으로 생성중 UI 를 건드리지 않음)
+              if (!priceInterpretationGeneratePendingRef.current) {
+                refreshPriceInterpretationsRef.current()
+              }
             } else {
               priceInterpretationStreamHasConnectedRef.current = true
             }
@@ -396,7 +426,8 @@ const ScenarioGroupPriceForecastInterpretation = ({
             return
           }
 
-          setIsGenerating(false)
+          // API: generation 완료(SSE) 수신 후 GET 재조회. 목록은 GET 응답만 사용한다.
+          priceInterpretationGeneratePendingRef.current = false
           refreshPriceInterpretationsRef.current()
           showSnackbarRef.current('시나리오별 가격전망 해석이 생성되었습니다.', { variant: 'success' })
         },
@@ -415,6 +446,9 @@ const ScenarioGroupPriceForecastInterpretation = ({
     let cancelled = false
 
     if (!groupDetailLoading) {
+      // 생성 요청 중에는 그룹 상세 embed(빈 interpretations)로 상태를 덮지 않는다.
+      if (priceInterpretationGeneratePendingRef.current) return undefined
+
       if (initialSection) {
         applyPriceInterpretationSection(initialSection)
       } else {
@@ -481,15 +515,17 @@ const ScenarioGroupPriceForecastInterpretation = ({
   const handleGenerate = useCallback(async () => {
     if (!canGenerate) return
 
+    // API: POST 는 생성 요청 ack. 목록/생성중 칩은 GET 또는 SSE 이후 GET 으로만 반영한다.
     setIsGenerating(true)
+    priceInterpretationGeneratePendingRef.current = true
     try {
       await nextGenMIScenarioGroupService.generatePriceInterpretations(scenarioGroupId)
-      refreshPriceInterpretations()
     } catch {
+      priceInterpretationGeneratePendingRef.current = false
       setIsGenerating(false)
       showSnackbar('가격전망 해석 생성을 요청하지 못했습니다.', { variant: 'error', body: '잠시 후 다시 시도해 주세요.' })
     }
-  }, [canGenerate, refreshPriceInterpretations, scenarioGroupId, showSnackbar])
+  }, [canGenerate, scenarioGroupId, showSnackbar])
 
   const commitDraft = useCallback(() => {
     const scenarioId = draftScenarioIdRef.current
@@ -595,7 +631,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
   }, [])
 
   const renderBody = () => {
-    if (!hasExecutedScenario && !interpretationGeneratable && !hasInterpretation) {
+    if (!hasExecutedScenario && !hasInterpretation) {
       return <PriceForecastInterpretationEmptyMessage icon="warning" message="MI 수급모델을 실행하면 가격전망 해석을 생성할 수 있습니다." />
     }
 
@@ -653,7 +689,7 @@ const ScenarioGroupPriceForecastInterpretation = ({
                 maxLength={PRICE_FORECAST_INTERPRETATION_MAX_LENGTH}
                 minHeight="160px"
                 minResizeHeight="160px"
-                maxHeight="200px"
+                maxHeight="600px"
                 fontSize="16px"
                 hoverBgcolor="contentBG.Hover"
                 disabled={isGenerating}
