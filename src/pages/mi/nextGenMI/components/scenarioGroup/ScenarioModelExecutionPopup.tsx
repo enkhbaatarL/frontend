@@ -239,12 +239,12 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [reset])
 
     const handleClose = useCallback(() => {
-      if (isParameterProposalMode && hasGeneratedParameters) {
+      if (isParameterProposalMode) {
         setConfirmType('close')
         return
       }
       closePopup()
-    }, [closePopup, hasGeneratedParameters, isParameterProposalMode])
+    }, [closePopup, isParameterProposalMode])
 
     const handleFilesAdd = useCallback(
       (selectedFiles: FileList | File[] | null) => {
