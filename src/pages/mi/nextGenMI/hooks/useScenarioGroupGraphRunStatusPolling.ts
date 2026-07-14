@@ -159,8 +159,17 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     [queryClient, scenarioGroupId],
   )
 
+  const notifyExecutionCompleted = useCallback(
+    (scenarioId: number) => {
+      optimisticExecutingIdsRef.current.delete(scenarioId)
+      settleExecution(`scenario-${scenarioId}`)
+    },
+    [settleExecution],
+  )
+
   return {
     executingScenarioIds,
     notifyExecutionAccepted,
+    notifyExecutionCompleted,
   }
 }

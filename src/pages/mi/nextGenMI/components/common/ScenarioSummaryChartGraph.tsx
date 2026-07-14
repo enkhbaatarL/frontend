@@ -465,6 +465,7 @@ const ScenarioSummaryChartGraph = ({
   const tooltipRef = useRef<HTMLDivElement | null>(null)
   const zoomButtonStackRef = useRef<HTMLDivElement | null>(null)
   const animationFrameRef = useRef<number | null>(null)
+  const tooltipPositionAnimationFrameRef = useRef<number | null>(null)
   const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null)
   const mouseDownPositionRef = useRef<{ x: number; y: number } | null>(null)
   const isDragConfirmedRef = useRef(false)
@@ -730,6 +731,11 @@ const ScenarioSummaryChartGraph = ({
   const externalTooltipHandler = useCallback((context: { tooltip: { x: number; y: number; content: Record<string, unknown> } | null }) => {
     const { tooltip: chartTooltip } = context
 
+    if (tooltipPositionAnimationFrameRef.current !== null) {
+      cancelAnimationFrame(tooltipPositionAnimationFrameRef.current)
+      tooltipPositionAnimationFrameRef.current = null
+    }
+
     if (!chartTooltip) {
       setTooltip((prev) => ({ ...prev, visible: false }))
       setIsTooltipPositionCalculated(false)
@@ -749,7 +755,8 @@ const ScenarioSummaryChartGraph = ({
       })
       setIsTooltipPositionCalculated(false)
 
-      requestAnimationFrame(() => {
+      tooltipPositionAnimationFrameRef.current = requestAnimationFrame(() => {
+        tooltipPositionAnimationFrameRef.current = null
         const element = tooltipRef.current
         if (!element) return
 
@@ -787,9 +794,18 @@ const ScenarioSummaryChartGraph = ({
     setIsCrosshairVisible(false)
     crosshairRef.current?.handleMouseOut()
     setTooltip((prev) => ({ ...prev, visible: false }))
+    setIsTooltipPositionCalculated(false)
     lastMousePositionRef.current = null
     mouseDownPositionRef.current = null
   }, [])
+
+  useEffect(() => {
+    if (!tooltip.visible) return undefined
+
+    const handleScroll = () => hideCrosshair()
+    window.addEventListener('scroll', handleScroll, true)
+    return () => window.removeEventListener('scroll', handleScroll, true)
+  }, [hideCrosshair, tooltip.visible])
 
   const handleZoomIn = useCallback(() => {
     const chart = chartRef.current as ZoomableLineChart | null
@@ -869,6 +885,7 @@ const ScenarioSummaryChartGraph = ({
   useEffect(
     () => () => {
       if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current)
+      if (tooltipPositionAnimationFrameRef.current !== null) cancelAnimationFrame(tooltipPositionAnimationFrameRef.current)
     },
     [],
   )

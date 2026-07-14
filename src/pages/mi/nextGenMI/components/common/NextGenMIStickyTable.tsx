@@ -24,6 +24,7 @@ import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common
 type NextGenMIStickyTableAlign = 'left' | 'center' | 'right'
 type NextGenMIStickyTableSortDirection = 'asc' | 'desc'
 type NextGenMIStickyTableHoverType = 'horizontal' | 'vertical'
+type NextGenMIStickyTableScrollEdgeEffect = 'gradient' | 'shadow' | 'none'
 type ScrollAxis = 'horizontal' | 'vertical' | null
 type FixedColumnResizeSide = 'left' | 'right' | null
 type NextGenMIStickyTableSortState = { field: string; direction: NextGenMIStickyTableSortDirection } | null
@@ -34,6 +35,7 @@ export type NextGenMIStickyTableColumn<T> = {
   width: string
   minWidth?: string
   maxWidth?: string
+  fixedWidth?: boolean
   align?: NextGenMIStickyTableAlign
   headerAlign?: NextGenMIStickyTableAlign
   renderCell: (params: { row: T; rowIndex: number; column: NextGenMIStickyTableColumn<T> }) => ReactNode
@@ -76,8 +78,10 @@ type NextGenMIStickyTableProps<T> = {
   maxHeight?: string
   rowHeight?: string
   headerHeight?: string
-  /** 셀 좌우 패딩 (셀 사이 간격 = cellPaddingX * 2). 외곽(첫/마지막 컬럼)에는 CELL_EDGE_INSET 만큼 추가 인셋이 붙는다 */
+  /** 셀 좌우 패딩 (셀 사이 간격 = cellPaddingX * 2). 기본적으로 외곽(첫/마지막 컬럼)에는 CELL_EDGE_INSET이 추가된다 */
   cellPaddingX?: string
+  cellEdgeInsetLeft?: boolean
+  cellEdgeInsetRight?: boolean
   /** 셀 상하 패딩. box-sizing: border-box + 고정 height 이므로 행 높이를 키우지 않는다 */
   cellPaddingY?: string
   headerFontSize?: string
@@ -89,6 +93,14 @@ type NextGenMIStickyTableProps<T> = {
   scrollContainerRef?: { current: HTMLDivElement | null }
   rightScrollEdgeOffset?: string
   disableHorizontalScroll?: boolean
+  /** 컨테이너 너비를 채우지 않고, 각 열의 지정 너비 합계만큼 테이블을 렌더링 */
+  fitContentWidth?: boolean
+  leftScrollEdgeEffect?: NextGenMIStickyTableScrollEdgeEffect
+  rightScrollEdgeEffect?: NextGenMIStickyTableScrollEdgeEffect
+  /** 분할 테이블의 세로 스크롤 동기화용 pane처럼 스크롤 동작만 유지하고 세로 thumb/gutter는 숨길 때 사용 */
+  hideVerticalScrollbar?: boolean
+  /** 좌우 분할 테이블의 본문 높이를 맞추기 위해 가로 스크롤 유무와 관계없이 하단 gutter를 유지 */
+  reserveHorizontalScrollbarGutter?: boolean
   hoverType?: NextGenMIStickyTableHoverType
   oddBackground?: boolean
   onRowClick?: (row: T, rowIndex: number) => void
@@ -348,6 +360,8 @@ const NextGenMIStickyTable = <T,>({
   rowHeight = '48px',
   headerHeight = '38px',
   cellPaddingX = '6px',
+  cellEdgeInsetLeft = true,
+  cellEdgeInsetRight = true,
   cellPaddingY = '10px',
   headerFontSize = '14px',
   bodyFontSize = '14px',
@@ -358,6 +372,11 @@ const NextGenMIStickyTable = <T,>({
   scrollContainerRef,
   rightScrollEdgeOffset = '0px',
   disableHorizontalScroll = false,
+  fitContentWidth = false,
+  leftScrollEdgeEffect = 'gradient',
+  rightScrollEdgeEffect = 'gradient',
+  hideVerticalScrollbar = false,
+  reserveHorizontalScrollbarGutter = false,
   hoverType = 'horizontal',
   oddBackground = false,
   onRowClick,
@@ -501,16 +520,18 @@ const NextGenMIStickyTable = <T,>({
       ? toCssLength(pageStickyHeaderReleaseOffsetBottom)
       : pageStickyHeaderMeasuredReleaseOffset
   // 고정-좌측 컬럼이 있으면 sticky 라벨은 첫 컬럼이 아니므로 엣지 인셋이 없는 cellPaddingX 만 더한다.
-  // 고정-좌측 컬럼이 없으면 sticky 라벨이 첫 컬럼(외곽)일 수 있으므로 엣지 인셋(8px)을 포함한 14px를 적용한다.
+  // 고정-좌측 컬럼이 없으면 sticky 라벨이 첫 컬럼일 수 있으므로 활성화된 외곽 인셋까지 반영한다.
   const leftAlignedHeaderStickyLeft =
     fixedLeftColumnsWidthParts.length > 0
       ? `calc(${fixedLeftColumnsWidthParts.join(' + ')} + ${cellPaddingX})`
-      : `calc(${cellPaddingX} + ${CELL_EDGE_INSET})`
+      : cellEdgeInsetLeft
+        ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})`
+        : cellPaddingX
   const getCellPaddingSx = (columnIndex: number) => ({
     paddingTop: cellPaddingY,
     paddingBottom: cellPaddingY,
-    paddingLeft: columnIndex === 0 ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
-    paddingRight: columnIndex === columns.length - 1 ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
+    paddingLeft: columnIndex === 0 && cellEdgeInsetLeft ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
+    paddingRight: columnIndex === columns.length - 1 && cellEdgeInsetRight ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})` : cellPaddingX,
   })
   const getColumnWidthSx = (column: NextGenMIStickyTableColumn<T>, columnIndex: number, isFixedColumn: boolean) => {
     const resizedWidth = resizableFixedColumns && isFixedColumn ? resizedFixedColumnWidths[columnIndex] : undefined
@@ -739,8 +760,10 @@ const NextGenMIStickyTable = <T,>({
       const fixedLeftColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-left-column="true"]') : 0
       const fixedRightColumnWidth = canInsetHorizontalScrollbar ? getFixedColumnWidth(el, 'thead [data-fixed-right-column="true"]') : 0
       const fixedColumnShadowOffsets = getFixedColumnShadowOffsets(el, root)
-      const fixedLeftColumnShadow = left && fixedColumnShadowOffsets.left !== null
-      const fixedRightColumnShadow = right && fixedColumnShadowOffsets.right !== null
+      const fixedLeftColumnShadow =
+        left && (fixedColumnShadowOffsets.left !== null || (fixedLeftColumnIndexList.length === 0 && leftScrollEdgeEffect === 'shadow'))
+      const fixedRightColumnShadow =
+        right && (fixedColumnShadowOffsets.right !== null || (fixedRightColumnIndexList.length === 0 && rightScrollEdgeEffect === 'shadow'))
       const horizontalThumbWidth = horizontal ? getScrollThumbSizePercent(clientWidth, scrollWidth) : 0
       const verticalThumbHeight = vertical ? getScrollThumbSizePercent(clientHeight, scrollHeight) : 0
       const applyScrollVisualState = (
@@ -753,8 +776,14 @@ const NextGenMIStickyTable = <T,>({
         target.style.setProperty('--next-gen-mi-sticky-right-column-shadow-opacity', fixedRightColumnShadow ? '1' : '0')
         target.style.setProperty('--next-gen-mi-sticky-left-column-shadow-left', `${columnShadowOffsets.left ?? 0}px`)
         target.style.setProperty('--next-gen-mi-sticky-right-column-shadow-right', `${columnShadowOffsets.right ?? 0}px`)
-        target.style.setProperty('--next-gen-mi-scroll-left-edge-opacity', left && !fixedLeftColumnShadow ? '1' : '0')
-        target.style.setProperty('--next-gen-mi-scroll-right-edge-opacity', right && !fixedRightColumnShadow ? '1' : '0')
+        target.style.setProperty(
+          '--next-gen-mi-scroll-left-edge-opacity',
+          left && !fixedLeftColumnShadow && leftScrollEdgeEffect === 'gradient' ? '1' : '0',
+        )
+        target.style.setProperty(
+          '--next-gen-mi-scroll-right-edge-opacity',
+          right && !fixedRightColumnShadow && rightScrollEdgeEffect === 'gradient' ? '1' : '0',
+        )
         target.style.setProperty('--next-gen-mi-scroll-left-edge-transition-duration', left ? '180ms' : '0ms')
         target.style.setProperty('--next-gen-mi-scroll-right-edge-transition-duration', right ? '180ms' : '0ms')
         target.style.setProperty(
@@ -886,8 +915,10 @@ const NextGenMIStickyTable = <T,>({
     fixedRightColumnIndexList,
     firstFixedRightColumnIndex,
     lastFixedLeftColumnIndex,
+    leftScrollEdgeEffect,
     loading,
     pageStickyHeaderColumnWidths,
+    rightScrollEdgeEffect,
     rows.length,
     showPageStickyHeader,
   ])
@@ -1010,8 +1041,9 @@ const NextGenMIStickyTable = <T,>({
     }
 
   const showScrollbars = isScrollAreaHovered || dragAxis !== null
-  const reserveExternalHorizontalScrollbarGutter = !showPageStickyHeader && scrollLayoutState.horizontal
-  const reserveExternalVerticalScrollbarGutter = !showPageStickyHeader || scrollLayoutState.vertical
+  const reserveExternalHorizontalScrollbarGutter =
+    !showPageStickyHeader && (scrollLayoutState.horizontal || reserveHorizontalScrollbarGutter)
+  const reserveExternalVerticalScrollbarGutter = !hideVerticalScrollbar && (!showPageStickyHeader || scrollLayoutState.vertical)
   const canUseInsetHorizontalScrollbar =
     canInsetHorizontalScrollbar &&
     scrollLayoutState.clientWidth >
@@ -1049,16 +1081,37 @@ const NextGenMIStickyTable = <T,>({
     '--next-gen-mi-vertical-thumb-top': '0%',
     '--next-gen-mi-vertical-thumb-height': '0%',
   } as const
-  const tableWidthSx = disableHorizontalScroll
+  const tableWidthSx = fitContentWidth
     ? {
-      width: '100%',
-      minWidth: 0,
-      maxWidth: '100%',
-    }
-    : {
       width: 'max-content',
-      minWidth: '100%',
+      minWidth: 0,
     }
+    : disableHorizontalScroll
+      ? {
+        width: '100%',
+        minWidth: 0,
+        maxWidth: '100%',
+      }
+      : {
+        width: 'max-content',
+        minWidth: '100%',
+      }
+  const hasFixedWidthColumn = columns.some((column) => column.fixedWidth)
+  const renderTableColumnGroup = () => {
+    if (!hasFixedWidthColumn) return null
+
+    return (
+      <colgroup>
+        {columns.map((column) =>
+          column.fixedWidth ? (
+            <col key={column.field} style={{ width: column.width, minWidth: column.minWidth, maxWidth: column.maxWidth }} />
+          ) : (
+            <col key={column.field} />
+          ),
+        )}
+      </colgroup>
+    )
+  }
   const pageStickyHeaderTableWidthPx = columns.reduce((sum, _, columnIndex) => sum + (pageStickyHeaderColumnWidths[columnIndex] ?? 0), 0)
   const pageStickyHeaderTableWidthSx =
     pageStickyHeaderTableWidthPx > 0
@@ -1229,7 +1282,11 @@ const NextGenMIStickyTable = <T,>({
             ...toSxArray(column.headerContentSx),
           ]}
         >
-          {column.headerName}
+          <NextGenMIStickyTableHeaderLabel
+            label={column.headerName}
+            tooltipTitle={column.headerTooltipTitle}
+            tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
+          />
         </Box>
       )
 
@@ -1523,9 +1580,10 @@ const NextGenMIStickyTable = <T,>({
               ...pageStickyHeaderTableWidthSx,
               borderCollapse: 'separate',
               borderSpacing: 0,
-              tableLayout: disableHorizontalScroll ? 'fixed' : 'auto',
+              tableLayout: disableHorizontalScroll || hasFixedWidthColumn ? 'fixed' : 'auto',
             }}
           >
+            {renderTableColumnGroup()}
             {renderTableHeader(false)}
           </Box>
         </Box>
@@ -1667,7 +1725,7 @@ const NextGenMIStickyTable = <T,>({
                 ...tableWidthSx,
                 borderCollapse: 'separate',
                 borderSpacing: 0,
-                tableLayout: disableHorizontalScroll ? 'fixed' : 'auto',
+                tableLayout: disableHorizontalScroll || hasFixedWidthColumn ? 'fixed' : 'auto',
                 ...(hoverType === 'vertical'
                   ? Object.fromEntries(
                     columns.map((_, columnIndex) => [
@@ -1678,6 +1736,7 @@ const NextGenMIStickyTable = <T,>({
                   : {}),
               }}
             >
+              {renderTableColumnGroup()}
               {!hideHeader && !showPageStickyHeader && renderTableHeader(true)}
 
               <Box component="tbody">
@@ -1797,7 +1856,7 @@ const NextGenMIStickyTable = <T,>({
           />
         )}
 
-        {fixedLeftColumnIndexList.length > 0 && (
+        {(fixedLeftColumnIndexList.length > 0 || leftScrollEdgeEffect === 'shadow') && (
           <Box
             aria-hidden
             sx={{
@@ -1807,7 +1866,7 @@ const NextGenMIStickyTable = <T,>({
           />
         )}
 
-        {fixedRightColumnIndexList.length > 0 && (
+        {(fixedRightColumnIndexList.length > 0 || rightScrollEdgeEffect === 'shadow') && (
           <Box
             aria-hidden
             sx={{
@@ -1839,7 +1898,7 @@ const NextGenMIStickyTable = <T,>({
           }}
         />
 
-        {configuredFixedLeftColumnIndexList.length === 0 && (
+        {configuredFixedLeftColumnIndexList.length === 0 && leftScrollEdgeEffect === 'gradient' && (
           <Box
             aria-hidden
             sx={{
@@ -1857,7 +1916,7 @@ const NextGenMIStickyTable = <T,>({
           />
         )}
 
-        {configuredFixedRightColumnIndexList.length === 0 && (
+        {configuredFixedRightColumnIndexList.length === 0 && rightScrollEdgeEffect === 'gradient' && (
           <Box
             aria-hidden
             sx={{
@@ -1878,7 +1937,7 @@ const NextGenMIStickyTable = <T,>({
 
       {!showPageStickyHeader && renderHorizontalScrollbar()}
 
-      {scrollLayoutState.vertical && (
+      {!hideVerticalScrollbar && scrollLayoutState.vertical && (
         <Box
           aria-hidden
           data-next-gen-mi-scrollbar-track="true"

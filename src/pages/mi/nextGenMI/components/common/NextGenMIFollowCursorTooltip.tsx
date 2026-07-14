@@ -24,6 +24,7 @@ const TooltipSx: SxProps<Theme> = (theme) => ({
   lineHeight: 1.4,
   fontWeight: 400,
   letterSpacing: 0,
+  whiteSpace: 'pre-line',
   fontFamily: theme.typography.fontFamily,
   boxSizing: 'border-box',
   '& .MuiTypography-root': {
@@ -140,7 +141,7 @@ const NextGenMIFollowCursorTooltip = ({
     setOpen(false)
   }, [clearEnterTimer])
 
-  const resolvedTooltipSx: SxProps<Theme> = tooltipSx ?? TooltipSx
+  const resolvedTooltipSx: SxProps<Theme> = [TooltipSx, ...(tooltipSx ? (Array.isArray(tooltipSx) ? tooltipSx : [tooltipSx]) : [])]
 
   const modifiers = useMemo(() => {
     const extra = slotProps?.popper?.modifiers ?? []

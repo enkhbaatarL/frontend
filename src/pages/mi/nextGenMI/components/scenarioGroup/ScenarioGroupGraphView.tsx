@@ -75,7 +75,7 @@ const ScenarioGroupGraphView = ({
     placeholderData: keepPreviousData,
   })
 
-  const { executingScenarioIds, notifyExecutionAccepted } = useScenarioGroupGraphRunStatusPolling({
+  const { executingScenarioIds, notifyExecutionAccepted, notifyExecutionCompleted } = useScenarioGroupGraphRunStatusPolling({
     scenarioGroupId,
     enabled,
     fallbackScenarioSeries: graphQuery.data?.scenarioSeries,
@@ -151,13 +151,6 @@ const ScenarioGroupGraphView = ({
         }
       }),
     [graphData?.scenarioSeries],
-  )
-
-  const handleAccepted = useCallback(
-    (scenarioId: number) => {
-      notifyExecutionAccepted(scenarioId)
-    },
-    [notifyExecutionAccepted],
   )
 
   const unitLabel = graphData ? buildScenarioGroupGraphUnit(graphData.currency, graphData.unit) : 'Unit: -'
@@ -269,7 +262,8 @@ const ScenarioGroupGraphView = ({
           scenarioOptions={scenarioOptions}
           parameterProposalTarget={graphData.parameterProposalTarget}
           executingScenarioIds={executingScenarioIds}
-          onAccepted={handleAccepted}
+          onAccepted={notifyExecutionAccepted}
+          onCompleted={notifyExecutionCompleted}
         />
       )}
     </>
