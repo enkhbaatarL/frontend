@@ -441,7 +441,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const isExecuting = modelExecution?.status === 'RUNNING'
     const isSubmitting = isSubmittingFiles || isSubmittingModelParamProposal
     const isBusy = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
-    const isCloseDisabled = isCreatingModelParamProposal || isExecuting || isSubmitting || isResettingModelParamProposal
+    const isCloseDisabled = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
     const canGenerate =
       currentProposalState === 'NOT_REQUESTED' || currentProposalState === 'PROPOSAL_FAILED' || currentProposalState === 'EXECUTION_FAILED'
     const canUseCurrentParameters =
