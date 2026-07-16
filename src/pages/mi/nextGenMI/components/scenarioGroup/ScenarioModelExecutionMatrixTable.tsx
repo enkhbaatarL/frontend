@@ -207,9 +207,10 @@ const ScenarioModelExecutionMatrixTable = <T,>({
   ])
 
   useEffect(() => {
+    const root = rootRef.current
     const leftScrollContainer = leftScrollContainerRef.current
     const rightScrollContainer = rightScrollContainerRef.current
-    if (!leftScrollContainer || !rightScrollContainer) return undefined
+    if (!root || !leftScrollContainer || !rightScrollContainer) return undefined
 
     const syncScrollTop = (source: HTMLDivElement, target: HTMLDivElement) => {
       if (Math.abs(source.scrollTop - target.scrollTop) < 1) return
@@ -223,11 +224,45 @@ const ScenarioModelExecutionMatrixTable = <T,>({
       syncScrollTop(rightScrollContainer, leftScrollContainer)
       scheduleSynchronizedRowHoverUpdate()
     }
+    // VDI에서는 별도 native scroller가 서로 다른 frame에 그려질 수 있으므로 wheel 기본 동작 전에 같은 위치를 적용한다.
+    const handleWheel = (event: WheelEvent) => {
+      if (
+        !event.cancelable ||
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        Math.abs(event.deltaY) <= Math.abs(event.deltaX)
+      )
+        return
 
+      const sourceScrollContainer =
+        event.target instanceof Node && leftScrollContainer.contains(event.target) ? leftScrollContainer : rightScrollContainer
+      const deltaY =
+        event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? event.deltaY * 16
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? event.deltaY * sourceScrollContainer.clientHeight
+            : event.deltaY
+      const maximumScrollTop = Math.min(
+        leftScrollContainer.scrollHeight - leftScrollContainer.clientHeight,
+        rightScrollContainer.scrollHeight - rightScrollContainer.clientHeight,
+      )
+      const nextScrollTop = Math.max(0, Math.min(sourceScrollContainer.scrollTop + deltaY, maximumScrollTop))
+
+      if (sourceScrollContainer.scrollTop === nextScrollTop) return
+
+      event.preventDefault()
+      leftScrollContainer.scrollTop = nextScrollTop
+      rightScrollContainer.scrollTop = nextScrollTop
+      scheduleSynchronizedRowHoverUpdate()
+    }
+
+    root.addEventListener('wheel', handleWheel, { passive: false })
     leftScrollContainer.addEventListener('scroll', syncFromLeft, { passive: true })
     rightScrollContainer.addEventListener('scroll', syncFromRight, { passive: true })
 
     return () => {
+      root.removeEventListener('wheel', handleWheel)
       leftScrollContainer.removeEventListener('scroll', syncFromLeft)
       rightScrollContainer.removeEventListener('scroll', syncFromRight)
     }

@@ -284,6 +284,7 @@ const EventDetailDriverTreeScoreboardSection = ({
         pageStickyHeaderBefore={shouldGroupPageStickyHeader ? renderSectionHeader() : undefined}
         pageStickyHeaderGap="12px"
         pageStickyHeaderReleaseOnLastRow={shouldGroupPageStickyHeader}
+        userFix
       />
     </Stack>
   )

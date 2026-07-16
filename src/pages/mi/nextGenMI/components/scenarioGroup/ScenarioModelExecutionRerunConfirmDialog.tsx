@@ -5,14 +5,16 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 
 interface ScenarioModelExecutionRerunConfirmDialogProps {
   open: boolean
+  zIndex?: number
   onClose: () => void
   onConfirm: () => void
 }
 
-const ScenarioModelExecutionRerunConfirmDialog = ({ open, onClose, onConfirm }: ScenarioModelExecutionRerunConfirmDialogProps) => (
+const ScenarioModelExecutionRerunConfirmDialog = ({ open, zIndex, onClose, onConfirm }: ScenarioModelExecutionRerunConfirmDialogProps) => (
   <Dialog
     open={open}
     onClose={onClose}
+    sx={{ zIndex }}
     slotProps={{
       paper: {
         sx: {

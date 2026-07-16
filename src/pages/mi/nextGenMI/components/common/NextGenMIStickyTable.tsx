@@ -16,10 +16,12 @@ import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import {
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
+  NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_TOP,
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
+import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 
 type NextGenMIStickyTableAlign = 'left' | 'center' | 'right'
 type NextGenMIStickyTableSortDirection = 'asc' | 'desc'
@@ -231,9 +233,13 @@ const getColumnStickyWidth = <T,>(
   column: NextGenMIStickyTableColumn<T>,
   columnIndex: number,
   resizedFixedColumnWidths: Record<number, number>,
+  measuredColumnWidths: Record<number, number>,
 ) => {
   const resizedWidth = resizedFixedColumnWidths[columnIndex]
-  return typeof resizedWidth === 'number' ? `${resizedWidth}px` : (column.minWidth ?? column.width)
+  if (typeof resizedWidth === 'number') return `${resizedWidth}px`
+
+  const measuredWidth = measuredColumnWidths[columnIndex]
+  return typeof measuredWidth === 'number' ? `${measuredWidth}px` : (column.minWidth ?? column.width)
 }
 
 const getFixedColumnWidth = (scrollRoot: HTMLDivElement, selector: string) => {
@@ -384,13 +390,14 @@ const NextGenMIStickyTable = <T,>({
   const tableRootRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const scrollFrameRef = useRef<HTMLDivElement | null>(null)
+  const pageStickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const pageStickyHeaderScrollRef = useRef<HTMLDivElement | null>(null)
   const stickyHorizontalScrollbarRef = useRef<HTMLDivElement | null>(null)
   const lastScrollPositionRef = useRef({ left: 0, top: 0 })
   const lastActiveAxisRef = useRef<ScrollAxis>(null)
   const pendingAxisUpdateRef = useRef(false)
   const scrollAnimationFrameRef = useRef(0)
-  const syncScrollVisualStateRef = useRef<(updateAxis?: boolean) => void>(() => undefined)
+  const syncingHorizontalScrollRef = useRef(false)
   const sortSkeletonTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const configuredFixedLeftColumnIndexList = useMemo(
     () => normalizeFixedColumnIndexes(fixedLeftColumnIndexes, columns.length),
@@ -438,7 +445,8 @@ const NextGenMIStickyTable = <T,>({
   const [sortState, setSortState] = useState<NextGenMIStickyTableSortState>(null)
   const [sortSkeletonVisible, setSortSkeletonVisible] = useState(false)
   const [pageStickyHeaderLastRowHeightPx, setPageStickyHeaderLastRowHeightPx] = useState(0)
-  const [pageStickyHeaderColumnWidths, setPageStickyHeaderColumnWidths] = useState<Record<number, number>>({})
+  const [pageStickyHeaderPinned, setPageStickyHeaderPinned] = useState(false)
+  const [measuredColumnWidths, setMeasuredColumnWidths] = useState<Record<number, number>>({})
   const fixedLeftColumnLeftMap = useMemo(() => {
     const next = new Map<number, string | number>()
     const widthParts: string[] = []
@@ -447,11 +455,11 @@ const NextGenMIStickyTable = <T,>({
       const column = columns.at(columnIndex)
       if (!column) return
       next.set(columnIndex, widthParts.length > 0 ? toCssCalc(widthParts) : 0)
-      widthParts.push(getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths))
+      widthParts.push(getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths, measuredColumnWidths))
     })
 
     return next
-  }, [columns, fixedLeftColumnIndexList, resizedFixedColumnWidths])
+  }, [columns, fixedLeftColumnIndexList, measuredColumnWidths, resizedFixedColumnWidths])
   const fixedRightColumnRightMap = useMemo(() => {
     const next = new Map<number, string | number>()
     const widthParts: string[] = []
@@ -463,11 +471,11 @@ const NextGenMIStickyTable = <T,>({
         const column = columns.at(columnIndex)
         if (!column) return
         next.set(columnIndex, widthParts.length > 0 ? toCssCalc(widthParts) : 0)
-        widthParts.push(getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths))
+        widthParts.push(getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths, measuredColumnWidths))
       })
 
     return next
-  }, [columns, fixedRightColumnIndexList, resizedFixedColumnWidths])
+  }, [columns, fixedRightColumnIndexList, measuredColumnWidths, resizedFixedColumnWidths])
   const sortedRows = useMemo(() => {
     if (!sortState) return rows
 
@@ -491,18 +499,41 @@ const NextGenMIStickyTable = <T,>({
     () =>
       fixedLeftColumnIndexList.flatMap((columnIndex) => {
         const column = columns.at(columnIndex)
-        return column ? [getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths)] : []
+        return column ? [getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths, measuredColumnWidths)] : []
       }),
-    [columns, fixedLeftColumnIndexList, resizedFixedColumnWidths],
+    [columns, fixedLeftColumnIndexList, measuredColumnWidths, resizedFixedColumnWidths],
   )
   const fixedRightColumnsWidthParts = useMemo(
     () =>
       fixedRightColumnIndexList.flatMap((columnIndex) => {
         const column = columns.at(columnIndex)
-        return column ? [getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths)] : []
+        return column ? [getColumnStickyWidth(column, columnIndex, resizedFixedColumnWidths, measuredColumnWidths)] : []
       }),
-    [columns, fixedRightColumnIndexList, resizedFixedColumnWidths],
+    [columns, fixedRightColumnIndexList, measuredColumnWidths, resizedFixedColumnWidths],
   )
+  const leftAlignedHeaderStickyLeftMap = useMemo(() => {
+    const next = new Map<number, string>()
+
+    columns.forEach((_, columnIndex) => {
+      const precedingFixedColumnWidthParts = fixedLeftColumnIndexList.flatMap((fixedColumnIndex) => {
+        if (fixedColumnIndex >= columnIndex) return []
+
+        const fixedColumn = columns.at(fixedColumnIndex)
+        return fixedColumn ? [getColumnStickyWidth(fixedColumn, fixedColumnIndex, resizedFixedColumnWidths, measuredColumnWidths)] : []
+      })
+
+      next.set(
+        columnIndex,
+        precedingFixedColumnWidthParts.length > 0
+          ? `calc(${precedingFixedColumnWidthParts.join(' + ')} + ${cellPaddingX})`
+          : cellEdgeInsetLeft
+            ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})`
+            : cellPaddingX,
+      )
+    })
+
+    return next
+  }, [cellEdgeInsetLeft, cellPaddingX, columns, fixedLeftColumnIndexList, measuredColumnWidths, resizedFixedColumnWidths])
   const fixedLeftColumnsWidth = fixedLeftColumnsWidthParts.length > 0 ? toCssCalc(fixedLeftColumnsWidthParts) : '0px'
   const fixedRightColumnsWidth = fixedRightColumnsWidthParts.length > 0 ? toCssCalc(fixedRightColumnsWidthParts) : '0px'
   const showSkeletonRows = loading || sortSkeletonVisible
@@ -519,14 +550,6 @@ const NextGenMIStickyTable = <T,>({
     pageStickyHeaderReleaseOffsetBottom !== undefined
       ? toCssLength(pageStickyHeaderReleaseOffsetBottom)
       : pageStickyHeaderMeasuredReleaseOffset
-  // 고정-좌측 컬럼이 있으면 sticky 라벨은 첫 컬럼이 아니므로 엣지 인셋이 없는 cellPaddingX 만 더한다.
-  // 고정-좌측 컬럼이 없으면 sticky 라벨이 첫 컬럼일 수 있으므로 활성화된 외곽 인셋까지 반영한다.
-  const leftAlignedHeaderStickyLeft =
-    fixedLeftColumnsWidthParts.length > 0
-      ? `calc(${fixedLeftColumnsWidthParts.join(' + ')} + ${cellPaddingX})`
-      : cellEdgeInsetLeft
-        ? `calc(${cellPaddingX} + ${CELL_EDGE_INSET})`
-        : cellPaddingX
   const getCellPaddingSx = (columnIndex: number) => ({
     paddingTop: cellPaddingY,
     paddingBottom: cellPaddingY,
@@ -574,17 +597,16 @@ const NextGenMIStickyTable = <T,>({
   const handleScrollAreaMouseLeave = () => {
     if (showPageStickyHeader) setIsScrollAreaHovered(false)
   }
-  const setElementScrollLeft = useCallback((element: HTMLDivElement, nextScrollLeft: number) => {
-    if (Math.abs(element.scrollLeft - nextScrollLeft) < 1) return
-    element.scrollLeft = nextScrollLeft
-    syncScrollVisualStateRef.current(true)
+  const syncPageStickyHeaderScrollLeft = useCallback((source: HTMLDivElement, target: HTMLDivElement) => {
+    if (syncingHorizontalScrollRef.current || target.scrollLeft === source.scrollLeft) return
+
+    syncingHorizontalScrollRef.current = true
+    try {
+      target.scrollLeft = source.scrollLeft
+    } finally {
+      syncingHorizontalScrollRef.current = false
+    }
   }, [])
-  const syncPageStickyHeaderScrollLeft = useCallback(
-    (source: HTMLDivElement, target: HTMLDivElement) => {
-      setElementScrollLeft(target, source.scrollLeft)
-    },
-    [setElementScrollLeft],
-  )
   const handleBodyScrollLeft = useCallback(() => {
     const bodyScrollEl = scrollRef.current
     const headerScrollEl = pageStickyHeaderScrollRef.current
@@ -683,14 +705,14 @@ const NextGenMIStickyTable = <T,>({
   }, [columns.length, pageStickyHeaderReleaseOnLastRow, showSkeletonRows, sortedRows])
 
   useLayoutEffect(() => {
-    if (!showPageStickyHeader) {
-      setPageStickyHeaderColumnWidths({})
+    if (!showPageStickyHeader && !userFix) {
+      setMeasuredColumnWidths({})
       return undefined
     }
 
     const root = tableRootRef.current
     if (!root) {
-      setPageStickyHeaderColumnWidths({})
+      setMeasuredColumnWidths({})
       return undefined
     }
 
@@ -700,8 +722,10 @@ const NextGenMIStickyTable = <T,>({
       animationFrameId = 0
       const nextWidths: Record<number, number> = {}
       const bodyCells = root.querySelectorAll<HTMLElement>('tbody [data-next-gen-mi-sticky-table-column-index]')
+      const renderedColumns =
+        bodyCells.length > 0 ? bodyCells : root.querySelectorAll<HTMLElement>('thead [data-next-gen-mi-sticky-table-column-index]')
 
-      bodyCells.forEach((cell) => {
+      renderedColumns.forEach((cell) => {
         const columnIndex = Number(cell.dataset.nextGenMiStickyTableColumnIndex)
         if (!Number.isInteger(columnIndex)) return
 
@@ -711,7 +735,7 @@ const NextGenMIStickyTable = <T,>({
         nextWidths[columnIndex] = Math.max(nextWidths[columnIndex] ?? 0, width)
       })
 
-      setPageStickyHeaderColumnWidths((current) => {
+      setMeasuredColumnWidths((current) => {
         const currentKeys = Object.keys(current)
         const nextKeys = Object.keys(nextWidths)
         const hasSameWidths =
@@ -730,7 +754,7 @@ const NextGenMIStickyTable = <T,>({
 
     const resizeObserver = new ResizeObserver(scheduleMeasure)
     resizeObserver.observe(root)
-    root.querySelectorAll<HTMLElement>('tbody [data-next-gen-mi-sticky-table-column-index]').forEach((cell) => resizeObserver.observe(cell))
+    root.querySelectorAll<HTMLElement>('[data-next-gen-mi-sticky-table-column-index]').forEach((cell) => resizeObserver.observe(cell))
     globalThis.addEventListener('resize', scheduleMeasure)
 
     return () => {
@@ -738,7 +762,52 @@ const NextGenMIStickyTable = <T,>({
       resizeObserver.disconnect()
       globalThis.removeEventListener('resize', scheduleMeasure)
     }
-  }, [columns.length, resizedFixedColumnWidths, showPageStickyHeader, showSkeletonRows, sortedRows])
+  }, [columns.length, resizedFixedColumnWidths, showPageStickyHeader, showSkeletonRows, sortedRows, userFix])
+
+  useLayoutEffect(() => {
+    if (!showPageStickyHeader) {
+      setPageStickyHeaderPinned(false)
+      return undefined
+    }
+
+    const scrollEl = document.getElementById(NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID)
+    const stickyEl = pageStickyHeaderRef.current
+    if (!scrollEl || !stickyEl) {
+      setPageStickyHeaderPinned(false)
+      return undefined
+    }
+
+    let animationFrameId = 0
+
+    const measurePinned = () => {
+      animationFrameId = 0
+      const stickyTop = Number.parseFloat(globalThis.getComputedStyle(stickyEl).top)
+      const stickyBoundaryTop = scrollEl.getBoundingClientRect().top + stickyTop
+      const nextPinned = Number.isFinite(stickyTop) && Math.abs(stickyEl.getBoundingClientRect().top - stickyBoundaryTop) <= 0.5
+      setPageStickyHeaderPinned((current) => (current === nextPinned ? current : nextPinned))
+    }
+
+    const scheduleMeasurePinned = () => {
+      if (animationFrameId !== 0) return
+      animationFrameId = globalThis.requestAnimationFrame(measurePinned)
+    }
+
+    measurePinned()
+
+    const resizeObserver = new ResizeObserver(scheduleMeasurePinned)
+    resizeObserver.observe(stickyEl)
+    scrollEl.addEventListener('scroll', scheduleMeasurePinned, { passive: true })
+    stickyEl.addEventListener('transitionend', scheduleMeasurePinned)
+    globalThis.addEventListener('resize', scheduleMeasurePinned)
+
+    return () => {
+      if (animationFrameId !== 0) globalThis.cancelAnimationFrame(animationFrameId)
+      resizeObserver.disconnect()
+      scrollEl.removeEventListener('scroll', scheduleMeasurePinned)
+      stickyEl.removeEventListener('transitionend', scheduleMeasurePinned)
+      globalThis.removeEventListener('resize', scheduleMeasurePinned)
+    }
+  }, [pageStickyHeaderTop, showPageStickyHeader])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -863,7 +932,6 @@ const NextGenMIStickyTable = <T,>({
     }
 
     sync()
-    syncScrollVisualStateRef.current = sync
     const handleScroll = () => {
       const maxLeft = Math.max(0, el.scrollWidth - el.clientWidth)
       const atLeftEdge = el.scrollLeft <= 1
@@ -903,7 +971,6 @@ const NextGenMIStickyTable = <T,>({
         globalThis.cancelAnimationFrame(scrollAnimationFrameRef.current)
         scrollAnimationFrameRef.current = 0
       }
-      if (syncScrollVisualStateRef.current === sync) syncScrollVisualStateRef.current = () => undefined
       el.removeEventListener('scroll', handleScroll)
       ro.disconnect()
     }
@@ -917,38 +984,36 @@ const NextGenMIStickyTable = <T,>({
     lastFixedLeftColumnIndex,
     leftScrollEdgeEffect,
     loading,
-    pageStickyHeaderColumnWidths,
+    measuredColumnWidths,
     rightScrollEdgeEffect,
     rows.length,
     showPageStickyHeader,
   ])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!showPageStickyHeader) return undefined
 
     const bodyScrollEl = scrollRef.current
     const headerScrollEl = pageStickyHeaderScrollRef.current
     if (!bodyScrollEl || !headerScrollEl) return undefined
 
-    const syncFromBody = () => syncPageStickyHeaderScrollLeft(bodyScrollEl, headerScrollEl)
-    const syncFromHeader = () => syncPageStickyHeaderScrollLeft(headerScrollEl, bodyScrollEl)
-
     headerScrollEl.scrollLeft = bodyScrollEl.scrollLeft
-    bodyScrollEl.addEventListener('scroll', syncFromBody, { passive: true })
-    headerScrollEl.addEventListener('scroll', syncFromHeader, { passive: true })
-
-    return () => {
-      bodyScrollEl.removeEventListener('scroll', syncFromBody)
-      headerScrollEl.removeEventListener('scroll', syncFromHeader)
-    }
-  }, [showPageStickyHeader, syncPageStickyHeaderScrollLeft])
+    return undefined
+  }, [measuredColumnWidths, showPageStickyHeader])
 
   const setHorizontalScrollLeft = useCallback(
     (nextScrollLeft: number) => {
-      if (scrollRef.current) setElementScrollLeft(scrollRef.current, nextScrollLeft)
-      if (showPageStickyHeader && pageStickyHeaderScrollRef.current) setElementScrollLeft(pageStickyHeaderScrollRef.current, nextScrollLeft)
+      if (syncingHorizontalScrollRef.current) return
+
+      syncingHorizontalScrollRef.current = true
+      try {
+        if (scrollRef.current) scrollRef.current.scrollLeft = nextScrollLeft
+        if (showPageStickyHeader && pageStickyHeaderScrollRef.current) pageStickyHeaderScrollRef.current.scrollLeft = nextScrollLeft
+      } finally {
+        syncingHorizontalScrollRef.current = false
+      }
     },
-    [setElementScrollLeft, showPageStickyHeader],
+    [showPageStickyHeader],
   )
 
   const handleScrollbarPointerDown = (axis: Exclude<ScrollAxis, null>) => (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -1112,7 +1177,7 @@ const NextGenMIStickyTable = <T,>({
       </colgroup>
     )
   }
-  const pageStickyHeaderTableWidthPx = columns.reduce((sum, _, columnIndex) => sum + (pageStickyHeaderColumnWidths[columnIndex] ?? 0), 0)
+  const pageStickyHeaderTableWidthPx = columns.reduce((sum, _, columnIndex) => sum + (measuredColumnWidths[columnIndex] ?? 0), 0)
   const pageStickyHeaderTableWidthSx =
     pageStickyHeaderTableWidthPx > 0
       ? {
@@ -1189,7 +1254,7 @@ const NextGenMIStickyTable = <T,>({
     const isFixedColumn = fixedColumnIndexSet.has(columnIndex)
     const isLastFixedLeftColumn = lastFixedLeftColumnIndex === columnIndex
     const isFirstFixedRightColumn = firstFixedRightColumnIndex === columnIndex
-    const pageStickyHeaderColumnWidth = hasPageStickyHeader ? pageStickyHeaderColumnWidths[columnIndex] : undefined
+    const pageStickyHeaderColumnWidth = hasPageStickyHeader ? measuredColumnWidths[columnIndex] : undefined
     const headerColumnWidthSx =
       pageStickyHeaderColumnWidth !== undefined
         ? {
@@ -1198,8 +1263,7 @@ const NextGenMIStickyTable = <T,>({
           maxWidth: `${pageStickyHeaderColumnWidth}px`,
         }
         : getColumnWidthSx(column, columnIndex, isFixedColumn)
-    const shouldStickyLeftAlignedHeader =
-      !isFixedColumn && leftAlignedHeaderSticky && align === 'left' && columnIndex > (lastFixedLeftColumnIndex ?? -1)
+    const shouldStickyLeftAlignedHeader = !isFixedColumn && leftAlignedHeaderSticky && align === 'left'
     const headerStickyTop = hasPageStickyHeader ? toCssLength(pageStickyHeaderTop!) : 0
     const headerStickyZIndex = hasPageStickyHeader ? pageStickyHeaderZIndex : 3
     const fixedHeaderStickyZIndex = hasPageStickyHeader ? pageStickyHeaderZIndex + 1 : 4
@@ -1236,7 +1300,7 @@ const NextGenMIStickyTable = <T,>({
             },
             shouldStickyLeftAlignedHeader && {
               position: 'sticky',
-              left: leftAlignedHeaderStickyLeft,
+              left: leftAlignedHeaderStickyLeftMap.get(columnIndex),
               width: 'fit-content',
               maxWidth: '100%',
             },
@@ -1275,7 +1339,7 @@ const NextGenMIStickyTable = <T,>({
             },
             shouldStickyLeftAlignedHeader && {
               position: 'sticky',
-              left: leftAlignedHeaderStickyLeft,
+              left: leftAlignedHeaderStickyLeftMap.get(columnIndex),
               width: 'fit-content',
               maxWidth: '100%',
             },
@@ -1369,7 +1433,7 @@ const NextGenMIStickyTable = <T,>({
       >
         {canToggleUserFix ? (
           <Box component="span" display="flex" alignItems="center" gap="4px" width="100%" minWidth={0}>
-            <Box component="span" display="block" flex="1 1 0" minWidth={0} overflow="hidden">
+            <Box component="span" display="block" flex="1 1 0" minWidth={0}>
               {renderHeaderContent()}
             </Box>
             <Box
@@ -1496,7 +1560,6 @@ const NextGenMIStickyTable = <T,>({
       sx={{
         position: 'relative',
         zIndex: sticky && hasPageStickyHeader ? pageStickyHeaderZIndex : 3,
-        ...(!sticky ? { boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP } : {}),
         bgcolor: 'commonColor.White',
       }}
     >
@@ -1548,6 +1611,9 @@ const NextGenMIStickyTable = <T,>({
       sx={{
         position: 'relative',
         width: '100%',
+        boxShadow: pageStickyHeaderPinned ? NEXT_GEN_MI_SCROLL_EDGE_SHADOW_TOP : 'none',
+        clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_TOP,
+        transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
       }}
     >
       <Box
@@ -1592,7 +1658,7 @@ const NextGenMIStickyTable = <T,>({
         aria-hidden
         sx={{
           position: 'absolute',
-          top: `calc(${headerHeight} - 1px)`,
+          bottom: 0,
           right: scrollLayoutState.vertical ? '18px' : 0,
           left: 0,
           height: '1px',
@@ -1627,6 +1693,7 @@ const NextGenMIStickyTable = <T,>({
 
   const pageStickyHeader = showPageStickyHeader ? (
     <Box
+      ref={pageStickyHeaderRef}
       sx={{
         position: 'sticky',
         top: toCssLength(pageStickyHeaderTop!),

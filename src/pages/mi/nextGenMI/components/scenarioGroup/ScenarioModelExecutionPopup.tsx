@@ -16,6 +16,7 @@ import ScenarioModelExecutionFileUploadContent from '@/pages/mi/nextGenMI/compon
 import ScenarioModelExecutionPopupContent, {
   type ScenarioModelExecutionOption,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
+import ScenarioModelExecutionRerunConfirmDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionRerunConfirmDialog'
 import fileService, { type IFileDownloadRequest } from '@/service/admin/file'
 import nextGenMIModelExecutionService, {
   type FileModelExecutionAccept,
@@ -37,7 +38,7 @@ interface ScenarioModelExecutionPopupProps {
   onCompleted: (scenarioId: number) => void
 }
 
-type ModelExecutionConfirmType = 'close' | 'scenarioChange' | 'submit'
+type ModelExecutionConfirmType = 'close' | 'scenarioChange' | 'scenarioRerun' | 'submit'
 type ModelParamProposalResetSource = 'confirmed' | 'proposed'
 
 const isExecutionValidationError = (error: unknown) => {
@@ -469,17 +470,33 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const handleSelectScenario = useCallback(
       (scenarioId: number) => {
         if (selectedScenarioId === scenarioId) return
+
+        const selectedScenarioExecuted = scenarioOptions.some((option) => option.scenarioId === scenarioId && option.executed)
+        if (selectedScenarioExecuted) {
+          setPendingScenarioId(scenarioId)
+          setConfirmType('scenarioRerun')
+          return
+        }
+
         if (isParameterProposalMode && hasGeneratedParameters) {
           setPendingScenarioId(scenarioId)
           setConfirmType('scenarioChange')
           return
         }
+
         changeScenario(scenarioId)
       },
-      [changeScenario, hasGeneratedParameters, isParameterProposalMode, selectedScenarioId],
+      [changeScenario, hasGeneratedParameters, isParameterProposalMode, scenarioOptions, selectedScenarioId],
     )
 
     const handleScenarioChangeConfirm = useCallback(() => {
+      if (pendingScenarioId === null) return
+      changeScenario(pendingScenarioId)
+      setPendingScenarioId(null)
+      setConfirmType(null)
+    }, [changeScenario, pendingScenarioId])
+
+    const handleScenarioRerunConfirm = useCallback(() => {
       if (pendingScenarioId === null) return
       changeScenario(pendingScenarioId)
       setPendingScenarioId(null)
@@ -927,6 +944,16 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         >
           현재 제안된 파라미터를 기준으로 수급모델을 실행합니다.
         </MIConfirm>
+
+        <ScenarioModelExecutionRerunConfirmDialog
+          open={confirmType === 'scenarioRerun'}
+          zIndex={1401}
+          onClose={() => {
+            setPendingScenarioId(null)
+            setConfirmType(null)
+          }}
+          onConfirm={handleScenarioRerunConfirm}
+        />
       </>
     )
   },
