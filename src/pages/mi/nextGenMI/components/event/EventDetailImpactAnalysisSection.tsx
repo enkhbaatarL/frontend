@@ -3,6 +3,8 @@ import ManageSearchIcon from '@mui/icons-material/ManageSearch'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useMemo } from 'react'
+import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
 import type { EventDetailImpactIndex } from '@/service/mi/nextGenMI/event'
@@ -20,6 +22,7 @@ import NextGenMITableBodyText, {
 } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
+import { markdownRemarkPlugins } from '@/utils/markdown'
 
 /** 영향도 분석 섹션 props */
 interface EventDetailImpactAnalysisSectionProps {
@@ -246,8 +249,10 @@ const EventDetailImpactAnalysisSection = ({
             영향도 분석 종합
           </Typography>
           {hasNarrative ? (
-            <Typography fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
-              {narrative}
+            <Typography component="div" fontSize={16} fontWeight={500} color="contentText.Black" lineHeight={1.6}>
+              <ReactMarkdown remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
+                {narrative}
+              </ReactMarkdown>
             </Typography>
           ) : (
             <Stack flex={1} minHeight="120px" alignItems="center" justifyContent="center">
