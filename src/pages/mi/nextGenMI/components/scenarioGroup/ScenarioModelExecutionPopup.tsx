@@ -1,8 +1,13 @@
+import { Stack, Typography } from '@mui/material'
+import { type Theme } from '@mui/material/styles'
 import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
+import CollapseIcon from '@/components/common/icons/agent/CollapseIcon'
+import ExpandIcon from '@/components/common/icons/agent/ExpandIcon'
 import useSnackbar from '@/hooks/useSnackbar'
 import {
   FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_BYTES,
@@ -89,6 +94,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
   ({ scenarioOptions, parameterProposalTarget, executingScenarioIds, onAccepted, onCompleted }, ref) => {
     const { showSnackbar } = useSnackbar()
     const [open, setOpen] = useState(false)
+    const [isMaximized, setIsMaximized] = useState(false)
     const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null)
     const [files, setFiles] = useState<File[]>([])
     const [parameterProposal, setParameterProposal] = useState<CurrentModelParamProposal | null>(null)
@@ -222,6 +228,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       refreshingScenarioIdsRef.current.clear()
       queuedRefreshScenarioIdsRef.current.clear()
       queuedFailureNotificationScenarioIdsRef.current.clear()
+      setIsMaximized(false)
       setSelectedScenarioId(null)
       setFiles([])
       setParameterProposal(null)
@@ -443,6 +450,9 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const isSubmitting = isSubmittingFiles || isSubmittingModelParamProposal
     const isBusy = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
     const isCloseDisabled = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
+    const hasMaximizableProposal = hasGeneratedParameters && Boolean(parameterProposal?.modelFiles.some((modelFile) => modelFile.modelFile))
+    const canChangeMaximize = hasMaximizableProposal && !isCurrentProposalLoading && !isGenerating && !isSubmitting && !isExecuting
+    const isMaximizeActive = hasMaximizableProposal && isMaximized
     const canGenerate =
       currentProposalState === 'NOT_REQUESTED' || currentProposalState === 'PROPOSAL_FAILED' || currentProposalState === 'EXECUTION_FAILED'
     const canUseCurrentParameters =
@@ -451,6 +461,10 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         currentProposalState === 'EXECUTION_FAILED') &&
       hasGeneratedParameters &&
       parameterProposal?.modelParamProposalId !== undefined
+
+    useEffect(() => {
+      if (!hasMaximizableProposal) setIsMaximized(false)
+    }, [hasMaximizableProposal])
 
     const changeScenario = useCallback((scenarioId: number) => {
       proposalSessionIdRef.current += 1
@@ -794,7 +808,39 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       <>
         <MIConfirm
           open={open}
-          title="MI 수급모델"
+          title={
+            isParameterProposalMode ? (
+              <Stack component="span" direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
+                <Typography component="span" fontSize="18px" fontWeight={600} lineHeight={1.4} color="contentText.Black">
+                  MI 수급모델
+                </Typography>
+                <MIBaseButton
+                  variant="text"
+                  title={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
+                  aria-label={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
+                  aria-pressed={isMaximizeActive}
+                  aria-haspopup={false}
+                  disabled={!canChangeMaximize}
+                  onClick={() => setIsMaximized((maximized) => !maximized)}
+                  disableRipple
+                  buttonHoverBgColor="contentBG.Hover"
+                  sx={{
+                    flexShrink: 0,
+                    width: '36px',
+                    minWidth: '36px',
+                    height: '36px',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    color: 'contentIcon.Enabled',
+                  }}
+                >
+                  {isMaximizeActive ? <CollapseIcon width={16} height={16} /> : <ExpandIcon width={24} height={24} />}
+                </MIBaseButton>
+              </Stack>
+            ) : (
+              'MI 수급모델'
+            )
+          }
           handleClose={handleClose}
           width={isParameterProposalMode ? 1200 : 600}
           hideFooter
@@ -807,12 +853,26 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
                 borderColor: 'contentBorder.Normal',
                 borderRadius: '10px',
                 boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
-                width: '1200px',
+                width: isMaximizeActive ? 'calc(100dvw - 32px)' : '1200px',
                 maxWidth: 'calc(100dvw - 32px)',
-                height: hasGeneratedParameters && !isSubmitting && !isExecuting ? 'auto' : 'min(604px, calc(100dvh - 32px))',
-                maxHeight: hasGeneratedParameters && !isSubmitting && !isExecuting ? 'calc(100dvh - 96px)' : 'calc(100dvh - 32px)',
-                margin: hasGeneratedParameters && !isSubmitting && !isExecuting ? '48px 16px' : '16px',
+                height: isMaximizeActive
+                  ? 'calc(100dvh - 32px)'
+                  : hasGeneratedParameters && !isSubmitting && !isExecuting
+                    ? 'auto'
+                    : 'min(604px, calc(100dvh - 32px))',
+                maxHeight: isMaximizeActive
+                  ? 'calc(100dvh - 32px)'
+                  : hasGeneratedParameters && !isSubmitting && !isExecuting
+                    ? 'calc(100dvh - 96px)'
+                    : 'calc(100dvh - 32px)',
+                margin: isMaximizeActive ? '16px' : hasGeneratedParameters && !isSubmitting && !isExecuting ? '48px 16px' : '16px',
                 overflow: 'hidden',
+                interpolateSize: 'allow-keywords',
+                transition: (theme: Theme) =>
+                  theme.transitions.create(['width', 'height', 'max-width', 'max-height', 'margin'], {
+                    duration: 400,
+                    easing: theme.transitions.easing.easeInOut,
+                  }),
               }
               : { borderRadius: '10px' }
           }
@@ -828,6 +888,9 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
                 fontSize: '18px',
                 color: 'contentText.Black',
                 '& > span:first-of-type': {
+                  display: 'flex',
+                  flex: '1 1 auto',
+                  minWidth: 0,
                   fontWeight: '600 !important',
                 },
                 '& > span:last-of-type button': {
@@ -863,6 +926,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
               selectedScenarioId={selectedScenarioId}
               executingScenarioIds={executingScenarioIds}
               parameterProposal={parameterProposal}
+              isMaximized={isMaximizeActive}
               isLoading={isCurrentProposalLoading}
               isGenerating={isGenerating}
               isExecuting={isExecuting}

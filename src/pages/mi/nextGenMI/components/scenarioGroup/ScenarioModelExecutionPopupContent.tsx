@@ -1,4 +1,5 @@
-import { Box, Collapse, Stack, Tab, Tabs, Typography } from '@mui/material'
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
+import { Box, Breadcrumbs, Collapse, Stack, Tab, Tabs, Typography } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -57,6 +58,7 @@ interface ScenarioModelExecutionPopupContentProps {
   selectedScenarioId: number | null
   executingScenarioIds: Set<number>
   parameterProposal: CurrentModelParamProposal | null
+  isMaximized: boolean
   isLoading: boolean
   isGenerating: boolean
   isExecuting: boolean
@@ -282,6 +284,45 @@ const ResetMenuLabel = ({
   </Stack>
 )
 
+const ParameterBreadcrumbMenu = <T extends string | number>({
+  items,
+  onSelected,
+  selected,
+}: {
+  items: SelectMenuItem<T>[]
+  onSelected: (selected: T) => void
+  selected: T
+}) => (
+    <MISelectMenu<T>
+      variant="outlined"
+      selected={selected}
+      onSelected={onSelected}
+      items={items}
+      selectionIconPosition="left"
+      groupDisplayType="none"
+      placement="bottom-start"
+      closeOnScroll
+      zIndex={1401}
+      maxHeight={244}
+      paperProps={{ sx: { minWidth: '180px', maxWidth: '320px' } }}
+      disableRipple
+      sx={{
+        maxWidth: '260px',
+        minWidth: 0,
+        height: '28px',
+        padding: '6px 8px 6px 10px',
+        borderRadius: '100px',
+        bgcolor: 'commonColor.White',
+        borderColor: 'contentBorder.Normal',
+        '&:hover:not(:disabled)': {
+          bgcolor: 'contentBG.Active',
+          borderColor: 'contentBorder.Normal',
+        },
+        '& .MuiTypography-root': { color: 'contentText.Normal', fontWeight: 600 },
+      }}
+    />
+  )
+
 const ParameterChip = ({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) => (
   <MIBaseButton
     variant="outlined"
@@ -345,6 +386,7 @@ const ScenarioModelExecutionPopupContent = ({
   selectedScenarioId,
   executingScenarioIds,
   parameterProposal,
+  isMaximized,
   isLoading,
   isGenerating,
   isExecuting,
@@ -524,7 +566,7 @@ const ScenarioModelExecutionPopupContent = ({
       <MIBaseButton
         variant="text"
         aria-label="파라미터 정보 열기"
-        disabled={!selectedParameter.parameter.rationale || isParameterInformationOpen}
+        disabled={isMaximized || !selectedParameter.parameter.rationale || isParameterInformationOpen}
         onClick={() =>
           setClosedParameterInformationKeys((keys) => {
             const nextKeys = new Set(keys)
@@ -721,6 +763,7 @@ const ScenarioModelExecutionPopupContent = ({
     activeModelSheetIndex,
     activeModelTableIndex,
     activeParameterIndex,
+    isMaximized,
     isMatrixTimeColumns,
     isParameterInformationOpen,
     isResetting,
@@ -830,8 +873,25 @@ const ScenarioModelExecutionPopupContent = ({
 
   return (
     <Stack ref={popupContentRef} width="100%" height="100%" minHeight={0} overflow="hidden">
-      <Stack direction="row" alignItems="center" flexShrink={0} padding="4px 20px">
-        <Stack direction="row" alignItems="flex-start" gap="12px" width="575px" padding="12px" borderRadius="8px" bgcolor="gray.5">
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent={isMaximized ? 'space-between' : undefined}
+        gap={isMaximized ? '12px' : undefined}
+        flexShrink={0}
+        padding="4px 20px"
+      >
+        <Stack
+          direction="row"
+          alignItems="flex-start"
+          gap="12px"
+          width={isMaximized ? undefined : '575px'}
+          flex={isMaximized ? '0 1 575px' : undefined}
+          minWidth={isMaximized ? 0 : undefined}
+          padding="12px"
+          borderRadius="8px"
+          bgcolor="gray.5"
+        >
           <Box flex="1 1 0" minWidth={0}>
             <MISelectMenu<number>
               variant="outlined"
@@ -865,6 +925,18 @@ const ScenarioModelExecutionPopupContent = ({
             파라미터 생성
           </MIBaseButton>
         </Stack>
+        {isMaximized && showParameterNavigation && !isLoading && !isGenerating && !isSubmitting && !isExecuting && (
+          <MIBaseButton
+            variant="outlined"
+            prefix={<FileDownloadIcon width={20} height={20} />}
+            disabled={!canDownloadInputFiles}
+            isLoading={isDownloadingInputFiles}
+            onClick={onDownloadInputFiles}
+            sx={{ flexShrink: 0, height: '36px', borderRadius: '8px', padding: '8px 10px 8px 6px' }}
+          >
+            인풋 파일 다운로드
+          </MIBaseButton>
+        )}
       </Stack>
 
       {isLoading ? (
@@ -879,59 +951,10 @@ const ScenarioModelExecutionPopupContent = ({
         <ParameterState message={emptyMessage} />
       ) : (
         <Stack width="100%" flex="1 1 auto" minHeight={0} overflow="hidden">
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            flexShrink={0}
-            height="54px"
-            padding="16px 24px"
-            borderBottom="1px solid"
-            borderColor="contentBorder.Normal"
-          >
-            <Tabs
-              value={activeModelFile ?? false}
-              onChange={(_, value: string) => setSelectedModelFile(value)}
-              sx={{
-                height: '100%',
-                minHeight: 0,
-                borderBottom: 'none',
-                '.MuiTabs-indicator': { height: '2px', bgcolor: 'commonColor.Black' },
-                '& .MuiTab-root': {
-                  minWidth: 0,
-                  minHeight: 0,
-                  height: '100%',
-                  padding: '16px 20px',
-                  color: 'contentText.Black',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  lineHeight: 1.4,
-                  textTransform: 'none',
-                  '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 700 },
-                },
-              }}
-            >
-              {modelFileNames.map((modelFile) => (
-                <Tab key={modelFile} label={modelFile} value={modelFile} disableRipple />
-              ))}
-            </Tabs>
-            <MIBaseButton
-              variant="outlined"
-              prefix={<FileDownloadIcon width={20} height={20} />}
-              disabled={!canDownloadInputFiles}
-              isLoading={isDownloadingInputFiles}
-              onClick={onDownloadInputFiles}
-              sx={{ height: '36px', borderRadius: '8px', padding: '8px 10px 8px 6px' }}
-            >
-              인풋 파일 다운로드
-            </MIBaseButton>
-          </Stack>
-
-          {modelSheetNames.length > 0 && (
-            <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
+          {isMaximized ? (
+            <Stack flexShrink={0} padding="12px 24px">
               <HorizontalScrollContainer
                 alignItems="center"
-                gap="5px"
                 gradientWidth={63}
                 scrollAmount={0.85}
                 containerSx={{
@@ -943,50 +966,159 @@ const ScenarioModelExecutionPopupContent = ({
                   },
                 }}
               >
-                {modelSheetNames.map((modelSheet) => (
-                  <ParameterChip
-                    key={modelSheet}
-                    label={modelSheet}
-                    selected={modelSheet === activeModelSheet}
-                    onClick={() => setSelectedModelSheet(modelSheet)}
+                <Breadcrumbs
+                  aria-label="모델 파라미터 경로"
+                  separator={<ChevronRightRoundedIcon aria-hidden focusable="false" sx={{ width: '18px', height: '18px' }} />}
+                  sx={{
+                    flexShrink: 0,
+                    '& .MuiBreadcrumbs-ol': { flexWrap: 'nowrap' },
+                    '& .MuiBreadcrumbs-li': { minWidth: 0 },
+                  }}
+                >
+                  <ParameterBreadcrumbMenu
+                    selected={activeModelFile ?? ''}
+                    onSelected={setSelectedModelFile}
+                    items={modelFileNames.map((modelFile) => ({ value: modelFile, label: modelFile }))}
                   />
-                ))}
+                  {modelSheetNames.length > 0 && (
+                    <ParameterBreadcrumbMenu
+                      selected={activeModelSheet ?? ''}
+                      onSelected={setSelectedModelSheet}
+                      items={modelSheetNames.map((modelSheet) => ({ value: modelSheet, label: modelSheet }))}
+                    />
+                  )}
+                  {modelTableNames.length > 1 && (
+                    <ParameterBreadcrumbMenu
+                      selected={activeModelTable ?? ''}
+                      onSelected={setSelectedModelTable}
+                      items={modelTableNames.map((modelTable) => ({ value: modelTable, label: modelTable }))}
+                    />
+                  )}
+                  {modelParameters.length > 1 && (
+                    <ParameterBreadcrumbMenu
+                      selected={activeParameterIndex}
+                      onSelected={setSelectedParameterIndex}
+                      items={modelParameters.map((modelParameter, index) => ({
+                        value: index,
+                        label: modelParameter.parameter.parameterName ?? `파라미터 ${index + 1}`,
+                      }))}
+                    />
+                  )}
+                </Breadcrumbs>
               </HorizontalScrollContainer>
             </Stack>
-          )}
+          ) : (
+            <>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                flexShrink={0}
+                height="54px"
+                padding="16px 24px"
+                borderBottom="1px solid"
+                borderColor="contentBorder.Normal"
+              >
+                <Tabs
+                  value={activeModelFile ?? false}
+                  onChange={(_, value: string) => setSelectedModelFile(value)}
+                  sx={{
+                    height: '100%',
+                    minHeight: 0,
+                    borderBottom: 'none',
+                    '.MuiTabs-indicator': { height: '2px', bgcolor: 'commonColor.Black' },
+                    '& .MuiTab-root': {
+                      minWidth: 0,
+                      minHeight: 0,
+                      height: '100%',
+                      padding: '16px 20px',
+                      color: 'contentText.Black',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      lineHeight: 1.4,
+                      textTransform: 'none',
+                      '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 700 },
+                    },
+                  }}
+                >
+                  {modelFileNames.map((modelFile) => (
+                    <Tab key={modelFile} label={modelFile} value={modelFile} disableRipple />
+                  ))}
+                </Tabs>
+                <MIBaseButton
+                  variant="outlined"
+                  prefix={<FileDownloadIcon width={20} height={20} />}
+                  disabled={!canDownloadInputFiles}
+                  isLoading={isDownloadingInputFiles}
+                  onClick={onDownloadInputFiles}
+                  sx={{ height: '36px', borderRadius: '8px', padding: '8px 10px 8px 6px' }}
+                >
+                  인풋 파일 다운로드
+                </MIBaseButton>
+              </Stack>
 
-          {modelTableNames.length > 1 && (
-            <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5">
-              <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
-                {modelTableNames.map((modelTable) => (
-                  <ParameterChip
-                    key={modelTable}
-                    label={modelTable}
-                    selected={modelTable === activeModelTable}
-                    onClick={() => setSelectedModelTable(modelTable)}
-                  />
-                ))}
-              </HorizontalScrollContainer>
-            </Stack>
-          )}
+              {modelSheetNames.length > 0 && (
+                <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
+                  <HorizontalScrollContainer
+                    alignItems="center"
+                    gap="5px"
+                    gradientWidth={63}
+                    scrollAmount={0.85}
+                    containerSx={{
+                      width: '100%',
+                      '& .scroll-button': {
+                        borderRadius: '100px',
+                        borderColor: 'contentBorder.Normal',
+                        boxShadow: '0px 0px 10px 0px rgba(0, 0, 0, 0.15)',
+                      },
+                    }}
+                  >
+                    {modelSheetNames.map((modelSheet) => (
+                      <ParameterChip
+                        key={modelSheet}
+                        label={modelSheet}
+                        selected={modelSheet === activeModelSheet}
+                        onClick={() => setSelectedModelSheet(modelSheet)}
+                      />
+                    ))}
+                  </HorizontalScrollContainer>
+                </Stack>
+              )}
 
-          {modelParameters.length > 1 && (
-            <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
-              <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
-                {modelParameters.map((modelParameter, index) => (
-                  <ParameterChip
-                    key={`${modelParameter.parameter.parameterName ?? 'parameter'}-${index}`}
-                    label={modelParameter.parameter.parameterName ?? `파라미터 ${index + 1}`}
-                    selected={index === activeParameterIndex}
-                    onClick={() => setSelectedParameterIndex(index)}
-                  />
-                ))}
-              </HorizontalScrollContainer>
-            </Stack>
+              {modelTableNames.length > 1 && (
+                <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5">
+                  <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+                    {modelTableNames.map((modelTable) => (
+                      <ParameterChip
+                        key={modelTable}
+                        label={modelTable}
+                        selected={modelTable === activeModelTable}
+                        onClick={() => setSelectedModelTable(modelTable)}
+                      />
+                    ))}
+                  </HorizontalScrollContainer>
+                </Stack>
+              )}
+
+              {modelParameters.length > 1 && (
+                <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
+                  <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+                    {modelParameters.map((modelParameter, index) => (
+                      <ParameterChip
+                        key={`${modelParameter.parameter.parameterName ?? 'parameter'}-${index}`}
+                        label={modelParameter.parameter.parameterName ?? `파라미터 ${index + 1}`}
+                        selected={index === activeParameterIndex}
+                        onClick={() => setSelectedParameterIndex(index)}
+                      />
+                    ))}
+                  </HorizontalScrollContainer>
+                </Stack>
+              )}
+            </>
           )}
 
           {selectedParameter?.parameter.rationale && (
-            <Collapse in={isParameterInformationOpen} timeout={220} unmountOnExit sx={{ flexShrink: 0 }}>
+            <Collapse in={!isMaximized && isParameterInformationOpen} timeout={220} unmountOnExit sx={{ flexShrink: 0 }}>
               <Stack flexShrink={0} padding="12px 24px">
                 <Stack
                   direction="row"
