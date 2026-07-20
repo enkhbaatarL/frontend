@@ -356,6 +356,8 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         }),
       onSuccess: (data, variables) => {
         if (data.status === 'COMPLETED') {
+          // 재실행 시 settleExecution 가드 리셋 후 완료 처리 (가격전망 해석 refetch)
+          onAccepted(variables.scenarioId)
           onCompleted(variables.scenarioId)
           closePopup()
           return
@@ -366,6 +368,8 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           return
         }
 
+        // 파일 업로드 경로와 동일하게 실행 수락 시 완료 가드를 리셋한다.
+        onAccepted(variables.scenarioId)
         setCurrentProposalState('EXECUTING')
         setModelExecution(data)
       },
