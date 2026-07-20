@@ -42,6 +42,7 @@ const PERIOD_UNIT_OPTIONS: { value: ScenarioGroupGraphPeriodUnit; label: string 
 interface ScenarioGroupGraphViewProps {
   scenarioGroupId: number
   enabled: boolean
+  onParameterProposalTargetChange?: (parameterProposalTarget: boolean) => void
   height?: number
   defaultIndexName?: NextGenMIIndexName
   headingSlot?: ReactNode
@@ -52,6 +53,7 @@ interface ScenarioGroupGraphViewProps {
 const ScenarioGroupGraphView = ({
   scenarioGroupId,
   enabled,
+  onParameterProposalTargetChange,
   height = 480,
   defaultIndexName = 'JKM',
   headingSlot,
@@ -104,6 +106,11 @@ const ScenarioGroupGraphView = ({
     () => (graphQuery.data ? mergeScenarioGroupGraphCmeBenchmark(graphQuery.data, cmeBenchmarkData) : undefined),
     [cmeBenchmarkData, graphQuery.data],
   )
+
+  useEffect(() => {
+    if (!graphData || graphData.scenarioGroupId !== scenarioGroupId) return
+    onParameterProposalTargetChange?.(graphData.parameterProposalTarget)
+  }, [graphData, onParameterProposalTargetChange, scenarioGroupId])
 
   useEffect(() => {
     setVisibilityMap(new Map())
