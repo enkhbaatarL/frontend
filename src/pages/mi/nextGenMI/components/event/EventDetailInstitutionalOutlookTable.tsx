@@ -128,6 +128,11 @@ const EventDetailInstitutionalOutlookTable = ({
       title="기관 전망"
       tooltipTitle=""
       stickyTopPx={headerStickyTopPx}
+      stickyCoverBelowPx={
+        shouldShowInstitutionViewSynthesis && headerStickyTopPx !== undefined && tableStickyTopPx !== undefined
+          ? NEXT_GEN_MI_TABLE_CONTAINER_PADDING
+          : undefined
+      }
     />
   )
   const paginationNode =
