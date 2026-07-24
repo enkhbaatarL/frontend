@@ -9,7 +9,7 @@ export type IndexImpactTerm = 'short' | 'long' | 'mid_long'
 
 const SIGNAL_BAR_GREEN = '#498B47'
 const SIGNAL_BAR_RED = '#CC4D50'
-const SIGNAL_BAR_EMPTY = '#E4E4E4'
+const SIGNAL_BAR_EMPTY = '#C5C5C5'
 const SIGNAL_BAR_NEUTRAL = '#ADB5BD'
 
 const DURATION_BADGE_BG = '#ECEDF4'
