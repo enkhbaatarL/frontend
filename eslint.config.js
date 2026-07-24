@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -9,7 +10,7 @@ import tseslint from 'typescript-eslint'
 import prettier from 'eslint-plugin-prettier'
 import stylisticJs from '@stylistic/eslint-plugin-js'
 
-export default tseslint.config(
+export default defineConfig(
   { ignores: ['dist'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -50,6 +51,15 @@ export default tseslint.config(
       semi: ['error', 'never'], // 세미콜론 사용 금지
       quotes: ['error', 'single'], // 작은 따옴표 사용
       'no-eval': 'error', // eval() 사용 금지
+      'no-console': 'error', // 디버그 출력 금지
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+        },
+      ],
+      'no-restricted-syntax': ['error', 'CatchClause > BlockStatement[body.length=0]'],
       'rest-spread-spacing': ['error', 'never'], // 스프레드 연산자와 객체 사이 공백 금지
       'space-infix-ops': 'error', // 연산자 주위 공백 요구
       'no-whitespace-before-property': 'error', // 속성 앞 공백 금지
@@ -92,7 +102,6 @@ export default tseslint.config(
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
-      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }], // console.log만 경고
     },
   },
 )
