@@ -95,6 +95,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const { showSnackbar } = useSnackbar()
     const [open, setOpen] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
+    const [isScenarioChanging, setIsScenarioChanging] = useState(false)
     const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null)
     const [files, setFiles] = useState<File[]>([])
     const [parameterProposal, setParameterProposal] = useState<CurrentModelParamProposal | null>(null)
@@ -229,6 +230,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       queuedRefreshScenarioIdsRef.current.clear()
       queuedFailureNotificationScenarioIdsRef.current.clear()
       setIsMaximized(false)
+      setIsScenarioChanging(false)
       setSelectedScenarioId(null)
       setFiles([])
       setParameterProposal(null)
@@ -454,9 +456,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const isSubmitting = isSubmittingFiles || isSubmittingModelParamProposal
     const isBusy = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
     const isCloseDisabled = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
-    const hasMaximizableProposal = hasGeneratedParameters && Boolean(parameterProposal?.modelFiles.some((modelFile) => modelFile.modelFile))
-    const canChangeMaximize = hasMaximizableProposal && !isCurrentProposalLoading && !isGenerating && !isSubmitting && !isExecuting
-    const isMaximizeActive = hasMaximizableProposal && isMaximized
+    const isMaximizeActive = isMaximized
     const canGenerate =
       currentProposalState === 'NOT_REQUESTED' || currentProposalState === 'PROPOSAL_FAILED' || currentProposalState === 'EXECUTION_FAILED'
     const canUseCurrentParameters =
@@ -466,16 +466,13 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       hasGeneratedParameters &&
       parameterProposal?.modelParamProposalId !== undefined
 
-    useEffect(() => {
-      if (!hasMaximizableProposal) setIsMaximized(false)
-    }, [hasMaximizableProposal])
-
     const changeScenario = useCallback((scenarioId: number) => {
       proposalSessionIdRef.current += 1
       currentProposalRequestIdRef.current += 1
       modelParamProposalFailureKeyRef.current = null
       initialModelParamProposalRef.current = null
       resettingModelParamProposalRef.current = false
+      setIsScenarioChanging(true)
       setSelectedScenarioId(scenarioId)
       setParameterProposal(null)
       setCurrentProposalState(undefined)
@@ -691,6 +688,13 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [isParameterProposalMode, loadCurrentModelParamProposal, open, selectedScenarioId])
 
     useEffect(() => {
+      if (!isScenarioChanging || isCurrentProposalLoading || selectedScenarioId === null) return undefined
+
+      const animationFrameId = globalThis.requestAnimationFrame(() => setIsScenarioChanging(false))
+      return () => globalThis.cancelAnimationFrame(animationFrameId)
+    }, [isCurrentProposalLoading, isScenarioChanging, selectedScenarioId])
+
+    useEffect(() => {
       if (
         !open ||
         !isParameterProposalMode ||
@@ -824,7 +828,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
                   aria-label={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
                   aria-pressed={isMaximizeActive}
                   aria-haspopup={false}
-                  disabled={!canChangeMaximize}
                   onClick={() => setIsMaximized((maximized) => !maximized)}
                   disableRipple
                   buttonHoverBgColor="contentBG.Hover"
@@ -873,10 +876,13 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
                 overflow: 'hidden',
                 interpolateSize: 'allow-keywords',
                 transition: (theme: Theme) =>
-                  theme.transitions.create(['width', 'height', 'max-width', 'max-height', 'margin'], {
-                    duration: 400,
-                    easing: theme.transitions.easing.easeInOut,
-                  }),
+                  theme.transitions.create(
+                    isScenarioChanging ? ['width', 'max-width'] : ['width', 'height', 'max-width', 'max-height', 'margin'],
+                    {
+                      duration: 400,
+                      easing: theme.transitions.easing.easeInOut,
+                    },
+                  ),
               }
               : { borderRadius: '10px' }
           }
