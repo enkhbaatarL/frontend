@@ -19,6 +19,7 @@ import ScenarioGroupInnerTable, {
   ScenarioJudgementConfirmDialog,
   ScenarioLastDiscardConfirmDialog,
 } from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
+import NextGenMIMarkdownDownloadButton from '@/pages/mi/nextGenMI/components/NextGenMIMarkdownDownloadButton'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import ScenarioGroupDeleteMenu from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDeleteMenu'
 import ScenarioGroupDetailSection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupDetailSection'
@@ -26,6 +27,7 @@ import ScenarioGroupGraphView from '@/pages/mi/nextGenMI/components/scenarioGrou
 import ScenarioGroupPriceForecastInterpretation from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupPriceForecastInterpretation'
 import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupSummarySection'
 import { NEXT_GEN_MI_BASE_PATH, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { buildScenarioGroupDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
 import nextGenMIScenarioGroupService, {
   type IScenarioGroupDetailRow,
   type ScenarioJudgementStatus,
@@ -323,14 +325,36 @@ const ScenarioGroupDetailPage = () => {
     [groupName, isLoading],
   )
 
+  const getScenarioGroupDetailMarkdown = useCallback(async () => {
+    if (!data) throw new Error('시나리오 그룹 상세 데이터가 없습니다.')
+
+    const scenarioDetails = await Promise.all(
+      data.scenarios
+        .filter((scenario) => scenario.status !== 'discarded')
+        .map((scenario) =>
+          queryClient.ensureQueryData({
+            queryKey: ['nextGenMIScenarioGroupScenarioDetail', scenarioGroupId, scenario.scenarioId],
+            queryFn: () => nextGenMIScenarioGroupService.getScenarioDetail(scenarioGroupId ?? '', scenario.scenarioId),
+          }),
+        ),
+    )
+
+    return buildScenarioGroupDetailMarkdown(data, scenarioDetails)
+  }, [data, queryClient, scenarioGroupId])
+
   const headerRightAction = useMemo(
     () => (
       <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexShrink={0} minHeight="62px">
+        <NextGenMIMarkdownDownloadButton
+          fileName={getMarkdownFileName(groupName, 'scenario-group-detail')}
+          getMarkdown={getScenarioGroupDetailMarkdown}
+          disabled={!data || isLoading}
+        />
         <NextGenMIUserFeedback feedbackSectionNm="Scenario Group" pageTitle={groupName || '시나리오 그룹 상세'} />
         <ScenarioGroupDeleteMenu scenarioGroupId={scenarioGroupId ?? ''} />
       </Stack>
     ),
-    [groupName, scenarioGroupId],
+    [data, getScenarioGroupDetailMarkdown, groupName, isLoading, scenarioGroupId],
   )
 
   const headerCollapsedSummarySlot = useMemo(

@@ -34,8 +34,10 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/ev
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
+import NextGenMIMarkdownDownloadButton from '@/pages/mi/nextGenMI/components/NextGenMIMarkdownDownloadButton'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { buildEventDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 import useAuthStore from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
@@ -80,11 +82,13 @@ const EVENT_DETAIL_STICKY_TABLE_HEADER_TOP_OFFSET_PX = 60
 
 const renderEventDetailHeaderTabActions = ({
   pageTitle,
+  markdownDownloadButton,
   scenarioDesignDisabled,
   scenarioDesignDisabledTooltipTitle,
   onScenarioDesignClick,
 }: {
   pageTitle: string
+  markdownDownloadButton: ReactNode
   scenarioDesignDisabled?: boolean
   scenarioDesignDisabledTooltipTitle?: string
   onScenarioDesignClick?: () => void
@@ -116,6 +120,7 @@ const renderEventDetailHeaderTabActions = ({
 
   return (
     <Stack direction="row" alignItems="center" gap="12px">
+      {markdownDownloadButton}
       <NextGenMIUserFeedback feedbackSectionNm="Event" pageTitle={pageTitle} />
       {scenarioDesignDisabled && scenarioDesignDisabledTooltipTitle ? (
         <NextGenMIFollowCursorTooltip title={scenarioDesignDisabledTooltipTitle}>{scenarioDesignButton}</NextGenMIFollowCursorTooltip>
@@ -289,8 +294,8 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
 
   const aiDetailedAnalysis = detail?.aiInsights?.detailedAnalysis ?? (detailLoading ? '' : '상세 분석 데이터가 없습니다.')
 
-  const recordRows = recordsData?.detail ?? []
-  const outlookRows = outlooksData?.detail ?? []
+  const recordRows = useMemo(() => recordsData?.detail ?? [], [recordsData?.detail])
+  const outlookRows = useMemo(() => outlooksData?.detail ?? [], [outlooksData?.detail])
   const relatedEventScenario = detail?.relatedEventScenario
   const designAvailability = useMemo(
     () => findEventDesignAvailability(designAvailabilityData, eventIdNumber),
@@ -366,15 +371,37 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     title,
   ])
 
+  const getEventDetailMarkdown = useCallback(() => {
+    if (!detail) throw new Error('이벤트 상세 데이터가 없습니다.')
+
+    return buildEventDetailMarkdown({
+      detail,
+      records: recordRows,
+      outlooks: outlookRows,
+    })
+  }, [detail, outlookRows, recordRows])
+
+  const markdownDownloadButton = useMemo(
+    () => (
+      <NextGenMIMarkdownDownloadButton
+        fileName={getMarkdownFileName(title, 'event-detail')}
+        getMarkdown={getEventDetailMarkdown}
+        disabled={!detail || detailLoading || recordsLoading || outlooksLoading}
+      />
+    ),
+    [detail, detailLoading, getEventDetailMarkdown, outlooksLoading, recordsLoading, title],
+  )
+
   const eventDetailHeaderTabActions = useMemo(
     () =>
       renderEventDetailHeaderTabActions({
         pageTitle: title,
+        markdownDownloadButton,
         scenarioDesignDisabled,
         scenarioDesignDisabledTooltipTitle,
         onScenarioDesignClick: handleScenarioDesignClick,
       }),
-    [handleScenarioDesignClick, scenarioDesignDisabled, scenarioDesignDisabledTooltipTitle, title],
+    [handleScenarioDesignClick, markdownDownloadButton, scenarioDesignDisabled, scenarioDesignDisabledTooltipTitle, title],
   )
 
   const headerTitleSlot = useMemo(
