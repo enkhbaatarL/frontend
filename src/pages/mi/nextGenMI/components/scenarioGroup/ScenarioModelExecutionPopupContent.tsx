@@ -1015,7 +1015,7 @@ const ScenarioModelExecutionPopupContent = ({
                 justifyContent="space-between"
                 flexShrink={0}
                 height="54px"
-                padding="16px 24px"
+                padding="0 24px"
                 borderBottom="1px solid"
                 borderColor="contentBorder.Normal"
               >
@@ -1030,8 +1030,8 @@ const ScenarioModelExecutionPopupContent = ({
                     '& .MuiTab-root': {
                       minWidth: 0,
                       minHeight: 0,
-                      height: '100%',
-                      padding: '16px 20px',
+                      height: '54px',
+                      padding: '0 20px',
                       color: 'contentText.Black',
                       fontSize: '16px',
                       fontWeight: 600,
