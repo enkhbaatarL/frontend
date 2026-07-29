@@ -6,6 +6,7 @@
 
 - 브라우저를 열어 실제 테스트하는 작업은 사용자가 명시적으로 요청한 경우에만 진행합니다.
 - import는 상대경로가 아닌 `src` `@` alias 기반 절대경로를 사용합니다.
+- 난수가 필요할 때는 `Math.random()`을 직접 사용하지 않고 [`getRandomNumber`](src/utils/random.ts)를 `@/utils/random`에서 import하여 사용합니다.
 - 쓸데없는 상수 선언은 하지 않습니다. 예를 들어 `TEST_WIDTH = 10`처럼 한 번 쓰이는 값은 상수로 빼지 말고 인라인으로 지정합니다.
 - 의미 없는 타입 래퍼는 만들지 않습니다. 예를 들어 `export type NextGenMIEventSort = EventSort`처럼 원 타입을 그대로 감싼 별칭은 사용하지 않습니다.
 
