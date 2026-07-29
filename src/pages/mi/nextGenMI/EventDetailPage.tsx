@@ -384,7 +384,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const markdownDownloadButton = useMemo(
     () => (
       <NextGenMIMarkdownDownloadButton
-        fileName={getMarkdownFileName(title, 'event-detail')}
+        fileName={getMarkdownFileName(`Event) ${title}`, 'Event) event-detail')}
         getMarkdown={getEventDetailMarkdown}
         disabled={!detail || detailLoading || recordsLoading || outlooksLoading}
       />

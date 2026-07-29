@@ -346,7 +346,7 @@ const ScenarioGroupDetailPage = () => {
     () => (
       <Stack direction="row" alignItems="center" justifyContent="flex-end" gap="8px" flexShrink={0} minHeight="62px">
         <NextGenMIMarkdownDownloadButton
-          fileName={getMarkdownFileName(groupName, 'scenario-group-detail')}
+          fileName={getMarkdownFileName(`Scenario) ${groupName}`, 'Scenario) scenario-group-detail')}
           getMarkdown={getScenarioGroupDetailMarkdown}
           disabled={!data || isLoading}
         />
