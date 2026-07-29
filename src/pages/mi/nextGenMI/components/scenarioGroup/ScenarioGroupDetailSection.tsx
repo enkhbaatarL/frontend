@@ -1,3 +1,4 @@
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded'
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
@@ -11,6 +12,7 @@ import type {
 import type { IPaginationResponse } from '@/types/api'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import {
@@ -24,6 +26,7 @@ import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextG
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import useNextGenMIDetailStickyTop from '@/pages/mi/nextGenMI/components/common/useNextGenMIDetailStickyTop'
+import ScenarioGroupScenarioReviewDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupScenarioReviewDialog'
 import SignpostDefinitionDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostDefinitionDetailDialog'
 import SignpostMonitoringDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostMonitoringDetailDialog'
 import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
@@ -60,6 +63,7 @@ interface ScenarioSelectSidebarProps {
   headingSlot?: ReactNode
   loading?: boolean
   onSelect: (scenarioId: number) => void
+  onOpenReview: () => void
 }
 
 const ScenarioSelectSidebar = ({
@@ -70,6 +74,7 @@ const ScenarioSelectSidebar = ({
   headingSlot,
   loading = false,
   onSelect,
+  onOpenReview,
 }: ScenarioSelectSidebarProps) => {
   const maxHeight = `calc(100vh - ${stickyTopPx + 24}px)`
   const listMaxHeight = headingSlot
@@ -157,9 +162,14 @@ const ScenarioSelectSidebar = ({
         {loading ? (
           <Skeleton variant="rounded" width="96px" height="17px" sx={{ margin: '10px 4px', borderRadius: '4px' }} />
         ) : (
-          <Typography padding="10px 4px" fontSize="12px" fontWeight={500} lineHeight={1.4} color="contentText.Normal">
-            {scenarioCount ?? scenarios.length}개 시나리오
-          </Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" padding="4px">
+            <Typography padding="6px 0" fontSize="12px" fontWeight={500} lineHeight={1.4} color="contentText.Normal">
+              {scenarioCount ?? scenarios.length}개 시나리오
+            </Typography>
+            <MIBaseButton variant="text" onClick={onOpenReview} gap="2px" sx={{ height: '28px', padding: '4px 6px', borderRadius: '6px' }}>
+              <OpenInNewRoundedIcon sx={{ fontSize: '16px' }} />
+            </MIBaseButton>
+          </Stack>
         )}
         <ScrollWrapper
           maxHeight={listMaxHeight}
@@ -554,6 +564,7 @@ const ScenarioGroupDetailSection = ({
   const [scrollSkeletonHoldScenarioId, setScrollSkeletonHoldScenarioId] = useState<number | null>(null)
   const [selectedSignpostDefinition, setSelectedSignpostDefinition] = useState<IScenarioSignpostDefinition | null>(null)
   const [selectedSignpostMonitoring, setSelectedSignpostMonitoring] = useState<IScenarioSignpostMonitoring | null>(null)
+  const [scenarioReviewOpen, setScenarioReviewOpen] = useState(false)
   const rightHeaderPinned = useScenarioDetailStickyPinned(rightHeaderRef, stickyTopPx)
   const hasHeadingSlot = Boolean(headingSlot)
   const { data, isLoading } = useQuery({
@@ -737,6 +748,7 @@ const ScenarioGroupDetailSection = ({
         headingSlot={headingSlot}
         loading={listLoading}
         onSelect={handleSelectScenario}
+        onOpenReview={() => setScenarioReviewOpen(true)}
       />
 
       <Stack flex={1} minWidth={0} gap="12px" pt={hasHeadingSlot ? `${SCENARIO_DETAIL_HEADING_BLOCK_HEIGHT_PX}px` : 0}>
@@ -849,6 +861,12 @@ const ScenarioGroupDetailSection = ({
         open={selectedSignpostMonitoring !== null}
         monitoring={selectedSignpostMonitoring}
         onClose={handleSignpostMonitoringDialogClose}
+      />
+      <ScenarioGroupScenarioReviewDialog
+        open={scenarioReviewOpen}
+        scenarioGroupId={scenarioGroupId}
+        scenarios={scenarios}
+        onClose={() => setScenarioReviewOpen(false)}
       />
     </Stack>
   )
