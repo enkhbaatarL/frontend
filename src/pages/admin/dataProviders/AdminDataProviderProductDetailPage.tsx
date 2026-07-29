@@ -298,8 +298,8 @@ const AdminDataProviderProductDetailPage = () => {
       setOpenActiveConfirm(false)
       showSnackbar(t('변경되었습니다.'), { variant: 'success' })
       await queryClient.invalidateQueries({ queryKey: ['productDetailData', providerNo, goodsNo] })
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -318,8 +318,8 @@ const AdminDataProviderProductDetailPage = () => {
       setSaveBtnDisabled(true)
       showSnackbar(t('저장되었습니다.'), { variant: 'success' })
       await queryClient.invalidateQueries({ queryKey: ['productDetailData', providerNo, goodsNo] })
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 

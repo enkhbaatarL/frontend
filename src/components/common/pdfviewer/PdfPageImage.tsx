@@ -119,7 +119,6 @@ const PdfPageImage = forwardRef<PdfPageImageHandles, PdfPageImageProps>(
               canvas.width = 0
               canvas.height = 0
               setInitialImageInfo({ width: 0, height: 0 })
-              console.error('Parent element not found for size calculation.')
               return
             }
 

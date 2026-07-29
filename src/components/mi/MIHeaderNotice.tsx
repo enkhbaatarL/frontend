@@ -265,8 +265,8 @@ const MIHeaderNotice = () => {
         if (response.detail) {
           setAlerts(response.detail)
         }
-      } catch (error) {
-        console.error('Failed to fetch notification history:', error)
+      } catch {
+        return
       } finally {
         setAlertsIsLoading(false)
       }
@@ -282,8 +282,8 @@ const MIHeaderNotice = () => {
           if (response.detail) {
             setNotices(response.detail)
           }
-        } catch (error) {
-          console.error('Failed to fetch notices:', error)
+        } catch {
+          return
         } finally {
           setIsLoadingNotices(false)
         }

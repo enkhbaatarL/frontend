@@ -27,7 +27,7 @@ export const useOilPriceRowImageCapture = (
       })
       onOilPriceRowImageReady(canvas.toDataURL('image/png'))
     } catch {
-      // 캡처 실패: SKIP
+      return
     }
   }, [oilPriceRowRef, onOilPriceRowImageReady, showOilRow])
 

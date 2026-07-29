@@ -47,8 +47,8 @@ const DocumentItem = ({
       })
 
       downloadFile(fileBlob, fileName)
-    } catch (error) {
-      console.error('파일 다운로드 중 오류가 발생했습니다:', error)
+    } catch {
+      return
     }
   }
 
@@ -114,8 +114,8 @@ const DocumentComponent = ({ data }: DocumentComponentProps) => {
         const response = await fileService.downloadFiles('file', fileData)
         downloadFile(response, 'file.zip')
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 

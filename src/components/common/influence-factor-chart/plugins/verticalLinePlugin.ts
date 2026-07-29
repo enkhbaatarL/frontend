@@ -49,8 +49,8 @@ const verticalLinePlugin: verticalLinePlugin = {
           chart,
           tooltip: null,
         })
-      } catch (err) {
-        console.error(err)
+      } catch {
+        return
       }
     })
   },

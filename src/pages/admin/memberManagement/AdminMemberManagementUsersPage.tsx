@@ -109,8 +109,8 @@ const AdminMemberManagementUsersPage = () => {
           await refetch()
         }
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }, [deleteUserRequest, selectedUser.userNo, showMemberDetailModal, showSnackbar, refetch])
 

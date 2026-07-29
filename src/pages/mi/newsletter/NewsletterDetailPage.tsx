@@ -435,7 +435,7 @@ const NewsletterDetailPage = () => {
         const result = await refetchIssueDetail()
         detail = result.data ?? undefined
       } catch {
-        // 네트워크 실패 시에도 캐시가 있으면 그걸 기준으로 편집 진입
+        detail = undefined
       }
       detail ??= queryClient.getQueryData<INewsletterIssueDetail>(['newsletterIssueDetail', newsletterId, issueNo])
 

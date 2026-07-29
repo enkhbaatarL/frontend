@@ -563,8 +563,8 @@ const TablePage = ({ basicInfo, chartData, chartDataIsLoading, onMonthSelectChan
 
       const response = await forecastDataService.getForecastReportsTableDataDownload(companyNo, params)
       downloadFile(response.data, 'Forecast Table.xlsx')
-    } catch (error) {
-      console.error('테이블 다운로드 실패:', error)
+    } catch {
+      return
     }
   }
 

@@ -11,8 +11,7 @@ export const simpleEncrypt = (text: string, key: string = DEFAULT_ENCRYPTION_KEY
     }
 
     return btoa(result)
-  } catch (error) {
-    console.error('Encryption failed:', error)
+  } catch {
     return ''
   }
 }
@@ -29,8 +28,7 @@ export const simpleDecrypt = (encryptedText: string, key: string = DEFAULT_ENCRY
     }
 
     return result
-  } catch (error) {
-    console.error('Decryption failed:', error)
+  } catch {
     return ''
   }
 }

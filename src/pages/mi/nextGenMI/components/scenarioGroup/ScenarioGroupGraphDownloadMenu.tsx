@@ -28,8 +28,8 @@ const ScenarioGroupGraphDownloadMenu = ({ scenarioGroupId, indexName, periodUnit
       const contentDisposition = response.headers?.['content-disposition'] ?? ''
       const fileNameFromHeader = contentDisposition.split('\'\'').pop()?.trim()
       downloadFile(response.data, fileNameFromHeader || `scenario-group-${scenarioGroupId}-${periodUnit}-graph.xlsx`)
-    } catch (error) {
-      console.error('시나리오 그룹 그래프 데이터 시트 다운로드 실패:', error)
+    } catch {
+      return
     }
   }
 

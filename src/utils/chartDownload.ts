@@ -61,7 +61,7 @@ export const downloadChart = async ({
     link.download = finalFilename
     link.href = canvasToDataURL(canvas, 'image/png', 1.0)
     link.click()
-  } catch (error) {
-    console.error('차트 다운로드 중 오류 발생:', error)
+  } catch {
+    return
   }
 }

@@ -215,7 +215,6 @@ const errorHandler = async (error: AxiosError<HttpResponse<unknown>>) => {
         if (!suppressGlobalErrorHandler) {
           errorHandlerOptions?.showSnackbar?.(`Error: ${statusText}`, { variant: 'error' })
         }
-        console.error(error)
         break
     }
   }

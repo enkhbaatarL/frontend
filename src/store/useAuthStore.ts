@@ -124,7 +124,6 @@ export const withCustomBaseUrl = (path: string) => {
     if (url) {
       __currentBaseUrl = url
     } else {
-      console.error('Custom base url not set.')
       throw new Error('Custom base url not set.')
     }
   }

@@ -78,8 +78,8 @@ const AdminMemberManagementMangerEditPage = () => {
         await membersService.updateManagerDetail(userNo, managerInfo)
         navigate(`/admin/member-mgmt/managers/detail/${userNo}`, { replace: true })
         showSnackbar(t('저장되었습니다.'), { variant: 'success' })
-      } catch (error) {
-        console.error('Error updating manager details:', error)
+      } catch {
+        return
       }
     }
   }, [userNo, managerInfo, navigate, showSnackbar])

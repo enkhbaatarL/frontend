@@ -6,6 +6,7 @@ import { MIBaseSkeleton } from '@/components/mi/MIBaseSkeleton'
 import SectionHeader from '@/pages/mi/dashboard/components/common/SectionHeader'
 import FeedItem from '@/pages/mi/dashboard/components/newsFeed/FeedItem'
 import { INewsFeedItem, DirectionType } from '@/service/mi/dashboard'
+import { getRandomNumber } from '@/utils/random'
 
 interface TimelineBarProps {
   data: INewsFeedItem[]
@@ -201,11 +202,11 @@ const TimelineBar = ({ data, onItemClick, selectedItemId }: TimelineBarProps) =>
         const impactScore = item.newsSignificanceScore ?? item.score ?? 0
 
         if (impactScore >= 9.0) {
-          return 70 + Math.floor(Math.random() * 27)
+          return 70 + Math.floor(getRandomNumber() * 27)
         } else if (impactScore >= 7.0) {
-          return 45 + Math.floor(Math.random() * 26)
+          return 45 + Math.floor(getRandomNumber() * 26)
         } else {
-          return 30 + Math.floor(Math.random() * 16)
+          return 30 + Math.floor(getRandomNumber() * 16)
         }
       }),
     [items],

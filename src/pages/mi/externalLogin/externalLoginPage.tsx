@@ -41,8 +41,8 @@ const ExternalLoginPage = () => {
     try {
       const encryptedCredentials = simpleEncrypt(JSON.stringify(credentials), ENCRYPTION_KEY)
       localStorage.setItem('external_credentials', encryptedCredentials)
-    } catch (error) {
-      console.error('Failed to save credentials:', error)
+    } catch {
+      return
     }
   }
 
@@ -67,16 +67,15 @@ const ExternalLoginPage = () => {
       }
 
       return credentialsData
-    } catch (error) {
-      console.error('Failed to get credentials:', error)
+    } catch {
       return null
     }
   }
   const clearCredentials = (): void => {
     try {
       localStorage.removeItem('external_credentials')
-    } catch (error) {
-      console.error('Failed to clear credentials:', error)
+    } catch {
+      return
     }
   }
 
@@ -99,8 +98,7 @@ const ExternalLoginPage = () => {
       }
 
       navigate(`/callback?sessionId=${sessionId}&isExternalLogin=true`)
-    } catch (error) {
-      console.error('Login failed:', error)
+    } catch {
       setErrorMessage('이메일과 비밀번호를 확인하세요.')
     } finally {
       setIsLoading(false)

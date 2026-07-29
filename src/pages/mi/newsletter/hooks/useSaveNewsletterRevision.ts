@@ -127,7 +127,6 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
         showSnackbar(err.message, { variant: 'error' })
       } else {
         showSnackbar('저장 중 오류가 발생했습니다. 다시 시도해 주세요.', { variant: 'error' })
-        console.error('[useSaveNewsletterRevision]', err)
       }
       return { success: false }
     } finally {
@@ -178,7 +177,6 @@ export const useSaveNewsletterRevision = (params: UseSaveNewsletterRevisionParam
         showSnackbar(err.message, { variant: 'error' })
       } else {
         showSnackbar('임시저장 중 오류가 발생했습니다. 다시 시도해 주세요.', { variant: 'error' })
-        console.error('[useSaveNewsletterRevision] saveDraftRevision', err)
       }
       return { success: false }
     } finally {

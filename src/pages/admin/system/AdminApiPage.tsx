@@ -51,8 +51,8 @@ const AdminApiPage = () => {
         setDecodedSecretKey(response.data.clientSecretKey)
         setViewSecretModal(true)
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -267,8 +267,8 @@ const AdminApiPage = () => {
         showSnackbar(t('재발행되었습니다.'), { variant: 'success' })
         await refetch()
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -301,7 +301,6 @@ const AdminApiPage = () => {
       if (error instanceof AxiosError && error.response?.data?.code === 'RSC-003') {
         setIsError(true)
       }
-      console.error(error)
     }
   }
 
@@ -332,8 +331,8 @@ const AdminApiPage = () => {
         setClientAccessRegNo(null)
         await refetch()
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 

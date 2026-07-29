@@ -21,6 +21,7 @@ import CategoryChip from '@/pages/mi/dashboard/components/common/CategoryChip'
 import DashboardCard from '@/pages/mi/dashboard/components/common/DashboardCard'
 import dashboardService from '@/service/mi/dashboard'
 import topicTrackerService, { ITopicTrackerWidgetItem } from '@/service/mi/topicTracker'
+import { getRandomNumber } from '@/utils/random'
 
 const TopicTrackerItem = ({ item }: { item: ITopicTrackerWidgetItem }) => {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -261,9 +262,8 @@ const TopicTracker = ({ criteriaDate }: Props) => {
     }))
   }
 
-  const handleAddTopic = (name: string) => {
+  const handleAddTopic = (_name: string) => {
     // TODO: 실제 API 호출로 토픽 추가 로직 구현
-    console.info('Adding topic:', name)
     setIsAddTopicDialogOpen(false)
     setTopicName('')
   }
@@ -347,7 +347,7 @@ const TopicTracker = ({ criteriaDate }: Props) => {
             {Array.from({ length: 4 }, (_, index) => (
               <MIBaseSkeleton.Chip
                 key={index}
-                width={Math.random() * 40 + 100}
+                width={getRandomNumber() * 40 + 100}
                 height={36}
                 sx={{
                   borderRadius: '100px',
@@ -394,12 +394,12 @@ const TopicTracker = ({ criteriaDate }: Props) => {
 
                     <Stack px="8px" flex={1} gap="8px">
                       <SkeletonWrapper.Row gap="8px">
-                        <MIBaseSkeleton.Button width={Math.random() * 30 + 80} height={22} />
-                        {index % 2 === 0 && <MIBaseSkeleton.Button width={Math.random() * 20 + 60} height={22} />}
+                        <MIBaseSkeleton.Button width={getRandomNumber() * 30 + 80} height={22} />
+                        {index % 2 === 0 && <MIBaseSkeleton.Button width={getRandomNumber() * 20 + 60} height={22} />}
                       </SkeletonWrapper.Row>
 
                       <Stack my="10px" py="4px" gap="8px">
-                        <MIBaseSkeleton.Title width={`${Math.random() * 20 + 85}%`} height={22} sx={{ borderRadius: '4px' }} />
+                        <MIBaseSkeleton.Title width={`${getRandomNumber() * 20 + 85}%`} height={22} sx={{ borderRadius: '4px' }} />
                         <SkeletonWrapper.Row gap="8px" sx={{ alignItems: 'center' }}>
                           <MIBaseSkeleton.TextLine width={60} height={14} />
                           <Divider orientation="vertical" flexItem sx={{ height: '12px', borderColor: 'contentBorder.Normal' }} />

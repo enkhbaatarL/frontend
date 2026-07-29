@@ -126,7 +126,7 @@ export const multiContentsToClipboard = async (plain: string, html?: string): Pr
     clipboardItems['text/plain'] = new Blob([plain], { type: 'text/plain' })
 
     await navigator.clipboard.write([new ClipboardItem(clipboardItems)])
-  } catch (error) {
-    console.error('Failed to copy to clipboard.', error)
+  } catch {
+    return
   }
 }

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { ICompareGraph, IMarketData } from '@/service/mi/marketData'
+import { getRandomNumber } from '@/utils/random'
 
 interface RawPoint {
   date: string
@@ -38,7 +39,7 @@ const compareChartLabel = '5Yr Avg'
 // ─────────────────────────────────────────────────────────────
 const makeMonthlyDates = (year = 2024) => Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`)
 
-const rand = (min: number, max: number) => Math.random() * (max - min) + min
+const rand = (min: number, max: number) => getRandomNumber(min, max)
 
 const makeSeriesPoints = (dates: string[], base: number, spread: number): RawPoint[] =>
   dates.map((d) => ({ date: d, value: Math.round((base + rand(-spread, spread)) * 100) / 100 }))

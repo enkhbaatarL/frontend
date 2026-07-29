@@ -85,8 +85,7 @@ const AdminBoardsFaqPage = () => {
         showSnackbar(t('게시글이 삭제되었습니다.'), { variant: 'success' })
         await refetch()
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
       showSnackbar(t('게시글 삭제에 실패했습니다.'), { variant: 'error' })
     }
 

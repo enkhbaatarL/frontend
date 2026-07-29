@@ -17,8 +17,8 @@ const useAgentStatus = () => {
         setAgentStatus(null)
         result()
       }, 1000)
-    } catch (error) {
-      console.error('Error in processing:', error)
+    } catch {
+      return
     }
   }
 

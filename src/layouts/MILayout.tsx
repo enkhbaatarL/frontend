@@ -157,8 +157,8 @@ const MILayout = () => {
           setNoticeDetailData(detail)
           setShowNoticePopup(true)
         }
-      } catch (error) {
-        console.error('공지사항 팝업을 불러오는 중 오류가 발생했습니다:', error)
+      } catch {
+        return
       }
     }
 

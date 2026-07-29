@@ -66,9 +66,8 @@ const MIAgentAnswerFooter = ({ copyableContent, onFeedback, onRetry, initialFeed
                   await multiContentsToClipboard(copyableContent.plain, copyableContent.html)
                   showSnackbar(t('common.copyToClipboard'))
                   setCopied(true)
-                } catch (error) {
+                } catch {
                   showSnackbar(t('common.copyFail'), { variant: 'error' })
-                  console.error('Failed to copy content:', error)
                 } finally {
                   setIsLoading(false)
                   await delay(2000)

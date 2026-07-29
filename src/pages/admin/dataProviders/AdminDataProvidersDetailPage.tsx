@@ -163,8 +163,8 @@ export default function AdminDataProvidersDetailPage() {
       setOpenActiveConfirm(false)
       showSnackbar(t(!isActive ? '활성' : '비활성') + t('으로 변경되었습니다.'), { variant: 'success' })
       await queryClient.invalidateQueries({ queryKey: ['providerDetail', providerNo] })
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -182,8 +182,8 @@ export default function AdminDataProvidersDetailPage() {
       setOpenModifiedData(false)
       setOpenEditingConfirm(false)
       showSnackbar('저장되었습니다.', { variant: 'success' })
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 

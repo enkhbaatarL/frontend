@@ -111,8 +111,8 @@ const AdminCustomerDataProviderTable = ({ data, companyNm }: AdminCustomerDataPr
         showSnackbar(t('등록되었습니다.'), { variant: 'success' })
         await queryClient.invalidateQueries({ queryKey: ['dataProvider', companyNo] })
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -321,8 +321,8 @@ const AdminCustomerMemberTable = () => {
           await queryClient.invalidateQueries({ queryKey: ['user', companyNo] })
         }
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -467,8 +467,8 @@ const AdminCustomerCompanyDetailPage = () => {
       showSnackbar(t(response?.isActivated ? '활성' : '비활성') + t('으로 변경되었습니다.'), { variant: 'success' })
       setIsErrorCompanyName(true)
       await queryClient.invalidateQueries({ queryKey: ['customerCompanyDetail', companyNo] })
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -483,8 +483,8 @@ const AdminCustomerCompanyDetailPage = () => {
       queryClient.setQueryData(['customerCompanyDetail', companyNo], response)
       setOpenConfirmSaving(false)
       showSnackbar('저장되었습니다.', { variant: 'success' })
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 

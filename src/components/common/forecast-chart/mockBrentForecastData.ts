@@ -1,5 +1,7 @@
 import dayjs from 'dayjs'
 
+import { getRandomNumber } from '@/utils/random'
+
 /**
  * Options for chart month generation
  */
@@ -141,7 +143,7 @@ export const generateMockActualData = (months: string[], options: MockActualData
 
     // Random change with volatility
     const changeRange = maxChange - minChange
-    const randomChange = minChange + Math.random() * changeRange * volatility
+    const randomChange = minChange + getRandomNumber() * changeRange * volatility
 
     // Apply trend (increases effect over time)
     const trendEffect = (i / actualDataPointCount) * trend * 2
@@ -175,7 +177,7 @@ const generateForecastByMonth = (actualData: (number | null)[], months: string[]
     forecastData[i] = actualData[i]
 
     // Set the next month's forecast value
-    forecastData[i + 1] = (actualData[i] as number) * (0.95 + Math.random() * 0.1)
+    forecastData[i + 1] = (actualData[i] as number) * (0.95 + getRandomNumber() * 0.1)
 
     forecastDatasets.push(forecastData)
   }
@@ -190,13 +192,13 @@ const generateForecastByYear = (actualData: (number | null)[], months: string[])
     .map((_item, i) => {
       if (actualData[i] === null) return null
 
-      return (actualData[i] as number) * (0.95 + Math.random() * 0.1)
+      return (actualData[i] as number) * (0.95 + getRandomNumber() * 0.1)
     })
 
   forecastData.pop()
   forecastData.pop()
-  forecastData.push((actualData[1] as number) * (0.95 + Math.random() * 0.1))
-  forecastData.push((actualData[2] as number) * (0.95 + Math.random() * 0.1))
+  forecastData.push((actualData[1] as number) * (0.95 + getRandomNumber() * 0.1))
+  forecastData.push((actualData[2] as number) * (0.95 + getRandomNumber() * 0.1))
 
   return [forecastData]
 }

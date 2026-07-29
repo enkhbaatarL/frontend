@@ -81,8 +81,7 @@ export default function AdminDataProviderRegistrationPage() {
           body: '나중에 다시 시도해 주세요.',
         })
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
       showSnackbar('문제가 발생했습니다.', {
         variant: 'error',
         body: '나중에 다시 시도해 주세요.',

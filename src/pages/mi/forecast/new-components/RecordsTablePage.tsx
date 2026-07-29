@@ -234,8 +234,8 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
           const fileName = cd.split('\'\'').pop().trim()
           downloadFile(response.data, fileName)
         }
-      } catch (error) {
-        console.error('Download failed:', error)
+      } catch {
+        return
       }
     },
     [companyNo],
@@ -258,8 +258,8 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
         const fileName = `SKT_유가전망_AI모델_예측결과_${date}_${targetName}.xlsx`
 
         downloadFile(response.data, fileName)
-      } catch (error) {
-        console.error('Daily data download failed:', error)
+      } catch {
+        return
       }
     },
     [companyNo],
@@ -281,8 +281,8 @@ const RecordsTablePage = memo(({ basicInfo, chartDataIsLoading }: RecordsTablePa
 
       const response = await forecastDataService.getForecastRecordsFileDownload(companyNo, params)
       downloadFile(response.data, 'Forecast Records.xlsx')
-    } catch (error) {
-      console.error('Download failed:', error)
+    } catch {
+      return
     }
   }, [companyNo, dateRange, selectedTarget, sortOrder])
 

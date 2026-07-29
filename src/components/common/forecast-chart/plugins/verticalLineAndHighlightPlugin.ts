@@ -241,8 +241,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
         // Trigger chart update to redraw with new state
         // Chart will redraw automatically
-      } catch (error) {
-        console.error('Error in mousemove event:', error)
+      } catch {
         plugin.mousePosition = null
         plugin.tooltipContent = []
         plugin.interactionState = PointInteractionState.NONE
@@ -272,8 +271,7 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
 
         // Trigger chart update to redraw with new state
         // Chart will redraw automatically
-      } catch (error) {
-        console.error('Error in mouseout event:', error)
+      } catch {
         // Reset cursor on error
         if (chart.canvas?.style) {
           chart.canvas.style.cursor = 'default'
@@ -452,8 +450,8 @@ class VerticalLineAndHighlightPlugin implements IVerticalLineAndHighlightPlugin 
             },
           })
         }
-      } catch (error) {
-        console.error('Error in click event:', error)
+      } catch {
+        return
       }
     })
   }

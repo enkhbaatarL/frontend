@@ -203,8 +203,8 @@ export const useNewsletterLocalDraft = ({
         baseSnapshotFingerprint: metadata.baseSnapshotFingerprint,
       }
       localStorage.setItem(key, JSON.stringify(payload))
-    } catch (e) {
-      console.warn('[useNewsletterLocalDraft] localStorage save failed', e)
+    } catch {
+      return
     }
   }, [])
 
@@ -280,7 +280,7 @@ export const useNewsletterLocalDraft = ({
     try {
       localStorage.removeItem(storageKey)
     } catch {
-      // ignore
+      return
     }
   }, [storageKey, debouncedSave])
 

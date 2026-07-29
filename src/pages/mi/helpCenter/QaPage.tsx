@@ -111,8 +111,8 @@ const QaPage = () => {
         try {
           updateFilterWithSearch('category', filterOptions.category[0].key)
           setHasInitialData(true)
-        } catch (error) {
-          console.error('초기 데이터 로딩 실패:', error)
+        } catch {
+          return
         } finally {
           setIsInitialLoading(false)
         }

@@ -38,8 +38,6 @@ export const useCompanyCondition = () => {
       const rel = getMiMenuItemDef(cd)?.path
       if (rel) {
         target = toMiLocationPath(rel)
-      } else {
-        console.warn('[MI GNB] Unknown defaultLandingCd:', cd)
       }
     }
     return target

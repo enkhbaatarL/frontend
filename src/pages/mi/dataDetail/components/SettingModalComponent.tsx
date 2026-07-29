@@ -169,8 +169,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({
       } else {
         showSnackbar(response.message || '알림 삭제에 실패했습니다.', { variant: 'error' })
       }
-    } catch (error) {
-      console.error('알림 삭제 오류:', error)
+    } catch {
       showSnackbar('알림 삭제 중 오류가 발생했습니다.', { variant: 'error' })
     }
   }
@@ -197,8 +196,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({
 
       const notificationSettingResponse = await notificationService.getNotificationSetting()
       setAlarmStatus(notificationSettingResponse?.isUserNotificationSetting)
-    } catch (error) {
-      console.error('알림 설정 목록 조회 오류:', error)
+    } catch {
       showSnackbar('알림 설정 목록을 불러오는데 실패했습니다.', { variant: 'error' })
     } finally {
       setIsLoadingTransactions(false)
@@ -254,8 +252,7 @@ const SettingModalComponent: FC<SettingModalProps> = ({
       } else {
         showSnackbar(response.message || '알림 등록에 실패했습니다.', { variant: 'error' })
       }
-    } catch (error) {
-      console.error('알림 등록 오류:', error)
+    } catch {
       showSnackbar('알림 등록 중 오류가 발생했습니다.', { variant: 'error' })
     } finally {
       setIsSubmitting(false)

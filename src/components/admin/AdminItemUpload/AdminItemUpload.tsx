@@ -87,8 +87,8 @@ const AdminItemUpload = ({
 
       // file.ts의 downloadFile 유틸리티 함수 사용
       downloadFile(fileBlob, fileItem.fileNm)
-    } catch (error) {
-      console.error('파일 다운로드 중 오류가 발생했습니다:', error)
+    } catch {
+      return
     }
   }
 

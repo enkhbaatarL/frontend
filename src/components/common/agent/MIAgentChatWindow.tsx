@@ -75,8 +75,8 @@ const loadSelectModeOptionsFromStorage = (): SelectModeOption[] => {
           : defaultOption
       })
     }
-  } catch (error) {
-    console.warn('Failed to load select mode options from localStorage:', error)
+  } catch {
+    return DEFAULT_SELECT_MODE_OPTIONS
   }
   return DEFAULT_SELECT_MODE_OPTIONS
 }
@@ -84,8 +84,8 @@ const loadSelectModeOptionsFromStorage = (): SelectModeOption[] => {
 const saveSelectModeOptionsToStorage = (options: SelectModeOption[]) => {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(options))
-  } catch (error) {
-    console.warn('Failed to save select mode options to localStorage:', error)
+  } catch {
+    return
   }
 }
 
@@ -218,8 +218,7 @@ const MIAgentChatWindowContent = ({ top, onClose, windowExpend = false, onChange
     try {
       await MIAgent.history.fetchPrevHistory()
       return true
-    } catch (error) {
-      console.error('Failed to fetch previous history:', error)
+    } catch {
       return false
     }
   }, [MIAgent.conversations, MIAgent.history])

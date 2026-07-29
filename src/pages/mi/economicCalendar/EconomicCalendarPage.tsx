@@ -128,8 +128,7 @@ const EconomicCalendarPage = () => {
         setIsRecentViewedLoading(true)
         const data = await economicService.getRecentViewed()
         setRecentViewedList(data)
-      } catch (error) {
-        console.error('Failed to fetch recent viewed:', error)
+      } catch {
         setRecentViewedList([])
       } finally {
         setIsRecentViewedLoading(false)
@@ -143,8 +142,8 @@ const EconomicCalendarPage = () => {
     try {
       await economicService.clearRecentViewed()
       setRecentViewedList([])
-    } catch (error) {
-      console.error('Failed to clear recent viewed:', error)
+    } catch {
+      return
     }
   }
 

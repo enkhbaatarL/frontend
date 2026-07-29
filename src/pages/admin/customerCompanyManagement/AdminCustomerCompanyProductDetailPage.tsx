@@ -272,8 +272,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setIsEditUsageBeginDate(false)
       setIsEditUsageEndDate(false)
       setCheckList([])
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -551,8 +551,8 @@ const AdminCustomerCompanyProductDetailPage = () => {
       setOpenConfirmActive(false)
       showSnackbar(response?.isUsed ? t('사용으로 변경되었습니다.') : t('미사용으로 변경되었습니다.'), { variant: 'success' })
       await queryClient.invalidateQueries({ queryKey: ['goodsDetail', companyNo, providerNo, goodsNo] })
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 

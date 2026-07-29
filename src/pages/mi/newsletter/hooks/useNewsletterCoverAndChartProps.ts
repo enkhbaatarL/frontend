@@ -24,7 +24,7 @@ export const useNewsletterCoverAndChartProps = (
       })
       onCoverImageReady(canvas.toDataURL('image/png'))
     } catch {
-      // 캡처 실패: SKIP
+      return
     }
   }, [onCoverImageReady])
 

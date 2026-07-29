@@ -3,10 +3,6 @@ import type { ComponentType } from 'react'
 
 import { getMiMenuGroupLabel, getMiMenuItemDef, getMiMenuTopLabel, toMiLocationPath } from '@/constants/miScreenElementNav'
 
-const warnUnknownScreenElement = (role: 'TOP' | 'GROUP' | 'ITEM', screenElementCd: string) => {
-  console.warn(`[MI GNB] Unknown screenElementCd (${role}):`, screenElementCd)
-}
-
 const getDirectNavigablePath = (node: IMenuNode): string | undefined => {
   if (node.typeCd !== 'MENU_ITEM' && node.typeCd !== 'MENU_TOP') return undefined
 
@@ -30,16 +26,6 @@ export interface MiGnbTopMenu {
   topLabel: string
   defaultPath: string
   rows: MiGnbSubmenuRow[]
-}
-
-const warnUnregisteredMenuItems = (nodes: IMenuNode[] | undefined) => {
-  if (!nodes) return
-  for (const n of nodes) {
-    if (n.typeCd === 'MENU_ITEM' && !getMiMenuItemDef(n.screenElementCd)?.path) {
-      warnUnknownScreenElement('ITEM', n.screenElementCd)
-    }
-    warnUnregisteredMenuItems(n.children ?? [])
-  }
 }
 
 export const isScreenElementInCompanyMenus = (nodes: IMenuNode[] | undefined, screenElementCd: string): boolean => {
@@ -85,16 +71,12 @@ const buildSubmenuRows = (children: IMenuNode[] | undefined): MiGnbSubmenuRow[] 
       const groupTitle = getMiMenuGroupLabel(n.screenElementCd)
       if (groupTitle) {
         rows.push({ kind: 'section', title: groupTitle })
-      } else {
-        warnUnknownScreenElement('GROUP', n.screenElementCd)
       }
       for (const c of n.children ?? []) {
         if (c.typeCd === 'MENU_ITEM') {
           const def = getMiMenuItemDef(c.screenElementCd)
           if (def?.path) {
             pushItem(c.screenElementCd, def)
-          } else {
-            warnUnknownScreenElement('ITEM', c.screenElementCd)
           }
         }
       }
@@ -102,8 +84,6 @@ const buildSubmenuRows = (children: IMenuNode[] | undefined): MiGnbSubmenuRow[] 
       const def = getMiMenuItemDef(n.screenElementCd)
       if (def?.path) {
         pushItem(n.screenElementCd, def)
-      } else {
-        warnUnknownScreenElement('ITEM', n.screenElementCd)
       }
     }
   }
@@ -129,21 +109,15 @@ export const buildMiGnbFromCompanyMenus = (menus: IMenuNode[] | undefined, optio
   tops.forEach((top, index) => {
     const topLabel = getMiMenuTopLabel(top.screenElementCd)
     if (!topLabel) {
-      warnUnknownScreenElement('TOP', top.screenElementCd)
       return
     }
 
     const landingInTop = defaultLandingCd && isScreenElementInCompanyMenus([top], defaultLandingCd) ? defaultLandingCd : undefined
     const landingRel = landingInTop ? getMiMenuItemDef(landingInTop)?.path : undefined
     const landingPath = landingRel ? toMiLocationPath(landingRel) : undefined
-    if (landingInTop && !landingPath) {
-      console.warn('[MI GNB] defaultLandingCd has no registered path:', landingInTop)
-    }
 
     const defaultPath = landingPath ?? firstLeafPath(top.children) ?? getDirectNavigablePath(top)
     if (!defaultPath) {
-      console.warn('[MI GNB] MENU_TOP has no navigable MENU_ITEM in registry:', top.screenElementCd)
-      warnUnregisteredMenuItems(top.children)
       return
     }
 

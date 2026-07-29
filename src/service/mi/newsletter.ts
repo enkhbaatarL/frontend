@@ -463,8 +463,7 @@ export const getIssueDetailEffectiveSnapshotData = (
 
   try {
     return applyNewsletterSnapshotPatch(base, deltas)
-  } catch (err) {
-    console.warn('[newsletter] getIssueDetailEffectiveSnapshotData applyPatch 실패 — base snapshot을 사용합니다.', err)
+  } catch {
     return base
   }
 }

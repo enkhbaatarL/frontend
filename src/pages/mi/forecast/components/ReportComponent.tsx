@@ -534,8 +534,8 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
         companyNo === 2020 ? monthSelect.replaceAll('-', '') : monthSelect.replace('-', '').slice(0, 6),
       )
       downloadFile(response.data, 'Data Table.xlsx')
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 

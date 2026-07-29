@@ -109,8 +109,8 @@ const DataDetailPage = () => {
 
       const fileName = `${productData?.goodsDataNm}_${productData?.goodsDataExpn}_${startDate}_${endDate}.xlsx`
       downloadFile(response.data, fileName)
-    } catch (error) {
-      console.error(error)
+    } catch {
+      return
     }
   }
 
@@ -208,8 +208,8 @@ const DataDetailPage = () => {
         try {
           // 기본 상태 설정이 완료되었음을 표시
           setHasInitialData(true)
-        } catch (error) {
-          console.error('초기 데이터 로딩 실패:', error)
+        } catch {
+          return
         } finally {
           setIsInitialLoading(false)
         }

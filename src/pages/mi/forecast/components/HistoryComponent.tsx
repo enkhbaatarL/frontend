@@ -129,8 +129,8 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
       // 파일 다운로드 처리
       const fileName = `${metaData?.data?.predictTargetSettingNm}_${selectedFulfillDate}.xlsx`
       downloadFile(response.data, fileName)
-    } catch (error) {
-      console.error('Download failed:', error)
+    } catch {
+      return
     }
   }
 
@@ -175,8 +175,8 @@ const HistoryComponent = ({ companyNo, basicInfo }: HistoryComponentProps) => {
       }
 
       downloadFile(response.data, fileName)
-    } catch (error) {
-      console.error('Download failed:', error)
+    } catch {
+      return
     }
   }
 

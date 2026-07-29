@@ -104,8 +104,6 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
         if (response.ok) {
           const blob = await response.blob()
           downloadFile(blob, 'DubaiCrudeReport.pdf')
-        } else {
-          console.error('PDF file not found')
         }
         return
       }
@@ -122,8 +120,8 @@ const MISummaryDownloadReport = ({ companyNo, monthSelect }: MISummaryDownloadRe
         const fileName = cd.split('\'\'').pop().trim()
         downloadFile(response.data, fileName)
       }
-    } catch (error) {
-      console.error('Download failed:', error)
+    } catch {
+      return
     }
   }
 

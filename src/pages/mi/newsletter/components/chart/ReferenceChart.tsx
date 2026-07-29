@@ -68,7 +68,6 @@ const ReferenceChart = forwardRef<ReferenceChartRef, Props>(({ chartData, market
 
   const convertChartToImage = useCallback((canvas: HTMLCanvasElement, setImageState: (image: string) => void) => {
     if (!canvas || canvas.width === 0 || canvas.height === 0) {
-      console.warn('Invalid canvas for image conversion')
       return
     }
 

@@ -121,13 +121,6 @@ export const useDocumentDiff = (
     const selectedIsBaseSnapshot = Number(revisionDetail.baseSnapshot.seq) === Number(selectedVersionSeq)
 
     if (!selectedIsBaseSnapshot && selectedIndex < 0) {
-      console.warn('[useDocumentDiff] 선택 seq가 histories에 없음 — base 스냅샷만 표시합니다.', {
-        selectedVersionSeq,
-        baseSnapshotSeq: revisionDetail.baseSnapshot.seq,
-        fromSeq: revisionDetail.fromSeq,
-        toSeq: revisionDetail.toSeq,
-        historySeqs: histories.map((h) => h.seq),
-      })
       return { previousData: null, currentData: parsedBase, diffOverrides: {} }
     }
 
@@ -144,21 +137,8 @@ export const useDocumentDiff = (
         previousData = applyNewsletterSnapshotPatch(parsedBase, deltasToPrevious)
       }
       currentData = applyNewsletterSnapshotPatch(parsedBase, deltasToCurrent)
-    } catch (err) {
-      const opTypes = [...new Set(deltasToCurrent.map((d) => d.op))]
-      console.error('[useDocumentDiff] applyPatch 실패:', err, {
-        selectedVersionSeq,
-        comparisonTarget,
-        deltasCount: deltasToCurrent.length,
-        opTypes,
-        baseSnapshotSeq: revisionDetail.baseSnapshot.seq,
-        historySeqs: histories.map((h) => h.seq),
-      })
+    } catch {
       return empty()
-    }
-
-    if (comparisonTarget === 'initial' && !originalParsed) {
-      console.warn('[useDocumentDiff] comparisonTarget=initial 인데 originalPublishedBaseline 없음')
     }
 
     if (!currentData) return empty()

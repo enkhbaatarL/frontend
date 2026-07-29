@@ -68,8 +68,9 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
         showSnackbar(t('등록되었습니다.'), { variant: 'success' })
       }
       navigateToList()
-    } catch (error) {
-      console.error(error)
+    } catch {
+      setShowRegistrationModal(false)
+      return
     }
 
     setShowRegistrationModal(false)
@@ -93,8 +94,8 @@ const AdminCustomerCompanyManagementOwnerCompaniesPage = () => {
           }
           navigateToList()
         }
-      } catch (error) {
-        console.error(error)
+      } catch {
+        return
       }
     },
     [showSnackbar, navigateToList, queryClient],

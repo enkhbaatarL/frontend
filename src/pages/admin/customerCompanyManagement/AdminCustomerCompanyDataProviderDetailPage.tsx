@@ -305,8 +305,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setOpenConfirmActive(false)
       showSnackbar(t(response.isUsed ? '사용' : '미사용') + t('으로 변경되었습니다.'), { variant: 'success' })
       await queryClient.invalidateQueries({ queryKey: ['providerDetail', companyNo, selectedProviderNo] })
-    } catch (error) {
-      console.error('error', error)
+    } catch {
+      return
     }
   }
 
@@ -324,8 +324,8 @@ const AdminCustomerCompanyDataProviderDetailPage = () => {
       setGoodsAuthManagementSeparateCd('INDIVIDUAL')
       showSnackbar(t('등록되었습니다'), { variant: 'success' })
       await refetch()
-    } catch (error) {
-      console.error('error', error)
+    } catch {
+      return
     }
   }
 

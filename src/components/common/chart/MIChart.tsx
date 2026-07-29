@@ -586,8 +586,8 @@ const MIChart = forwardRef<HTMLCanvasElement, Readonly<MIChartProps>>(
 
           targetChart.zoomScale('x', { min: sourceScales.min, max: sourceScales.max }, 'none')
         }
-      } catch (error) {
-        console.error(error)
+      } catch {
+        return
       } finally {
         isSynchronizing.current = false
       }

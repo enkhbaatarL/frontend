@@ -65,8 +65,8 @@ export const parseDate = (dateStr: unknown): string => {
     if (parsed.isValid()) {
       return parsed.format('YYYY-MM-DD')
     }
-  } catch (error) {
-    console.error('날짜 파싱 실패:', error)
+  } catch {
+    return ''
   }
 
   return ''

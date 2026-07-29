@@ -377,8 +377,8 @@ const ForecastReportCardReportContent = ({
                   const fileName = cd.split('\'\'').pop().trim()
                   downloadFile(response.data, fileName)
                 }
-              } catch (error) {
-                console.error('Download failed:', error)
+              } catch {
+                return
               }
             }}
           >

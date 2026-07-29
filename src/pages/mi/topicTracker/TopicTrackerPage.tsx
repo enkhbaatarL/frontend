@@ -122,8 +122,8 @@ const TopicTrackerPage = () => {
           regions: Array.isArray(parsed.regions) ? parsed.regions : [],
         }
       }
-    } catch (error) {
-      console.error('Failed to parse saved filters:', error)
+    } catch {
+      return { topics: [], regions: [] }
     }
     return { topics: [], regions: [] }
   }, [])

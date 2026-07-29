@@ -99,9 +99,8 @@ const LoginPage = () => {
               localStorage.removeItem(key)
             }
           }
-        } catch (error) {
+        } catch {
           // 파싱 오류가 있으면 삭제
-          console.error(`Failed to parse localStorage item ${key}:`, error)
           localStorage.removeItem(key)
         }
       }
