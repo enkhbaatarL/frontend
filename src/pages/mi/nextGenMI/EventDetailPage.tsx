@@ -191,7 +191,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const currentUserNo = useAuthStore((authState) => authState.user?.userNo)
   const eventIdNumber = eventId !== undefined && Number.isFinite(Number(eventId)) ? Number(eventId) : null
 
-  const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
+  const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 5 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
   const { setStickyHeader } = useStickyHeader()
   const popupContext = useMIMorphingPopupContext()

@@ -72,7 +72,7 @@ const ScenarioDesignBaseEventSection = ({
 }: ScenarioDesignBaseEventSectionProps) => {
   const [expanded, setExpanded] = useState(false)
   const [selectedTab, setSelectedTab] = useState<ScenarioDesignBaseEventTabKey>('ai')
-  const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 10 })
+  const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 5 })
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
 
   const { data: recordsData, isLoading: recordsLoading } = useQuery({

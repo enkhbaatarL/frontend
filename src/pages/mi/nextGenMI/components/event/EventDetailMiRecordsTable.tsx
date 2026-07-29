@@ -18,7 +18,7 @@ import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/Even
 import EventDetailSummaryCell from '@/pages/mi/nextGenMI/components/event/EventDetailSummaryCell'
 import EventDetailSummaryDialog from '@/pages/mi/nextGenMI/components/event/EventDetailSummaryDialog'
 
-const PAGE_SIZE_LIST = [10, 15, 20, 50, 100] as const
+const PAGE_SIZE_LIST = [5, 10, 15, 20, 50, 100] as const
 
 const shakeAnimation = keyframes`
   0%, 100% { transform: translateX(0); }
