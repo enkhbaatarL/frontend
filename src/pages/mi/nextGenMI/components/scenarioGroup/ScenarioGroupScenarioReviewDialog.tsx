@@ -29,6 +29,7 @@ import {
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
+import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
 const SCENARIO_REVIEW_CARD_DEFAULT_WIDTH = 400
@@ -197,14 +198,29 @@ const ScenarioReviewEllipsisText = ({ value, sx, ...typographyProps }: Omit<Typo
 }
 
 const ScenarioReviewSignpost = ({ signpost }: { signpost: IScenarioSignpostDefinition }) => (
-  <Stack minHeight="62px" padding="10px 12px" bgcolor="gray.5" borderRadius="10px" minWidth={0} justifyContent="center">
-    <ScenarioReviewEllipsisText value={signpost.label} variant="body2SB14" color="contentText.Black" lineHeight={1.5} />
-    <ScenarioReviewEllipsisText
-      value={`가능성 강화 · ${signpost.strengthLabel}`}
-      variant="body2M14"
-      color="contentText.Normal"
-      lineHeight={1.5}
-    />
+  <Stack gap="8px" padding="10px 12px" bgcolor="gray.5" borderRadius="10px" minWidth={0}>
+    <Stack minWidth={0}>
+      <ScenarioReviewEllipsisText value={signpost.label} variant="body2SB14" color="contentText.Black" lineHeight={1.5} />
+      <ScenarioReviewEllipsisText
+        value={`${signpost.directionLabel} · ${signpost.strengthLabel}`}
+        variant="body2M14"
+        color="contentText.Normal"
+        lineHeight={1.5}
+      />
+    </Stack>
+    <Divider />
+    <Stack gap="2px" minWidth={0}>
+      <Typography variant="body2SB14" color="contentText.Subtext" lineHeight={1.5}>
+        핵심 근거
+      </Typography>
+      <NextGenMITableBodyText
+        value={signpost.rationale || '-'}
+        color="contentText.Normal"
+        lineClamp={3}
+        tooltipWhenTruncated
+        sx={{ lineHeight: 1.5 }}
+      />
+    </Stack>
   </Stack>
 )
 
@@ -568,7 +584,7 @@ const ScenarioGroupScenarioReviewDialog = ({ open, scenarioGroupId, scenarios, o
   const [narrativeHeight, setNarrativeHeight] = useState(194)
   const [cardWidths, setCardWidths] = useState<Record<number, number>>(() => createScenarioReviewCardWidths(scenarios))
   const [activeSplitterIndex, setActiveSplitterIndex] = useState<number | null>(null)
-  const [isMaximized, setIsMaximized] = useState(true)
+  const [isMaximized, setIsMaximized] = useState(() => scenarios.length > 3)
   const [pinnedScenarioIds, setPinnedScenarioIds] = useState<number[]>([])
   const [scrollEdges, setScrollEdges] = useState({ top: false, right: false, bottom: false, left: false })
   const [stickyCardEdges, setStickyCardEdges] = useState<{
@@ -643,8 +659,8 @@ const ScenarioGroupScenarioReviewDialog = ({ open, scenarioGroupId, scenarios, o
   }, [scenarios])
 
   useEffect(() => {
-    if (!open) setIsMaximized(true)
-  }, [open])
+    if (!open) setIsMaximized(scenarios.length > 3)
+  }, [open, scenarios.length])
 
   useLayoutEffect(() => {
     if (!open || loading) return undefined
@@ -887,9 +903,9 @@ const ScenarioGroupScenarioReviewDialog = ({ open, scenarioGroupId, scenarios, o
               direction="row"
               alignItems="stretch"
               gap="0px"
-              width="max-content"
-              minWidth="100%"
+              width="100%"
               padding="0 8px 20px 24px"
+              boxSizing="border-box"
             >
               {loading
                 ? scenarios.map((scenario) => <ScenarioReviewCardSkeleton key={scenario.scenarioId} />)

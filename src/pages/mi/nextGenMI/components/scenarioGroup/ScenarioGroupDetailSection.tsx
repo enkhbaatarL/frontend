@@ -567,6 +567,7 @@ const ScenarioGroupDetailSection = ({
   const [scenarioReviewOpen, setScenarioReviewOpen] = useState(false)
   const rightHeaderPinned = useScenarioDetailStickyPinned(rightHeaderRef, stickyTopPx)
   const hasHeadingSlot = Boolean(headingSlot)
+  const reviewableScenarios = useMemo(() => scenarios.filter((scenario) => scenario.status !== 'discarded'), [scenarios])
   const { data, isLoading } = useQuery({
     queryKey: ['nextGenMIScenarioGroupScenarioDetail', scenarioGroupId, selectedScenarioId],
     queryFn: () => nextGenMIScenarioGroupService.getScenarioDetail(scenarioGroupId, selectedScenarioId ?? ''),
@@ -865,7 +866,7 @@ const ScenarioGroupDetailSection = ({
       <ScenarioGroupScenarioReviewDialog
         open={scenarioReviewOpen}
         scenarioGroupId={scenarioGroupId}
-        scenarios={scenarios}
+        scenarios={reviewableScenarios}
         onClose={() => setScenarioReviewOpen(false)}
       />
     </Stack>
