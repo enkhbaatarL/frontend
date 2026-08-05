@@ -1,6 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import ErrorIcon from '@mui/icons-material/Error'
-import { Box, FormControlLabel, Switch, Typography } from '@mui/material'
+import { Box, FormControlLabel, Stack, Switch, Tooltip, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs, { Dayjs } from 'dayjs'
@@ -22,6 +22,7 @@ import MISelect from '@/components/common/select/MISelect'
 import { useAdminHeader } from '@/contexts/AdminHeaderContext'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import useSnackbar from '@/hooks/useSnackbar'
+import AdminCompanyInfoPage from '@/pages/admin/system/AdminCompanyInfoPage'
 import companiesService, { ICompanyProviderInfo } from '@/service/admin/companies'
 import dataProviderService, { IProviderInfo } from '@/service/admin/dataProvider'
 import membersService, { IUserInfo, IUserRequest } from '@/service/admin/members'
@@ -415,6 +416,7 @@ const AdminCustomerCompanyDetailPage = () => {
   const [openConfirmActive, setOpenConfirmActive] = useState(false)
   const [openInformationDialog, setOpenInformationDialog] = useState(false)
   const [openConfirmSaving, setOpenConfirmSaving] = useState(false)
+  const [isWhiteLabelSettingsOpen, setIsWhiteLabelSettingsOpen] = useState(false)
   const [isErrorCompanyName, setIsErrorCompanyName] = useState(false)
   const [inputCompanyName, setInputCompanyName] = useState<string>('')
   const [inputUsageBeginDate, setInputUsageBeginDate] = useState<Dayjs | null>(null)
@@ -447,6 +449,13 @@ const AdminCustomerCompanyDetailPage = () => {
     queryFn: async () => await companiesService.getCompanyLatestUpdated(Number(companyNo)),
     refetchOnWindowFocus: false,
     gcTime: 0,
+    enabled: !!companyNo,
+  })
+
+  const { data: companyLogo } = useQuery({
+    queryKey: ['company-logo', Number(companyNo)],
+    queryFn: () => companiesService.getCompanyLogo(Number(companyNo)),
+    refetchOnWindowFocus: false,
     enabled: !!companyNo,
   })
 
@@ -497,7 +506,47 @@ const AdminCustomerCompanyDetailPage = () => {
       setCustomComponent(<AdminCustomerCompanyDetailPageHeader value={isActive} onChange={toggle} label={isActive ? '활성' : '비활성'} />)
       setSubHeader(
         <DetailItem
-          title={data?.companyNm}
+          title={
+            <Stack alignItems="center" direction="row" gap="16px">
+              <Typography color="gray.70" variant="body1">
+                {data.companyNm}
+              </Typography>
+              {companyLogo?.logoUrl ? (
+                <Tooltip
+                  arrow
+                  placement="top"
+                  slotProps={{
+                    arrow: { sx: { color: 'common.white' } },
+                    tooltip: {
+                      sx: {
+                        backgroundColor: 'common.white',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.16)',
+                        lineHeight: 0,
+                        padding: '12px',
+                      },
+                    },
+                  }}
+                  title={
+                    <img
+                      alt={t(`${data.companyNm} 로고`)}
+                      src={companyLogo.logoUrl}
+                      style={{ height: '30px', maxWidth: '160px', objectFit: 'contain' }}
+                    />
+                  }
+                >
+                  <span>
+                    <AdminButton color="secondary" size="h34" variant="outlined" onClick={() => setIsWhiteLabelSettingsOpen(true)}>
+                      {t('화이트라벨 수정')}
+                    </AdminButton>
+                  </span>
+                </Tooltip>
+              ) : (
+                <AdminButton color="secondary" size="h34" variant="outlined" onClick={() => setIsWhiteLabelSettingsOpen(true)}>
+                  {t('화이트라벨 설정')}
+                </AdminButton>
+              )}
+            </Stack>
+          }
           fields={[
             {
               label: '등록일',
@@ -537,7 +586,7 @@ const AdminCustomerCompanyDetailPage = () => {
       setCustomComponent(null)
       setSubHeader(null)
     }
-  }, [setCustomComponent, setSubHeader, data, companyLatestUpdatedData, isActive, isLoading])
+  }, [setCustomComponent, setSubHeader, data, companyLatestUpdatedData, companyLogo, isActive, isLoading])
 
   useEffect(() => {
     setIsErrorCompanyName(inputCompanyName.replace(/\s/g, '') !== data?.companyNm.replace(/\s/g, ''))
@@ -547,6 +596,13 @@ const AdminCustomerCompanyDetailPage = () => {
     <AdminSkeleton loading={isLoading} table>
       {dataProviderData && <AdminCustomerDataProviderTable data={dataProviderData} companyNm={companyNm} />}
       {<AdminCustomerMemberTable />}
+      {companyNo && (
+        <AdminCompanyInfoPage
+          customerCompanyNo={Number(companyNo)}
+          isOpen={isWhiteLabelSettingsOpen}
+          onClose={() => setIsWhiteLabelSettingsOpen(false)}
+        />
+      )}
       <MIConfirm
         open={openConfirmActive}
         title={<>{data?.isActivated ? t('비활성으로 변경하시겠습니까?') : t('활성으로 변경하시겠습니까?')}</>}

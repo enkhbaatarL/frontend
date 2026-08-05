@@ -31,9 +31,26 @@ import AdminMemberManagementUserRegistrationPage from '@/pages/admin/memberManag
 import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/AdminMemberManagementUsersPage'
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
 import AdminApiPage from '@/pages/admin/system/AdminApiPage'
+import AdminCompanyInfoPage from '@/pages/admin/system/AdminCompanyInfoPage'
 import AdminTokenManagementPage from '@/pages/admin/tokens/AdminTokenManagementPage'
 import AdminProvider from '@/providers/AdminProvider'
+import { UserRole } from '@/service/admin/members'
+import useAuthStore from '@/store/useAuthStore'
 import { ICustomRouteObject } from '@/types/common'
+
+const AdminSystemIndexPage = () => {
+  const userRoleCd = useAuthStore((state) => state.user?.userRoleCd)
+
+  return <Navigate to={userRoleCd === UserRole.OPERATOR ? 'company' : 'api'} replace />
+}
+
+const AdminOnlyApiPage = () => {
+  const userRoleCd = useAuthStore((state) => state.user?.userRoleCd)
+
+  return userRoleCd === UserRole.ADMIN ? <AdminApiPage /> : <Navigate to="/admin/system/company" replace />
+}
+
+const OperatorCompanyInfoPage = () => <AdminCompanyInfoPage useCurrentCompanyLogoApi />
 
 const AdminRoutes: ICustomRouteObject = {
   path: 'admin',
@@ -442,12 +459,17 @@ const AdminRoutes: ICustomRouteObject = {
       children: [
         {
           index: true,
-          element: <Navigate to="api" replace />,
+          element: <AdminSystemIndexPage />,
         },
         {
           path: 'api',
           label: 'API 관리',
-          element: <AdminApiPage />,
+          element: <AdminOnlyApiPage />,
+        },
+        {
+          path: 'company',
+          label: '화이트라벨 설정',
+          element: <OperatorCompanyInfoPage />,
         },
       ],
     },

@@ -247,7 +247,7 @@ const EventDetailImpactAnalysisSection = ({
             영향도 분석 종합
           </Typography>
           {hasNarrative ? (
-            <MIMarkdown sx={{ '& > :first-child': { marginTop: 0 }, '& > :last-child': { marginBottom: 0 } }}>{narrative}</MIMarkdown>
+            <MIMarkdown sx={{ '& > :first-of-type': { marginTop: 0 }, '& > :last-child': { marginBottom: 0 } }}>{narrative}</MIMarkdown>
           ) : (
             <Stack flex={1} minHeight="120px" alignItems="center" justifyContent="center">
               <Typography variant="body2M14" color="contentText.Normal">

@@ -40,9 +40,32 @@ export const useAdminMenuItems = () => {
       user?.userRoleCd === UserRole.OPERATOR
         ? {
           ...AdminRoutes,
-          children: AdminRoutes.children?.filter((child) => child.path && ['data-providers', 'tokens'].includes(child.path)),
+          children: AdminRoutes.children?.flatMap((child) => {
+            if (child.path && ['data-providers', 'tokens'].includes(child.path)) return [child]
+
+            if (child.path === 'system') {
+              return [
+                {
+                  ...child,
+                  children: child.children?.filter((route) => route.path === 'company'),
+                },
+              ]
+            }
+
+            return []
+          }),
         }
-        : AdminRoutes,
+        : {
+          ...AdminRoutes,
+          children: AdminRoutes.children?.map((child) =>
+            child.path === 'system'
+              ? {
+                ...child,
+                children: child.children?.filter((route) => route.path !== 'company'),
+              }
+              : child,
+          ),
+        },
     [user?.userRoleCd],
   )
 

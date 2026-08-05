@@ -320,7 +320,16 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
                 }
               }}
             >
-              <img src={logoImg} alt="AI Market Insights" draggable={false} />
+              <img
+                className={style.Logo}
+                src={accessCompanyInfo?.logoUrl ?? logoImg}
+                alt="AI Market Insights"
+                draggable={false}
+                onError={(event) => {
+                  event.currentTarget.onerror = null
+                  event.currentTarget.src = logoImg
+                }}
+              />
             </Box>
 
             <Box sx={{ flexGrow: 1, display: 'flex' }}>

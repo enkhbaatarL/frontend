@@ -102,6 +102,12 @@ export interface IProviderGoodsRequest extends IPaginationRequest {
 export interface IChangeUsageRequest {
   isUsed: boolean
 }
+
+export interface ICompanyLogoInfo {
+  customerCompanyNo: number
+  logoUrl: string | null
+}
+
 export interface IUpdateCustomerCompanyRequest {
   isActivated: boolean
   usageBeginDate: string
@@ -249,6 +255,41 @@ const companiesService = {
    */
   async getCompanyDetail(companyNo?: number): Promise<ICompanyDetailInfo> {
     const response: AxiosResponse<ICommonResponse<ICompanyDetailInfo>> = await api.get(`admin/company-management/companies/${companyNo}`)
+
+    return response.data.data
+  },
+  async getCompanyLogo(companyNo: number): Promise<ICompanyLogoInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLogoInfo>> = await api.get(`admin/company-management/companies/${companyNo}/logo`)
+
+    return response.data.data
+  },
+  async updateCompanyLogo(formData: FormData, companyNo: number): Promise<ICompanyLogoInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLogoInfo>> = await api.put(
+      `admin/company-management/companies/${companyNo}/logo`,
+      formData,
+    )
+
+    return response.data.data
+  },
+  async deleteCompanyLogo(companyNo: number): Promise<ICompanyLogoInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLogoInfo>> = await api.delete(
+      `admin/company-management/companies/${companyNo}/logo`,
+    )
+
+    return response.data.data
+  },
+  async getMyCompanyLogo(): Promise<ICompanyLogoInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLogoInfo>> = await api.get('admin/company-management/companies/me/logo')
+
+    return response.data.data
+  },
+  async updateMyCompanyLogo(formData: FormData): Promise<ICompanyLogoInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLogoInfo>> = await api.put('admin/company-management/companies/me/logo', formData)
+
+    return response.data.data
+  },
+  async deleteMyCompanyLogo(): Promise<ICompanyLogoInfo> {
+    const response: AxiosResponse<ICommonResponse<ICompanyLogoInfo>> = await api.delete('admin/company-management/companies/me/logo')
 
     return response.data.data
   },

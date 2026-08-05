@@ -61,7 +61,7 @@ const NewsDetailPage = () => {
                     {newsSummaryData.summaryTitle}
                   </Typography>
                 )}
-                <MIMarkdown sx={{ '& > :first-child': { marginTop: 0 }, '& > :last-child': { marginBottom: 0 } }}>
+                <MIMarkdown sx={{ '& > :first-of-type': { marginTop: 0 }, '& > :last-child': { marginBottom: 0 } }}>
                   {newsSummaryData?.summary}
                 </MIMarkdown>
               </Stack>

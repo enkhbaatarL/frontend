@@ -20,6 +20,7 @@ export interface IAccessCompanyInfo {
   defaultLandingCd?: string
   menus?: IMenuNode[]
   floating?: IMenuNode[]
+  logoUrl?: string | null
 }
 
 const companiesService = {

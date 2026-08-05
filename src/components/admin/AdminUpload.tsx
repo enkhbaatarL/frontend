@@ -18,6 +18,7 @@ export interface FileInfo {
 }
 interface UploadFieldProps {
   labelSub?: string
+  guideText?: string
   required?: boolean
   maxSize?: number // in MB
   minWidth?: number // in pixels
@@ -43,6 +44,7 @@ const AdminUpload = ({
   maxSize = 20, // Default 20MB
   minWidth = 700, // Default 700px
   acceptedTypes = ['*'],
+  guideText,
   draggable,
   multiple = false,
   disabled,
@@ -165,7 +167,7 @@ const AdminUpload = ({
               <div className="upload-field-content">
                 {getUploadIcon()}
                 <div className="upload-field-text">파일을 드래그하여 업로드하거나 클릭하여 파일을 첨부하세요.</div>
-                <div className="upload-field-size-limit">(최대 8MB)</div>
+                <div className="upload-field-size-limit">{guideText ?? '(최대 8MB)'}</div>
               </div>
             </div>
           )}
