@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
@@ -24,16 +25,21 @@ import {
   isEventDesignOccupiedByOther,
   isOwnEventDesignAvailability,
   mergeEventListItemDesignAvailability,
+  normalizeEventDesignStep,
+  normalizeEventScenarioDesignStatus,
+  resolveMultiEventSelectionDesignState,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
 import EventRecommendedStarCell from '@/pages/mi/nextGenMI/components/event/EventRecommendedStarCell'
 import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/EventScenarioGenerateButton'
+import EventSelectionActionBar, { type EventSelectionItem } from '@/pages/mi/nextGenMI/components/event/EventSelectionActionBar'
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
+  type EventConnectedScenarioGroup,
   type EventDesignAvailability,
   type EventListItem,
   type EventSort,
@@ -45,6 +51,8 @@ import useDialog from '@/store/useDialog'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
 type CategoryFilterValue = number[]
+
+const EVENT_SELECTION_MAX_COUNT = 5
 
 const TYPE_FILTER_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -71,6 +79,8 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
   return { startDate: today.subtract(1, 'month'), endDate: today }
 }
 
+const isEventSelectableForScenarioDesign = (row: EventListItem) => row.scenarioDesignStatus !== 'unavailable'
+
 const EventsTabPanel = () => {
   const navigate = useNavigate()
   const { onShow } = useDialog()
@@ -84,6 +94,7 @@ const EventsTabPanel = () => {
   const [committedKeyword, setCommittedKeyword] = useState('')
   const [pagination, setPagination] = useState({ size: 20, page: 1 })
   const [hideNonRecommended, setHideNonRecommended] = useState(false)
+  const [selectedEvents, setSelectedEvents] = useState<EventSelectionItem[]>([])
 
   useEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
@@ -166,6 +177,83 @@ const EventsTabPanel = () => {
     [designAvailabilityByEventId, rawTableRows],
   )
 
+  const selectedEventIdSet = useMemo(() => new Set(selectedEvents.map((item) => item.eventId)), [selectedEvents])
+
+  const isSelectionLimitReached = selectedEvents.length >= EVENT_SELECTION_MAX_COUNT
+
+  const handleToggleEventSelection = useCallback((row: EventListItem, checked: boolean) => {
+    if (!isEventSelectableForScenarioDesign(row)) return
+
+    setSelectedEvents((prev) => {
+      if (!checked) return prev.filter((item) => item.eventId !== row.eventId)
+      if (prev.some((item) => item.eventId === row.eventId)) return prev
+      if (prev.length >= EVENT_SELECTION_MAX_COUNT) return prev
+      return [...prev, { eventId: row.eventId, eventName: row.eventName }]
+    })
+  }, [])
+
+  const handleRemoveSelectedEvent = useCallback((eventId: number) => {
+    setSelectedEvents((prev) => prev.filter((item) => item.eventId !== eventId))
+  }, [])
+
+  const selectedRowsForDesign = useMemo(() => {
+    const rowById = new Map(tableRows.map((row) => [row.eventId, row]))
+    return selectedEvents.map((item) => rowById.get(item.eventId)).filter((row): row is EventListItem => row !== undefined)
+  }, [selectedEvents, tableRows])
+
+  const selectionDesignState = useMemo(() => {
+    if (selectedEvents.length < 2) return null
+
+    // 현재 페이지/가용 데이터에 선택 행이 모두 없으면 신규 생성 CTA로 폴백
+    if (selectedRowsForDesign.length !== selectedEvents.length) {
+      const primary = selectedEvents[0]
+      return {
+        mode: 'designable' as const,
+        locked: false,
+        primaryEventId: primary.eventId,
+        primaryEventName: primary.eventName,
+      }
+    }
+
+    return resolveMultiEventSelectionDesignState(selectedRowsForDesign, currentUserNo)
+  }, [currentUserNo, selectedEvents, selectedRowsForDesign])
+
+  const handleSelectedEventsDesignClick = useCallback(() => {
+    if (!selectionDesignState) return
+
+    // Case 2. 동일 조합을 다른 사용자가 진행 중 - 진입 불가 안내
+    if (selectionDesignState.mode === 'creating' && selectionDesignState.locked) {
+      onShow({
+        title: '시나리오 설계를 시작할 수 없습니다',
+        width: 450,
+        children: getEventDesignOccupiedMessage(selectionDesignState.occupantUserName),
+      })
+      return
+    }
+
+    // Case 3. 동일 조합의 시나리오 그룹이 완료된 경우 - 상세로 이동 (신규 생성 없음)
+    if (
+      selectionDesignState.mode === 'created' &&
+      selectionDesignState.scenarioGroupId !== undefined &&
+      selectionDesignState.scenarioGroupId !== null
+    ) {
+      navigate(getNextGenMIScenarioGroupDetailPath(selectionDesignState.scenarioGroupId), {
+        state: { eventName: selectionDesignState.primaryEventName },
+      })
+      return
+    }
+
+    // Case 1. 신규 생성 / Case 3. 내가 진행 중 - 현재 단계 설계 화면으로 이동
+    navigate(getNextGenMIEventDesignPath(selectionDesignState.primaryEventId), {
+      state: {
+        eventName: selectionDesignState.primaryEventName,
+        eventIds: selectedEvents.map((item) => item.eventId),
+        scenarioGroupId: selectionDesignState.scenarioGroupId ?? undefined,
+        designStep: selectionDesignState.designStep ?? null,
+      },
+    })
+  }, [navigate, onShow, selectedEvents, selectionDesignState])
+
   const handleEventNameClick = useCallback(
     (row: EventListItem) =>
       navigate(`/mi/next-gen-mi/events/${row.eventId}`, {
@@ -212,14 +300,95 @@ const EventsTabPanel = () => {
       }
 
       navigate(getNextGenMIEventDesignPath(currentRow.eventId), {
-        state: { eventName: currentRow.eventName },
+        state: {
+          eventName: currentRow.eventName,
+          scenarioGroupId: currentRow.scenarioGroupId ?? undefined,
+          designStep: normalizeEventDesignStep(currentRow.designStep) ?? null,
+        },
       })
     },
     [currentUserNo, designAvailabilityByEventId, navigate, onShow],
   )
 
+  const handleConnectedGroupContinue = useCallback(
+    (row: EventListItem, group: EventConnectedScenarioGroup) => {
+      const groupStatus = normalizeEventScenarioDesignStatus(group.scenarioDesignStatus)
+      const isGroupOccupiedByOther = isEventDesignOccupiedByOther(
+        {
+          scenarioDesignStatus: groupStatus ?? row.scenarioDesignStatus,
+          occupied: group.occupied ?? row.occupied,
+          occupantUserId: group.occupantUserId ?? row.occupantUserId,
+          occupantUserName: group.occupantUserName ?? row.occupantUserName,
+        },
+        currentUserNo,
+      )
+
+      if (isGroupOccupiedByOther) {
+        onShow({
+          title: '시나리오 설계를 시작할 수 없습니다',
+          width: 450,
+          children: getEventDesignOccupiedMessage(group.occupantUserName ?? row.occupantUserName),
+        })
+        return
+      }
+
+      // 완료된 그룹만 상세로 이동. 1/2단계는 시나리오 설계 화면으로 이동
+      if (groupStatus === 'created') {
+        navigate(getNextGenMIScenarioGroupDetailPath(group.scenarioGroupId), {
+          state: { eventName: row.eventName },
+        })
+        return
+      }
+
+      navigate(getNextGenMIEventDesignPath(row.eventId), {
+        state: {
+          eventName: row.eventName,
+          scenarioGroupId: group.scenarioGroupId,
+          designStep: normalizeEventDesignStep(group.designStep) ?? null,
+        },
+      })
+    },
+    [currentUserNo, navigate, onShow],
+  )
+
   const columns: GridColDef<EventListItem>[] = useMemo(
     () => [
+      {
+        field: '__selection',
+        headerName: '',
+        width: 36,
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderHeader: () => (
+          <AdminCheckbox
+            size="small"
+            checked={false}
+            disabled
+            tabIndex={-1}
+            inputProps={{ 'aria-hidden': true }}
+            sx={{
+              padding: '6px',
+              pointerEvents: 'none',
+            }}
+          />
+        ),
+        renderCell: (params) => {
+          const selectable = isEventSelectableForScenarioDesign(params.row)
+          const isSelected = selectedEventIdSet.has(params.row.eventId)
+          return (
+            <AdminCheckbox
+              size="small"
+              checked={isSelected}
+              disabled={!selectable || (isSelectionLimitReached && !isSelected)}
+              onChange={(_, checked) => handleToggleEventSelection(params.row, checked)}
+              onClick={(e) => e.stopPropagation()}
+              inputProps={{ 'aria-label': `${params.row.eventName} 선택` }}
+              sx={{ padding: '6px' }}
+            />
+          )
+        },
+      },
       {
         field: '__statusBadge',
         headerName: '',
@@ -337,11 +506,13 @@ const EventsTabPanel = () => {
       {
         field: 'scenario',
         headerName: '시나리오',
-        width: 100,
+        width: 120,
         align: 'center',
         sortable: false,
         renderCell: (params) => {
           const scenarioDesignUnavailable = params.row.scenarioDesignStatus === 'unavailable'
+          const connectedGroups = params.row.connectedScenarioGroups ?? []
+          const hasConnectedGroups = connectedGroups.length > 0
 
           return (
             <EventScenarioGenerateButton
@@ -351,20 +522,39 @@ const EventsTabPanel = () => {
               designingLocked={isEventDesignOccupiedByOther(params.row, currentUserNo)}
               designStep={params.row.designStep}
               designStepLabel={params.row.designStepLabel}
+              scenarioGroupId={params.row.scenarioGroupId}
+              connectedScenarioGroups={connectedGroups}
+              eventId={params.row.eventId}
+              eventName={params.row.eventName}
+              scenarioDesignStatus={params.row.scenarioDesignStatus}
+              occupied={params.row.occupied}
+              occupantUserId={params.row.occupantUserId}
+              occupantUserName={params.row.occupantUserName}
+              currentUserNo={currentUserNo}
               disabled={
                 scenarioDesignUnavailable ||
-                (params.row.scenarioDesignStatus === 'created' &&
+                (!hasConnectedGroups &&
+                  params.row.scenarioDesignStatus === 'created' &&
                   (params.row.scenarioGroupId === undefined || params.row.scenarioGroupId === null))
               }
               disabledTooltipTitle={scenarioDesignUnavailable ? EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE : undefined}
               onClick={() => handleScenarioClick(params.row)}
+              onConnectedGroupContinue={(group) => handleConnectedGroupContinue(params.row, group)}
               designingAlwaysExpanded
             />
           )
         },
       },
     ],
-    [currentUserNo, handleEventNameClick, handleScenarioClick],
+    [
+      currentUserNo,
+      handleConnectedGroupContinue,
+      handleEventNameClick,
+      handleScenarioClick,
+      handleToggleEventSelection,
+      isSelectionLimitReached,
+      selectedEventIdSet,
+    ],
   )
 
   const nextGenMIDatePresets = useMemo(() => buildNextGenMIDatePresets(), [])
@@ -399,27 +589,37 @@ const EventsTabPanel = () => {
   }, [])
 
   const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
+    if (field === '__selection') return { px: '8px' }
     if (field === '__statusBadge') return { px: '8px' }
     if (field === 'createdAt') return { px: '6px' }
-    if (field === 'scenario') return { px: '16px', overflow: 'visible' }
+    if (field === 'scenario') return { px: '6px', overflow: 'visible' }
     if (field === 'jkm' || field === 'ttf' || field === 'hh') return { px: '24px' }
     return {}
   }, [])
 
   const showEventsTableCellSkeleton = useCallback(
-    (col: GridColDef<EventListItem>) => col.field === '__statusBadge' || String(col.headerName ?? '').trim() !== '',
+    (col: GridColDef<EventListItem>) =>
+      col.field === '__selection' || col.field === '__statusBadge' || String(col.headerName ?? '').trim() !== '',
     [],
   )
 
   const getEventsTableHeaderCellSx = useCallback((col: GridColDef<EventListItem>) => {
+    if (col.field === '__selection') {
+      return { px: '8px' }
+    }
     if (col.field === 'scenario') {
-      return { px: '16px' }
+      return { px: '6px' }
     }
     if (col.field === 'jkm' || col.field === 'ttf' || col.field === 'hh') {
       return { px: '24px' }
     }
     return undefined
   }, [])
+
+  const getEventsTableRowClassName = useCallback(
+    ({ row }: { row: EventListItem }) => (selectedEventIdSet.has(row.eventId) ? 'event-row--selected' : ''),
+    [selectedEventIdSet],
+  )
 
   const handleCategoryFilterApply = useCallback(
     (next: number[]) => {
@@ -553,12 +753,17 @@ const EventsTabPanel = () => {
         rowHeight={48}
         noRowsOverlay={emptyOverlay}
         getCellSx={getEventsTableCellSx}
+        getRowClassName={getEventsTableRowClassName}
         sx={{
           '& > .MuiBox-root': {
             minHeight: '400px',
             borderRadius: 0,
             borderBottom: '1px solid',
             borderColor: 'gray.30',
+          },
+          '& .event-row--selected': {
+            // 선택 행 배경: rgba(65, 76, 147, 0.05)
+            backgroundColor: 'rgba(65, 76, 147, 0.05) !important',
           },
         }}
       />
@@ -569,6 +774,16 @@ const EventsTabPanel = () => {
         sizeList={[20, 50, 100]}
         onSizeChange={handlePageSizeChange}
         onPageChange={handlePageChange}
+      />
+
+      <EventSelectionActionBar
+        selectedEvents={selectedEvents}
+        maxCount={EVENT_SELECTION_MAX_COUNT}
+        designMode={selectionDesignState?.mode}
+        designLocked={selectionDesignState?.locked}
+        designStep={selectionDesignState?.designStep}
+        onRemove={handleRemoveSelectedEvent}
+        onDesignClick={handleSelectedEventsDesignClick}
       />
     </Box>
   )

@@ -23,6 +23,9 @@ export type ScenarioDesignConfirmType = 'cancel' | 'reviewComplete' | 'reviewCom
 
 export type ScenarioDesignLocationState = {
   eventName?: string
+  eventIds?: number[]
+  scenarioGroupId?: number
+  designStep?: string | null
 }
 
 export type ScenarioDesignColumn = {

@@ -183,7 +183,12 @@ const MIDataTableHeader = <T extends GridRowModel>({
               ...toSxArray(getHeaderCellSx?.(col)),
             ]}
           >
-            {headerLabelLineClamp !== undefined || tooltipWhenHeaderLabelTruncated ? (
+            {typeof col.renderHeader === 'function' ? (
+              col.renderHeader({
+                colDef: col,
+                field: col.field,
+              } as Parameters<NonNullable<GridColDef<T>['renderHeader']>>[0])
+            ) : headerLabelLineClamp !== undefined || tooltipWhenHeaderLabelTruncated ? (
               <MIDataTableHeaderLabel
                 label={headerLabel}
                 variant={headerLabelVariant}

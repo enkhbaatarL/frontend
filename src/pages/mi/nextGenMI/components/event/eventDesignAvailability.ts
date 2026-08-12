@@ -1,5 +1,19 @@
 import type { EventDesignAvailability, EventDesignStep, EventListItem, EventScenarioDesignStatus } from '@/service/mi/nextGenMI/event'
 
+/** 멀티 선택 액션바 - 동일 이벤트 조합 기준 상태 분기 */
+export type MultiEventSelectionDesignMode = 'designable' | 'creating' | 'created'
+
+export type MultiEventSelectionDesignState = {
+  mode: MultiEventSelectionDesignMode
+  locked: boolean
+  designStep?: EventDesignStep
+  designStepLabel?: string | null
+  scenarioGroupId?: number | null
+  occupantUserName?: string | null
+  primaryEventId: number
+  primaryEventName: string
+}
+
 export const EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE =
   '본 이벤트 유형에 대한 시나리오설계 지원은 Phase #2 릴리즈에 예정되어 있습니다 (현재 시나리오화를 지원하는 이벤트유형을 기준으로, Agent의 시나리오 설계 품질 향상을 먼저 수행)'
 
@@ -84,5 +98,63 @@ export const mergeEventListItemDesignAvailability = (
     occupied: availability.occupied ?? row.occupied,
     occupantUserId: availability.occupantUserId ?? row.occupantUserId,
     occupantUserName: availability.occupantUserName ?? row.occupantUserName,
+  }
+}
+
+/**
+ * 멀티 선택 이벤트 조합의 액션바 CTA 상태를 판정한다.
+ * - 선택 이벤트가 모두 동일 scenarioGroupId + creating/created 이면 해당 조합 상태로 분기
+ * - 그 외(신규 가능/조합 불일치)는 designable
+ */
+export const resolveMultiEventSelectionDesignState = (
+  selectedRows: EventListItem[],
+  currentUserNo: number | null | undefined,
+): MultiEventSelectionDesignState | null => {
+  if (selectedRows.length === 0) return null
+
+  const primary = selectedRows[0]
+  const baseState = {
+    locked: false,
+    primaryEventId: primary.eventId,
+    primaryEventName: primary.eventName,
+  }
+
+  if (selectedRows.length < 2) {
+    return {
+      ...baseState,
+      mode: 'designable',
+    }
+  }
+
+  const statuses = selectedRows.map((row) => normalizeEventScenarioDesignStatus(row.scenarioDesignStatus))
+  const groupIds = selectedRows.map((row) => row.scenarioGroupId)
+  const sharedGroupId = groupIds[0]
+  const allSameGroup = sharedGroupId !== undefined && sharedGroupId !== null && groupIds.every((groupId) => groupId === sharedGroupId)
+  const sharedStatus = statuses[0]
+  const allSameStatus = sharedStatus !== undefined && statuses.every((status) => status === sharedStatus)
+
+  if (allSameGroup && allSameStatus && sharedStatus === 'creating') {
+    return {
+      ...baseState,
+      mode: 'creating',
+      locked: isEventDesignOccupiedByOther(primary, currentUserNo),
+      designStep: normalizeEventDesignStep(primary.designStep),
+      designStepLabel: primary.designStepLabel,
+      scenarioGroupId: sharedGroupId,
+      occupantUserName: primary.occupantUserName,
+    }
+  }
+
+  if (allSameGroup && allSameStatus && sharedStatus === 'created') {
+    return {
+      ...baseState,
+      mode: 'created',
+      scenarioGroupId: sharedGroupId,
+    }
+  }
+
+  return {
+    ...baseState,
+    mode: 'designable',
   }
 }

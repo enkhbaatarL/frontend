@@ -20,6 +20,7 @@ import {
   findEventDesignAvailability,
   isEventDesignOccupiedByOther,
   isOwnEventDesignAvailability,
+  normalizeEventDesignStep,
   normalizeEventScenarioDesignStatus,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
@@ -337,7 +338,10 @@ const ScenarioDesignPage = () => {
   const state = location.state as ScenarioDesignLocationState | null
   const currentUserNo = useAuthStore((authState) => authState.user?.userNo)
   const eventIdNumber = id !== undefined && Number.isFinite(Number(id)) ? Number(id) : null
-  const [scenarioGroupId, setScenarioGroupId] = useState<number | null>(null)
+  const locationScenarioGroupId =
+    state?.scenarioGroupId !== undefined && Number.isFinite(state.scenarioGroupId) ? state.scenarioGroupId : null
+  const locationDesignStep = normalizeEventDesignStep(state?.designStep)
+  const [scenarioGroupId, setScenarioGroupId] = useState<number | null>(locationScenarioGroupId)
   const [rows, setRows] = useState<DesignScenarioRow[]>([])
   const [initialRows, setInitialRows] = useState<DesignScenarioRow[]>([])
   const [visibleScenarioDesignColumns, setVisibleScenarioDesignColumns] = useState<ScenarioDesignColumn[]>([])
@@ -351,7 +355,8 @@ const ScenarioDesignPage = () => {
   const [scenarioGroupCreatePending, setScenarioGroupCreatePending] = useState(false)
   const [scenarioDesignGenerationFailure, setScenarioDesignGenerationFailure] = useState<{ reason?: string | null } | null>(null)
   const [scenarioDesignGenerationRetryPending, setScenarioDesignGenerationRetryPending] = useState(false)
-  const [currentStep, setCurrentStep] = useState<'criteria' | 'oneView'>('criteria')
+  // 목록에서 2단계로 이어가기면 One-view부터 표시
+  const [currentStep, setCurrentStep] = useState<'criteria' | 'oneView'>(locationDesignStep === 'step2' ? 'oneView' : 'criteria')
   const [oneViewDefaultKey, setOneViewDefaultKey] = useState(0)
   const [confirmType, setConfirmType] = useState<ScenarioDesignConfirmType | null>(null)
   const [reviewFailedDialogOpen, setReviewFailedDialogOpen] = useState(false)

@@ -1,18 +1,20 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
-import { Box, Stack, Typography } from '@mui/material'
-import { keyframes, type SxProps, type Theme } from '@mui/material/styles'
+import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined'
+import { Box } from '@mui/material'
+import { type SxProps, type Theme } from '@mui/material/styles'
 import { type MouseEvent } from 'react'
 
-import type { EventDesignStep } from '@/service/mi/nextGenMI/event'
+import type { EventConnectedScenarioGroup, EventDesignStep, EventScenarioDesignStatus } from '@/service/mi/nextGenMI/event'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
+import ArrowDown from '@/components/common/icons/ArrowDown'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
-import { getEventDesignStepTooltipTitle, normalizeEventDesignStep } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
+import EventConnectedScenarioGroupPopover from '@/pages/mi/nextGenMI/components/event/EventConnectedScenarioGroupPopover'
 
 export interface EventScenarioGenerateButtonProps {
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void
+  onConnectedGroupContinue?: (group: EventConnectedScenarioGroup) => void
   disabled?: boolean
   disabledTooltipTitle?: string
   recommended?: boolean
@@ -22,37 +24,21 @@ export interface EventScenarioGenerateButtonProps {
   designingAlwaysExpanded?: boolean
   designStep?: EventDesignStep | string | null
   designStepLabel?: string | null
+  scenarioGroupId?: number | null
+  connectedScenarioGroups?: EventConnectedScenarioGroup[]
+  eventId?: number
+  eventName?: string
+  scenarioDesignStatus?: EventScenarioDesignStatus | string | null
+  occupied?: boolean
+  occupantUserId?: number | null
+  occupantUserName?: string | null
+  currentUserNo?: number | null
 }
 
 type ScenarioTableButtonProps = {
   disabled?: boolean
   onClick: (e: MouseEvent<HTMLButtonElement>) => void
 }
-
-type ScenarioDesigningButtonProps = ScenarioTableButtonProps & {
-  recommended?: boolean
-  locked?: boolean
-  alwaysExpanded?: boolean
-  designStep?: EventDesignStep | string | null
-  designStepLabel?: string | null
-}
-
-const scenarioDesignStepPulseAnimation = keyframes`
-  0%, 100% {
-    background-color: #9AA7E3;
-  }
-
-  35%, 75% {
-    background-color: #364FC7;
-  }
-`
-
-const scenarioDesignStepPulseSx = {
-  animation: `${scenarioDesignStepPulseAnimation} 1.8s linear infinite 1.6s`,
-  '@media (prefers-reduced-motion: reduce)': {
-    animation: 'none',
-  },
-} satisfies SxProps<Theme>
 
 const tableButtonIconSx = {
   width: '20px',
@@ -302,228 +288,199 @@ const ViewScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) => 
   </MIBaseButton>
 )
 
-const ScenarioDesignStepBar = ({ active, done }: { active?: boolean; done?: boolean }) => (
-  <Box
-    component="span"
-    width="26px"
-    height="4px"
-    borderRadius="100px"
-    bgcolor={active ? 'mari.Primary' : done ? '#C3CAEE' : 'gray.40'}
-    flexShrink={0}
-    sx={active ? scenarioDesignStepPulseSx : undefined}
-  />
-)
-
-const DesigningScenarioButtonContent = ({
-  className,
-  locked,
-  designStep,
-}: {
-  className?: string
-  locked?: boolean
-  designStep?: EventDesignStep | string | null
-}) => {
-  const normalizedStep = normalizeEventDesignStep(designStep)
-  const step2 = normalizedStep === 'step2'
-
-  return (
-    <Stack component="span" className={className} alignItems="center" gap="4px" width="54px" overflow="visible">
-      <Stack component="span" direction="row" alignItems="center" gap="2px">
-        <ScenarioDesignStepBar active={!step2} done={step2} />
-        <ScenarioDesignStepBar active={step2} />
-      </Stack>
-      <Stack component="span" direction="row" alignItems="center" justifyContent="center" gap="4px" width="100%" minWidth={0}>
-        {locked && (
-          <LockOutlinedIcon
-            width="8px"
-            height="12px"
-            aria-hidden
-            focusable="false"
-            color="#868E96"
-            style={{ display: 'block', flexShrink: 0 }}
-          />
-        )}
-        <Typography component="span" variant="body3SB12" color="inherit" lineHeight={1.4} noWrap>
-          {step2 ? '2단계' : '1단계'}
-        </Typography>
-      </Stack>
-    </Stack>
-  )
-}
-
-const DesigningScenarioButton = ({
+const ConnectedGroupsButton = ({
   disabled,
-  recommended,
-  locked,
-  alwaysExpanded = false,
-  designStep,
-  designStepLabel,
+  count,
+  open = false,
   onClick,
-}: ScenarioDesigningButtonProps) => {
-  const button = (
-    <MIBaseButton
-      variant="outlined"
-      disabled={disabled}
-      aria-label={`${locked ? '다른 사용자 ' : ''}시나리오 ${designStepLabel?.trim() || '설계'} 진행 중`}
-      onClick={onClick}
-      sx={{
-        ...(alwaysExpanded
-          ? {
-            width: '66px',
-            minWidth: '66px',
-          }
-          : tableButtonBaseSx),
-        height: '36px',
-        padding: alwaysExpanded ? '6px' : 0,
-        borderRadius: '8px',
-        borderColor: alwaysExpanded ? 'contentBorder.Normal' : 'transparent',
-        backgroundColor: alwaysExpanded ? 'commonColor.White' : 'transparent',
-        color: alwaysExpanded ? 'contentText.Normal' : recommended ? 'mari.Primary' : 'contentIcon.Enabled',
-        justifyContent: 'center',
-        '& > span, & > span > span': {
-          width: '100%',
-        },
-        ...(!alwaysExpanded && {
-          '&::before': {
-            ...tableButtonBaseSx['&::before'],
-            borderColor: recommended ? 'mari.Primary' : 'contentBorder.Normal',
-            backgroundColor: 'commonColor.White',
+}: ScenarioTableButtonProps & { count: number; open?: boolean }) => (
+  <MIBaseButton
+    variant="outlined"
+    disabled={disabled}
+    aria-label={`연결된 시나리오 그룹 ${count}개`}
+    aria-expanded={open}
+    onClick={onClick}
+    gap="0px"
+    prefix={<LayersOutlinedIcon aria-hidden focusable="false" sx={{ fontSize: '16px', width: '16px', height: '16px', display: 'block' }} />}
+    suffix={
+      <Box
+        component="span"
+        display="inline-flex"
+        alignItems="center"
+        justifyContent="center"
+        width="14px"
+        height="14px"
+        flexShrink={0}
+        sx={{
+          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 160ms ease',
+          '& svg path': {
+            fill: 'currentColor',
           },
-          '& > span > span': {
-            boxSizing: 'border-box',
-            width: '100%',
-            padding: 0,
-            transform: 'translateX(0)',
-            transition: 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-          },
-          '& .scenario-designing-content': {
-            position: 'relative',
-            width: '36px',
-            height: '36px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'visible',
-          },
-          '& .scenario-designing-expanded': {
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            flex: '0 0 auto',
-            opacity: 0,
-            transform: 'translate(-50%, -50%) translateX(12px) scale(0.96)',
-            transition: 'opacity 140ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-          },
-          '& .scenario-designing-collapsed-icon': {
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            opacity: 1,
-            transform: 'translate(-50%, -50%) scale(1)',
-            transition: 'opacity 140ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-          },
-          '&:is(:hover:not(:disabled), :focus-visible)::before': {
-            borderRadius: '4.1px / 8px',
-            borderColor: 'contentBG.Active',
-            backgroundColor: 'contentBG.Active',
-            transform: 'translateX(-50%) scaleX(1.9444)',
-          },
-          '&:is(:hover:not(:disabled), :focus-visible) > span > span': {
-            transform: 'translateX(0)',
-          },
-          '&:is(:hover:not(:disabled), :focus-visible) .scenario-designing-collapsed-icon': {
-            opacity: 0,
-            transform: 'translate(-50%, -50%) translateX(-12px) scale(0.92)',
-          },
-          '&:is(:hover:not(:disabled), :focus-visible) .scenario-designing-expanded': {
-            opacity: 1,
-            transform: 'translate(-50%, -50%) translateX(0) scale(1)',
-            transition: 'opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-          },
-        }),
-        '& .MuiStack-root': {
-          overflow: 'visible',
-        },
-        '&:hover:not(:disabled), &:focus-visible': {
-          borderColor: alwaysExpanded ? 'contentBG.Active' : 'transparent',
-          backgroundColor: alwaysExpanded ? 'contentBG.Active' : 'transparent',
-          color: 'contentText.Black',
-        },
-        '&:active:not(:disabled)': {
-          borderColor: alwaysExpanded ? 'contentBG.Active' : 'transparent',
-          backgroundColor: alwaysExpanded ? 'gray.5' : 'transparent',
-          color: 'contentText.Black',
-          ...(!alwaysExpanded && {
-            '&::before': {
-              borderColor: 'contentBorder.Active',
-              backgroundColor: 'gray.5',
-            },
-          }),
-        },
-        '&.Mui-disabled': {
-          borderColor: alwaysExpanded ? 'contentBorder.Disabled' : 'transparent',
-          backgroundColor: alwaysExpanded ? 'contentBG.Disabled' : 'transparent',
-          color: 'contentText.Disabled',
-        },
-      }}
-    >
-      {alwaysExpanded ? (
-        <DesigningScenarioButtonContent locked={locked} designStep={designStep} />
-      ) : (
-        <Box component="span" className="scenario-designing-content">
-          <ScenarioDesignButtonIcon className="scenario-designing-collapsed-icon" />
-          <DesigningScenarioButtonContent className="scenario-designing-expanded" locked={locked} designStep={designStep} />
-        </Box>
-      )}
-    </MIBaseButton>
-  )
-
-  return (
-    <NextGenMIFollowCursorTooltip
-      title={getEventDesignStepTooltipTitle(designStep, designStepLabel)}
-      followCursor={false}
-      placement="top-start"
-      // placement="right"
-      // slotProps={{
-      //   popper: {
-      //     modifiers: [{ name: 'offset', options: { offset: [0, 22] } }],
-      //   },
-      // }}
-    >
-      {button}
-    </NextGenMIFollowCursorTooltip>
-  )
-}
+        }}
+      >
+        <ArrowDown width="14px" height="14px" aria-hidden />
+      </Box>
+    }
+    sx={{
+      width: 'auto',
+      minWidth: 'auto',
+      height: '36px',
+      padding: '6px 4px 6px 6px',
+      borderRadius: '8px',
+      borderColor: 'contentBorder.Normal',
+      backgroundColor: 'commonColor.White',
+      color: 'contentText.Normal',
+      justifyContent: 'center',
+      flexShrink: 0,
+      '& > span': {
+        width: 'auto',
+        minWidth: 'auto',
+      },
+      '& > span > span': {
+        width: 'auto',
+        minWidth: 'auto',
+      },
+      '& .MuiStack-root': {
+        flex: '0 0 auto',
+        width: 'auto',
+        minWidth: 'auto',
+        overflow: 'visible',
+      },
+      '& .MuiTypography-root': {
+        flex: '0 0 auto',
+        width: 'auto',
+        minWidth: 'auto',
+        maxWidth: 'none',
+        overflow: 'visible',
+        textOverflow: 'clip',
+        whiteSpace: 'nowrap',
+      },
+      '&:hover:not(:disabled), &:focus-visible': {
+        borderColor: 'contentBG.Active',
+        backgroundColor: 'contentBG.Active',
+        color: 'contentText.Black',
+      },
+      '&:active:not(:disabled)': {
+        borderColor: 'contentBG.Active',
+        backgroundColor: 'gray.5',
+        color: 'contentText.Black',
+      },
+      '&.Mui-disabled': {
+        borderColor: 'contentBorder.Disabled',
+        backgroundColor: 'contentBG.Disabled',
+        color: 'contentText.Disabled',
+      },
+    }}
+  >
+    {`그룹 ${count}`}
+  </MIBaseButton>
+)
 
 /** Events - 시나리오 생성 버튼 (목록 아이콘) */
 const EventScenarioGenerateButton = ({
   onClick,
+  onConnectedGroupContinue,
   disabled,
   disabledTooltipTitle,
   recommended,
   scenarioAvailable,
   designing,
-  designingLocked,
-  designingAlwaysExpanded = false,
+  designingLocked: _designingLocked,
+  designingAlwaysExpanded: _designingAlwaysExpanded = false,
   designStep,
-  designStepLabel,
+  designStepLabel: _designStepLabel,
+  scenarioGroupId,
+  connectedScenarioGroups,
+  eventId,
+  eventName,
+  scenarioDesignStatus,
+  occupied,
+  occupantUserId,
+  occupantUserName,
+  currentUserNo,
 }: EventScenarioGenerateButtonProps) => {
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     onClick?.(e)
   }
 
-  const button = designing ? (
-    <DesigningScenarioButton
-      disabled={disabled}
-      recommended={recommended}
-      locked={designingLocked}
-      alwaysExpanded={designingAlwaysExpanded}
-      designStep={designStep}
-      designStepLabel={designStepLabel}
-      onClick={handleClick}
-    />
-  ) : scenarioAvailable ? (
+  const resolvedScenarioDesignStatus = scenarioDesignStatus ?? (scenarioAvailable ? 'created' : designing ? 'creating' : undefined)
+
+  // 연결 그룹 배열이 없으면 scenarioGroupId 1건으로 폴백 (목록 CTA는 "그룹 N"으로 통일)
+  const resolvedConnectedGroups: EventConnectedScenarioGroup[] =
+    (connectedScenarioGroups?.length ?? 0) > 0
+      ? (connectedScenarioGroups ?? [])
+      : scenarioGroupId !== undefined && scenarioGroupId !== null
+        ? [
+          {
+            scenarioGroupId,
+            groupName: eventName?.trim() || '시나리오 그룹',
+            designStep,
+            scenarioDesignStatus: resolvedScenarioDesignStatus,
+            occupied,
+            occupantUserId,
+            occupantUserName,
+            events: eventId !== undefined ? [{ eventId, eventName: eventName?.trim() || `이벤트 ${eventId}` }] : [],
+          },
+        ]
+        : []
+
+  const connectedGroupCount = resolvedConnectedGroups.length
+  const hasConnectedGroups = connectedGroupCount > 0
+
+  const handleConnectedGroupContinue = (group: EventConnectedScenarioGroup) => {
+    if (onConnectedGroupContinue) {
+      onConnectedGroupContinue(group)
+      return
+    }
+    onClick?.({} as MouseEvent<HTMLButtonElement>)
+  }
+
+  // creating/created 등 연결 그룹이 있으면 이벤트 단위 락/"진행" 없이 "그룹 N" + 팝오버
+  if (hasConnectedGroups) {
+    const connectedGroupsButton = (
+      <EventConnectedScenarioGroupPopover
+        connectedScenarioGroups={resolvedConnectedGroups}
+        scenarioGroupId={scenarioGroupId}
+        eventId={eventId}
+        eventName={eventName}
+        designStep={designStep}
+        scenarioDesignStatus={resolvedScenarioDesignStatus}
+        occupied={occupied}
+        occupantUserId={occupantUserId}
+        occupantUserName={occupantUserName}
+        currentUserNo={currentUserNo}
+        onContinue={handleConnectedGroupContinue}
+      >
+        {({ open, onClick: openPopover }) => (
+          <ConnectedGroupsButton
+            disabled={disabled}
+            count={connectedGroupCount}
+            open={open}
+            onClick={(e) => {
+              e.stopPropagation()
+              openPopover(e)
+            }}
+          />
+        )}
+      </EventConnectedScenarioGroupPopover>
+    )
+
+    if (disabled && disabledTooltipTitle) {
+      return (
+        <NextGenMIFollowCursorTooltip title={disabledTooltipTitle}>
+          <Box component="span" display="inline-flex" sx={{ cursor: 'not-allowed' }}>
+            {connectedGroupsButton}
+          </Box>
+        </NextGenMIFollowCursorTooltip>
+      )
+    }
+
+    return connectedGroupsButton
+  }
+
+  const button = scenarioAvailable ? (
     <ViewScenarioButton disabled={disabled} onClick={handleClick} />
   ) : recommended ? (
     <RecommendedScenarioButton disabled={disabled} onClick={handleClick} />
