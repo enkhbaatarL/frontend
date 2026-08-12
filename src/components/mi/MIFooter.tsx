@@ -38,8 +38,9 @@ const MIFooter = () => {
             >
               <img src={logowImg} alt="" draggable={false} />
             </Link>
-            <Typography color="gray.40" component="div" variant="body3R12">
+            <Typography color="gray.40" component="div" variant="body3R12" sx={{ whiteSpace: 'pre-line' }}>
               COPYRIGHT©2025 ALL RIGHTS RESERVED. <br />
+              <br />
               {t('footer.copyrightMessage')}
             </Typography>
           </Grid>
