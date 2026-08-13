@@ -1,6 +1,6 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
-import { Box, Collapse, type CollapseProps, Divider, Fade, IconButton, Stack, Typography } from '@mui/material'
+import { Box, Collapse, type CollapseProps, Divider, Fade, IconButton, Slide, Stack, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { SwitchTransition, TransitionGroup } from 'react-transition-group'
 
@@ -236,7 +236,11 @@ const EventSelectionActionBar = ({
   return (
     <Fade
       in={selectedCount > 0}
-      timeout={{ enter: 200, exit: 160 }}
+      timeout={{ enter: 240, exit: 240 }}
+      style={{
+        transitionDuration: '160ms',
+        transitionDelay: selectedCount > 0 ? '20ms' : '80ms',
+      }}
       mountOnEnter
       unmountOnExit
       onExited={() => {
@@ -247,7 +251,7 @@ const EventSelectionActionBar = ({
       <Box
         position="fixed"
         left="50%"
-        bottom="145px"
+        bottom="56px"
         zIndex={1200}
         width="580px"
         maxWidth="calc(100vw - 48px)"
@@ -256,117 +260,119 @@ const EventSelectionActionBar = ({
           pointerEvents: 'auto',
         }}
       >
-        <Stack bgcolor="#14181F" borderRadius="8px" padding="12px 16px" boxShadow="0px 6px 12px rgba(0, 0, 0, 0.1)">
-          <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px">
-            <Stack
-              component="button"
-              type="button"
-              direction="row"
-              alignItems="center"
-              gap="6px"
-              minWidth={0}
-              border="none"
-              bgcolor="transparent"
-              padding={0}
-              aria-expanded={expanded}
-              aria-controls="selected-event-list"
-              onClick={() => setExpanded((prev) => !prev)}
-              sx={{
-                cursor: 'pointer',
-                font: 'inherit',
-                appearance: 'none',
-                color: 'inherit',
-              }}
-            >
-              <Typography variant="body2SB14" color="commonColor.White" noWrap>
-                {`선택한 이벤트 (${displayedEvents.length})`}
-              </Typography>
-              <Stack direction="row" alignItems="center" gap="2px" flexShrink={0}>
-                <Typography variant="body2M14" color="contentText.Subtext" noWrap>
-                  {`최대 ${maxCount}개 선택 가능`}
+        <Slide in={selectedCount > 0} direction="up" appear timeout={{ enter: 240, exit: 240 }}>
+          <Stack bgcolor="#14181F" borderRadius="8px" padding="12px 16px" boxShadow="0px 6px 12px rgba(0, 0, 0, 0.1)">
+            <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px">
+              <Stack
+                component="button"
+                type="button"
+                direction="row"
+                alignItems="center"
+                gap="6px"
+                minWidth={0}
+                border="none"
+                bgcolor="transparent"
+                padding={0}
+                aria-expanded={expanded}
+                aria-controls="selected-event-list"
+                onClick={() => setExpanded((prev) => !prev)}
+                sx={{
+                  cursor: 'pointer',
+                  font: 'inherit',
+                  appearance: 'none',
+                  color: 'inherit',
+                }}
+              >
+                <Typography variant="body2SB14" color="commonColor.White" noWrap>
+                  {`선택한 이벤트 (${displayedEvents.length})`}
                 </Typography>
-                <Box
-                  display="inline-flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  width="20px"
-                  height="20px"
-                  sx={{
-                    transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 160ms ease',
-                    '& svg path': { fill: '#868E96' },
-                  }}
-                >
-                  <ArrowDown width="20px" height="20px" aria-hidden />
-                </Box>
+                <Stack direction="row" alignItems="center" gap="2px" flexShrink={0}>
+                  <Typography variant="body2M14" color="contentText.Subtext" noWrap>
+                    {`최대 ${maxCount}개 선택 가능`}
+                  </Typography>
+                  <Box
+                    display="inline-flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    width="20px"
+                    height="20px"
+                    sx={{
+                      transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 160ms ease',
+                      '& svg path': { fill: '#868E96' },
+                    }}
+                  >
+                    <ArrowDown width="20px" height="20px" aria-hidden />
+                  </Box>
+                </Stack>
               </Stack>
+
+              <SwitchTransition mode="out-in">
+                <Fade key={designCtaTransitionKey} appear={false} timeout={{ enter: 160, exit: 100 }}>
+                  <Box display="flex" flexShrink={0}>
+                    {designCta}
+                  </Box>
+                </Fade>
+              </SwitchTransition>
             </Stack>
 
-            <SwitchTransition mode="out-in">
-              <Fade key={designCtaTransitionKey} appear={false} timeout={{ enter: 160, exit: 100 }}>
-                <Box display="flex" flexShrink={0}>
-                  {designCta}
-                </Box>
-              </Fade>
-            </SwitchTransition>
-          </Stack>
-
-          <Collapse in={expanded} timeout={220} unmountOnExit sx={{ width: '100%' }}>
-            <Stack id="selected-event-list" paddingTop="14px" paddingBottom="6px" gap="14px">
-              <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
-              <Stack marginBottom="-7px">
-                <TransitionGroup component={null}>
-                  {displayedEvents.map((event, index) => (
-                    <SelectionEventListItemTransition key={event.eventId}>
-                      <Stack direction="row" alignItems="center" justifyContent="space-between" gap="8px" minWidth={0}>
-                        <Stack direction="row" alignItems="center" gap="6px" minWidth={0} flex={1}>
-                          <Stack
-                            alignItems="center"
-                            justifyContent="center"
-                            width="20px"
-                            height="20px"
-                            borderRadius="8px"
-                            bgcolor="gray.70"
-                            flexShrink={0}
-                          >
-                            <Typography variant="body3M12" color="gray.30" lineHeight={1.4}>
-                              {index + 1}
+            <Collapse in={expanded} timeout={220} unmountOnExit sx={{ width: '100%' }}>
+              <Stack id="selected-event-list" paddingTop="14px" paddingBottom="6px" gap="14px">
+                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
+                <Stack marginBottom="-7px">
+                  <TransitionGroup component={null}>
+                    {displayedEvents.map((event, index) => (
+                      <SelectionEventListItemTransition key={event.eventId}>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between" gap="8px" minWidth={0}>
+                          <Stack direction="row" alignItems="center" gap="6px" minWidth={0} flex={1}>
+                            <Stack
+                              alignItems="center"
+                              justifyContent="center"
+                              width="20px"
+                              height="20px"
+                              borderRadius="8px"
+                              bgcolor="gray.70"
+                              flexShrink={0}
+                            >
+                              <Typography variant="body3M12" color="gray.30" lineHeight={1.4}>
+                                {index + 1}
+                              </Typography>
+                            </Stack>
+                            <Typography
+                              variant="body1R16"
+                              color="commonColor.White"
+                              noWrap
+                              sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                            >
+                              {event.eventName}
                             </Typography>
                           </Stack>
-                          <Typography
-                            variant="body1R16"
-                            color="commonColor.White"
-                            noWrap
-                            sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          <IconButton
+                            aria-label="선택 해제"
+                            onClick={() => onRemove(event.eventId)}
+                            size="small"
+                            sx={{
+                              width: '22px',
+                              height: '22px',
+                              padding: '4px',
+                              borderRadius: '4px',
+                              color: 'contentText.Subtext',
+                              '&:hover': {
+                                bgcolor: 'rgba(255, 255, 255, 0.08)',
+                              },
+                            }}
                           >
-                            {event.eventName}
-                          </Typography>
+                            <CloseIcon width="20px" height="20px" aria-hidden />
+                          </IconButton>
                         </Stack>
-                        <IconButton
-                          aria-label="선택 해제"
-                          onClick={() => onRemove(event.eventId)}
-                          size="small"
-                          sx={{
-                            width: '22px',
-                            height: '22px',
-                            padding: '4px',
-                            borderRadius: '4px',
-                            color: 'contentText.Subtext',
-                            '&:hover': {
-                              bgcolor: 'rgba(255, 255, 255, 0.08)',
-                            },
-                          }}
-                        >
-                          <CloseIcon width="20px" height="20px" aria-hidden />
-                        </IconButton>
-                      </Stack>
-                    </SelectionEventListItemTransition>
-                  ))}
-                </TransitionGroup>
+                      </SelectionEventListItemTransition>
+                    ))}
+                  </TransitionGroup>
+                </Stack>
               </Stack>
-            </Stack>
-          </Collapse>
-        </Stack>
+            </Collapse>
+          </Stack>
+        </Slide>
       </Box>
     </Fade>
   )

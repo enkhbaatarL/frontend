@@ -14,6 +14,7 @@ import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableCellText from '@/components/common/table/MIDataTableCellText'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import { buildNextGenMIDatePresets, defaultNextGenMIDateRange } from '@/pages/mi/nextGenMI/components/common/nextGenMIDateRange'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
@@ -363,16 +364,27 @@ const EventsTabPanel = () => {
         renderCell: (params) => {
           const selectable = isEventSelectableForScenarioDesign(params.row)
           const isSelected = selectedEventIdSet.has(params.row.eventId)
-          return (
+          const selectionLimitDisabled = selectable && isSelectionLimitReached && !isSelected
+          const checkbox = (
             <AdminCheckbox
               size="small"
               checked={isSelected}
-              disabled={!selectable || (isSelectionLimitReached && !isSelected)}
+              disabled={!selectable || selectionLimitDisabled}
               onChange={(_, checked) => handleToggleEventSelection(params.row, checked)}
               onClick={(e) => e.stopPropagation()}
               inputProps={{ 'aria-label': `${params.row.eventName} 선택` }}
               sx={{ padding: '6px' }}
             />
+          )
+
+          return selectionLimitDisabled ? (
+            <NextGenMIFollowCursorTooltip title="최대 5개 까지 선택 가능합니다">
+              <Box component="span" display="inline-flex" sx={{ cursor: 'not-allowed' }}>
+                {checkbox}
+              </Box>
+            </NextGenMIFollowCursorTooltip>
+          ) : (
+            checkbox
           )
         },
       },
