@@ -360,19 +360,6 @@ const EventsTabPanel = () => {
         align: 'center',
         headerAlign: 'center',
         sortable: false,
-        renderHeader: () => (
-          <AdminCheckbox
-            size="small"
-            checked={false}
-            disabled
-            tabIndex={-1}
-            inputProps={{ 'aria-hidden': true }}
-            sx={{
-              padding: '6px',
-              pointerEvents: 'none',
-            }}
-          />
-        ),
         renderCell: (params) => {
           const selectable = isEventSelectableForScenarioDesign(params.row)
           const isSelected = selectedEventIdSet.has(params.row.eventId)
