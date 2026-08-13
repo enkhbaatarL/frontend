@@ -1,7 +1,7 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Divider, Stack, Typography } from '@mui/material'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -30,6 +30,7 @@ import ScenarioDesignCriteriaStep, {
 import {
   ScenarioDesignConfirmDialog,
   type ScenarioDesignConfirmDialogContent,
+  type ScenarioDesignRationaleSection,
   ScenarioDesignReviewFailedDialog,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignDialogs'
 import {
@@ -54,7 +55,7 @@ import ScenarioDesignProgressStep from '@/pages/mi/nextGenMI/components/scenario
 import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
 import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { scrollNextGenMILayoutToTop } from '@/pages/mi/nextGenMI/nextGenMIScroll'
-import nextGenMIEventService from '@/service/mi/nextGenMI/event'
+import nextGenMIEventService, { type EventDetail } from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService, {
   type DesignConfirmSignpost,
   type DesignScenarioRow,
@@ -63,6 +64,7 @@ import nextGenMIScenarioDesignService, {
   type ScenarioDesignStreamEventData,
   type ScenarioDesignStreamEventType,
 } from '@/service/mi/nextGenMI/scenarioDesign'
+import { MOCK_SCENARIO_DESIGN_RATIONALE_SECTIONS } from '@/service/mi/nextGenMI/scenarioDesignMock'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -484,16 +486,101 @@ const ScenarioDesignPage = () => {
   })
 
   const eventNameFromState = state?.eventName?.trim()
+  const designEventIds = useMemo(() => {
+    const fromState = (state?.eventIds ?? []).filter((eventId) => Number.isFinite(eventId))
+    const uniqueIds = [...new Set(fromState)]
+    if (uniqueIds.length > 0) {
+      if (eventIdNumber !== null && !uniqueIds.includes(eventIdNumber)) {
+        return [eventIdNumber, ...uniqueIds]
+      }
+      return uniqueIds
+    }
+    return eventIdNumber !== null ? [eventIdNumber] : []
+  }, [eventIdNumber, state?.eventIds])
+
+  const secondaryEventIds = useMemo(() => designEventIds.filter((eventId) => String(eventId) !== String(id)), [designEventIds, id])
+
+  const secondaryEventQueries = useQueries({
+    queries: secondaryEventIds.map((eventId) => ({
+      queryKey: ['nextGenMIScenarioDesignEvent', String(eventId)],
+      queryFn: () => nextGenMIEventService.getEventDetail(String(eventId)),
+      enabled: Number.isFinite(eventId),
+      refetchOnWindowFocus: false,
+      gcTime: 0,
+    })),
+  })
+
+  const secondaryEventDetailsById = useMemo(() => {
+    const map = new Map<number, EventDetail>()
+    secondaryEventIds.forEach((eventId, index) => {
+      const eventDetail = secondaryEventQueries[index]?.data
+      if (eventDetail) map.set(eventId, eventDetail)
+    })
+    return map
+  }, [secondaryEventIds, secondaryEventQueries])
+
   const eventTitle = detail?.eventName ?? eventNameFromState ?? (id ? `이벤트 ${id}` : '이벤트')
-  const isScenarioSuggested = detail?.isScenarioSuggested === true
-  const createdAtLabel = formatNextGenMIDateTimeYmdHm(detail?.createdAt)
-  const eventTypeLabel = detail?.impactAnalysis?.eventTypeLv1Label ?? detail?.impactAnalysis?.eventTypeLv1 ?? '-'
   const eventDetailPath = id ? `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(id)}` : getNextGenMITabPath('events')
+  const designRationale = detail?.scenarioSuggestReason?.trim() || ''
+  // #DELETE: API 적용후엔 목 섹션 제거 - 도출 근거 팝업 틀 확인용
+  const designRationaleSections = useMemo(
+    (): ScenarioDesignRationaleSection[] =>
+      designRationale || designEventIds.some((eventId) => eventId >= 9001 && eventId <= 9003)
+        ? MOCK_SCENARIO_DESIGN_RATIONALE_SECTIONS
+        : [],
+    [designEventIds, designRationale],
+  )
+  const showDesignRationaleButton = Boolean(designRationale) || designRationaleSections.length > 0
+
+  const baseEventItems = useMemo(
+    () =>
+      designEventIds.map((eventId) => {
+        const isRouteEvent = String(eventId) === String(id)
+        const eventDetail = isRouteEvent ? detail : secondaryEventDetailsById.get(eventId)
+        const title = eventDetail?.eventName?.trim() || (isRouteEvent ? eventTitle : undefined) || `이벤트 ${eventId}`
+        return {
+          eventId: String(eventId),
+          detail: eventDetail,
+          title,
+          isSuggested: eventDetail?.isScenarioSuggested === true,
+          createdAtLabel: formatNextGenMIDateTimeYmdHm(eventDetail?.createdAt),
+          typeLabel: eventDetail?.impactAnalysis?.eventTypeLv1Label ?? eventDetail?.impactAnalysis?.eventTypeLv1 ?? '-',
+          onEventClick: () => {
+            navigate(`${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}`, {
+              state: { eventName: title },
+            })
+          },
+        }
+      }),
+    [designEventIds, detail, eventTitle, id, navigate, secondaryEventDetailsById],
+  )
+
   const scenarioDimensionTemplates = useMemo(() => scenarioDimensionTemplate?.dimensions ?? [], [scenarioDimensionTemplate?.dimensions])
   const hiddenScenarioDesignColumns = useMemo(
     () => createScenarioDesignTemplateColumns(scenarioDimensionTemplates, visibleScenarioDesignColumns),
     [scenarioDimensionTemplates, visibleScenarioDesignColumns],
   )
+
+  // 템플릿이 state 동기화보다 늦게 도착하면 valueEnums가 비어 드롭다운 옵션이 사라지므로 보강한다
+  useEffect(() => {
+    if (scenarioDimensionTemplates.length === 0) return
+
+    const enrichColumns = (columns: typeof visibleScenarioDesignColumns) => {
+      if (columns.length === 0) return columns
+      if (columns.every((column) => (column.valueEnums?.length ?? 0) > 0)) return columns
+      return createScenarioDesignColumns(
+        columns.map((column) => ({
+          key: column.key,
+          label: column.label,
+          description: column.description,
+        })),
+        scenarioDimensionTemplates,
+      )
+    }
+
+    setVisibleScenarioDesignColumns(enrichColumns)
+    setInitialScenarioDesignColumns(enrichColumns)
+  }, [scenarioDimensionTemplates])
   useEffect(() => {
     if (eventIdNumber === null) {
       navigate('/error/404', { replace: true })
@@ -597,9 +684,6 @@ const ScenarioDesignPage = () => {
   useEffect(() => {
     scenarioGroupIdRef.current = scenarioGroupId
   }, [scenarioGroupId])
-  const handleBackToEvent = useCallback(() => {
-    navigate(eventDetailPath, { state: { eventName: eventTitle } })
-  }, [eventDetailPath, eventTitle, navigate])
   const pushScenarioDesignHistoryGuard = useCallback(() => {
     if (confirmedScenarioDesignLeaveRef.current) return
 
@@ -1122,8 +1206,6 @@ const ScenarioDesignPage = () => {
     return () => globalThis.removeEventListener('popstate', handlePopState)
   }, [pushScenarioDesignHistoryGuard])
 
-  const designRationale = detail?.scenarioSuggestReason?.trim() ?? ''
-  const showDesignRationale = isLoading || Boolean(designRationale)
   const criteriaResetDisabled = useMemo(
     () =>
       JSON.stringify(rows) === JSON.stringify(initialRows) &&
@@ -1416,17 +1498,10 @@ const ScenarioDesignPage = () => {
         onAddRow: handleAddRow,
       },
       baseEvent: {
-        eventId: id,
-        detail,
-        title: eventTitle,
-        isSuggested: isScenarioSuggested,
-        createdAtLabel,
-        typeLabel: eventTypeLabel,
-        onEventClick: handleBackToEvent,
-      },
-      rationale: {
-        visible: showDesignRationale,
-        text: designRationale,
+        events: baseEventItems,
+        showRationaleButton: showDesignRationaleButton,
+        rationaleText: designRationale,
+        rationaleSections: designRationaleSections,
       },
       isLoading: scenarioDesignLoading,
       review: {
@@ -1446,17 +1521,14 @@ const ScenarioDesignPage = () => {
     }),
     [
       agentScenarioDesignColumnKeys,
+      baseEventItems,
       canCompleteScenarioDesignReview,
-      createdAtLabel,
       criteriaValidation.dimensionValueErrorMessages,
       criteriaResetDisabled,
-      detail,
       designRationale,
-      eventTitle,
-      eventTypeLabel,
+      designRationaleSections,
       handleAddCriteriaColumns,
       handleAddRow,
-      handleBackToEvent,
       handleCancelScenarioDesignRequest,
       handleComplete,
       handleDeleteCriteriaColumn,
@@ -1464,10 +1536,8 @@ const ScenarioDesignPage = () => {
       handleResetCriteriaStep,
       handleRowValueChange,
       hiddenScenarioDesignColumns,
-      id,
       initialRows,
       initialScenarioDesignColumns,
-      isScenarioSuggested,
       isCurrentCriteriaReviewed,
       resetScenarioDesignMutation.isPending,
       reviewCompletedVisible,
@@ -1476,7 +1546,7 @@ const ScenarioDesignPage = () => {
       rows,
       scenarioDesignLoading,
       scenarioNameErrorMessages,
-      showDesignRationale,
+      showDesignRationaleButton,
       startScenarioDesignReview,
       validateScenarioDesignMutation.isPending,
       visibleScenarioDesignColumns,

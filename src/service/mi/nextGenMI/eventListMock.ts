@@ -63,6 +63,56 @@ type EventListMockSeed = Omit<EventListItem, 'updatedAt' | 'createdAt' | 'latest
 }
 
 const EVENT_LIST_MOCK_SEEDS: EventListMockSeed[] = [
+  // --- Scenario Design (12266:72778) 대표이벤트/시나리오유형/인포 툴팁 확인용 ---
+  {
+    eventId: 9001,
+    daysAgo: 0,
+    eventName: '[설계/대표] 중동 지정학 리스크 — 긴장 완화 뒤 유럽 가스가격 추가 하락',
+    status: 'new',
+    statusLabel: '신규',
+    signalType: 'signal',
+    signalTypeLabel: '시그널',
+    eventTypeLv1: 'geopolitical_risk',
+    eventTypeLv1Label: '지정학적 긴장 및 전쟁·군사분쟁',
+    isScenarioSuggested: true,
+    scenarioSuggestReason:
+      '복수 이벤트 조합에서 Agent가 추천한 대표 이벤트입니다.\n공급·운송 차질과 지정학 리스크가 동시에 반영되어 시나리오 분기 기준으로 적합합니다.',
+    scenarioDesignStatus: 'designable',
+    scenarioDesignStatusLabel: '설계 가능',
+    indexImpacts: bullishTriplet(MarketImpactLevel.HIGH, MarketImpactLevel.HIGH, MarketImpactLevel.MEDIUM),
+  },
+  {
+    eventId: 9002,
+    daysAgo: 0,
+    eventName: '[설계/멀티] 아시아 냉방수요 — JKM 강세 + 프리미엄 상방 리스크 유지',
+    status: 'new',
+    statusLabel: '신규',
+    signalType: 'signal',
+    signalTypeLabel: '시그널',
+    eventTypeLv1: 'weather_climate',
+    eventTypeLv1Label: '기상/기후',
+    isScenarioSuggested: false,
+    scenarioSuggestReason: '대표 이벤트와 함께 수요 측 분기 근거를 보완합니다.',
+    scenarioDesignStatus: 'designable',
+    scenarioDesignStatusLabel: '설계 가능',
+    indexImpacts: bullishTriplet(MarketImpactLevel.HIGH, MarketImpactLevel.MEDIUM, MarketImpactLevel.LOW),
+  },
+  {
+    eventId: 9003,
+    daysAgo: 0,
+    eventName: '[설계/멀티] 아프리카 LNG 공급 — 나이지리아 감산 상쇄로 공급 리스크 완화',
+    status: 'new',
+    statusLabel: '신규',
+    signalType: 'signal',
+    signalTypeLabel: '시그널',
+    eventTypeLv1: 'supply_balance',
+    eventTypeLv1Label: '수급 밸런스',
+    isScenarioSuggested: false,
+    scenarioSuggestReason: '대표 이벤트와 함께 공급 측 완화 경로를 보완합니다.',
+    scenarioDesignStatus: 'designable',
+    scenarioDesignStatusLabel: '설계 가능',
+    indexImpacts: bullishTriplet(MarketImpactLevel.MEDIUM, MarketImpactLevel.LOW, MarketImpactLevel.LOW),
+  },
   // --- 멀티선택 액션바 CTA 확인용 (동일 scenarioGroupId 2개 이상 선택) ---
   // Case 1. 신규 생성 가능: designable 2개 이상 선택 → `시나리오 설계`
   {

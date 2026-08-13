@@ -5,6 +5,7 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded'
+import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRenameOutlineRounded'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
@@ -16,7 +17,6 @@ import type { DesignScenarioRow } from '@/service/mi/nextGenMI/scenarioDesign'
 
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import MIChip from '@/components/common/chip/MIChip'
 import LoadingIcon from '@/components/common/icons/LoadingIcon'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
 import MIMenu from '@/components/common/menu/MIMenu'
@@ -36,13 +36,17 @@ import ScenarioDesignBaseEventSection, {
   type ScenarioDesignBaseEventSectionProps,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignBaseEventSection'
 import { ScenarioDesignConfirmDialog } from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignDialogs'
+import ScenarioDesignInfoTooltipIcon from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignInfoTooltipIcon'
 import {
   getInitialScenarioDesignColumnValue,
   getScenarioDesignColumnItems,
+  getScenarioDesignColumnValueDescription,
+  getScenarioDesignDimensionRationale,
   getScenarioDesignDimensionSelectedValue,
   getScenarioDesignRowId,
   isScenarioDesignRequiredColumn,
   scenarioDesignAgentItem,
+  scenarioDesignManualItem,
   SCENARIO_DESIGN_MAX_ROW_COUNT,
   SCENARIO_DESIGN_SECTIONS,
   SCENARIO_DESIGN_SELECT_COMMON_ACTIONS,
@@ -50,6 +54,7 @@ import {
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
 import ScenarioDesignOutlineStatusBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOutlineStatusBadge'
 import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
+import ScenarioDesignTypeBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignTypeBadge'
 import { NEXT_GEN_MI_MAIN_SCROLL_WRAPPER_ID } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 
 type ScenarioDesignReviewButtonStatus = 'loading' | 'completed' | null
@@ -222,11 +227,13 @@ const ScenarioDesignCriteriaHeaderLabel = ({ label }: { label: string }) => {
 const ScenarioDesignCriteriaHeader = ({
   label,
   required,
+  description,
   disabled = false,
   onDelete,
 }: {
   label: string
   required: boolean
+  description?: string | null
   disabled?: boolean
   onDelete?: () => void
 }) => (
@@ -280,7 +287,12 @@ const ScenarioDesignCriteriaHeader = ({
         boxSizing: 'border-box',
       }}
     >
-      <ScenarioDesignCriteriaHeaderLabel label={label} />
+      <Stack direction="row" alignItems="center" gap="4px" minWidth={0} width="100%">
+        <Box component="span" minWidth={0} flex={1} overflow="hidden">
+          <ScenarioDesignCriteriaHeaderLabel label={label} />
+        </Box>
+        {description?.trim() ? <ScenarioDesignInfoTooltipIcon title={description} /> : null}
+      </Stack>
     </Box>
     <Stack
       component="span"
@@ -352,7 +364,7 @@ const ScenarioDesignSelectFooterAction = ({
     sx={{
       width: '100%',
       height: '36px',
-      padding: '8px 12px 8px 8px',
+      padding: '8px 12px 8px 6px',
       borderRadius: '10px',
       justifyContent: 'flex-start',
       backgroundColor: selected ? 'contentBG.PrimaryFade' : 'transparent',
@@ -385,45 +397,71 @@ const ScenarioDesignSelectFooterAction = ({
 const ScenarioDesignSelectFooter = ({
   selected,
   defaultValue,
-  showAgentAction,
+  manualValue,
+  manualSelected,
   disabled = false,
+  onManualSave,
   onSelected,
   onReset,
 }: {
   selected: string
   defaultValue: string
-  showAgentAction: boolean
+  manualValue: string
+  manualSelected: boolean
   disabled?: boolean
+  onManualSave: (value: string) => void
   onSelected: (value: string) => void
   onReset: () => void
 }) => {
+  const hasManualValue = manualValue.trim().length > 0
   const resetDisabled = disabled || selected === defaultValue
+  const isAgentSelected = selected === scenarioDesignAgentItem.value || selected === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label
 
   return (
-    <Stack gap="6px" padding="8px 12px">
-      {showAgentAction && (
-        <>
-          <Divider />
-          <ScenarioDesignSelectFooterAction
-            icon={
-              <AutoAwesomeRoundedIcon
-                sx={{
-                  fontSize: '18px',
-                  color: disabled
-                    ? 'contentIcon.Disabled'
-                    : selected === scenarioDesignAgentItem.value
-                      ? 'mari.Primary'
-                      : 'contentIcon.Enabled',
-                }}
-              />
-            }
-            label={String(scenarioDesignAgentItem.label)}
-            selected={selected === scenarioDesignAgentItem.value}
-            disabled={disabled}
-            onClick={() => onSelected(scenarioDesignAgentItem.value)}
+    <Stack gap="8px" padding="0 12px 8px">
+      <Divider />
+      <ScenarioDesignSelectFooterAction
+        icon={
+          <AutoAwesomeRoundedIcon
+            sx={{
+              fontSize: '18px',
+              color: disabled ? 'contentIcon.Disabled' : isAgentSelected ? 'mari.Primary' : 'contentIcon.Enabled',
+            }}
           />
-        </>
-      )}
+        }
+        label={String(scenarioDesignAgentItem.label)}
+        selected={isAgentSelected}
+        disabled={disabled}
+        onClick={() => onSelected(scenarioDesignAgentItem.value)}
+      />
+
+      <Divider />
+      <NextGenMIInlineEditableInput
+        value={manualValue}
+        emptyMode="trigger"
+        placeholder={SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.inputLabel}
+        modePrefix={{
+          trigger: (
+            <DriveFileRenameOutlineRoundedIcon
+              sx={{ fontSize: '20px', color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }}
+            />
+          ),
+          input: <DriveFileRenameOutlineRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Activeb', flexShrink: 0 }} />,
+          display: <DriveFileRenameOutlineRoundedIcon sx={{ fontSize: '20px', color: 'mari.Primary', flexShrink: 0 }} />,
+        }}
+        selected={manualSelected}
+        disabled={disabled}
+        autoFocus
+        showSaveButton
+        showEditButton={hasManualValue}
+        resetOnBlur
+        trimOnSave
+        onCommit={onManualSave}
+        onClick={() => {
+          if (disabled) return
+          onSelected(manualValue.trim() || SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label)
+        }}
+      />
 
       <Divider />
       <ScenarioDesignSelectFooterAction
@@ -441,25 +479,35 @@ const ScenarioDesignSelectCell = ({
   selected,
   items,
   defaultValue,
-  showAgentAction,
+  valueRationale,
   disabled = false,
   onSelected,
 }: {
   selected: string
   items: SelectMenuItem<string>[]
   defaultValue: string
-  showAgentAction: boolean
+  valueRationale?: string
   disabled?: boolean
   onSelected: (value: string) => void
 }) => {
   const selectedColumnItem = items.find((item) => item.value === selected)
   const [open, setOpen] = useState(false)
   const isEmptySelected = selected === ''
-  const isAgentSelected = selected === scenarioDesignAgentItem.value
-  const customValue = !selectedColumnItem && !isAgentSelected && !isEmptySelected ? selected : ''
-  const selectedItem = selectedColumnItem ?? (isAgentSelected ? scenarioDesignAgentItem : undefined)
-  const isInlineBadgeValue = isAgentSelected
-  const inlineBadgeLabel = selectedItem?.label
+  const isAgentSelected = selected === scenarioDesignAgentItem.value || selected === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label
+  const isLegacyManualSelected = selected === scenarioDesignManualItem.value
+  const manualValue = isLegacyManualSelected
+    ? SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label
+    : !selectedColumnItem && !isAgentSelected && !isEmptySelected
+      ? selected
+      : ''
+  const isManualSelected = manualValue.trim().length > 0
+  const selectedItem =
+    selectedColumnItem ??
+    (isAgentSelected ? scenarioDesignAgentItem : undefined) ??
+    (isManualSelected ? scenarioDesignManualItem : undefined)
+  const isInlineBadgeValue = isAgentSelected || isManualSelected
+  const inlineBadgeLabel = isManualSelected ? manualValue.trim() : selectedItem?.label
+  const displayValueLabel = typeof selectedItem?.label === 'string' ? selectedItem.label : selected
 
   const handleSelected = (value: string) => {
     if (disabled) {
@@ -468,6 +516,18 @@ const ScenarioDesignSelectCell = ({
     }
 
     onSelected(value)
+    setOpen(false)
+  }
+
+  const handleManualSave = (value: string) => {
+    if (disabled) {
+      setOpen(false)
+      return
+    }
+
+    const nextValue = value.trim()
+    if (!nextValue) return
+    onSelected(nextValue)
     setOpen(false)
   }
 
@@ -485,6 +545,8 @@ const ScenarioDesignSelectCell = ({
     setOpen(!disabled && nextOpen)
   }
 
+  const valueInfoIcon = valueRationale?.trim() ? <ScenarioDesignInfoTooltipIcon title={valueRationale} size="18px" /> : null
+
   return (
     <MISelectMenu<string>
       selected={selected}
@@ -498,6 +560,7 @@ const ScenarioDesignSelectCell = ({
       open={open}
       onOpenChange={handleOpenChange}
       disabled={disabled}
+      showSelectedSuffix={false}
       labelPrefix={isInlineBadgeValue ? null : undefined}
       textLabel={
         isInlineBadgeValue ? (
@@ -533,12 +596,25 @@ const ScenarioDesignSelectCell = ({
             >
               {inlineBadgeLabel}
             </Typography>
+            {valueInfoIcon}
           </Stack>
-        ) : customValue ? (
-          <Typography variant="body2M14" color="contentText.Normal" minWidth={0} overflow="hidden" textOverflow="ellipsis" noWrap>
-            {customValue}
-          </Typography>
-        ) : undefined
+        ) : (
+          <Stack direction="row" alignItems="center" gap="6px" width="100%" minWidth={0} flex={1}>
+            <Typography
+              variant="body2M14"
+              color={isEmptySelected ? 'contentText.Subtext' : open ? 'contentText.Black' : 'contentText.Normal'}
+              minWidth={0}
+              flex={1}
+              overflow="hidden"
+              textOverflow="ellipsis"
+              textAlign="left"
+              noWrap
+            >
+              {isEmptySelected ? '선택하세요' : displayValueLabel}
+            </Typography>
+            {valueInfoIcon}
+          </Stack>
+        )
       }
       sx={{
         width: '100%',
@@ -547,6 +623,8 @@ const ScenarioDesignSelectCell = ({
         padding: isInlineBadgeValue ? '8px 12px 8px 4px' : '8px 12px',
         borderRadius: '8px',
         overflow: 'hidden',
+        backgroundColor: open ? 'gray.5' : 'commonColor.White',
+        borderColor: open ? 'contentBorder.Active' : 'contentBorder.Normal',
         ...(isInlineBadgeValue && {
           '& > .MuiBox-root > .MuiBox-root > .MuiStack-root': {
             gap: 0,
@@ -569,14 +647,24 @@ const ScenarioDesignSelectCell = ({
         elevation: 0,
         sx: {
           width: '260px',
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: 'contentBorder.Normal',
+          boxShadow: '0px 0px 2px rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden',
+          '& .disabledScroll > div > .MuiStack-root': {
+            padding: '8px 12px 0',
+          },
         },
       }}
       footer={
         <ScenarioDesignSelectFooter
           selected={selected}
           defaultValue={defaultValue}
-          showAgentAction={showAgentAction}
+          manualValue={manualValue}
+          manualSelected={isManualSelected}
           disabled={disabled}
+          onManualSave={handleManualSave}
           onSelected={handleSelected}
           onReset={handleReset}
         />
@@ -894,10 +982,6 @@ type ScenarioDesignCriteriaReviewProps = {
 type ScenarioDesignCriteriaStepProps = {
   criteria: ScenarioDesignCriteriaTableProps
   baseEvent: Omit<ScenarioDesignBaseEventSectionProps, 'loading'>
-  rationale: {
-    visible: boolean
-    text: string
-  }
   isLoading: boolean
   review: ScenarioDesignCriteriaReviewProps
   actions: {
@@ -907,12 +991,11 @@ type ScenarioDesignCriteriaStepProps = {
   }
 }
 
-const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading, review, actions }: ScenarioDesignCriteriaStepProps) => {
+const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, isLoading, review, actions }: ScenarioDesignCriteriaStepProps) => {
   const { showSnackbar } = useSnackbar()
   const {
     rows,
     initialRows,
-    initialScenarioDesignColumns,
     visibleScenarioDesignColumns,
     hiddenScenarioDesignColumns,
     agentScenarioDesignColumnKeys,
@@ -922,7 +1005,6 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
     onAddCriteriaColumns,
     onAddRow,
   } = criteria
-  const { visible: showDesignRationale, text: designRationale } = rationale
   const {
     reviewed,
     pending: reviewPending,
@@ -957,17 +1039,14 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
         .join('\u001e'),
     [reviewErrorItems],
   )
-  const initialScenarioDesignColumnKeys = useMemo(
-    () => new Set(initialScenarioDesignColumns.map((column) => column.key)),
-    [initialScenarioDesignColumns],
-  )
-  const tableScenarioDesignColumns = useMemo(() => {
+  const tableScenarioDesignColumns = useMemo((): ScenarioDesignColumn[] => {
     if (!isLoading || visibleScenarioDesignColumns.length > 0) return visibleScenarioDesignColumns
 
     return Array.from({ length: 5 }, (_, index) => ({
       key: `loadingCriteriaColumn${index}`,
       label: '',
       width: '200px',
+      description: null,
     }))
   }, [isLoading, visibleScenarioDesignColumns])
 
@@ -1275,57 +1354,65 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
         renderCell: ({ row, rowIndex }) => {
           const rowId = getScenarioDesignRowId(row, rowIndex + 1)
           const scenarioName = row.scenarioName ?? ''
+          const isLocked = row.locked === true
+          const typeBadge =
+            row.baseCase === true ? (
+              <ScenarioDesignTypeBadge type="BC" reason="기존에 생성된 Base Case 시나리오입니다." />
+            ) : row.scenarioType ? (
+              <ScenarioDesignTypeBadge type={row.scenarioType} reason={row.scenarioTypeReason} />
+            ) : null
+
+          const nameInput = (
+            <NextGenMIInlineEditableInput
+              value={scenarioName}
+              placeholder="입력하세요"
+              autoFocus
+              showEditButton={false}
+              editOnClick
+              commitOnBlur
+              commitOnEnter
+              disabled={criteriaEditingDisabled || isLocked}
+              suffix={
+                typeBadge ? (
+                  <Stack component="span" direction="row" alignItems="center" gap="4px" flexShrink={0}>
+                    {typeBadge}
+                  </Stack>
+                ) : undefined
+              }
+              onCommit={(value) => {
+                if (value !== scenarioName) onRowValueChange(rowId, 'scenarioName', value)
+              }}
+              sx={{
+                borderColor: 'contentBorder.Normal',
+                bgcolor: 'commonColor.White',
+                '&:hover:not(:focus-within)': {
+                  backgroundColor: 'contentBG.Hover',
+                  borderColor: 'contentBorder.Hover',
+                },
+                '&:focus-within': {
+                  borderColor: 'contentBorder.Active',
+                  backgroundColor: 'commonColor.White',
+                },
+              }}
+            />
+          )
 
           return (
             <Stack direction="row" alignItems="center" gap="8px" width="100%" minWidth={0}>
               <ScenarioDesignIconButton
                 label={`${scenarioName || '시나리오'} 삭제`}
-                disabled={criteriaEditingDisabled || rows.length <= 1}
+                disabled={criteriaEditingDisabled || isLocked || rows.length <= 1}
                 onClick={() => handleDeleteRowRequest(rowId)}
               />
-              <NextGenMIInlineEditableInput
-                value={scenarioName}
-                placeholder="입력하세요"
-                autoFocus
-                showEditButton={false}
-                editOnClick
-                commitOnBlur
-                commitOnEnter
-                disabled={criteriaEditingDisabled}
-                suffix={
-                  row.baseCase ? (
-                    <Stack component="span" direction="row" alignItems="center" gap="4px" flexShrink={0}>
-                      <MIChip
-                        label="BC"
-                        color="purple"
-                        size="h20"
-                        disableHover
-                        sx={{
-                          padding: '2px 6px',
-                          borderRadius: '8px',
-                          backgroundColor: 'mari.Primary',
-                          color: 'contentText.White',
-                        }}
-                      />
-                    </Stack>
-                  ) : undefined
-                }
-                onCommit={(value) => {
-                  if (value !== scenarioName) onRowValueChange(rowId, 'scenarioName', value)
-                }}
-                sx={{
-                  borderColor: 'contentBorder.Normal',
-                  bgcolor: 'commonColor.White',
-                  '&:hover:not(:focus-within)': {
-                    backgroundColor: 'contentBG.Hover',
-                    borderColor: 'contentBorder.Hover',
-                  },
-                  '&:focus-within': {
-                    borderColor: 'contentBorder.Active',
-                    backgroundColor: 'commonColor.White',
-                  },
-                }}
-              />
+              {isLocked ? (
+                <MIFollowCursorTooltip title="해당 시나리오는 공통 범위로 편집 하시기 바랍니다">
+                  <Stack width="100%" minWidth={0}>
+                    {nameInput}
+                  </Stack>
+                </MIFollowCursorTooltip>
+              ) : (
+                nameInput
+              )}
             </Stack>
           )
         },
@@ -1342,6 +1429,7 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
             <ScenarioDesignCriteriaHeader
               label={column.label}
               required={required}
+              description={column.description}
               disabled={criteriaEditingDisabled}
               onDelete={required || criteriaEditingDisabled ? undefined : () => handleDeleteCriteriaColumnRequest(column.key)}
             />
@@ -1356,22 +1444,30 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
             textOverflow: 'clip',
           },
           renderCell: ({ row, rowIndex }) => {
-            const items = getScenarioDesignColumnItems(column)
             const rowId = getScenarioDesignRowId(row, rowIndex + 1)
             const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+            const isLocked = row.locked === true
+            const items = getScenarioDesignColumnItems(column).map((item) => {
+              const description = getScenarioDesignColumnValueDescription(column, item.value)
+              if (!description) return item
+              return {
+                ...item,
+                suffix: <ScenarioDesignInfoTooltipIcon title={description} size="18px" />,
+              }
+            })
             return (
               <ScenarioDesignSelectCell
                 selected={selectedValue}
                 items={items}
                 defaultValue={
-                  agentScenarioDesignColumnKeys.has(column.key) && selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
+                  agentScenarioDesignColumnKeys.has(column.key) &&
+                  (selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value ||
+                    selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label)
                     ? SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
                     : getInitialScenarioDesignColumnValue(initialRows, row, column)
                 }
-                showAgentAction={
-                  !initialScenarioDesignColumnKeys.has(column.key) && selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
-                }
-                disabled={criteriaEditingDisabled}
+                valueRationale={getScenarioDesignDimensionRationale(row, column.key)}
+                disabled={criteriaEditingDisabled || isLocked}
                 onSelected={(value) => onRowValueChange(rowId, column.key, value)}
               />
             )
@@ -1398,7 +1494,6 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
       handleDeleteRowRequest,
       agentScenarioDesignColumnKeys,
       criteriaEditingDisabled,
-      initialScenarioDesignColumnKeys,
       initialRows,
       isLoading,
       onRowValueChange,
@@ -1411,26 +1506,6 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, rationale, isLoading,
     <>
       <Stack gap="38px" padding="24px 0px">
         <ScenarioDesignBaseEventSection {...baseEvent} loading={isLoading} />
-
-        {showDesignRationale && (
-          <Stack id={SCENARIO_DESIGN_SECTIONS[1].id} gap="12px">
-            <Typography fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} padding="4px 8px">
-              설계 근거
-            </Typography>
-            <Stack bgcolor="gray.5" borderRadius="10px" padding="20px" justifyContent="center">
-              {isLoading ? (
-                <Stack gap="8px">
-                  <Skeleton variant="rounded" width="100%" height="18px" />
-                  <Skeleton variant="rounded" width="78%" height="18px" />
-                </Stack>
-              ) : (
-                <Typography fontSize="16px" fontWeight={500} color="contentText.Normal" lineHeight={1.5} whiteSpace="pre-line">
-                  {designRationale}
-                </Typography>
-              )}
-            </Stack>
-          </Stack>
-        )}
 
         <Stack id={SCENARIO_DESIGN_SECTIONS[2].id} gap="4px">
           <Typography fontSize="18px" fontWeight={600} color="contentText.Black" padding="4px 8px">

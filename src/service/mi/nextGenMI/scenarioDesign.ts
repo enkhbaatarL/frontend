@@ -3,6 +3,12 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import i18n from '@/lib/i18n'
+// #DELETE: API 적용후엔 목데이터 삭제
+import {
+  buildMockScenarioDesignStart,
+  buildMockScenarioDesignState,
+  buildMockScenarioDimensionTemplate,
+} from '@/service/mi/nextGenMI/scenarioDesignMock'
 import useAuthStore from '@/store/useAuthStore'
 import { ICommonResponse } from '@/types/api'
 
@@ -43,6 +49,8 @@ export interface ScenarioDesignStreamEventData {
 export interface ScenarioDimensionColumn {
   key?: string
   label?: string
+  /** 분기 항목 선정 근거 (헤더 인포 툴팁) */
+  description?: string | null
 }
 
 export interface ScenarioDimension {
@@ -50,7 +58,11 @@ export interface ScenarioDimension {
   label?: string
   value?: string | null
   valueLabel?: string | null
+  /** 해당 시나리오에 기준값이 적용된 사유 (셀 인포 툴팁) */
+  rationale?: string | null
 }
+
+export type ScenarioDesignScenarioType = 'BR' | 'BL' | 'MX'
 
 export interface ScenarioSignpostDefinition {
   signpostId?: number | null
@@ -70,6 +82,12 @@ export interface DesignScenarioRow {
   displayOrder?: number
   scenarioName?: string
   baseCase?: boolean
+  /** 시나리오 유형 배지 (BR/BL/MX). BC는 baseCase로 표시 */
+  scenarioType?: ScenarioDesignScenarioType | null
+  /** 유형 구분 사유 (배지 호버 툴팁) */
+  scenarioTypeReason?: string | null
+  /** 공통 범위로만 편집 가능한 잠금 시나리오 */
+  locked?: boolean
   dimensions?: ScenarioDimension[]
   probability?: number | null
   narrative?: string | null
@@ -112,6 +130,10 @@ export interface ScenarioDimensionTemplateItem {
   required?: boolean
   displayOrder?: number
   valueEnums?: string[]
+  /** 분기 항목 선정 근거 */
+  description?: string | null
+  /** 분기 기준값별 설명 (메뉴 인포 툴팁) */
+  valueEnumDescriptions?: Record<string, string>
 }
 
 export interface ScenarioDimensionTemplate {
@@ -192,25 +214,48 @@ const createScenarioDesignStreamHeaders = () => {
 
 const nextGenMIScenarioDesignService = {
   async startScenarioDesign(payload: ScenarioDesignStart): Promise<ScenarioDesignStageData> {
-    const response: AxiosResponse<ICommonResponse<ScenarioDesignStageData>> = await api.post('mi/next-gen/scenario-groups', payload)
+    try {
+      const response: AxiosResponse<ICommonResponse<ScenarioDesignStageData>> = await api.post('mi/next-gen/scenario-groups', payload, {
+        suppressGlobalErrorHandler: true,
+      } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean })
 
-    return response.data.data
+      return response.data.data
+    } catch {
+      // #DELETE: API 적용후엔 목데이터 삭제 - 시나리오 설계 화면 진입용 더미
+      return buildMockScenarioDesignStart(payload)
+    }
   },
 
   async getScenarioDesign(scenarioGroupId: string | number): Promise<ScenarioDesignState> {
-    const response: AxiosResponse<ICommonResponse<ScenarioDesignState>> = await api.get(
-      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/design`,
-    )
+    try {
+      const response: AxiosResponse<ICommonResponse<ScenarioDesignState>> = await api.get(
+        `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/design`,
+        {
+          suppressGlobalErrorHandler: true,
+        } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean },
+      )
 
-    return response.data.data
+      return response.data.data
+    } catch {
+      // #DELETE: API 적용후엔 목데이터 삭제 - 1단계 테이블 확인용 더미
+      return buildMockScenarioDesignState(scenarioGroupId)
+    }
   },
 
   async getScenarioDimensionTemplates(scenarioGroupId: string | number): Promise<ScenarioDimensionTemplate> {
-    const response: AxiosResponse<ICommonResponse<ScenarioDimensionTemplate>> = await api.get(
-      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/dimension-templates`,
-    )
+    try {
+      const response: AxiosResponse<ICommonResponse<ScenarioDimensionTemplate>> = await api.get(
+        `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/dimension-templates`,
+        {
+          suppressGlobalErrorHandler: true,
+        } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean },
+      )
 
-    return response.data.data
+      return response.data.data
+    } catch {
+      // #DELETE: API 적용후엔 목데이터 삭제 - 분기항목 템플릿 더미
+      return buildMockScenarioDimensionTemplate()
+    }
   },
 
   async validateScenarioDesign(scenarioGroupId: string | number, payload: ScenarioValidation): Promise<ScenarioDesignStageData> {
@@ -227,18 +272,23 @@ const nextGenMIScenarioDesignService = {
     onMessage: (event: EventSourceMessage) => void,
     signal: AbortSignal,
   ): Promise<void> {
-    await fetchEventSource(`/api/v1/mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/design/stream`, {
-      method: 'GET',
-      headers: createScenarioDesignStreamHeaders(),
-      credentials: 'include',
-      openWhenHidden: true,
-      signal,
-      onmessage: onMessage,
-      async onopen(response) {
-        if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) return
-        throw new Error(`시나리오 설계 스트림 연결 실패: ${response.status} ${response.statusText}`)
-      },
-    })
+    try {
+      await fetchEventSource(`/api/v1/mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/design/stream`, {
+        method: 'GET',
+        headers: createScenarioDesignStreamHeaders(),
+        credentials: 'include',
+        openWhenHidden: true,
+        signal,
+        onmessage: onMessage,
+        async onopen(response) {
+          if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) return
+          throw new Error(`시나리오 설계 스트림 연결 실패: ${response.status} ${response.statusText}`)
+        },
+      })
+    } catch {
+      if (signal.aborted) return
+      // #DELETE: API 적용후엔 목데이터 삭제 - 스트림 실패로 /error 이동하지 않도록 무시 (더미 design state로 화면 유지)
+    }
   },
 
   async createScenarioSignposts(scenarioGroupId: string | number, payload: ScenarioSignposts): Promise<ScenarioDesignStageData> {

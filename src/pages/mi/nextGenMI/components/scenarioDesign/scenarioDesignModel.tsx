@@ -35,6 +35,8 @@ export type ScenarioDesignColumn = {
   required?: boolean
   displayOrder?: number
   valueEnums?: string[]
+  description?: string | null
+  valueEnumDescriptions?: Record<string, string>
 }
 
 export const SCENARIO_DESIGN_MAX_ROW_COUNT = 15
@@ -89,6 +91,8 @@ export const createScenarioDesignColumn = (
     required: template?.required,
     displayOrder: template?.displayOrder,
     valueEnums: template?.valueEnums,
+    description: column.description?.trim() || template?.description?.trim() || null,
+    valueEnumDescriptions: template?.valueEnumDescriptions,
   }
 }
 
@@ -125,6 +129,8 @@ export const createScenarioDesignTemplateColumns = (
         required: template.required,
         displayOrder: template.displayOrder,
         valueEnums: template.valueEnums,
+        description: template.description?.trim() || null,
+        valueEnumDescriptions: template.valueEnumDescriptions,
       })),
   )
 }
@@ -142,8 +148,18 @@ export const getScenarioDesignDimensionSelectedValue = (row: DesignScenarioRow, 
   return value
 }
 
+export const getScenarioDesignDimensionRationale = (row: DesignScenarioRow, key: string) =>
+  getScenarioDesignDimension(row, key)?.rationale?.trim() || ''
+
+export const getScenarioDesignColumnValueDescription = (column: ScenarioDesignColumn, value: string) =>
+  column.valueEnumDescriptions?.[value]?.trim() || ''
+
 export const getScenarioDesignColumnItems = (column: ScenarioDesignColumn): SelectMenuItem<string>[] =>
-  (column.valueEnums ?? []).map((value) => ({ value, label: value }))
+  (column.valueEnums ?? [])
+    .filter(
+      (value) => value !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value && value !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label,
+    )
+    .map((value) => ({ value, label: value }))
 
 const getScenarioDesignColumnValueLabel = (column: ScenarioDesignColumn, value: string) =>
   String(getScenarioDesignColumnItems(column).find((item) => item.value === value)?.label ?? value)
@@ -188,6 +204,7 @@ export const updateScenarioDesignRowDimension = (
     label: column.label,
     value,
     valueLabel: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, value),
+    rationale: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueDescription(column, value) || null,
   }
 
   if (dimensionIndex >= 0) {

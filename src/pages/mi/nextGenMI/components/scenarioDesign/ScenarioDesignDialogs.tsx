@@ -10,6 +10,196 @@ export type ScenarioDesignConfirmDialogContent = {
   confirmBgColor: string
 }
 
+/** 도출 근거 팝업 섹션 (노출 형식 미정 - UI 틀용) */
+export type ScenarioDesignRationaleBlock = {
+  heading?: string
+  paragraphs?: string[]
+  bullets?: string[]
+}
+
+export type ScenarioDesignRationaleSection = {
+  title: string
+  blocks: ScenarioDesignRationaleBlock[]
+}
+
+const ScenarioDesignRationaleCard = ({ section }: { section: ScenarioDesignRationaleSection }) => (
+  <Stack width="100%" padding="8px" borderRadius="10px" bgcolor="gray.5" boxSizing="border-box">
+    <Stack width="100%" padding="8px" gap="0px" boxSizing="border-box">
+      <Typography fontSize="13px" fontWeight={600} color="contentText.Normal" lineHeight={1.6}>
+        {section.title}
+      </Typography>
+      <Stack gap="0px" width="100%">
+        {section.blocks.map((block, blockIndex) => (
+          <Stack key={`${section.title}-${blockIndex}`} width="100%">
+            {block.heading ? (
+              <Typography fontSize="15px" fontWeight={500} color="contentText.Black" lineHeight={1.6} whiteSpace="pre-wrap">
+                {block.heading}
+              </Typography>
+            ) : null}
+            {block.paragraphs?.map((paragraph, paragraphIndex) => (
+              <Typography
+                key={`${section.title}-${blockIndex}-p-${paragraphIndex}`}
+                fontSize="15px"
+                fontWeight={500}
+                color="contentText.Black"
+                lineHeight={1.6}
+                whiteSpace="pre-wrap"
+              >
+                {paragraph}
+              </Typography>
+            ))}
+            {block.bullets && block.bullets.length > 0 ? (
+              <Stack
+                component="ul"
+                margin={0}
+                padding="0 0 0 22px"
+                sx={{
+                  listStyleType: 'disc',
+                  listStylePosition: 'outside',
+                }}
+              >
+                {block.bullets.map((bullet, bulletIndex) => (
+                  <Typography
+                    key={`${section.title}-${blockIndex}-b-${bulletIndex}`}
+                    component="li"
+                    fontSize="15px"
+                    fontWeight={500}
+                    color="contentText.Black"
+                    lineHeight={1.6}
+                    sx={{ display: 'list-item' }}
+                  >
+                    {bullet}
+                  </Typography>
+                ))}
+              </Stack>
+            ) : null}
+          </Stack>
+        ))}
+      </Stack>
+    </Stack>
+  </Stack>
+)
+
+export const ScenarioDesignRationaleDialog = ({
+  open,
+  sections,
+  fallbackText,
+  onClose,
+}: {
+  open: boolean
+  sections?: ScenarioDesignRationaleSection[]
+  fallbackText?: string
+  onClose: () => void
+}) => {
+  const resolvedSections =
+    sections && sections.length > 0
+      ? sections
+      : fallbackText?.trim()
+        ? [
+          {
+            title: '설계 근거',
+            blocks: [{ paragraphs: [fallbackText.trim()] }],
+          },
+        ]
+        : []
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        },
+        paper: {
+          sx: {
+            width: '800px',
+            maxWidth: 'calc(100vw - 88px)',
+            border: '1px solid',
+            borderColor: 'contentBorder.Normal',
+            borderRadius: '10px',
+            boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
+            margin: 0,
+            overflow: 'hidden',
+          },
+        },
+      }}
+    >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" padding="12px 20px" width="100%" minWidth={0}>
+        <Stack direction="row" alignItems="center" gap="6px" minWidth={0} flex={1}>
+          <Typography component="span" fontSize="18px" fontWeight={600} color="contentText.Black" lineHeight={1.4} noWrap>
+            도출 근거
+          </Typography>
+          <Typography component="span" fontSize="14px" fontWeight={400} color="contentText.Error" lineHeight={1.4} noWrap>
+            *노출 형식은 미정입니다.
+          </Typography>
+        </Stack>
+        <MIBaseButton
+          aria-label="닫기"
+          variant="text"
+          onClick={onClose}
+          sx={{
+            width: '36px',
+            minWidth: '36px',
+            height: '36px',
+            padding: '8px',
+            borderRadius: '8px',
+          }}
+        >
+          <CloseRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Enabled' }} />
+        </MIBaseButton>
+      </Stack>
+
+      <Stack width="100%" gap="20px">
+        <Stack width="100%" gap="12px" padding="0 24px" boxSizing="border-box">
+          {resolvedSections.length > 0 ? (
+            resolvedSections.map((section) => <ScenarioDesignRationaleCard key={section.title} section={section} />)
+          ) : (
+            <ScenarioDesignRationaleCard
+              section={{
+                title: '설계 근거',
+                blocks: [{ paragraphs: ['설계 근거가 없습니다.'] }],
+              }}
+            />
+          )}
+        </Stack>
+      </Stack>
+
+      <DialogActions
+        disableSpacing
+        sx={{
+          padding: '20px',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <MIBaseButton
+          variant="contained"
+          onClick={onClose}
+          labelColor="contentText.White"
+          sx={{
+            height: '36px',
+            padding: '8px 10px',
+            borderRadius: '8px',
+            backgroundColor: 'contentIcon.ActivePrimary',
+            '&:hover:not(:disabled)': {
+              backgroundColor: 'contentIcon.ActivePrimary',
+            },
+            '& .MuiTypography-root': {
+              fontSize: '14px',
+              fontWeight: 600,
+              lineHeight: 1.4,
+            },
+          }}
+        >
+          확인
+        </MIBaseButton>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
 export const ScenarioDesignConfirmDialog = ({
   open,
   content,
