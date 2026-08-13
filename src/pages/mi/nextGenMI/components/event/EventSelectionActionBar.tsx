@@ -1,7 +1,8 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
-import { Box, Divider, IconButton, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+import { Box, Collapse, type CollapseProps, Divider, Fade, IconButton, Stack, Typography } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { SwitchTransition, TransitionGroup } from 'react-transition-group'
 
 import type { EventDesignStep } from '@/service/mi/nextGenMI/event'
 
@@ -24,6 +25,72 @@ export type EventSelectionActionBarProps = {
   designStep?: EventDesignStep | string | null
   onRemove: (eventId: number) => void
   onDesignClick: () => void
+}
+
+const SelectionEventListItemTransition = ({
+  children,
+  onEnter,
+  onEntering,
+  onEntered,
+  onExit,
+  onExiting,
+  onExited,
+  ...collapseProps
+}: CollapseProps) => {
+  const [motion, setMotion] = useState<'idle' | 'entering' | 'exiting'>('idle')
+
+  return (
+    <Collapse
+      {...collapseProps}
+      timeout={{ enter: 300, exit: 300 }}
+      onEnter={(node, isAppearing) => {
+        setMotion('entering')
+        onEnter?.(node, isAppearing)
+      }}
+      onEntering={(node, isAppearing) => {
+        node.style.transitionDuration = '150ms'
+        node.style.transitionDelay = '0ms'
+        onEntering?.(node, isAppearing)
+      }}
+      onEntered={(node, isAppearing) => {
+        setMotion('idle')
+        onEntered?.(node, isAppearing)
+      }}
+      onExit={(node) => {
+        setMotion('exiting')
+        onExit?.(node)
+      }}
+      onExiting={(node) => {
+        node.style.transitionDuration = '180ms'
+        node.style.transitionDelay = '120ms'
+        onExiting?.(node)
+      }}
+      onExited={(node) => onExited?.(node)}
+    >
+      <Box
+        paddingBottom="7px"
+        sx={{
+          animation:
+            motion === 'entering'
+              ? 'selectedEventItemEnter 180ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both'
+              : motion === 'exiting'
+                ? 'selectedEventItemExit 160ms ease-in both'
+                : 'none',
+          willChange: motion === 'idle' ? 'auto' : 'opacity, transform',
+          '@keyframes selectedEventItemEnter': {
+            from: { opacity: 0, transform: 'translateX(-12px)' },
+            to: { opacity: 1, transform: 'translateX(0)' },
+          },
+          '@keyframes selectedEventItemExit': {
+            from: { opacity: 1, transform: 'translateX(0)' },
+            to: { opacity: 0, transform: 'translateX(-12px)' },
+          },
+        }}
+      >
+        {children}
+      </Box>
+    </Collapse>
+  )
 }
 
 const SelectionDesignProgressCta = ({
@@ -145,10 +212,17 @@ const EventSelectionActionBar = ({
   onDesignClick,
 }: EventSelectionActionBarProps) => {
   const [expanded, setExpanded] = useState(false)
+  const [lastSelectedEvents, setLastSelectedEvents] = useState(selectedEvents)
   const selectedCount = selectedEvents.length
+  const displayedEvents = selectedCount > 0 ? selectedEvents : lastSelectedEvents
+  const designCtaTransitionKey =
+    designMode === 'creating'
+      ? `${designMode}-${normalizeEventDesignStep(designStep) ?? 'step1'}-${designLocked ? 'locked' : 'unlocked'}`
+      : designMode
 
-  // 1개 이상 선택 시 하단 액션바 표시
-  if (selectedCount < 1) return null
+  useEffect(() => {
+    if (selectedCount > 0) setLastSelectedEvents(selectedEvents)
+  }, [selectedCount, selectedEvents])
 
   const designCta =
     designMode === 'creating' ? (
@@ -160,119 +234,141 @@ const EventSelectionActionBar = ({
     )
 
   return (
-    <Box
-      position="fixed"
-      left="50%"
-      bottom="145px"
-      zIndex={1200}
-      width="580px"
-      maxWidth="calc(100vw - 48px)"
-      sx={{
-        transform: 'translateX(-50%)',
-        pointerEvents: 'auto',
+    <Fade
+      in={selectedCount > 0}
+      timeout={{ enter: 200, exit: 160 }}
+      mountOnEnter
+      unmountOnExit
+      onExited={() => {
+        setExpanded(false)
+        setLastSelectedEvents([])
       }}
     >
-      <Stack
-        bgcolor="#14181F"
-        borderRadius="8px"
-        padding={expanded ? '12px 16px 18px' : '12px 16px'}
-        boxShadow="0px 6px 12px rgba(0, 0, 0, 0.1)"
-        gap={expanded ? '14px' : 0}
+      <Box
+        position="fixed"
+        left="50%"
+        bottom="145px"
+        zIndex={1200}
+        width="580px"
+        maxWidth="calc(100vw - 48px)"
+        sx={{
+          transform: 'translateX(-50%)',
+          pointerEvents: 'auto',
+        }}
       >
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px">
-          <Stack
-            component="button"
-            type="button"
-            direction="row"
-            alignItems="center"
-            gap="6px"
-            minWidth={0}
-            border="none"
-            bgcolor="transparent"
-            padding={0}
-            onClick={() => setExpanded((prev) => !prev)}
-            sx={{
-              cursor: 'pointer',
-              font: 'inherit',
-              appearance: 'none',
-              color: 'inherit',
-            }}
-          >
-            <Typography variant="body2SB14" color="commonColor.White" noWrap>
-              {`선택한 이벤트 (${selectedCount})`}
-            </Typography>
-            <Stack direction="row" alignItems="center" gap="2px" flexShrink={0}>
-              <Typography variant="body2M14" color="contentText.Subtext" noWrap>
-                {`최대 ${maxCount}개 선택 가능`}
+        <Stack bgcolor="#14181F" borderRadius="8px" padding="12px 16px" boxShadow="0px 6px 12px rgba(0, 0, 0, 0.1)">
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px">
+            <Stack
+              component="button"
+              type="button"
+              direction="row"
+              alignItems="center"
+              gap="6px"
+              minWidth={0}
+              border="none"
+              bgcolor="transparent"
+              padding={0}
+              aria-expanded={expanded}
+              aria-controls="selected-event-list"
+              onClick={() => setExpanded((prev) => !prev)}
+              sx={{
+                cursor: 'pointer',
+                font: 'inherit',
+                appearance: 'none',
+                color: 'inherit',
+              }}
+            >
+              <Typography variant="body2SB14" color="commonColor.White" noWrap>
+                {`선택한 이벤트 (${displayedEvents.length})`}
               </Typography>
-              <Box
-                display="inline-flex"
-                alignItems="center"
-                justifyContent="center"
-                width="20px"
-                height="20px"
-                sx={{
-                  transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 160ms ease',
-                  '& svg path': { fill: '#868E96' },
-                }}
-              >
-                <ArrowDown width="20px" height="20px" aria-hidden />
-              </Box>
+              <Stack direction="row" alignItems="center" gap="2px" flexShrink={0}>
+                <Typography variant="body2M14" color="contentText.Subtext" noWrap>
+                  {`최대 ${maxCount}개 선택 가능`}
+                </Typography>
+                <Box
+                  display="inline-flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  width="20px"
+                  height="20px"
+                  sx={{
+                    transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 160ms ease',
+                    '& svg path': { fill: '#868E96' },
+                  }}
+                >
+                  <ArrowDown width="20px" height="20px" aria-hidden />
+                </Box>
+              </Stack>
             </Stack>
+
+            <SwitchTransition mode="out-in">
+              <Fade key={designCtaTransitionKey} appear={false} timeout={{ enter: 160, exit: 100 }}>
+                <Box display="flex" flexShrink={0}>
+                  {designCta}
+                </Box>
+              </Fade>
+            </SwitchTransition>
           </Stack>
 
-          {designCta}
-        </Stack>
-
-        {expanded && (
-          <>
-            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
-            <Stack gap="7px">
-              {selectedEvents.map((event, index) => (
-                <Stack key={event.eventId} direction="row" alignItems="center" justifyContent="space-between" gap="8px" minWidth={0}>
-                  <Stack direction="row" alignItems="center" gap="6px" minWidth={0} flex={1}>
-                    <Stack
-                      alignItems="center"
-                      justifyContent="center"
-                      width="20px"
-                      height="20px"
-                      borderRadius="8px"
-                      bgcolor="gray.70"
-                      flexShrink={0}
-                    >
-                      <Typography variant="body3M12" color="gray.30" lineHeight={1.4}>
-                        {index + 1}
-                      </Typography>
-                    </Stack>
-                    <Typography variant="body1R16" color="commonColor.White" noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {event.eventName}
-                    </Typography>
-                  </Stack>
-                  <IconButton
-                    aria-label="선택 해제"
-                    onClick={() => onRemove(event.eventId)}
-                    size="small"
-                    sx={{
-                      width: '22px',
-                      height: '22px',
-                      padding: '4px',
-                      borderRadius: '4px',
-                      color: 'contentText.Subtext',
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.08)',
-                      },
-                    }}
-                  >
-                    <CloseIcon width="20px" height="20px" aria-hidden />
-                  </IconButton>
-                </Stack>
-              ))}
+          <Collapse in={expanded} timeout={220} unmountOnExit sx={{ width: '100%' }}>
+            <Stack id="selected-event-list" paddingTop="14px" paddingBottom="6px" gap="14px">
+              <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
+              <Stack marginBottom="-7px">
+                <TransitionGroup component={null}>
+                  {displayedEvents.map((event, index) => (
+                    <SelectionEventListItemTransition key={event.eventId}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" gap="8px" minWidth={0}>
+                        <Stack direction="row" alignItems="center" gap="6px" minWidth={0} flex={1}>
+                          <Stack
+                            alignItems="center"
+                            justifyContent="center"
+                            width="20px"
+                            height="20px"
+                            borderRadius="8px"
+                            bgcolor="gray.70"
+                            flexShrink={0}
+                          >
+                            <Typography variant="body3M12" color="gray.30" lineHeight={1.4}>
+                              {index + 1}
+                            </Typography>
+                          </Stack>
+                          <Typography
+                            variant="body1R16"
+                            color="commonColor.White"
+                            noWrap
+                            sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {event.eventName}
+                          </Typography>
+                        </Stack>
+                        <IconButton
+                          aria-label="선택 해제"
+                          onClick={() => onRemove(event.eventId)}
+                          size="small"
+                          sx={{
+                            width: '22px',
+                            height: '22px',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            color: 'contentText.Subtext',
+                            '&:hover': {
+                              bgcolor: 'rgba(255, 255, 255, 0.08)',
+                            },
+                          }}
+                        >
+                          <CloseIcon width="20px" height="20px" aria-hidden />
+                        </IconButton>
+                      </Stack>
+                    </SelectionEventListItemTransition>
+                  ))}
+                </TransitionGroup>
+              </Stack>
             </Stack>
-          </>
-        )}
-      </Stack>
-    </Box>
+          </Collapse>
+        </Stack>
+      </Box>
+    </Fade>
   )
 }
 
