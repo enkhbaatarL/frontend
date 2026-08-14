@@ -1,13 +1,16 @@
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { CircularProgress, ClickAwayListener, Divider, Paper, Popper, Stack, Typography } from '@mui/material'
+import { CircularProgress, ClickAwayListener, Divider, Paper, Popper, Stack, Typography, type TypographyProps } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { type MouseEvent, type ReactNode, type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { EventConnectedScenarioGroup, EventDesignStep, EventScenarioDesignStatus } from '@/service/mi/nextGenMI/event'
 import type { IScenarioBaseEvent } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
+import useEllipsisDetection from '@/hooks/useEllipsisDetection'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import {
   isEventDesignOccupiedByOther,
   normalizeEventDesignStep,
@@ -74,22 +77,72 @@ export type EventConnectedScenarioGroupPopoverProps = {
   onContinue: (group: EventConnectedScenarioGroup) => void
 }
 
-const ConnectedGroupStepBadge = ({ locked, designStep }: { locked?: boolean; designStep?: EventDesignStep | string | null }) => {
+const ConnectedGroupEllipsisText = ({ value, sx, ...typographyProps }: Omit<TypographyProps, 'children'> & { value: string }) => {
+  const { ref, isEllipsis } = useEllipsisDetection(value)
+
+  const typography = (
+    <Typography
+      ref={ref}
+      {...typographyProps}
+      noWrap
+      sx={[
+        {
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        },
+        ...(sx ? (Array.isArray(sx) ? sx : [sx]) : []),
+      ]}
+    >
+      {value}
+    </Typography>
+  )
+
+  return isEllipsis ? <NextGenMIFollowCursorTooltip title={value}>{typography}</NextGenMIFollowCursorTooltip> : typography
+}
+
+const ConnectedGroupStepBadge = ({
+  locked,
+  designStep,
+  onClick,
+}: {
+  locked?: boolean
+  designStep?: EventDesignStep | string | null
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void
+}) => {
   const normalizedStep = normalizeEventDesignStep(designStep)
   const stepNumber = normalizedStep === 'step2' ? 2 : 1
 
   return (
     <Stack
+      component="button"
+      type="button"
+      aria-label={`${stepNumber}단계 시나리오 그룹으로 이동`}
+      onClick={onClick}
+      width="66px"
+      minWidth="66px"
+      maxWidth="66px"
       height="36px"
-      padding="6px"
-      borderRadius="8px"
+      padding="6px 5px"
+      boxSizing="border-box"
       border="1px solid"
       borderColor="contentBorder.Normal"
+      borderRadius="8px"
       bgcolor="commonColor.White"
       gap="4px"
       alignItems="center"
       justifyContent="center"
       flexShrink={0}
+      sx={{
+        appearance: 'none',
+        cursor: 'pointer',
+        font: 'inherit',
+        color: 'contentText.Normal',
+        '&:hover': {
+          borderColor: 'contentBorder.Hover',
+          backgroundColor: 'gray.5',
+        },
+      }}
     >
       <Stack direction="row" alignItems="center" gap="2px">
         <Stack width="26px" height="4px" borderRadius="100px" bgcolor={stepNumber === 1 ? 'mari.Primary' : '#C3CAEE'} />
@@ -97,16 +150,11 @@ const ConnectedGroupStepBadge = ({ locked, designStep }: { locked?: boolean; des
       </Stack>
       <Stack direction="row" alignItems="center" justifyContent="center" gap="2px">
         {locked && (
-          <LockOutlinedIcon
-            width="8px"
-            height="12px"
-            aria-hidden
-            focusable="false"
-            color="#868E96"
-            style={{ display: 'block', flexShrink: 0 }}
-          />
+          <Stack width="12px" height="12px" alignItems="center" justifyContent="center" flexShrink={0}>
+            <LockOutlinedIcon width="8px" height="10.5px" aria-hidden focusable="false" color="#868E96" style={{ display: 'block' }} />
+          </Stack>
         )}
-        <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4} noWrap>
+        <Typography variant="body3SB12" color="contentText.Normal" lineHeight="17px" noWrap>
           {`${stepNumber}단계`}
         </Typography>
       </Stack>
@@ -114,27 +162,52 @@ const ConnectedGroupStepBadge = ({ locked, designStep }: { locked?: boolean; des
   )
 }
 
-const ConnectedGroupCompletedBadge = () => (
-  <Stack
-    width="38px"
-    height="36px"
-    alignItems="center"
-    justifyContent="center"
-    borderRadius="8px"
-    border="1px solid"
-    borderColor="contentBorder.Normal"
-    bgcolor="commonColor.White"
-    flexShrink={0}
-    color="contentIcon.Enabled"
+const ConnectedGroupCompletedBadge = ({ onClick }: { onClick: (e: MouseEvent<HTMLButtonElement>) => void }) => (
+  <MIBaseButton
+    variant="outlined"
+    aria-label="완료된 시나리오 그룹으로 이동"
+    aria-haspopup={undefined}
+    onClick={onClick}
+    sx={{
+      width: '38px',
+      minWidth: '38px',
+      height: '36px',
+      padding: 0,
+      boxSizing: 'border-box',
+      borderColor: 'contentBorder.Normal',
+      borderRadius: '8px',
+      backgroundColor: 'commonColor.White',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      color: 'contentIcon.Enabled',
+      '&:hover:not(:disabled)': {
+        borderColor: 'contentBorder.Hover',
+        backgroundColor: 'gray.5',
+        color: 'contentText.Normal',
+      },
+    }}
   >
     <ChevronRightRoundedIcon aria-hidden focusable="false" sx={{ fontSize: '20px' }} />
-  </Stack>
+  </MIBaseButton>
 )
 
-const ConnectedGroupStatusCell = ({ group, currentUserNo }: { group: EventConnectedScenarioGroup; currentUserNo?: number | null }) => {
+const ConnectedGroupStatusCell = ({
+  group,
+  currentUserNo,
+  onClick,
+}: {
+  group: EventConnectedScenarioGroup
+  currentUserNo?: number | null
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void
+}) => {
   const status = normalizeEventScenarioDesignStatus(group.scenarioDesignStatus)
   if (status === 'created') {
-    return <ConnectedGroupCompletedBadge />
+    return (
+      <Stack width="76px" minWidth="76px" height="36px" alignItems="center" justifyContent="center">
+        <ConnectedGroupCompletedBadge onClick={onClick} />
+      </Stack>
+    )
   }
 
   const locked = isEventDesignOccupiedByOther(
@@ -147,7 +220,11 @@ const ConnectedGroupStatusCell = ({ group, currentUserNo }: { group: EventConnec
     currentUserNo,
   )
 
-  return <ConnectedGroupStepBadge locked={locked} designStep={group.designStep} />
+  return (
+    <Stack width="76px" minWidth="76px" height="36px" alignItems="center" justifyContent="center">
+      <ConnectedGroupStepBadge locked={locked} designStep={group.designStep} onClick={onClick} />
+    </Stack>
+  )
 }
 
 const EventConnectedScenarioGroupPopover = ({
@@ -292,23 +369,24 @@ const EventConnectedScenarioGroupPopover = ({
             width: '400px',
             padding: 0,
             borderRadius: '10px',
-            border: '1px solid',
-            borderColor: 'contentBorder.Normal',
-            boxShadow: '0px 0px 4px rgba(0, 0, 0, 0.1)',
+            border: 0,
+            boxShadow: (theme) => `inset 0 0 0 1px ${theme.palette.contentBorder.Normal}, 0px 0px 4px rgba(0, 0, 0, 0.1)`,
             overflow: 'hidden',
           }}
         >
           <ClickAwayListener onClickAway={handleClose} mouseEvent="onMouseDown" touchEvent="onTouchStart">
             <Stack>
               <Stack padding="6px 6px 0">
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  borderBottom="1px solid"
-                  borderColor="contentBorder.Normal"
-                >
-                  <Typography variant="body2SB14" color="contentText.Black" padding="10px" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" height="40px" position="relative">
+                  <Typography
+                    variant="body2SB14"
+                    color="contentText.Black"
+                    padding="10px"
+                    boxSizing="border-box"
+                    lineHeight="20px"
+                    noWrap
+                    sx={{ flex: 1, minWidth: 0 }}
+                  >
                     {`연결된 시나리오 그룹 (${groupCount})`}
                   </Typography>
                   <Typography
@@ -316,11 +394,22 @@ const EventConnectedScenarioGroupPopover = ({
                     color="contentText.Black"
                     padding="10px 16px"
                     width="76px"
+                    boxSizing="border-box"
+                    lineHeight="20px"
                     textAlign="center"
                     flexShrink={0}
                   >
                     상태
                   </Typography>
+                  <Divider
+                    sx={{
+                      position: 'absolute',
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                      borderColor: 'contentBorder.Normal',
+                    }}
+                  />
                 </Stack>
 
                 {isLoading && !hasProvidedGroups ? (
@@ -336,81 +425,68 @@ const EventConnectedScenarioGroupPopover = ({
                 ) : (
                   <Stack>
                     {groups.map((group) => (
-                      <Stack
-                        key={group.scenarioGroupId}
-                        component="button"
-                        type="button"
-                        onClick={(e) => handleContinue(e, group)}
-                        direction="row"
-                        alignItems="flex-start"
-                        justifyContent="space-between"
-                        gap="8px"
-                        width="100%"
-                        padding="14px 10px 14px"
-                        border="none"
-                        bgcolor="transparent"
-                        textAlign="left"
-                        sx={{
-                          cursor: 'pointer',
-                          font: 'inherit',
-                          appearance: 'none',
-                          '&:hover': {
-                            bgcolor: 'contentBG.Hover',
-                          },
-                        }}
-                      >
-                        <Stack flex={1} minWidth={0} gap="5px">
-                          <Typography
-                            variant="body2SB14"
-                            color="contentText.Normal"
-                            noWrap
-                            sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-                          >
-                            {group.groupName}
-                          </Typography>
-                          <Stack gap="4px" minWidth={0}>
-                            {group.events.map((event, eventIndex) => (
-                              <Stack
-                                key={`${group.scenarioGroupId}-${event.eventId}-${eventIndex}`}
-                                direction="row"
-                                alignItems="flex-start"
-                                gap="6px"
-                                minWidth={0}
-                              >
-                                <Typography
-                                  component="span"
-                                  variant="body3R12"
-                                  color="contentText.Normal"
-                                  lineHeight={1.4}
-                                  flexShrink={0}
-                                  aria-hidden
+                      <Stack key={group.scenarioGroupId} width="100%" padding="8px 0">
+                        <Stack
+                          width="100%"
+                          padding="6px 0"
+                          borderRadius="10px"
+                          bgcolor="transparent"
+                          textAlign="left"
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: 'minmax(0, 1fr) 76px',
+                            alignItems: 'start',
+                          }}
+                        >
+                          <Stack minWidth={0} padding="0 10px" gap="5px">
+                            <ConnectedGroupEllipsisText
+                              value={group.groupName}
+                              variant="body2SB14"
+                              color="contentText.Normal"
+                              lineHeight="20px"
+                            />
+                            <Stack gap="4px" minWidth={0}>
+                              {group.events.map((event, eventIndex) => (
+                                <Stack
+                                  key={`${group.scenarioGroupId}-${event.eventId}-${eventIndex}`}
+                                  direction="row"
+                                  alignItems="flex-start"
+                                  gap="6px"
+                                  minWidth={0}
+                                  paddingLeft="8px"
                                 >
-                                  {'\u2022'}
-                                </Typography>
-                                <Typography
-                                  variant="body3R12"
-                                  color="contentText.Normal"
-                                  lineHeight={1.4}
-                                  noWrap
-                                  sx={{ overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}
-                                >
-                                  {event.eventName}
-                                </Typography>
-                              </Stack>
-                            ))}
+                                  <Typography
+                                    component="span"
+                                    variant="body3R12"
+                                    color="contentText.Normal"
+                                    lineHeight="17px"
+                                    flexShrink={0}
+                                    aria-hidden
+                                  >
+                                    {'\u2022'}
+                                  </Typography>
+                                  <ConnectedGroupEllipsisText
+                                    value={event.eventName}
+                                    variant="body3R12"
+                                    color="contentText.Normal"
+                                    lineHeight="17px"
+                                    sx={{ flex: 1 }}
+                                  />
+                                </Stack>
+                              ))}
+                            </Stack>
                           </Stack>
+                          <ConnectedGroupStatusCell group={group} currentUserNo={currentUserNo} onClick={(e) => handleContinue(e, group)} />
                         </Stack>
-                        <ConnectedGroupStatusCell group={group} currentUserNo={currentUserNo} />
                       </Stack>
                     ))}
                   </Stack>
                 )}
               </Stack>
 
-              <Divider sx={{ borderColor: 'contentBorder.Normal' }} />
               <Stack direction="row" alignItems="flex-start" gap="4px" padding="12px 16px">
                 <InfoOutlinedIcon sx={{ fontSize: '16px', color: 'contentText.Subtext', flexShrink: 0, mt: '1px' }} />
-                <Typography variant="body3M12" color="contentText.Subtext" lineHeight={1.4}>
+                <Typography variant="body3M12" color="contentText.Subtext" lineHeight="17px">
                   선택한 이벤트와 연결된 시나리오 그룹입니다.
                 </Typography>
               </Stack>

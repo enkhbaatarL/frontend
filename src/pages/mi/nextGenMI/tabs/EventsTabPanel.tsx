@@ -373,7 +373,7 @@ const EventsTabPanel = () => {
               onChange={(_, checked) => handleToggleEventSelection(params.row, checked)}
               onClick={(e) => e.stopPropagation()}
               inputProps={{ 'aria-label': `${params.row.eventName} 선택` }}
-              sx={{ padding: '6px' }}
+              sx={{ margin: 0, padding: 0 }}
             />
           )
 
@@ -390,7 +390,7 @@ const EventsTabPanel = () => {
       },
       {
         field: '__statusBadge',
-        headerName: '',
+        headerName: '구분',
         width: 40,
         align: 'center',
         headerAlign: 'center',
@@ -588,7 +588,7 @@ const EventsTabPanel = () => {
   }, [])
 
   const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
-    if (field === '__selection') return { px: '8px' }
+    if (field === '__selection') return { px: '6px' }
     if (field === '__statusBadge') return { px: '8px' }
     if (field === 'createdAt') return { px: '6px' }
     if (field === 'scenario') return { px: '6px', overflow: 'visible' }
@@ -604,7 +604,10 @@ const EventsTabPanel = () => {
 
   const getEventsTableHeaderCellSx = useCallback((col: GridColDef<EventListItem>) => {
     if (col.field === '__selection') {
-      return { px: '8px' }
+      return { px: '6px' }
+    }
+    if (col.field === '__statusBadge') {
+      return { px: '4px' }
     }
     if (col.field === 'scenario') {
       return { px: '6px' }
