@@ -15,10 +15,11 @@ import useAuthStore from '@/store/useAuthStore'
 interface AgreementTableRowProps {
   header: string
   body: string
+  isBodyBold?: boolean
   isLast?: boolean
 }
 
-const AgreementTableRow = ({ header, body, isLast = false }: AgreementTableRowProps) => (
+const AgreementTableRow = ({ header, body, isBodyBold = false, isLast = false }: AgreementTableRowProps) => (
   <Stack direction="row" height="40px">
     <Typography
       component="div"
@@ -56,6 +57,7 @@ const AgreementTableRow = ({ header, body, isLast = false }: AgreementTableRowPr
       borderLeft="1px solid"
       borderColor="contentBorder.Normal"
       bgcolor="common.white"
+      fontWeight={isBodyBold ? 700 : undefined}
       noWrap
     >
       {body}
@@ -192,17 +194,17 @@ const PersonalInformationAgreementPage = () => {
                     용도로 사용하지 않습니다. 내용을 충분히 읽어보신 후 동의 여부를 결정해 주시기 바랍니다.
                   </Typography>
                   <Stack component="section" gap="16px">
-                    <Typography component="h2" variant="body1SB16" color="contentText.Black">
+                    <Typography component="h2" variant="body1SB16" color="common.black">
                       개인정보의 수집 및 이용 목적
                     </Typography>
                     <Stack width="100%">
-                      <AgreementTableRow header="회원 가입 및 관리" body="개인식별 및 권한부여" />
-                      <AgreementTableRow header="서비스 제공 및 운영" body="알람, 이메일 서비스 제공" />
-                      <AgreementTableRow header="고객 문의 및 불만 처리" body="고객 문의, 서비스 개선" isLast />
+                      <AgreementTableRow header="회원 가입 및 관리" body="개인식별 및 권한부여" isBodyBold />
+                      <AgreementTableRow header="서비스 제공 및 운영" body="알람, 이메일 서비스 제공" isBodyBold />
+                      <AgreementTableRow header="고객 문의 및 불만 처리" body="고객 문의, 서비스 개선" isBodyBold isLast />
                     </Stack>
                   </Stack>
                   <Stack component="section" gap="16px">
-                    <Typography component="h2" variant="body1SB16" color="contentText.Black">
+                    <Typography component="h2" variant="body1SB16" color="common.black">
                       수집하는 개인정보 항목
                     </Typography>
                     <Stack width="100%">
@@ -215,7 +217,7 @@ const PersonalInformationAgreementPage = () => {
                     </Typography>
                     <Typography
                       component="ul"
-                      variant="body1R16"
+                      variant="body1B16"
                       color="contentText.Normal"
                       display="flex"
                       flexDirection="column"
@@ -239,7 +241,6 @@ const PersonalInformationAgreementPage = () => {
                       }}
                     >
                       <li>회원 탈퇴 시까지</li>
-                      <li>법령에 따른 보존 기간 동안</li>
                     </Typography>
                   </Stack>
                   <Stack component="section" gap="16px">
