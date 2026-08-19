@@ -1,5 +1,5 @@
 import { omit } from 'lodash-es'
-import { createBrowserRouter, Navigate, RouteObject, RouterProvider, useLocation } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouteObject, RouterProvider } from 'react-router-dom'
 
 import ProtectedRoute from '@/components/common/ProtectedRoute'
 import { ResetKeyProvider } from '@/contexts/ResetKeyContext'
@@ -7,6 +7,7 @@ import CallbackProcessingPage from '@/pages/common/CallbackProcessingPage'
 import LoginPage from '@/pages/common/LoginPage'
 import NewsletterRenderPage from '@/pages/common/NewsletterRenderPage'
 import PdfViewerPage from '@/pages/common/PdfViewerPage'
+import PersonalInformationAgreementPage from '@/pages/common/PersonalInformationAgreementPage'
 import ExternalLoginPage from '@/pages/mi/externalLogin/externalLoginPage'
 import AdminRoutes from '@/routes/AdminRoutes'
 import ErrorRoutes from '@/routes/ErrorRoutes'
@@ -14,11 +15,7 @@ import { healthCheckRoutes } from '@/routes/HealthCheckRoutes'
 import MIRoutes from '@/routes/MIRoutes'
 import { ICustomRouteObject } from '@/types/common'
 
-const NotFoundRedirect = () => {
-  const location = useLocation()
-  console.info('404 Not Found: ', location.pathname)
-  return <Navigate to="/error/404" replace={true} />
-}
+const NotFoundRedirect = () => <Navigate to="/error/404" replace={true} />
 
 const commonRoutes: ICustomRouteObject[] = [
   {
@@ -52,6 +49,10 @@ const commonRoutes: ICustomRouteObject[] = [
   {
     path: 'newsletter-render',
     element: <NewsletterRenderPage />,
+  },
+  {
+    path: 'terms-agreement',
+    element: <PersonalInformationAgreementPage />,
   },
   { ...ErrorRoutes },
   ...healthCheckRoutes,
