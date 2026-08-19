@@ -108,8 +108,10 @@ const getDisplayValue = (value: unknown) => {
   return String(value)
 }
 
+const getDisplayNumericValue = (value: number) => Number(value.toPrecision(15))
+
 const getNumericFractionDigits = (value: number) => {
-  const [coefficient, exponent] = String(value).toLowerCase().split('e')
+  const [coefficient, exponent] = String(getDisplayNumericValue(value)).toLowerCase().split('e')
   const decimalLength = coefficient.split('.')[1]?.length ?? 0
   return Math.max(0, decimalLength - Number(exponent ?? 0))
 }
@@ -120,7 +122,7 @@ const getMaximumNumericFractionDigits = (values: unknown[]) =>
     return Math.max(maximumFractionDigits, getNumericFractionDigits(value))
   }, 0)
 
-const getNumericDisplayValue = (value: number, fractionDigits: number) => value.toFixed(fractionDigits)
+const getNumericDisplayValue = (value: number, fractionDigits: number) => getDisplayNumericValue(value).toFixed(fractionDigits)
 
 const getUniqueValues = (values: Array<string | undefined>) =>
   Array.from(new Set(values.filter((value): value is string => Boolean(value))))
@@ -285,11 +287,10 @@ const NumericParameterValueInput = ({
       onChange={(event) => {
         if (!/^-?\d*(?:\.\d*)?$/.test(event.target.value)) return
         setInputValue(event.target.value)
-        if (event.target.value !== '' && event.target.value !== '-' && Number.isFinite(Number(event.target.value))) {
-          onChange(Number(event.target.value))
-        }
       }}
       onBlur={() => {
+        const nextValue = Number(inputValue)
+        if (inputValue !== '' && inputValue !== '-' && Number.isFinite(nextValue) && nextValue !== value) onChange(nextValue)
         setInputValue(String(value))
         setIsEditing(false)
       }}
@@ -939,7 +940,7 @@ const ScenarioModelExecutionPopupContent = ({
       resizeObserver.disconnect()
       globalThis.removeEventListener('resize', scheduleTableViewportHeightUpdate)
     }
-  }, [parameterTableRows.length, selectedParameter, showMatrixSplitTable])
+  }, [isSubmitting, parameterTableRows.length, selectedParameter, showMatrixSplitTable])
 
   const showParameterNavigation = modelFileNames.length > 0
   const showParameterTable = Boolean(selectedParameter && tableColumns.length > 1)
