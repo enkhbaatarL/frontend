@@ -1,10 +1,16 @@
-import { Box, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+import { Box, CircularProgress, Stack, Typography } from '@mui/material'
+import { isAxiosError } from 'axios'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import logoImg from '@/assets/logo.svg'
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MICheckBox from '@/components/common/input/MICheckBox'
+import { setNavigate } from '@/lib/axios'
+import { UserRole } from '@/service/admin/members'
+import authService from '@/service/common/auth'
+import useAuthStore from '@/store/useAuthStore'
 
 interface AgreementTableRowProps {
   header: string
@@ -59,6 +65,103 @@ const AgreementTableRow = ({ header, body, isLast = false }: AgreementTableRowPr
 
 const PersonalInformationAgreementPage = () => {
   const [isAgreed, setIsAgreed] = useState(false)
+  const [isCheckingUser, setIsCheckingUser] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const token = useAuthStore((state) => state.token)
+  const setUser = useAuthStore((state) => state.setUser)
+  const clearAuth = useAuthStore((state) => state.clearAuth)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    let isActive = true
+    setNavigate(navigate)
+
+    const checkUser = async () => {
+      if (!token) {
+        navigate('/', { replace: true })
+        return
+      }
+
+      try {
+        const userDetail = await authService.getUserDetail(token)
+        if (!isActive) return
+
+        setUser(userDetail)
+
+        if (!userDetail.isIndividualInfoAgreement) {
+          setIsCheckingUser(false)
+          return
+        }
+
+        const redirectPath = sessionStorage.getItem('redirectAfterAgreement')
+        sessionStorage.removeItem('redirectAfterAgreement')
+
+        if (redirectPath?.startsWith('/') && !redirectPath.startsWith('//') && !redirectPath.startsWith('/terms-agreement')) {
+          navigate(redirectPath, { replace: true })
+          return
+        }
+
+        switch (userDetail.userRoleCd) {
+          case UserRole.ADMIN:
+            navigate('/admin', { replace: true })
+            break
+          case UserRole.OPERATOR:
+            navigate('/admin/data-providers/providers', { replace: true })
+            break
+          case UserRole.USER:
+            navigate('/mi', { replace: true })
+            break
+          default:
+            navigate('/error/auth', { replace: true })
+        }
+      } catch (error) {
+        if (!isActive) return
+
+        const isAuthenticationError =
+          (isAxiosError(error) && error.response?.status === 401) ||
+          (error instanceof Error && ['No saved token', 'Token refresh failed'].includes(error.message))
+
+        if (isAuthenticationError) {
+          clearAuth()
+          navigate('/', { replace: true })
+          return
+        }
+
+        navigate('/error/unknown', { replace: true })
+      }
+    }
+
+    void checkUser()
+
+    return () => {
+      isActive = false
+    }
+  }, [clearAuth, navigate, setUser, token])
+
+  const handleAgreement = async () => {
+    if (!isAgreed || isUpdating) return
+
+    setIsUpdating(true)
+
+    try {
+      const response = await authService.updateIndividualInfoAgreement({ isIndividualInfoAgreement: true })
+      if (response.status) {
+        globalThis.location.reload()
+      }
+    } catch {
+      return
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  if (isCheckingUser) {
+    return (
+      <Stack alignItems="center" justifyContent="center" width="100%" height="100%" bgcolor="gray.5">
+        <CircularProgress />
+      </Stack>
+    )
+  }
 
   return (
     <Box width="100%" height="100%" overflow="hidden" bgcolor="gray.5">
@@ -172,6 +275,7 @@ const PersonalInformationAgreementPage = () => {
               >
                 <MICheckBox
                   checked={isAgreed}
+                  disabled={isUpdating}
                   onChange={(event) => setIsAgreed(event.target.checked)}
                   sx={{ width: '26px', height: '26px', '& .MuiSvgIcon-root': { fontSize: '26px' } }}
                 />
@@ -181,6 +285,8 @@ const PersonalInformationAgreementPage = () => {
               </Stack>
               <MIBaseButton
                 disabled={!isAgreed}
+                isLoading={isUpdating}
+                onClick={() => void handleAgreement()}
                 variant="contained"
                 fullWidth
                 sx={{ height: '50px', padding: '10px 16px', borderRadius: '4px' }}

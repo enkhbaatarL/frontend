@@ -18,8 +18,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const loadAccessCompanyInfo = useAuthStore((state) => state.loadAccessCompanyInfo)
   const location = useLocation()
   const navigate = useNavigate()
+  const isIndividualInfoAgreed = user?.isIndividualInfoAgreement === true
   // USER 로그인 직후 accessCompanyInfo 로딩 전에는 MI 진입·후속 처리 판단 불가 → 리다이렉트 보류
-  const isCompanyInfoLoading = user?.userRoleCd === UserRole.USER && !accessCompanyInfo
+  const isCompanyInfoLoading = isIndividualInfoAgreed && user?.userRoleCd === UserRole.USER && !accessCompanyInfo
   const needsCompanyInfoForMi = location.pathname === '/mi' || location.pathname.startsWith('/mi/')
 
   // 공유 링크 등에서 전달된 rdcn(redirect company number) 파라미터로 관리자 자동 회사 전환
@@ -31,15 +32,20 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, [location.search])
 
   const isAdminRdcnSwitch =
-    needsCompanyInfoForMi && user?.userRoleCd === UserRole.ADMIN && rdcnParam !== null && accessCompanyInfo?.customerCompanyNo !== rdcnParam
+    isIndividualInfoAgreed &&
+    needsCompanyInfoForMi &&
+    user?.userRoleCd === UserRole.ADMIN &&
+    rdcnParam !== null &&
+    accessCompanyInfo?.customerCompanyNo !== rdcnParam
 
   useEffect(() => {
+    if (!isIndividualInfoAgreed) return
     if (!needsCompanyInfoForMi) return
     if (user?.userRoleCd !== UserRole.USER) return
     if (accessCompanyInfo) return
     if (!user?.companyNo) return
     loadAccessCompanyInfo(user.companyNo)
-  }, [needsCompanyInfoForMi, user?.userRoleCd, user?.companyNo, accessCompanyInfo, loadAccessCompanyInfo])
+  }, [isIndividualInfoAgreed, needsCompanyInfoForMi, user?.userRoleCd, user?.companyNo, accessCompanyInfo, loadAccessCompanyInfo])
 
   useEffect(() => {
     if (isAdminRdcnSwitch && rdcnParam) {
@@ -48,6 +54,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, [isAdminRdcnSwitch, rdcnParam, loadAccessCompanyInfo])
 
   useEffect(() => {
+    if (!isIndividualInfoAgreed) return
     if (!needsCompanyInfoForMi || user?.userRoleCd !== UserRole.ADMIN || rdcnParam === null) return
     if (accessCompanyInfo?.customerCompanyNo !== rdcnParam) return
 
@@ -56,6 +63,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     const newSearch = params.toString()
     navigate(location.pathname + (newSearch ? `?${newSearch}` : '') + location.hash, { replace: true })
   }, [
+    isIndividualInfoAgreed,
     needsCompanyInfoForMi,
     user?.userRoleCd,
     rdcnParam,
@@ -84,6 +92,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     localStorage.setItem('redirectAfterLogin', redirectPath)
 
     return <Navigate to="/" state={{ from: location }} replace />
+  }
+
+  if (!isIndividualInfoAgreed) {
+    sessionStorage.setItem('redirectAfterAgreement', location.pathname + location.search + location.hash)
+
+    return <Navigate to="/terms-agreement" replace />
   }
 
   if (needsCompanyInfoForMi && (isCompanyInfoLoading || isAdminRdcnSwitch)) {

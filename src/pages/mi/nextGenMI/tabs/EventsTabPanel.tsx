@@ -372,7 +372,7 @@ const EventsTabPanel = () => {
               disabled={!selectable || selectionLimitDisabled}
               onChange={(_, checked) => handleToggleEventSelection(params.row, checked)}
               onClick={(e) => e.stopPropagation()}
-              inputProps={{ 'aria-label': `${params.row.eventName} 선택` }}
+              slotProps={{ input: { 'aria-label': `${params.row.eventName} 선택` } }}
               sx={{ margin: 0, padding: 0 }}
             />
           )

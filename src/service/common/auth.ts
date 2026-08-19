@@ -4,6 +4,27 @@ import api from '@/lib/axios'
 import { IUserDetail } from '@/store/useAuthStore'
 import { ICommonResponse } from '@/types/api'
 
+export interface IIndividualInfoAgreementRequest {
+  isIndividualInfoAgreement: boolean
+}
+
+type IndividualInfoAgreementUser = Pick<
+  IUserDetail,
+  | 'userNo'
+  | 'userNm'
+  | 'userLoginId'
+  | 'userRoleCd'
+  | 'userRoleNm'
+  | 'positionNm'
+  | 'jobGradeNm'
+  | 'onDutyNm'
+  | 'departmentNm'
+  | 'isOtherServiceAccessPossible'
+  | 'isIndividualInfoAgreement'
+  | 'companyNo'
+  | 'companyNm'
+>
+
 const authService = {
   async getUserDetail(token: string): Promise<IUserDetail> {
     const response: AxiosResponse<ICommonResponse<IUserDetail>> = await api.get('common/user-detail', {
@@ -13,6 +34,12 @@ const authService = {
     })
 
     return response.data.data
+  },
+
+  async updateIndividualInfoAgreement(body: IIndividualInfoAgreementRequest): Promise<ICommonResponse<IndividualInfoAgreementUser>> {
+    const response: AxiosResponse<ICommonResponse<IndividualInfoAgreementUser>> = await api.patch('common/individual-info-agreement', body)
+
+    return response.data
   },
 
   async postTokenReissue(token: string): Promise<{ accessToken: string }> {
