@@ -108,6 +108,20 @@ const getDisplayValue = (value: unknown) => {
   return String(value)
 }
 
+const getNumericFractionDigits = (value: number) => {
+  const [coefficient, exponent] = String(value).toLowerCase().split('e')
+  const decimalLength = coefficient.split('.')[1]?.length ?? 0
+  return Math.max(0, decimalLength - Number(exponent ?? 0))
+}
+
+const getMaximumNumericFractionDigits = (values: unknown[]) =>
+  values.reduce<number>((maximumFractionDigits, value) => {
+    if (typeof value !== 'number') return maximumFractionDigits
+    return Math.max(maximumFractionDigits, getNumericFractionDigits(value))
+  }, 0)
+
+const getNumericDisplayValue = (value: number, fractionDigits: number) => value.toFixed(fractionDigits)
+
 const getUniqueValues = (values: Array<string | undefined>) =>
   Array.from(new Set(values.filter((value): value is string => Boolean(value))))
 
@@ -193,24 +207,73 @@ const ParameterValueInput = styled('input')(({ theme }) => ({
   },
 }))
 
+const ParameterValueDisplay = styled('button')(({ theme }) => ({
+  width: '100%',
+  minWidth: 0,
+  height: '28px',
+  padding: '8px 12px',
+  border: `1px solid ${theme.palette.contentBorder.Normal}`,
+  borderRadius: '10px',
+  boxSizing: 'border-box',
+  backgroundColor: theme.palette.commonColor.White,
+  color: theme.palette.contentText.Normal,
+  fontFamily: 'inherit',
+  fontSize: '12px',
+  fontWeight: 500,
+  lineHeight: 1.4,
+  display: 'flex',
+  alignItems: 'center',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  cursor: 'text',
+  '&:hover:not(:disabled)': {
+    borderColor: theme.palette.contentBorder.Normal,
+    backgroundColor: theme.palette.contentBG.Active,
+    color: theme.palette.contentText.Black,
+  },
+  '&:disabled': {
+    borderColor: theme.palette.contentBorder.Disabled,
+    backgroundColor: theme.palette.contentBG.Disabled,
+    color: theme.palette.contentText.Disabled,
+    cursor: 'default',
+  },
+}))
+
 const NumericParameterValueInput = ({
   disabled,
+  displayFractionDigits,
   onChange,
   textAlign,
   value,
 }: {
   disabled: boolean
+  displayFractionDigits: number
   onChange: (value: number) => void
   textAlign: 'left' | 'center' | 'right' | undefined
   value: number
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState(String(value))
 
   useEffect(() => {
     if (globalThis.document?.activeElement === inputRef.current) return
     setInputValue(String(value))
   }, [value])
+
+  useEffect(() => {
+    if (!isEditing) return
+    inputRef.current?.focus()
+  }, [isEditing])
+
+  if (!isEditing) {
+    return (
+      <ParameterValueDisplay type="button" disabled={disabled} onClick={() => setIsEditing(true)}>
+        <span style={{ width: '100%', textAlign }}>{getNumericDisplayValue(value, displayFractionDigits)}</span>
+      </ParameterValueDisplay>
+    )
+  }
 
   return (
     <ParameterValueInput
@@ -226,7 +289,10 @@ const NumericParameterValueInput = ({
           onChange(Number(event.target.value))
         }
       }}
-      onBlur={() => setInputValue(String(value))}
+      onBlur={() => {
+        setInputValue(String(value))
+        setIsEditing(false)
+      }}
     />
   )
 }
@@ -630,6 +696,9 @@ const ScenarioModelExecutionPopupContent = ({
         const editable = isEditableValueColumn(column, selectedParameter.parameter.modelTarget?.valueFieldNames ?? [])
         const headerLabel = column.role || column.column
         const headerAlign = isMatrixTimeColumns ? 'left' : getColumnAlign(column.align)
+        const displayFractionDigits = getMaximumNumericFractionDigits(
+          parameterTableRows.map((row) => getParameterValue(row, column.column ?? '', column.role, column.kind)),
+        )
 
         return [
           {
@@ -647,9 +716,10 @@ const ScenarioModelExecutionPopupContent = ({
             tooltipWhenHeaderTruncated: true,
             headerTooltipTitle: headerLabel,
             width: getContentBasedColumnWidth({
-              bodyValues: parameterTableRows.map((row) =>
-                getDisplayValue(getParameterValue(row, column.column ?? '', column.role, column.kind)),
-              ),
+              bodyValues: parameterTableRows.map((row) => {
+                const value = getParameterValue(row, column.column ?? '', column.role, column.kind)
+                return editable && typeof value === 'number' ? getNumericDisplayValue(value, displayFractionDigits) : getDisplayValue(value)
+              }),
               editable,
               headerValues: [
                 headerLabel,
@@ -677,6 +747,7 @@ const ScenarioModelExecutionPopupContent = ({
                   <NumericParameterValueInput
                     value={value}
                     disabled={isSubmitting || isResetting}
+                    displayFractionDigits={displayFractionDigits}
                     textAlign={headerAlign}
                     onChange={(nextValue) =>
                       onChangeParameterValue(
@@ -703,6 +774,7 @@ const ScenarioModelExecutionPopupContent = ({
       }),
       ...matrixTimeColumns.map((column): NextGenMIStickyTableColumn<ModelParamProposalRow> => {
         const editable = isEditableValueColumn(column.valueColumn, selectedParameter.parameter.modelTarget?.valueFieldNames ?? [])
+        const displayFractionDigits = getMaximumNumericFractionDigits(parameterTableRows.map((row) => row[column.field]))
 
         return {
           field: column.field,
@@ -710,7 +782,10 @@ const ScenarioModelExecutionPopupContent = ({
           tooltipWhenHeaderTruncated: true,
           headerTooltipTitle: column.headerTooltipTitle,
           width: getContentBasedColumnWidth({
-            bodyValues: parameterTableRows.map((row) => getDisplayValue(row[column.field])),
+            bodyValues: parameterTableRows.map((row) => {
+              const value = row[column.field]
+              return editable && typeof value === 'number' ? getNumericDisplayValue(value, displayFractionDigits) : getDisplayValue(value)
+            }),
             editable,
             headerValues: column.headerItems.map((item) => item.value),
             maximumWidth: 180,
@@ -734,6 +809,7 @@ const ScenarioModelExecutionPopupContent = ({
                 <NumericParameterValueInput
                   value={value}
                   disabled={isSubmitting || isResetting}
+                  displayFractionDigits={displayFractionDigits}
                   textAlign="right"
                   onChange={(nextValue) =>
                     onChangeParameterValue(
