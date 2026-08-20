@@ -325,12 +325,12 @@ const EventDetailMiRecordsTable = ({
       <EventDetailSummaryDialog
         open={selectedRecord !== null}
         title="MI Records"
-        summaryLabel="요약"
-        summary={selectedRecord?.summary}
-        infoItems={[
+        items={[
           { label: '일자', value: selectedRecord?.publishedAt },
           { label: '종류', value: selectedRecord?.recordType },
           { label: '제목', value: selectedRecord?.title, fullWidth: true },
+          { label: '요약', value: selectedRecord?.summary, fullWidth: true, scrollable: true },
+          { label: '핵심근거', value: selectedRecord?.mappingReason, fullWidth: true },
         ]}
         onClose={handleSummaryDialogClose}
       />

@@ -252,6 +252,8 @@ export interface EventRelatedRecord {
   goodsDataNo?: number | null
   sourceObjId?: number | null
   isPermitted?: boolean
+  mappingReason?: string | null
+  mappingConfidence?: number | null
 }
 
 export interface EventInstitutionOutlook {

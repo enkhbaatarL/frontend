@@ -228,11 +228,10 @@ const EventDetailInstitutionalOutlookTable = ({
       <EventDetailSummaryDialog
         open={selectedOutlook !== null}
         title="기관 전망"
-        summaryLabel="전망 요약"
-        summary={selectedOutlook?.outlookSummary}
-        infoItems={[
+        items={[
           { label: '일자', value: selectedOutlook?.viewDate },
           { label: '기관', value: selectedOutlook?.institutionName },
+          { label: '전망 요약', value: selectedOutlook?.outlookSummary, fullWidth: true, scrollable: true },
         ]}
         onClose={handleSummaryDialogClose}
       />

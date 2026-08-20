@@ -3,39 +3,69 @@ import { Box, Dialog, DialogActions, Stack, Typography } from '@mui/material'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 
-interface EventDetailSummaryDialogInfoItem {
+interface EventDetailSummaryDialogItem {
   label: string
   value?: string | null
   fullWidth?: boolean
+  scrollable?: boolean
 }
 
 interface EventDetailSummaryDialogProps {
   open: boolean
   title?: string
-  summaryLabel: string
-  summary?: string | null
-  infoItems?: EventDetailSummaryDialogInfoItem[]
+  items: EventDetailSummaryDialogItem[]
   onClose: () => void
 }
 
-const EventDetailSummaryDialogInfoCard = ({ label, value }: EventDetailSummaryDialogInfoItem) => (
-  <Stack flex={1} minWidth={0} bgcolor="gray.5" borderRadius="10px" padding="8px" boxSizing="border-box">
-    <Stack padding="8px" gap="4px" minWidth={0}>
+const EventDetailSummaryDialogInfoCard = ({ label, value, scrollable = false }: EventDetailSummaryDialogItem) => (
+  <Stack
+    flex={1}
+    minWidth={0}
+    minHeight={scrollable ? 0 : undefined}
+    bgcolor="gray.5"
+    borderRadius="10px"
+    padding="8px"
+    boxSizing="border-box"
+  >
+    <Stack padding="8px" gap="4px" minWidth={0} minHeight={scrollable ? 0 : undefined} height={scrollable ? '100%' : undefined}>
       <Typography color="contentText.Normal" fontSize="13px" fontWeight={600} lineHeight={1.6}>
         {label}
       </Typography>
-      <Typography color="contentText.Black" fontSize="15px" fontWeight={500} lineHeight={1.6} sx={{ wordBreak: 'break-word' }}>
-        {value || '-'}
-      </Typography>
+      {scrollable ? (
+        <Box flex={1} minHeight={0} maxHeight="320px" overflow="auto">
+          <Typography
+            color="contentText.Black"
+            fontSize="15px"
+            fontWeight={500}
+            lineHeight={1.6}
+            sx={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}
+          >
+            {value || '-'}
+          </Typography>
+        </Box>
+      ) : (
+        <Typography color="contentText.Black" fontSize="15px" fontWeight={500} lineHeight={1.6} sx={{ wordBreak: 'break-word' }}>
+          {value || '-'}
+        </Typography>
+      )}
     </Stack>
   </Stack>
 )
 
-const EventDetailSummaryDialog = ({ open, title, summaryLabel, summary, infoItems = [], onClose }: EventDetailSummaryDialogProps) => {
+const EventDetailSummaryDialog = ({ open, title, items, onClose }: EventDetailSummaryDialogProps) => {
   if (!open) return null
 
-  const inlineInfoItems = infoItems.filter((item) => !item.fullWidth)
-  const fullWidthInfoItems = infoItems.filter((item) => item.fullWidth)
+  const itemRows = items.reduce<EventDetailSummaryDialogItem[][]>((rows, item) => {
+    const currentRow = rows.at(-1)
+
+    if (item.fullWidth || !currentRow || currentRow[0].fullWidth) {
+      rows.push([item])
+    } else {
+      currentRow.push(item)
+    }
+
+    return rows
+  }, [])
 
   return (
     <Dialog
@@ -81,46 +111,13 @@ const EventDetailSummaryDialog = ({ open, title, summaryLabel, summary, infoItem
       </Stack>
 
       <Stack flex={1} minHeight={0} gap="12px" padding="0 24px" overflow="hidden">
-        {inlineInfoItems.length > 0 && (
-          <Stack direction="row" gap="12px">
-            {inlineInfoItems.map((item) => (
-              <EventDetailSummaryDialogInfoCard key={item.label} label={item.label} value={item.value} />
+        {itemRows.map((row) => (
+          <Stack key={row.map((item) => item.label).join('-')} direction={row.length > 1 ? 'row' : 'column'} gap="12px">
+            {row.map((item) => (
+              <EventDetailSummaryDialogInfoCard key={item.label} {...item} />
             ))}
           </Stack>
-        )}
-        {fullWidthInfoItems.length > 0 && (
-          <Stack gap="12px">
-            {fullWidthInfoItems.map((item) => (
-              <EventDetailSummaryDialogInfoCard key={item.label} label={item.label} value={item.value} />
-            ))}
-          </Stack>
-        )}
-        <Stack flex={1} minHeight={0} bgcolor="gray.5" borderRadius="10px" padding="8px" boxSizing="border-box">
-          <Stack padding="8px" gap="4px" minHeight={0} height="100%">
-            <Typography color="contentText.Normal" fontSize="13px" fontWeight={600} lineHeight={1.6} flexShrink={0}>
-              {summaryLabel}
-            </Typography>
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                maxHeight: '320px',
-                overflowY: 'auto',
-                overflowX: 'hidden',
-              }}
-            >
-              <Typography
-                color="contentText.Black"
-                fontSize="15px"
-                fontWeight={500}
-                lineHeight={1.6}
-                sx={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}
-              >
-                {summary || '-'}
-              </Typography>
-            </Box>
-          </Stack>
-        </Stack>
+        ))}
       </Stack>
 
       <DialogActions

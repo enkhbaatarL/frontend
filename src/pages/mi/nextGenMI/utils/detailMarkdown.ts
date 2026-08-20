@@ -164,8 +164,8 @@ export const buildEventDetailMarkdown = ({
     ),
     '## MI Records',
     markdownTable(
-      ['일자', '종류', '제목', '요약'],
-      records.map((record) => [record.publishedAt, record.recordType, record.title, record.summary]),
+      ['일자', '종류', '제목', '요약', '핵심근거'],
+      records.map((record) => [record.publishedAt, record.recordType, record.title, record.summary, record.mappingReason]),
     ),
     '## 관련 시나리오',
   )
