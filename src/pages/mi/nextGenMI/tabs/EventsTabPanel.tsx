@@ -281,6 +281,15 @@ const EventsTabPanel = () => {
         return
       }
 
+      if (group.mine === false) {
+        onShow({
+          title: '시나리오 설계를 시작할 수 없습니다',
+          width: 450,
+          children: getEventDesignOccupiedMessage(),
+        })
+        return
+      }
+
       navigate(getNextGenMIEventDesignPath(row.eventId), {
         state: {
           eventName: row.eventName,
@@ -290,7 +299,7 @@ const EventsTabPanel = () => {
         },
       })
     },
-    [navigate],
+    [navigate, onShow],
   )
 
   const columns: GridColDef<EventListItem>[] = useMemo(

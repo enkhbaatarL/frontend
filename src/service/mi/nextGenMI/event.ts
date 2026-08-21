@@ -53,6 +53,8 @@ export interface EventLinkedScenarioGroup {
   stageLabel?: string
   designStep?: EventDesignStep | string | null
   designStepLabel?: string | null
+  /** 설계중 그룹 진행자가 로그인 사용자인지. false면 잠금 배지. 설계중이 아니면 null */
+  mine?: boolean | null
   events?: string[]
 }
 

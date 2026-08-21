@@ -199,7 +199,7 @@ const ConnectedGroupStatusCell = ({
 
   return (
     <Stack width="76px" minWidth="76px" height="36px" alignItems="center" justifyContent="center">
-      <ConnectedGroupStepBadge designStep={group.designStep} onClick={onClick} />
+      <ConnectedGroupStepBadge locked={group.mine === false} designStep={group.designStep} onClick={onClick} />
     </Stack>
   )
 }
