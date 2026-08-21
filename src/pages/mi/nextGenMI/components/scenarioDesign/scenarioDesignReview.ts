@@ -12,8 +12,10 @@ const createScenarioDesignReviewFallbackErrorItem = (message: string): ScenarioD
   actionLabel: '수정 필요',
 })
 
+const formatScenarioDesignReviewValueTokens = (message: string) => message.replace(/\b([A-Za-z][\w]*_v\d+)\(([^)]+)\)/g, '$2')
+
 const formatScenarioDesignReviewMessage = (message: string) =>
-  message
+  formatScenarioDesignReviewValueTokens(message)
     .split('\n')
     .flatMap(
       (line) =>
@@ -54,7 +56,7 @@ export const createScenarioDesignBackendReviewItems = (reason: string): Scenario
       if (currentItem) currentItem.messageLines.push(line.replace(/^\u2514\s*/, ''))
     })
 
-  if (parsedItems.length === 0) return [createScenarioDesignReviewFallbackErrorItem(reason)]
+  if (parsedItems.length === 0) return [createScenarioDesignReviewFallbackErrorItem(formatScenarioDesignReviewValueTokens(reason))]
 
   return parsedItems.map(({ headline, messageLines, ...item }) => ({
     ...item,

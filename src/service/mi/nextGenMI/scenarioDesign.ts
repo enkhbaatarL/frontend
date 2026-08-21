@@ -210,6 +210,38 @@ export interface ScenarioDesignPresentation {
   dimensionValueOptions?: Record<string, DesignDimensionValueOption[]>
 }
 
+export type AdditionalDimensionGenerationStatus = 'not_requested' | 'queued' | 'running' | 'ready' | 'failed' | 'interrupted' | 'discarded'
+
+export interface AdditionalDimensionCandidateValue {
+  valueId?: string
+  label?: string
+  rationale?: string | null
+  pressureContribution?: string
+}
+
+export interface AdditionalDimensionCandidate {
+  key?: string
+  label?: string
+  description?: string | null
+  rationale?: string | null
+  modelSupportStatus?: string
+  values?: AdditionalDimensionCandidateValue[]
+}
+
+export interface AdditionalDimensions {
+  scenarioGroupId?: number
+  generationStatus?: AdditionalDimensionGenerationStatus | string | null
+  generationStatusLabel?: string
+  candidates?: AdditionalDimensionCandidate[]
+  availableCount?: number
+  updatedAt?: string
+  errorCode?: string
+}
+
+export const isAdditionalDimensionGenerating = (status?: string | null) => status === 'queued' || status === 'running'
+
+export const isAdditionalDimensionReady = (status?: string | null) => status === 'ready'
+
 export interface ScenarioDimensionTemplateItem {
   dimKey?: string
   label?: string
@@ -417,6 +449,17 @@ const nextGenMIScenarioDesignService = {
           operationId: params?.operationId,
         },
       },
+    )
+
+    return response.data.data
+  },
+
+  async getAdditionalDimensions(scenarioGroupId: string | number): Promise<AdditionalDimensions> {
+    const response: AxiosResponse<ICommonResponse<AdditionalDimensions>> = await api.get(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/design/additional-dimensions`,
+      {
+        suppressGlobalErrorHandler: true,
+      } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean },
     )
 
     return response.data.data

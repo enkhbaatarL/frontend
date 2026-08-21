@@ -50,6 +50,7 @@ import {
   SCENARIO_DESIGN_MAX_ROW_COUNT,
   SCENARIO_DESIGN_SECTIONS,
   SCENARIO_DESIGN_SELECT_COMMON_ACTIONS,
+  type ScenarioDesignAddCriteriaRequestResult,
   type ScenarioDesignColumn,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignModel'
 import ScenarioDesignOutlineStatusBadge from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOutlineStatusBadge'
@@ -960,11 +961,11 @@ type ScenarioDesignCriteriaTableProps = {
   initialRows: DesignScenarioRow[]
   initialScenarioDesignColumns: ScenarioDesignColumn[]
   visibleScenarioDesignColumns: ScenarioDesignColumn[]
-  hiddenScenarioDesignColumns: ScenarioDesignColumn[]
   agentScenarioDesignColumnKeys: Set<string>
   onRowValueChange: (rowId: number, key: string, value: string) => void
   onDeleteRow: (rowId: number) => void
   onDeleteCriteriaColumn: (key: string) => void
+  onRequestAddCriteriaColumns: () => Promise<ScenarioDesignAddCriteriaRequestResult>
   onAddCriteriaColumns: (columns: ScenarioDesignColumn[]) => void
   onAddRow: () => void
 }
@@ -1005,11 +1006,11 @@ const ScenarioDesignCriteriaStep = ({
     rows,
     initialRows,
     visibleScenarioDesignColumns,
-    hiddenScenarioDesignColumns,
     agentScenarioDesignColumnKeys,
     onRowValueChange,
     onDeleteRow,
     onDeleteCriteriaColumn,
+    onRequestAddCriteriaColumns,
     onAddCriteriaColumns,
     onAddRow,
   } = criteria
@@ -1024,6 +1025,8 @@ const ScenarioDesignCriteriaStep = ({
   } = review
   const { resetDisabled, onReset, onCancel } = actions
   const [addCriteriaMenuOpen, setAddCriteriaMenuOpen] = useState(false)
+  const [addCriteriaLoading, setAddCriteriaLoading] = useState(false)
+  const [addableCriteriaColumns, setAddableCriteriaColumns] = useState<ScenarioDesignColumn[]>([])
   const [selectedAddCriteriaColumnKeys, setSelectedAddCriteriaColumnKeys] = useState<string[]>([])
   const [reviewConfirmOpen, setReviewConfirmOpen] = useState(false)
   const [criteriaConfirmType, setCriteriaConfirmType] = useState<ScenarioDesignCriteriaConfirmType | null>(null)
@@ -1063,6 +1066,7 @@ const ScenarioDesignCriteriaStep = ({
 
     setAddCriteriaMenuOpen(false)
     setSelectedAddCriteriaColumnKeys([])
+    setAddableCriteriaColumns([])
     setCriteriaConfirmType(null)
     setDeleteRowId(null)
     setDeleteCriteriaColumnKey(null)
@@ -1235,6 +1239,7 @@ const ScenarioDesignCriteriaStep = ({
   const handleAddCriteriaMenuClose = () => {
     setAddCriteriaMenuOpen(false)
     setSelectedAddCriteriaColumnKeys([])
+    setAddableCriteriaColumns([])
   }
 
   const handleAddCriteriaMenuOpenChange = (open: boolean) => {
@@ -1243,18 +1248,33 @@ const ScenarioDesignCriteriaStep = ({
       return
     }
 
-    if (criteriaEditingDisabled) {
+    if (criteriaEditingDisabled || addCriteriaLoading) {
       handleAddCriteriaMenuClose()
       return
     }
 
-    if (hiddenScenarioDesignColumns.length === 0) {
-      showSnackbar('추가 가능한 분기 기준이 없습니다.', { variant: 'info' })
-      return
-    }
+    void (async () => {
+      setAddCriteriaLoading(true)
+      try {
+        const result: ScenarioDesignAddCriteriaRequestResult = await onRequestAddCriteriaColumns()
+        if (result === 'generating') {
+          showSnackbar('분기 항목을 생성중입니다. 잠시 후 다시 시도해주세요.', { variant: 'info' })
+          return
+        }
+        if (result === 'empty' || result.length === 0) {
+          showSnackbar('추천 분기 없음', { variant: 'info' })
+          return
+        }
 
-    setSelectedAddCriteriaColumnKeys([])
-    setAddCriteriaMenuOpen(true)
+        setAddableCriteriaColumns(result)
+        setSelectedAddCriteriaColumnKeys([])
+        setAddCriteriaMenuOpen(true)
+      } catch {
+        showSnackbar('추천 분기 없음', { variant: 'info' })
+      } finally {
+        setAddCriteriaLoading(false)
+      }
+    })()
   }
 
   const handleToggleAddCriteriaColumn = (key: string) => {
@@ -1268,7 +1288,7 @@ const ScenarioDesignCriteriaStep = ({
   const handleAddSelectedCriteria = () => {
     if (criteriaEditingDisabled) return
 
-    const selectedColumns = hiddenScenarioDesignColumns.filter((column) => selectedAddCriteriaColumnKeys.includes(column.key))
+    const selectedColumns = addableCriteriaColumns.filter((column) => selectedAddCriteriaColumnKeys.includes(column.key))
     if (selectedColumns.length === 0) return
 
     onAddCriteriaColumns(selectedColumns)
@@ -1363,6 +1383,7 @@ const ScenarioDesignCriteriaStep = ({
           const rowId = getScenarioDesignRowId(row, rowIndex + 1)
           const scenarioName = row.scenarioName ?? ''
           const isLocked = row.locked === true
+          // BR/BL/MX 는 8월 표출 대상 아님. scenarioType 이 null 이면 없는 것처럼 처리(배지 미노출)
           const typeBadge =
             row.baseCase === true ? (
               <ScenarioDesignTypeBadge type="BC" reason="기존에 생성된 Base Case 시나리오입니다." />
@@ -1463,6 +1484,8 @@ const ScenarioDesignCriteriaStep = ({
                 suffix: <ScenarioDesignInfoTooltipIcon title={description} size="18px" />,
               }
             })
+            const valueRationale =
+              getScenarioDesignDimensionRationale(row, column.key) || getScenarioDesignColumnValueDescription(column, selectedValue)
             return (
               <ScenarioDesignSelectCell
                 selected={selectedValue}
@@ -1474,7 +1497,7 @@ const ScenarioDesignCriteriaStep = ({
                     ? SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
                     : getInitialScenarioDesignColumnValue(initialRows, row, column)
                 }
-                valueRationale={getScenarioDesignDimensionRationale(row, column.key)}
+                valueRationale={valueRationale}
                 disabled={criteriaEditingDisabled || isLocked}
                 onSelected={(value) => onRowValueChange(rowId, column.key, value)}
               />
@@ -1557,7 +1580,7 @@ const ScenarioDesignCriteriaStep = ({
                   label={<AddRoundedIcon sx={{ fontSize: '20px' }} />}
                   variant="outlined"
                   enableHoverBackground
-                  disabled={criteriaEditingDisabled}
+                  disabled={criteriaEditingDisabled || addCriteriaLoading}
                   open={addCriteriaMenuOpen}
                   onOpenChange={handleAddCriteriaMenuOpenChange}
                   placement="bottom-end"
@@ -1586,7 +1609,7 @@ const ScenarioDesignCriteriaStep = ({
                   }}
                 >
                   <Stack gap="4px" padding="8px 6px">
-                    {hiddenScenarioDesignColumns.map((column) => {
+                    {addableCriteriaColumns.map((column) => {
                       const selected = selectedAddCriteriaColumnKeys.includes(column.key)
 
                       return (

@@ -302,7 +302,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         if (accepted.status === 'FAILED') {
           setIsProposalGenerationPending(false)
           setCurrentProposalState('PROPOSAL_FAILED')
-          notifyModelParamProposalFailure(accepted.scenarioId ?? scenarioId, accepted.status)
+          void refreshModelParamProposal(accepted.scenarioId ?? scenarioId, true)
           return
         }
 

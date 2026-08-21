@@ -36,15 +36,20 @@ import {
   createScenarioDesignColumns,
   createScenarioDesignEditTable,
   createScenarioDesignRow,
-  createScenarioDesignTemplateColumns,
   getScenarioDesignDimensionSelectedValue,
   getScenarioDesignRowId,
+  hasScenarioDesignColumnDisplayLabels,
+  isScenarioDesignAdditionalColumn,
   isScenarioDesignRequiredColumn,
+  mapAdditionalDimensionCandidatesToColumns,
+  mergeScenarioDesignAdditionalColumnOptions,
+  upsertScenarioDesignAdditionalColumnSources,
   SCENARIO_DESIGN_MAX_ROW_COUNT,
   SCENARIO_DESIGN_SELECT_COMMON_ACTIONS,
   sortScenarioDesignColumns,
   updateScenarioDesignRowDimension,
   updateScenarioDesignRowScenarioName,
+  type ScenarioDesignAddCriteriaRequestResult,
   type ScenarioDesignColumn,
   type ScenarioDesignConfirmType,
   type ScenarioDesignLocationState,
@@ -58,6 +63,8 @@ import nextGenMIEventService, { type EventDetail } from '@/service/mi/nextGenMI/
 import nextGenMIScenarioDesignService, {
   clearScenarioGroupCreationCursor,
   getScenarioGroupCreationCursor,
+  isAdditionalDimensionGenerating,
+  isAdditionalDimensionReady,
   mapDimensionValueOptionsToTemplates,
   mapScenarioDesignPresentationToState,
   saveScenarioGroupCreationCursor,
@@ -397,6 +404,8 @@ const ScenarioDesignPage = () => {
   const [visibleScenarioDesignColumns, setVisibleScenarioDesignColumns] = useState<ScenarioDesignColumn[]>([])
   const [initialScenarioDesignColumns, setInitialScenarioDesignColumns] = useState<ScenarioDesignColumn[]>([])
   const [agentScenarioDesignColumnKeys, setAgentScenarioDesignColumnKeys] = useState<Set<string>>(() => new Set())
+  const [additionalDimensionColumnSources, setAdditionalDimensionColumnSources] = useState<ScenarioDesignColumn[]>([])
+  const additionalDimensionLabelHydrationKeyRef = useRef('')
   const [reviewed, setReviewed] = useState(false)
   const [reviewPending, setReviewPending] = useState(false)
   const [reviewMinimumLoadingComplete, setReviewMinimumLoadingComplete] = useState(false)
@@ -618,11 +627,6 @@ const ScenarioDesignPage = () => {
     })
   }, [designEventIds, detail, eventTitle, id, navigate, scenarioDesignPresentation?.eventBundles, secondaryEventDetailsById])
 
-  const hiddenScenarioDesignColumns = useMemo(
-    () => createScenarioDesignTemplateColumns(scenarioDimensionTemplates, visibleScenarioDesignColumns),
-    [scenarioDimensionTemplates, visibleScenarioDesignColumns],
-  )
-
   // 템플릿이 state 동기화보다 늦게 도착하면 valueEnums가 비어 드롭다운 옵션이 사라지므로 보강한다
   useEffect(() => {
     if (scenarioDimensionTemplates.length === 0) return
@@ -630,26 +634,63 @@ const ScenarioDesignPage = () => {
     const enrichColumns = (columns: typeof visibleScenarioDesignColumns) => {
       if (columns.length === 0) return columns
       if (
-        columns.every(
-          (column) =>
-            (column.valueEnums?.length ?? 0) > 0 && Object.keys(column.valueEnumLabels ?? {}).length === (column.valueEnums?.length ?? 0),
-        )
+        columns.every((column) => {
+          const hasEnums = (column.valueEnums?.length ?? 0) > 0
+          const hasMatchingLabelCount = Object.keys(column.valueEnumLabels ?? {}).length === (column.valueEnums?.length ?? 0)
+          if (!hasEnums || !hasMatchingLabelCount) return false
+          if (isScenarioDesignAdditionalColumn(column) && !hasScenarioDesignColumnDisplayLabels(column)) return false
+          return true
+        })
       ) {
-        return columns
+        return mergeScenarioDesignAdditionalColumnOptions(columns, additionalDimensionColumnSources)
       }
-      return createScenarioDesignColumns(
-        columns.map((column) => ({
-          key: column.key,
-          label: column.label,
-          description: column.description,
-        })),
-        scenarioDimensionTemplates,
+      return mergeScenarioDesignAdditionalColumnOptions(
+        createScenarioDesignColumns(
+          columns.map((column) => ({
+            key: column.key,
+            label: column.label,
+            description: column.description,
+          })),
+          scenarioDimensionTemplates,
+        ),
+        [...additionalDimensionColumnSources, ...columns],
       )
     }
 
     setVisibleScenarioDesignColumns(enrichColumns)
     setInitialScenarioDesignColumns(enrichColumns)
-  }, [scenarioDimensionTemplates])
+  }, [additionalDimensionColumnSources, scenarioDimensionTemplates])
+  useEffect(() => {
+    if (scenarioGroupId === null) return undefined
+
+    const additionalColumns = visibleScenarioDesignColumns.filter(isScenarioDesignAdditionalColumn)
+    if (additionalColumns.length === 0) return undefined
+    if (additionalColumns.every(hasScenarioDesignColumnDisplayLabels)) return undefined
+
+    const hydrationKey = `${scenarioGroupId}:${additionalColumns
+      .map((column) => column.key)
+      .sort()
+      .join(',')}`
+    if (additionalDimensionLabelHydrationKeyRef.current === hydrationKey) return undefined
+
+    let cancelled = false
+
+    void nextGenMIScenarioDesignService.getAdditionalDimensions(scenarioGroupId).then((additionalDimensions) => {
+      if (cancelled || !isAdditionalDimensionReady(additionalDimensions.generationStatus)) return
+
+      const candidateColumns = mapAdditionalDimensionCandidatesToColumns(additionalDimensions.candidates, [])
+      additionalDimensionLabelHydrationKeyRef.current = hydrationKey
+      if (candidateColumns.length === 0) return
+
+      setAdditionalDimensionColumnSources((currentColumns) => upsertScenarioDesignAdditionalColumnSources(currentColumns, candidateColumns))
+      setVisibleScenarioDesignColumns((currentColumns) => mergeScenarioDesignAdditionalColumnOptions(currentColumns, candidateColumns))
+      setInitialScenarioDesignColumns((currentColumns) => mergeScenarioDesignAdditionalColumnOptions(currentColumns, candidateColumns))
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [scenarioGroupId, visibleScenarioDesignColumns])
   useEffect(() => {
     if (eventIdNumber === null) {
       navigate('/error/404', { replace: true })
@@ -1285,7 +1326,10 @@ const ScenarioDesignPage = () => {
       !backendValidationResultReady
     const shouldSyncScenarioDesignTable =
       shouldUseSubmittedCriteriaDraft || scenarioDesignStateUpdatedAt > lastSyncedScenarioDesignStateUpdatedAtRef.current
-    const serverColumns = createScenarioDesignColumns(activeTable.dimensionColumns, scenarioDimensionTemplates)
+    const serverColumns = mergeScenarioDesignAdditionalColumnOptions(
+      createScenarioDesignColumns(activeTable.dimensionColumns, scenarioDimensionTemplates),
+      [...additionalDimensionColumnSources, ...(submittedCriteriaDraft?.columns ?? [])],
+    )
     const serverRows = activeTable.scenarios ?? []
     const nextColumns = shouldUseSubmittedCriteriaDraft ? submittedCriteriaDraft.columns : serverColumns
     const nextRows = shouldUseSubmittedCriteriaDraft ? submittedCriteriaDraft.rows : serverRows
@@ -1384,6 +1428,7 @@ const ScenarioDesignPage = () => {
       void queryClient.invalidateQueries({ queryKey: ['nextGenMIEventScenarioGroups'] })
     }
   }, [
+    additionalDimensionColumnSources,
     currentCriteriaSnapshotKey,
     reviewPending,
     scenarioDesignActiveTable,
@@ -1499,6 +1544,7 @@ const ScenarioDesignPage = () => {
       if (!column || isScenarioDesignRequiredColumn(column)) return
 
       setVisibleScenarioDesignColumns((currentColumns) => currentColumns.filter((item) => item.key !== key))
+      setAdditionalDimensionColumnSources((currentColumns) => currentColumns.filter((item) => item.key !== key))
       setAgentScenarioDesignColumnKeys((currentKeys) => {
         const nextKeys = new Set(currentKeys)
         nextKeys.delete(key)
@@ -1514,6 +1560,17 @@ const ScenarioDesignPage = () => {
     [visibleScenarioDesignColumns],
   )
 
+  const handleRequestAddCriteriaColumns = useCallback(async (): Promise<ScenarioDesignAddCriteriaRequestResult> => {
+    if (scenarioGroupId === null) return 'empty'
+
+    const additionalDimensions = await nextGenMIScenarioDesignService.getAdditionalDimensions(scenarioGroupId)
+    if (isAdditionalDimensionGenerating(additionalDimensions.generationStatus)) return 'generating'
+    if (!isAdditionalDimensionReady(additionalDimensions.generationStatus)) return 'empty'
+
+    const columns = mapAdditionalDimensionCandidatesToColumns(additionalDimensions.candidates, visibleScenarioDesignColumns)
+    return columns.length > 0 ? columns : 'empty'
+  }, [scenarioGroupId, visibleScenarioDesignColumns])
+
   const handleAddCriteriaColumns = useCallback((selectedColumns: ScenarioDesignColumn[]) => {
     if (selectedColumns.length === 0) return
 
@@ -1525,6 +1582,7 @@ const ScenarioDesignPage = () => {
         ...selectedColumns.filter((column) => !currentColumns.some((currentColumn) => currentColumn.key === column.key)),
       ]),
     )
+    setAdditionalDimensionColumnSources((currentColumns) => upsertScenarioDesignAdditionalColumnSources(currentColumns, selectedColumns))
     setAgentScenarioDesignColumnKeys((currentKeys) => new Set([...currentKeys, ...selectedColumnKeys]))
     setRows((currentRows) =>
       currentRows.map((row) =>
@@ -1560,10 +1618,14 @@ const ScenarioDesignPage = () => {
           setRows(nextRows)
           setInitialRows(nextRows)
           setAgentScenarioDesignColumnKeys(new Set())
+          setAdditionalDimensionColumnSources([])
+          additionalDimensionLabelHydrationKeyRef.current = ''
         } else {
           setRows(initialRows)
           setVisibleScenarioDesignColumns(initialScenarioDesignColumns)
           setAgentScenarioDesignColumnKeys(new Set())
+          setAdditionalDimensionColumnSources([])
+          additionalDimensionLabelHydrationKeyRef.current = ''
         }
 
         await refetchScenarioDesignState()
@@ -1725,13 +1787,13 @@ const ScenarioDesignPage = () => {
         initialRows,
         initialScenarioDesignColumns,
         visibleScenarioDesignColumns,
-        hiddenScenarioDesignColumns,
         agentScenarioDesignColumnKeys,
         scenarioNameErrorMessages,
         dimensionValueErrorMessages: criteriaValidation.dimensionValueErrorMessages,
         onRowValueChange: handleRowValueChange,
         onDeleteRow: handleDeleteRow,
         onDeleteCriteriaColumn: handleDeleteCriteriaColumn,
+        onRequestAddCriteriaColumns: handleRequestAddCriteriaColumns,
         onAddCriteriaColumns: handleAddCriteriaColumns,
         onAddRow: handleAddRow,
       },
@@ -1766,6 +1828,7 @@ const ScenarioDesignPage = () => {
       criteriaResetDisabled,
       designRationaleSections,
       handleAddCriteriaColumns,
+      handleRequestAddCriteriaColumns,
       handleAddRow,
       handleCancelScenarioDesignRequest,
       handleComplete,
@@ -1773,7 +1836,6 @@ const ScenarioDesignPage = () => {
       handleDeleteRow,
       handleResetCriteriaStep,
       handleRowValueChange,
-      hiddenScenarioDesignColumns,
       initialRows,
       initialScenarioDesignColumns,
       isCurrentCriteriaReviewed,
