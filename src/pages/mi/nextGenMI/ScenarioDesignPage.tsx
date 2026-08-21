@@ -1,7 +1,7 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
 import { Divider, Stack, Typography } from '@mui/material'
-import { useMutation, useQueries, useQuery } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -17,11 +17,10 @@ import NextGenMIDetailHeader, {
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
-  findEventDesignAvailability,
-  isEventDesignOccupiedByOther,
-  isOwnEventDesignAvailability,
+  isScenarioDesignStatusMine,
+  isScenarioDesignStatusOccupiedByOther,
   normalizeEventDesignStep,
-  normalizeEventScenarioDesignStatus,
+  normalizeScenarioDesignStatusCode,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import ScenarioDesignCriteriaStep, {
@@ -57,16 +56,20 @@ import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath, NEXT_GEN_MI_B
 import { scrollNextGenMILayoutToTop } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 import nextGenMIEventService, { type EventDetail } from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService, {
+  clearScenarioGroupCreationCursor,
+  getScenarioGroupCreationCursor,
+  mapDimensionValueOptionsToTemplates,
+  mapScenarioDesignPresentationToState,
+  saveScenarioGroupCreationCursor,
   type DesignConfirmSignpost,
   type DesignScenarioRow,
   type ScenarioDesignState,
   type ScenarioDesignStageValue,
   type ScenarioDesignStreamEventData,
   type ScenarioDesignStreamEventType,
+  type ScenarioGroupCreationStreamData,
 } from '@/service/mi/nextGenMI/scenarioDesign'
-import { MOCK_SCENARIO_DESIGN_RATIONALE_SECTIONS } from '@/service/mi/nextGenMI/scenarioDesignMock'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
-import useAuthStore from '@/store/useAuthStore'
 
 type ScenarioDesignHeaderContent = {
   backLabel: string
@@ -146,6 +149,8 @@ const getScenarioDesignConfirmContent = (type: ScenarioDesignConfirmType): Scena
 
 const normalizeScenarioDesignStage = (stage?: ScenarioDesignStageValue) => stage?.toLowerCase()
 
+const isScenarioDesignOneViewStage = (stage?: string | null) => stage === 'signpost_created' || stage === 'completed'
+
 const getScenarioDesignActiveTable = (state?: ScenarioDesignState | null) => state?.step2?.table ?? state?.step1 ?? null
 
 const isScenarioDesignStreamEventType = (event?: string): event is ScenarioDesignStreamEventType =>
@@ -161,6 +166,38 @@ const parseScenarioDesignStreamEventData = (data?: string): ScenarioDesignStream
     return null
   }
 }
+
+const parseScenarioGroupCreationStreamData = (data?: string): ScenarioGroupCreationStreamData | null => {
+  if (!data || data.trim() === 'keep-alive') return null
+
+  try {
+    const parsed = JSON.parse(data) as ScenarioGroupCreationStreamData
+    return parsed && typeof parsed === 'object' ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+const normalizeScenarioGroupCreationEventType = (eventName?: string, eventType?: string | null) => {
+  const normalized = (eventType || eventName || '').trim().toLowerCase()
+  return normalized || undefined
+}
+
+const getScenarioGroupCreationOperationStatus = (status?: string | null) => status?.trim().toLowerCase()
+
+const isScenarioGroupCreationEngineRunning = (status?: string | null) => {
+  const normalized = getScenarioGroupCreationOperationStatus(status)
+  return normalized === 'queued' || normalized === 'running'
+}
+
+const getScenarioGroupCreationProgressText = (title?: string | null, messageMarkdown?: string | null) => {
+  const heading = title?.trim()
+  if (heading) return heading
+  return messageMarkdown?.trim() || undefined
+}
+
+const isValidScenarioGroupId = (scenarioGroupId: unknown): scenarioGroupId is number =>
+  typeof scenarioGroupId === 'number' && Number.isFinite(scenarioGroupId)
 
 const isScenarioDesignStreamFailure = (
   data: ScenarioDesignStreamEventData | null,
@@ -291,7 +328,7 @@ const validateScenarioDesignCriteriaValues = (
 
   columns.forEach((column) => {
     rows.forEach((row, index) => {
-      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
 
       if (isScenarioDesignRequiredColumn(column) && selectedValue === '') {
         hasMissingRequiredValue = true
@@ -336,13 +373,24 @@ const ScenarioDesignPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { showSnackbar } = useSnackbar()
+  const queryClient = useQueryClient()
   const { setStickyHeader } = useStickyHeader()
   const state = location.state as ScenarioDesignLocationState | null
-  const currentUserNo = useAuthStore((authState) => authState.user?.userNo)
   const eventIdNumber = id !== undefined && Number.isFinite(Number(id)) ? Number(id) : null
   const locationScenarioGroupId =
     state?.scenarioGroupId !== undefined && Number.isFinite(state.scenarioGroupId) ? state.scenarioGroupId : null
   const locationDesignStep = normalizeEventDesignStep(state?.designStep)
+  const designEventIds = useMemo(() => {
+    const fromState = (state?.eventIds ?? []).filter((eventId) => Number.isFinite(eventId))
+    const uniqueIds = [...new Set(fromState)]
+    if (uniqueIds.length > 0) {
+      if (eventIdNumber !== null && !uniqueIds.includes(eventIdNumber)) {
+        return [eventIdNumber, ...uniqueIds]
+      }
+      return uniqueIds
+    }
+    return eventIdNumber !== null ? [eventIdNumber] : []
+  }, [eventIdNumber, state?.eventIds])
   const [scenarioGroupId, setScenarioGroupId] = useState<number | null>(locationScenarioGroupId)
   const [rows, setRows] = useState<DesignScenarioRow[]>([])
   const [initialRows, setInitialRows] = useState<DesignScenarioRow[]>([])
@@ -368,6 +416,14 @@ const ScenarioDesignPage = () => {
   const initialScenarioDesignHistoryIndexRef = useRef<number | null>(null)
   const scenarioDesignStartRequestedRef = useRef(false)
   const scenarioGroupIdRef = useRef<number | null>(null)
+  const creationOperationIdRef = useRef<string | null>(null)
+  const creationLastSequenceRef = useRef<number | null>(null)
+  const creationAbortControllerRef = useRef<AbortController | null>(null)
+  const [scenarioDesignCreationPending, setScenarioDesignCreationPending] = useState(false)
+  const [creationProgressText, setCreationProgressText] = useState<string | null>(null)
+  const [creationReadyForRefinement, setCreationReadyForRefinement] = useState(false)
+  const creationStreamTerminalRef = useRef(false)
+  const lastAppliedSnapshotRevisionRef = useRef(0)
   const preserveScenarioDesignGroupRef = useRef(false)
   const deleteScenarioDesignGroupRequestedRef = useRef(false)
   const scenarioDesignStateRefreshInFlightRef = useRef(false)
@@ -375,7 +431,9 @@ const ScenarioDesignPage = () => {
   const signpostStreamReceivedRef = useRef(false)
   const lastSyncedScenarioDesignStateUpdatedAtRef = useRef(0)
   const reviewStartedScenarioDesignUpdatedAtRef = useRef(0)
+  const reviewValidationStreamReceivedRef = useRef(false)
   const reviewValidationStreamStageRef = useRef<string | null>(null)
+  const signpostStartedScenarioDesignUpdatedAtRef = useRef(0)
   const pendingFrontendReviewItemsRef = useRef<ScenarioDesignReviewErrorItem[] | null>(null)
   const pendingScenarioDesignReviewItemsRef = useRef<ScenarioDesignReviewErrorItem[]>([])
   const submittedCriteriaDraftRef = useRef<ScenarioDesignCriteriaDraft | null>(null)
@@ -406,26 +464,17 @@ const ScenarioDesignPage = () => {
   })
 
   const {
-    data: designAvailabilityData,
-    isLoading: designAvailabilityLoading,
-    isError: isDesignAvailabilityError,
-    error: designAvailabilityError,
+    data: designStatus,
+    isLoading: designStatusLoading,
+    isError: isDesignStatusError,
+    error: designStatusError,
   } = useQuery({
-    queryKey: ['nextGenMIEventDesignAvailability', eventIdNumber],
-    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: eventIdNumber === null ? [] : [eventIdNumber] }),
-    enabled: eventIdNumber !== null && scenarioGroupId === null,
+    queryKey: ['nextGenMIScenarioDesignStatus', designEventIds],
+    queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: designEventIds }),
+    enabled: eventIdNumber !== null && scenarioGroupId === null && designEventIds.length > 0,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
-
-  const startScenarioDesignMutation = useMutation({
-    mutationFn: (miEventId: number) => nextGenMIScenarioDesignService.startScenarioDesign({ miEventId }),
-    onSuccess: (data) => {
-      setScenarioDesignGenerationFailure(null)
-      if (data.scenarioGroupId !== undefined) setScenarioGroupId(data.scenarioGroupId)
-    },
-  })
-  const { mutate: startScenarioDesign, mutateAsync: startScenarioDesignAsync } = startScenarioDesignMutation
 
   const createScenarioSignpostsMutation = useMutation({
     mutationFn: () => {
@@ -458,7 +507,7 @@ const ScenarioDesignPage = () => {
   })
 
   const {
-    data: scenarioDesignState,
+    data: scenarioDesignPresentation,
     dataUpdatedAt: scenarioDesignStateUpdatedAt,
     error: scenarioDesignStateError,
     isFetching: scenarioDesignStateFetching,
@@ -466,37 +515,43 @@ const ScenarioDesignPage = () => {
     isLoading: scenarioDesignStateLoading,
     refetch: refetchScenarioDesignState,
   } = useQuery({
-    queryKey: ['nextGenMIScenarioDesignState', scenarioGroupId],
-    queryFn: () => nextGenMIScenarioDesignService.getScenarioDesign(scenarioGroupId!),
-    enabled: scenarioGroupId !== null,
+    queryKey: ['nextGenMIScenarioDesignPresentation', scenarioGroupId],
+    queryFn: () =>
+      nextGenMIScenarioDesignService.getScenarioDesignPresentation(scenarioGroupId!, {
+        operationId: creationOperationIdRef.current ?? getScenarioGroupCreationCursor(designEventIds)?.operationId,
+      }),
+    enabled: isValidScenarioGroupId(scenarioGroupId),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
+  const scenarioDesignState = useMemo(
+    () => (scenarioDesignPresentation ? mapScenarioDesignPresentationToState(scenarioDesignPresentation) : undefined),
+    [scenarioDesignPresentation],
+  )
+  const scenarioDimensionTemplates = useMemo(
+    () => (scenarioDesignPresentation ? mapDimensionValueOptionsToTemplates(scenarioDesignPresentation) : []),
+    [scenarioDesignPresentation],
+  )
 
-  const {
-    data: scenarioDimensionTemplate,
-    error: scenarioDimensionTemplateError,
-    isError: isScenarioDimensionTemplateError,
-  } = useQuery({
-    queryKey: ['nextGenMIScenarioDesignDimensionTemplates', scenarioGroupId],
-    queryFn: () => nextGenMIScenarioDesignService.getScenarioDimensionTemplates(scenarioGroupId!),
-    enabled: scenarioGroupId !== null,
-    refetchOnWindowFocus: false,
-    gcTime: 0,
-  })
+  useEffect(() => {
+    const cursor = getScenarioGroupCreationCursor(designEventIds)
+    if (!cursor) return
+    if (cursor.operationId) creationOperationIdRef.current = cursor.operationId
+    if (typeof cursor.lastSequence === 'number') creationLastSequenceRef.current = cursor.lastSequence
+    if (isValidScenarioGroupId(cursor.scenarioGroupId) && scenarioGroupId === null) {
+      setScenarioGroupId(cursor.scenarioGroupId)
+    }
+  }, [designEventIds, scenarioGroupId])
+
+  useEffect(() => {
+    const operationStatus = getScenarioGroupCreationOperationStatus(scenarioDesignPresentation?.creationState?.operationStatus)
+    if (operationStatus === 'succeeded') {
+      setCreationReadyForRefinement(true)
+      clearScenarioGroupCreationCursor(designEventIds)
+    }
+  }, [designEventIds, scenarioDesignPresentation?.creationState?.operationStatus])
 
   const eventNameFromState = state?.eventName?.trim()
-  const designEventIds = useMemo(() => {
-    const fromState = (state?.eventIds ?? []).filter((eventId) => Number.isFinite(eventId))
-    const uniqueIds = [...new Set(fromState)]
-    if (uniqueIds.length > 0) {
-      if (eventIdNumber !== null && !uniqueIds.includes(eventIdNumber)) {
-        return [eventIdNumber, ...uniqueIds]
-      }
-      return uniqueIds
-    }
-    return eventIdNumber !== null ? [eventIdNumber] : []
-  }, [eventIdNumber, state?.eventIds])
 
   const secondaryEventIds = useMemo(() => designEventIds.filter((eventId) => String(eventId) !== String(id)), [designEventIds, id])
 
@@ -521,41 +576,48 @@ const ScenarioDesignPage = () => {
 
   const eventTitle = detail?.eventName ?? eventNameFromState ?? (id ? `이벤트 ${id}` : '이벤트')
   const eventDetailPath = id ? `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(id)}` : getNextGenMITabPath('events')
-  const designRationale = detail?.scenarioSuggestReason?.trim() || ''
-  // #DELETE: API 적용후엔 목 섹션 제거 - 도출 근거 팝업 틀 확인용
-  const designRationaleSections = useMemo(
-    (): ScenarioDesignRationaleSection[] =>
-      designRationale || designEventIds.some((eventId) => eventId >= 9001 && eventId <= 9003)
-        ? MOCK_SCENARIO_DESIGN_RATIONALE_SECTIONS
-        : [],
-    [designEventIds, designRationale],
-  )
-  const showDesignRationaleButton = Boolean(designRationale) || designRationaleSections.length > 0
+  const designRationaleSections = useMemo((): ScenarioDesignRationaleSection[] => {
+    const evidence = scenarioDesignPresentation?.evidence
+    const sections: ScenarioDesignRationaleSection[] = []
+    const eventAnalysis = evidence?.eventAnalysisMarkdown?.trim()
+    const roleSelection = evidence?.roleSelectionMarkdown?.trim()
+    if (eventAnalysis) sections.push({ title: '이벤트 분석', blocks: [{ paragraphs: [eventAnalysis] }] })
+    if (roleSelection) sections.push({ title: '역할 선정', blocks: [{ paragraphs: [roleSelection] }] })
+    return sections
+  }, [scenarioDesignPresentation?.evidence])
+  const showDesignRationaleButton = designRationaleSections.length > 0
 
-  const baseEventItems = useMemo(
-    () =>
-      designEventIds.map((eventId) => {
-        const isRouteEvent = String(eventId) === String(id)
-        const eventDetail = isRouteEvent ? detail : secondaryEventDetailsById.get(eventId)
-        const title = eventDetail?.eventName?.trim() || (isRouteEvent ? eventTitle : undefined) || `이벤트 ${eventId}`
-        return {
-          eventId: String(eventId),
-          detail: eventDetail,
-          title,
-          isSuggested: eventDetail?.isScenarioSuggested === true,
-          createdAtLabel: formatNextGenMIDateTimeYmdHm(eventDetail?.createdAt),
-          typeLabel: eventDetail?.impactAnalysis?.eventTypeLv1Label ?? eventDetail?.impactAnalysis?.eventTypeLv1 ?? '-',
-          onEventClick: () => {
-            navigate(`${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}`, {
-              state: { eventName: title },
-            })
-          },
-        }
-      }),
-    [designEventIds, detail, eventTitle, id, navigate, secondaryEventDetailsById],
-  )
+  const baseEventItems = useMemo(() => {
+    const bundles = scenarioDesignPresentation?.eventBundles ?? []
+    const eventIds = bundles.length > 0 ? bundles.map((bundle) => bundle.eventId) : designEventIds
 
-  const scenarioDimensionTemplates = useMemo(() => scenarioDimensionTemplate?.dimensions ?? [], [scenarioDimensionTemplate?.dimensions])
+    return eventIds.map((eventId) => {
+      const isRouteEvent = String(eventId) === String(id)
+      const eventDetail = isRouteEvent ? detail : secondaryEventDetailsById.get(eventId)
+      const bundle = bundles.find((item) => item.eventId === eventId)
+      const title =
+        eventDetail?.eventName?.trim() || bundle?.eventName?.trim() || (isRouteEvent ? eventTitle : undefined) || `이벤트 ${eventId}`
+      return {
+        eventId: String(eventId),
+        detail: eventDetail,
+        title,
+        isSuggested: eventDetail?.isScenarioSuggested === true || bundle?.isScenarioSuggested === true,
+        createdAtLabel: formatNextGenMIDateTimeYmdHm(eventDetail?.createdAt ?? bundle?.latestRecordFirstCreated),
+        typeLabel:
+          eventDetail?.impactAnalysis?.eventTypeLv1Label ??
+          eventDetail?.impactAnalysis?.eventTypeLv1 ??
+          bundle?.eventTypeLv1Label ??
+          bundle?.eventTypeLv1 ??
+          '-',
+        onEventClick: () => {
+          navigate(`${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}`, {
+            state: { eventName: title },
+          })
+        },
+      }
+    })
+  }, [designEventIds, detail, eventTitle, id, navigate, scenarioDesignPresentation?.eventBundles, secondaryEventDetailsById])
+
   const hiddenScenarioDesignColumns = useMemo(
     () => createScenarioDesignTemplateColumns(scenarioDimensionTemplates, visibleScenarioDesignColumns),
     [scenarioDimensionTemplates, visibleScenarioDesignColumns],
@@ -567,7 +629,14 @@ const ScenarioDesignPage = () => {
 
     const enrichColumns = (columns: typeof visibleScenarioDesignColumns) => {
       if (columns.length === 0) return columns
-      if (columns.every((column) => (column.valueEnums?.length ?? 0) > 0)) return columns
+      if (
+        columns.every(
+          (column) =>
+            (column.valueEnums?.length ?? 0) > 0 && Object.keys(column.valueEnumLabels ?? {}).length === (column.valueEnums?.length ?? 0),
+        )
+      ) {
+        return columns
+      }
       return createScenarioDesignColumns(
         columns.map((column) => ({
           key: column.key,
@@ -590,29 +659,23 @@ const ScenarioDesignPage = () => {
       navigateScenarioDesignErrorPage(detailError)
       return
     }
-    if (isDesignAvailabilityError) {
-      navigateScenarioDesignErrorPage(designAvailabilityError)
+    if (isDesignStatusError) {
+      navigateScenarioDesignErrorPage(designStatusError)
       return
     }
     if (isScenarioDesignStateError) {
       navigateScenarioDesignErrorPage(scenarioDesignStateError)
-      return
-    }
-    if (isScenarioDimensionTemplateError) {
-      navigateScenarioDesignErrorPage(scenarioDimensionTemplateError)
     }
   }, [
-    designAvailabilityError,
+    designStatusError,
     detailError,
     eventIdNumber,
-    isDesignAvailabilityError,
+    isDesignStatusError,
     isDetailError,
     isScenarioDesignStateError,
-    isScenarioDimensionTemplateError,
     navigate,
     navigateScenarioDesignErrorPage,
     scenarioDesignStateError,
-    scenarioDimensionTemplateError,
   ])
   const scenarioDesignActiveTable = useMemo(() => getScenarioDesignActiveTable(scenarioDesignState), [scenarioDesignState])
   const scenarioDesignActiveTableRowCount = scenarioDesignActiveTable?.scenarios?.length ?? 0
@@ -628,14 +691,18 @@ const ScenarioDesignPage = () => {
     (scenarioDesignStateFetching || scenarioDesignStage === 'ready' || scenarioDesignActiveTableRowCount > 0)
   const scenarioDesignLoading =
     isLoading ||
-    designAvailabilityLoading ||
-    startScenarioDesignMutation.isPending ||
+    designStatusLoading ||
+    (scenarioDesignCreationPending && scenarioDesignActiveTable === null) ||
     scenarioDesignGenerationRetryPending ||
     scenarioDesignStateLoading ||
     resetScenarioDesignMutation.isPending ||
     scenarioDesignWaitingForInitialTable ||
     scenarioDesignWaitingForInitialRows ||
     signpostPending
+  const scenarioDesignLoadingMessage = signpostPending
+    ? '시나리오 One-view를 생성하고 있습니다.'
+    : creationProgressText?.trim() ||
+      (scenarioDesignCreationPending ? '시나리오 그룹 생성을 진행 중입니다.' : '시나리오 설계를 불러오는 중입니다.')
   const scenarioNameErrorMessages = useMemo(() => {
     const scenarioNameSet = new Set<string>()
     const errorMessages = new Map<number, string>()
@@ -750,8 +817,10 @@ const ScenarioDesignPage = () => {
       reviewedCriteriaSnapshotKeyRef.current = null
       criteriaReviewSnapshotInvalidatedRef.current = true
       reviewStartedScenarioDesignUpdatedAtRef.current = 0
+      reviewValidationStreamReceivedRef.current = false
       reviewValidationStreamStageRef.current = null
       signpostStreamReceivedRef.current = false
+      signpostStartedScenarioDesignUpdatedAtRef.current = 0
       pendingFrontendReviewItemsRef.current = null
       pendingScenarioDesignReviewItemsRef.current = []
       if (!options?.keepErrorItems) setReviewErrorItems([])
@@ -766,6 +835,8 @@ const ScenarioDesignPage = () => {
     resetScenarioDesignReviewState({ keepErrorItems: true })
   }, [currentCriteriaSnapshotKey, resetScenarioDesignReviewState, reviewed])
   const refreshScenarioDesignStateFromStream = useCallback(() => {
+    if (!isValidScenarioGroupId(scenarioGroupIdRef.current)) return
+
     const refetchOnce = () => {
       if (scenarioDesignStateRefreshInFlightRef.current) {
         scenarioDesignStateRefreshQueuedRef.current = true
@@ -809,6 +880,7 @@ const ScenarioDesignPage = () => {
         criteriaReviewSnapshotInvalidatedRef.current = true
         pendingFrontendReviewItemsRef.current = null
         reviewStartedScenarioDesignUpdatedAtRef.current = 0
+        reviewValidationStreamReceivedRef.current = false
         reviewValidationStreamStageRef.current = null
         setReviewPending(false)
         setReviewMinimumLoadingComplete(false)
@@ -826,6 +898,7 @@ const ScenarioDesignPage = () => {
       }
 
       signpostStreamReceivedRef.current = false
+      signpostStartedScenarioDesignUpdatedAtRef.current = 0
       setSignpostPending(false)
       setCurrentStep('criteria')
       showSnackbar('시나리오 One-view 생성에 실패했습니다.', {
@@ -835,21 +908,120 @@ const ScenarioDesignPage = () => {
     },
     [clearScenarioDesignReviewMinimumLoadingTimeout, showSnackbar],
   )
+  const runScenarioGroupCreationStream = useCallback(
+    async (signal: AbortSignal) => {
+      if (designEventIds.length === 0) throw new Error('No events selected')
+
+      creationStreamTerminalRef.current = false
+      setScenarioDesignCreationPending(true)
+      setScenarioDesignGenerationFailure(null)
+      setCreationReadyForRefinement(false)
+
+      const handleCreationStreamMessage = ({ event, data, id: eventId }: { event?: string; data?: string; id?: string }) => {
+        const parsed = parseScenarioGroupCreationStreamData(data)
+        if (!parsed) return
+
+        const eventType = normalizeScenarioGroupCreationEventType(event, parsed.eventType)
+        const sequence = parsed.sequence ?? (eventId !== undefined && Number.isFinite(Number(eventId)) ? Number(eventId) : undefined)
+        if (parsed.operationId) creationOperationIdRef.current = parsed.operationId
+        if (typeof sequence === 'number') creationLastSequenceRef.current = sequence
+        if (isValidScenarioGroupId(parsed.scenarioGroupId)) setScenarioGroupId(parsed.scenarioGroupId)
+
+        const progressText = getScenarioGroupCreationProgressText(parsed.title, parsed.messageMarkdown)
+        if (progressText) setCreationProgressText(progressText)
+
+        if (eventType !== 'completed' && eventType !== 'failed' && eventType !== 'interrupted') {
+          saveScenarioGroupCreationCursor(designEventIds, {
+            operationId: creationOperationIdRef.current ?? parsed.operationId,
+            lastSequence: creationLastSequenceRef.current ?? sequence,
+            scenarioGroupId: isValidScenarioGroupId(parsed.scenarioGroupId)
+              ? parsed.scenarioGroupId
+              : (scenarioGroupIdRef.current ?? undefined),
+          })
+        }
+
+        if (eventType === 'section_ready') {
+          const snapshotRevision = parsed.snapshotRevision
+          if (typeof snapshotRevision === 'number' && snapshotRevision > lastAppliedSnapshotRevisionRef.current) {
+            lastAppliedSnapshotRevisionRef.current = snapshotRevision
+            refreshScenarioDesignStateFromStream()
+          }
+        }
+
+        if (eventType === 'completed') {
+          creationStreamTerminalRef.current = true
+          lastAppliedSnapshotRevisionRef.current = Math.max(lastAppliedSnapshotRevisionRef.current, parsed.snapshotRevision ?? 0)
+          clearScenarioGroupCreationCursor(designEventIds)
+          setCreationReadyForRefinement(true)
+          refreshScenarioDesignStateFromStream()
+          creationAbortControllerRef.current?.abort()
+          return
+        }
+
+        if (eventType === 'failed' || eventType === 'interrupted' || eventType === 'failure' || eventType === 'error') {
+          creationStreamTerminalRef.current = true
+          clearScenarioGroupCreationCursor(designEventIds)
+          setCreationReadyForRefinement(false)
+          setScenarioDesignGenerationFailure({
+            reason: getScenarioGroupCreationProgressText(parsed.title, parsed.messageMarkdown) ?? null,
+          })
+          refreshScenarioDesignStateFromStream()
+          creationAbortControllerRef.current?.abort()
+        }
+      }
+
+      try {
+        while (!signal.aborted && !creationStreamTerminalRef.current) {
+          try {
+            await nextGenMIScenarioDesignService.createScenarioGroupStream(
+              {
+                miEventIds: designEventIds,
+                operationId: creationOperationIdRef.current ?? undefined,
+                lastSequence: creationLastSequenceRef.current ?? undefined,
+              },
+              handleCreationStreamMessage,
+              signal,
+            )
+            if (creationStreamTerminalRef.current || signal.aborted) break
+            if (!creationOperationIdRef.current) break
+          } catch (error) {
+            if (signal.aborted || creationStreamTerminalRef.current) break
+            if (!creationOperationIdRef.current) throw error
+          }
+        }
+      } finally {
+        setScenarioDesignCreationPending(false)
+      }
+    },
+    [designEventIds, refreshScenarioDesignStateFromStream],
+  )
   const retryScenarioDesignGeneration = useCallback(async () => {
-    if (eventIdNumber === null || scenarioDesignGenerationRetryPending) return
+    if (designEventIds.length === 0 || scenarioDesignGenerationRetryPending) return
 
     setScenarioDesignGenerationRetryPending(true)
     setScenarioDesignGenerationFailure(null)
+    setCreationProgressText(null)
+    setCreationReadyForRefinement(false)
+    creationStreamTerminalRef.current = false
+    lastAppliedSnapshotRevisionRef.current = 0
+    creationOperationIdRef.current = null
+    creationLastSequenceRef.current = null
+    clearScenarioGroupCreationCursor(designEventIds)
+
+    creationAbortControllerRef.current?.abort()
+    const controller = new AbortController()
+    creationAbortControllerRef.current = controller
 
     try {
-      await startScenarioDesignAsync(eventIdNumber)
+      await runScenarioGroupCreationStream(controller.signal)
     } catch {
+      if (controller.signal.aborted) return
       setScenarioDesignGenerationFailure({ reason: null })
       showSnackbar('시나리오 설계 생성을 다시 요청하지 못했습니다.', { variant: 'error', body: '잠시 후 다시 시도해 주세요.' })
     } finally {
       setScenarioDesignGenerationRetryPending(false)
     }
-  }, [eventIdNumber, scenarioDesignGenerationRetryPending, showSnackbar, startScenarioDesignAsync])
+  }, [designEventIds, runScenarioGroupCreationStream, scenarioDesignGenerationRetryPending, showSnackbar])
   const startScenarioDesignReview = useCallback(async () => {
     if (scenarioGroupId === null) return
 
@@ -873,6 +1045,7 @@ const ScenarioDesignPage = () => {
     setReviewCompletedVisible(false)
     setReviewFailedDialogOpen(false)
     reviewStartedScenarioDesignUpdatedAtRef.current = scenarioDesignStateUpdatedAt
+    reviewValidationStreamReceivedRef.current = false
     reviewValidationStreamStageRef.current = null
     const frontendBlockingReviewItems = nextReviewErrorItems.filter((item) => (item.severity ?? 'error') === 'error')
     const frontendWarningReviewItems = nextReviewErrorItems.filter((item) => item.severity === 'warning')
@@ -905,6 +1078,7 @@ const ScenarioDesignPage = () => {
       reviewedCriteriaSnapshotKeyRef.current = null
       criteriaReviewSnapshotInvalidatedRef.current = true
       reviewStartedScenarioDesignUpdatedAtRef.current = 0
+      reviewValidationStreamReceivedRef.current = false
       reviewValidationStreamStageRef.current = null
       pendingFrontendReviewItemsRef.current = null
       setReviewPending(false)
@@ -936,22 +1110,20 @@ const ScenarioDesignPage = () => {
   )
 
   useEffect(() => {
-    const availability = findEventDesignAvailability(designAvailabilityData, eventIdNumber)
     if (
       eventIdNumber === null ||
-      scenarioGroupId !== null ||
       scenarioDesignStartRequestedRef.current ||
-      designAvailabilityLoading ||
-      designAvailabilityData === undefined
+      designStatusLoading ||
+      (designEventIds.length > 0 && designStatus === undefined && !isDesignStatusError && scenarioGroupId === null)
     ) {
       return
     }
 
-    if (availability) {
-      const status = normalizeEventScenarioDesignStatus(availability.scenarioDesignStatus)
-      if (status === 'created' && availability.scenarioGroupId !== undefined && availability.scenarioGroupId !== null) {
+    if (designStatus) {
+      const status = normalizeScenarioDesignStatusCode(designStatus.designStatus)
+      if (status === 'created' && designStatus.scenarioGroupId !== undefined && designStatus.scenarioGroupId !== null) {
         confirmedScenarioDesignLeaveRef.current = true
-        navigate(getNextGenMIScenarioGroupDetailPath(availability.scenarioGroupId), { replace: true })
+        navigate(getNextGenMIScenarioGroupDetailPath(designStatus.scenarioGroupId), { replace: true })
         return
       }
 
@@ -962,49 +1134,91 @@ const ScenarioDesignPage = () => {
         return
       }
 
-      if (
-        status === 'creating' &&
-        availability.scenarioGroupId !== undefined &&
-        availability.scenarioGroupId !== null &&
-        isOwnEventDesignAvailability(availability, currentUserNo)
-      ) {
-        setScenarioGroupId(availability.scenarioGroupId)
-        return
-      }
-
-      if (isEventDesignOccupiedByOther(availability, currentUserNo)) {
+      if (isScenarioDesignStatusOccupiedByOther(designStatus)) {
         confirmedScenarioDesignLeaveRef.current = true
         showSnackbar('다른 사용자가 현재 시나리오 설계를 진행 중입니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
         navigate(eventDetailPath, { replace: true, state: { eventName: eventTitle } })
         return
       }
+
+      if (
+        status === 'creating' &&
+        designStatus.scenarioGroupId !== undefined &&
+        designStatus.scenarioGroupId !== null &&
+        isScenarioDesignStatusMine(designStatus) &&
+        scenarioGroupId === null
+      ) {
+        setScenarioGroupId(designStatus.scenarioGroupId)
+        return
+      }
+    }
+
+    const resolvedGroupId = scenarioGroupId ?? designStatus?.scenarioGroupId ?? null
+    if (resolvedGroupId !== null && scenarioDesignPresentation === undefined && scenarioDesignStateLoading) {
+      return
+    }
+
+    const operationStatus = getScenarioGroupCreationOperationStatus(scenarioDesignPresentation?.creationState?.operationStatus)
+    const engineRunning = isScenarioGroupCreationEngineRunning(operationStatus)
+    const engineSucceeded = operationStatus === 'succeeded'
+    const engineFailed = operationStatus === 'failed' || operationStatus === 'interrupted'
+    const hasTable = (scenarioDesignPresentation?.table?.scenarios?.length ?? 0) > 0
+
+    if (engineFailed) {
+      scenarioDesignStartRequestedRef.current = true
+      setScenarioDesignGenerationFailure({
+        reason: scenarioDesignPresentation?.creationState?.lastError?.message?.trim() || null,
+      })
+      return
+    }
+
+    if (engineSucceeded || (hasTable && !engineRunning)) {
+      scenarioDesignStartRequestedRef.current = true
+      setCreationReadyForRefinement(true)
+      clearScenarioGroupCreationCursor(designEventIds)
+      return
     }
 
     scenarioDesignStartRequestedRef.current = true
-    startScenarioDesign(eventIdNumber, { onError: navigateScenarioDesignErrorPage })
+    const controller = new AbortController()
+    creationAbortControllerRef.current = controller
+    void runScenarioGroupCreationStream(controller.signal).catch((error) => {
+      if (controller.signal.aborted) return
+      navigateScenarioDesignErrorPage(error)
+    })
   }, [
-    currentUserNo,
-    designAvailabilityData,
-    designAvailabilityLoading,
+    designEventIds,
+    designStatus,
+    designStatusLoading,
     eventDetailPath,
     eventIdNumber,
     eventTitle,
+    isDesignStatusError,
     navigate,
     navigateScenarioDesignErrorPage,
+    runScenarioGroupCreationStream,
+    scenarioDesignPresentation,
+    scenarioDesignStateLoading,
     scenarioGroupId,
     showSnackbar,
-    startScenarioDesign,
   ])
 
+  useEffect(
+    () => () => {
+      creationAbortControllerRef.current?.abort()
+    },
+    [],
+  )
+
   useEffect(() => {
-    if (scenarioGroupId === null) {
+    if (scenarioGroupId === null || !creationReadyForRefinement) {
       return undefined
     }
 
     const controller = new AbortController()
 
     void nextGenMIScenarioDesignService
-      .streamScenarioDesign(
+      .streamScenarioRefinement(
         scenarioGroupId,
         ({ event, data }) => {
           if (!isScenarioDesignStreamEventType(event) || event === 'connected') return
@@ -1017,7 +1231,10 @@ const ScenarioDesignPage = () => {
           }
 
           if (event === 'generation') setScenarioDesignGenerationFailure(null)
-          if (event === 'validation') reviewValidationStreamStageRef.current = normalizeScenarioDesignStage(streamData?.stage) ?? null
+          if (event === 'validation') {
+            reviewValidationStreamReceivedRef.current = true
+            reviewValidationStreamStageRef.current = normalizeScenarioDesignStage(streamData?.stage) ?? null
+          }
           if (event === 'signposts') signpostStreamReceivedRef.current = true
           refreshScenarioDesignStateFromStream()
         },
@@ -1031,7 +1248,13 @@ const ScenarioDesignPage = () => {
     return () => {
       controller.abort()
     }
-  }, [handleScenarioDesignStreamFailure, navigateScenarioDesignErrorPage, refreshScenarioDesignStateFromStream, scenarioGroupId])
+  }, [
+    creationReadyForRefinement,
+    handleScenarioDesignStreamFailure,
+    navigateScenarioDesignErrorPage,
+    refreshScenarioDesignStateFromStream,
+    scenarioGroupId,
+  ])
 
   useEffect(() => {
     const activeTable = scenarioDesignActiveTable
@@ -1040,15 +1263,18 @@ const ScenarioDesignPage = () => {
     const stage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
     const validationResult = scenarioDesignState?.validation?.isValid
     const hasValidationResult = validationResult === true || validationResult === false
+    const receivedCurrentReviewValidation = reviewValidationStreamReceivedRef.current
     const backendValidationResultReady =
       reviewPending &&
       reviewMinimumLoadingComplete &&
       pendingFrontendReviewItemsRef.current === null &&
+      receivedCurrentReviewValidation &&
       scenarioDesignStateUpdatedAt > reviewStartedScenarioDesignUpdatedAtRef.current &&
-      (hasValidationResult || reviewValidationStreamStageRef.current === 'scenario_validated' || stage === 'scenario_validated')
+      (hasValidationResult || reviewValidationStreamStageRef.current === 'scenario_validated')
     const reviewValidationResultReady = !reviewPending || backendValidationResultReady
     const validationPassed =
-      reviewValidationResultReady && (validationResult === true || (!hasValidationResult && stage === 'scenario_validated'))
+      reviewValidationResultReady &&
+      (validationResult === true || (!hasValidationResult && reviewValidationStreamStageRef.current === 'scenario_validated'))
     const validationFailed = reviewValidationResultReady && validationResult === false
     const submittedCriteriaDraft = submittedCriteriaDraftRef.current
     const hasOneViewTable = scenarioDesignState?.step2?.table !== undefined && scenarioDesignState.step2.table !== null
@@ -1082,13 +1308,13 @@ const ScenarioDesignPage = () => {
         lastSyncedScenarioDesignStateUpdatedAtRef.current = scenarioDesignStateUpdatedAt
       }
     }
-    if ((validationPassed || stage === 'signpost_created' || stage === 'completed') && canUseValidatedCriteriaSnapshot) {
+    if ((validationPassed || isScenarioDesignOneViewStage(stage)) && canUseValidatedCriteriaSnapshot) {
       reviewedCriteriaSnapshotKeyRef.current = nextCriteriaSnapshotKey
       criteriaReviewSnapshotInvalidatedRef.current = false
       setReviewed(true)
     }
 
-    if (stage === 'signpost_created' || stage === 'completed') {
+    if (!signpostPending && isScenarioDesignOneViewStage(stage)) {
       submittedCriteriaDraftRef.current = null
       setCurrentStep('oneView')
     }
@@ -1098,6 +1324,7 @@ const ScenarioDesignPage = () => {
       setReviewPending(false)
       setReviewMinimumLoadingComplete(false)
       reviewStartedScenarioDesignUpdatedAtRef.current = 0
+      reviewValidationStreamReceivedRef.current = false
       reviewValidationStreamStageRef.current = null
 
       if (validationPassed) {
@@ -1139,14 +1366,22 @@ const ScenarioDesignPage = () => {
       }
     }
 
-    if (signpostPending && scenarioDesignState?.step2) {
+    const signpostResultReady =
+      signpostPending &&
+      scenarioDesignStateUpdatedAt > signpostStartedScenarioDesignUpdatedAtRef.current &&
+      (signpostStreamReceivedRef.current || isScenarioDesignOneViewStage(stage))
+
+    if (signpostResultReady) {
       if (signpostStreamReceivedRef.current) {
         signpostStreamReceivedRef.current = false
         setOneViewDefaultKey((currentKey) => currentKey + 1)
       }
+      signpostStartedScenarioDesignUpdatedAtRef.current = 0
       setSignpostPending(false)
       setCurrentStep('oneView')
       scrollNextGenMILayoutToTop()
+      void queryClient.invalidateQueries({ queryKey: ['nextGenMIScenarioDesignStatus'] })
+      void queryClient.invalidateQueries({ queryKey: ['nextGenMIEventScenarioGroups'] })
     }
   }, [
     currentCriteriaSnapshotKey,
@@ -1158,6 +1393,7 @@ const ScenarioDesignPage = () => {
     reviewMinimumLoadingComplete,
     showSnackbar,
     signpostPending,
+    queryClient,
   ])
 
   useEffect(() => {
@@ -1168,6 +1404,7 @@ const ScenarioDesignPage = () => {
 
     pendingFrontendReviewItemsRef.current = null
     reviewStartedScenarioDesignUpdatedAtRef.current = 0
+    reviewValidationStreamReceivedRef.current = false
     reviewValidationStreamStageRef.current = null
     setReviewPending(false)
     setReviewMinimumLoadingComplete(false)
@@ -1229,7 +1466,7 @@ const ScenarioDesignPage = () => {
           }
 
           const column = visibleScenarioDesignColumns.find((item) => item.key === key)
-          if (!column || getScenarioDesignDimensionSelectedValue(row, column.key) === value) return row
+          if (!column || getScenarioDesignDimensionSelectedValue(row, column.key, column) === value) return row
 
           changed = true
           return updateScenarioDesignRowDimension(row, column, value)
@@ -1310,7 +1547,9 @@ const ScenarioDesignPage = () => {
 
     resetScenarioDesignReviewState()
     resetScenarioDesignMutation.mutate(undefined, {
-      onSuccess: async (resetState) => {
+      onSuccess: async () => {
+        const presentationResult = await refetchScenarioDesignState()
+        const resetState = presentationResult.data ? mapScenarioDesignPresentationToState(presentationResult.data) : undefined
         const resetTable = getScenarioDesignActiveTable(resetState)
         if (resetTable) {
           const nextColumns = createScenarioDesignColumns(resetTable.dimensionColumns, scenarioDimensionTemplates)
@@ -1350,18 +1589,17 @@ const ScenarioDesignPage = () => {
     if (scenarioGroupId === null) return
 
     signpostStreamReceivedRef.current = false
+    signpostStartedScenarioDesignUpdatedAtRef.current = scenarioDesignStateUpdatedAt
     setSignpostPending(true)
-    setCurrentStep('oneView')
-    scrollNextGenMILayoutToTop()
 
     try {
       await createScenarioSignpostsMutation.mutateAsync()
     } catch {
+      signpostStartedScenarioDesignUpdatedAtRef.current = 0
       setSignpostPending(false)
-      setCurrentStep('criteria')
       showSnackbar('시나리오 One-view 생성을 요청하지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
     }
-  }, [createScenarioSignpostsMutation, scenarioGroupId, showSnackbar])
+  }, [createScenarioSignpostsMutation, scenarioDesignStateUpdatedAt, scenarioGroupId, showSnackbar])
 
   const handleConfirm = useCallback(
     (type: ScenarioDesignConfirmType) => {
@@ -1500,10 +1738,11 @@ const ScenarioDesignPage = () => {
       baseEvent: {
         events: baseEventItems,
         showRationaleButton: showDesignRationaleButton,
-        rationaleText: designRationale,
+        rationaleText: '',
         rationaleSections: designRationaleSections,
       },
       isLoading: scenarioDesignLoading,
+      loadingMessage: scenarioDesignLoadingMessage,
       review: {
         reviewed: isCurrentCriteriaReviewed,
         pending: reviewPending || validateScenarioDesignMutation.isPending,
@@ -1525,7 +1764,6 @@ const ScenarioDesignPage = () => {
       canCompleteScenarioDesignReview,
       criteriaValidation.dimensionValueErrorMessages,
       criteriaResetDisabled,
-      designRationale,
       designRationaleSections,
       handleAddCriteriaColumns,
       handleAddRow,
@@ -1545,6 +1783,7 @@ const ScenarioDesignPage = () => {
       reviewPending,
       rows,
       scenarioDesignLoading,
+      scenarioDesignLoadingMessage,
       scenarioNameErrorMessages,
       showDesignRationaleButton,
       startScenarioDesignReview,
@@ -1588,7 +1827,7 @@ const ScenarioDesignPage = () => {
         {scenarioDesignGenerationFailure ? (
           <ScenarioDesignGenerationFailureState
             reason={scenarioDesignGenerationFailure.reason}
-            retrying={scenarioDesignGenerationRetryPending || startScenarioDesignMutation.isPending}
+            retrying={scenarioDesignGenerationRetryPending || scenarioDesignCreationPending}
             onRetry={retryScenarioDesignGeneration}
             onCancel={handleCancelScenarioDesignRequest}
           />

@@ -1,19 +1,10 @@
 // #DELETE: API 적용후엔 목데이터 삭제
 import dayjs from 'dayjs'
 
-import type {
-  EventDesignAvailability,
-  EventDetail,
-  EventImpactIndex,
-  EventList,
-  EventListItem,
-  EventTypeL1,
-  GetEventsParams,
-} from '@/service/mi/nextGenMI/event'
+import type { EventDetail, EventImpactIndex, EventList, EventListItem, EventTypeL1, GetEventsParams } from '@/service/mi/nextGenMI/event'
 import type { IPaginationResponse } from '@/types/api'
 
 import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
-import useAuthStore from '@/store/useAuthStore'
 
 /** 멀티선택 액션바 - 다른 사용자 진행 중(잠금) 확인용 occupant */
 const MOCK_OTHER_OCCUPANT_USER_NO = 999001
@@ -60,6 +51,25 @@ type EventListMockSeed = Omit<EventListItem, 'updatedAt' | 'createdAt' | 'latest
   daysAgo: number
   /** true면 로그인 사용자 userNo를 occupant로 넣어 본인 진행 중 CTA 확인 */
   useCurrentUserAsOccupant?: boolean
+  scenarioDesignStatus?: string
+  scenarioDesignStatusLabel?: string
+  designStep?: string | null
+  designStepLabel?: string | null
+  scenarioGroupId?: number | null
+  occupied?: boolean
+  occupantUserId?: number | null
+  occupantUserName?: string | null
+  connectedScenarioGroups?: Array<{
+    scenarioGroupId: number
+    groupName: string
+    designStep?: string | null
+    designStepLabel?: string | null
+    scenarioDesignStatus?: string | null
+    occupied?: boolean
+    occupantUserId?: number | null
+    occupantUserName?: string | null
+    events: Array<{ eventId: number; eventName: string }>
+  }>
 }
 
 const EVENT_LIST_MOCK_SEEDS: EventListMockSeed[] = [
@@ -1061,49 +1071,31 @@ const EVENT_LIST_MOCK_SEEDS: EventListMockSeed[] = [
   },
 ]
 
-const buildMockEventListItems = (): EventListItem[] => {
-  const currentUserNo = useAuthStore.getState().user?.userNo ?? null
-  const currentUserName = useAuthStore.getState().user?.userNm?.trim() || '나(본인)'
-
-  return EVENT_LIST_MOCK_SEEDS.map(({ daysAgo, useCurrentUserAsOccupant, ...seed }) => {
+const buildMockEventListItems = (): EventListItem[] =>
+  EVENT_LIST_MOCK_SEEDS.map(({ daysAgo, useCurrentUserAsOccupant: _useCurrentUserAsOccupant, ...seed }) => {
     const at = dayjs().subtract(daysAgo, 'day').hour(17).minute(0).second(0).millisecond(0)
     const iso = at.toISOString()
-    const occupantFields =
-      useCurrentUserAsOccupant && currentUserNo !== null
-        ? {
-          occupantUserId: currentUserNo,
-          occupantUserName: currentUserName,
-        }
-        : useCurrentUserAsOccupant
-          ? {
-            // 로그인 전이면 타인과 구분되도록 임시 occupant 유지
-            occupantUserId: MOCK_OTHER_OCCUPANT_USER_NO + 1,
-            occupantUserName: currentUserName,
-          }
-          : {}
-
-    const connectedScenarioGroups = seed.connectedScenarioGroups?.map((group) => {
-      if (!useCurrentUserAsOccupant) return group
-      if (group.occupantUserId === MOCK_OTHER_OCCUPANT_USER_NO) return group
-      if (group.scenarioDesignStatus === 'created') return group
-      return {
-        ...group,
-        occupied: true,
-        occupantUserId: occupantFields.occupantUserId ?? group.occupantUserId,
-        occupantUserName: occupantFields.occupantUserName ?? group.occupantUserName,
-      }
-    })
+    const {
+      connectedScenarioGroups,
+      scenarioDesignStatus: _scenarioDesignStatus,
+      scenarioDesignStatusLabel: _scenarioDesignStatusLabel,
+      designStep: _designStep,
+      designStepLabel: _designStepLabel,
+      scenarioGroupId: _scenarioGroupId,
+      occupied: _occupied,
+      occupantUserId: _occupantUserId,
+      occupantUserName: _occupantUserName,
+      ...listFields
+    } = seed
 
     return {
-      ...seed,
-      ...occupantFields,
-      ...(connectedScenarioGroups ? { connectedScenarioGroups } : {}),
+      ...listFields,
+      scenarioGroupCount: listFields.scenarioGroupCount ?? connectedScenarioGroups?.length ?? 0,
       updatedAt: iso,
       createdAt: iso,
       latestRecordFirstCreated: iso,
     }
   })
-}
 
 /** #DELETE: API 적용후엔 목데이터 삭제 */
 export const MOCK_EVENT_TYPE_L1_LIST: EventTypeL1[] = [
@@ -1205,10 +1197,6 @@ export const buildMockEventDetail = (eventId: string | number): EventDetail => {
     signalTypeLabel: listItem.signalTypeLabel,
     isScenarioSuggested: listItem.isScenarioSuggested,
     scenarioSuggestReason: listItem.scenarioSuggestReason,
-    scenarioDesignStatus: listItem.scenarioDesignStatus,
-    scenarioDesignStatusLabel: listItem.scenarioDesignStatusLabel,
-    designStep: listItem.designStep,
-    designStepLabel: listItem.designStepLabel,
     latestRecordFirstCreated: listItem.latestRecordFirstCreated,
     createdAt: listItem.createdAt,
     updatedAt: listItem.updatedAt,
@@ -1242,27 +1230,6 @@ export const buildMockEventDetail = (eventId: string | number): EventDetail => {
       eventTypeLv1Label: listItem.eventTypeLv1Label,
       sources: ['MI Agent', 'Market Desk'],
     },
-    relatedEventScenario: null,
+    relatedEventScenarios: [],
   }
-}
-
-/** API 서버 비가용 시 design-availability 더미 응답 */
-/** #DELETE: API 적용후엔 목데이터 삭제 */
-export const buildMockEventDesignAvailability = (eventIds?: number[]): EventDesignAvailability[] => {
-  const rows = buildMockEventListItems()
-  const idSet = eventIds && eventIds.length > 0 ? new Set(eventIds) : null
-
-  return rows
-    .filter((row) => (idSet ? idSet.has(row.eventId) : true))
-    .map((row) => ({
-      eventId: row.eventId,
-      scenarioDesignStatus: row.scenarioDesignStatus,
-      scenarioDesignStatusLabel: row.scenarioDesignStatusLabel,
-      designStep: row.designStep,
-      designStepLabel: row.designStepLabel,
-      occupied: row.occupied,
-      occupantUserId: row.occupantUserId,
-      occupantUserName: row.occupantUserName,
-      scenarioGroupId: row.scenarioGroupId,
-    }))
 }

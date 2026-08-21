@@ -27,6 +27,13 @@ export const formatNextGenMIDateTimeYmdHm = (value?: string | null): string => {
 export const findIndexImpact = <T extends { indexName: string }>(impacts: readonly T[] | undefined, indexName: string): T | undefined =>
   impacts?.find((impact) => (impact.indexName ?? '').toUpperCase() === indexName)
 
+/** BE가 0~1 비율로 주면 0~100으로 맞춤. 이미 퍼센트면 그대로 사용 */
+export const toDisplayProbabilityPercent = (value?: number | null): number => {
+  if (value === null || value === undefined || !Number.isFinite(value)) return Number.NaN
+  if (value > 0 && value <= 1) return value * 100
+  return value
+}
+
 export const marketDirectionToLabel = (d: MarketDirection): string => {
   switch (d) {
     case MarketDirection.BULLISH:

@@ -10,6 +10,9 @@ import { ICommonResponse, IPaginationResponse } from '@/types/api'
 /** 시나리오 판정 상태 (대기/실현/폐기) */
 export type ScenarioJudgementStatus = 'pending' | 'realized' | 'discarded'
 
+/** 시나리오 상대 역할 배지 (v4 대표 시나리오 3종만, 그 외 null) */
+export type ScenarioRole = 'ceiling' | 'floor' | 'mixed'
+
 export type ScenarioSignpostStrength = 'verystrong' | 'strong' | 'medium' | 'weak' | 'veryweak'
 
 export type ScenarioGroupGraphPeriodUnit = 'monthly' | 'yearly'
@@ -18,6 +21,10 @@ export type ScenarioGroupGraphPeriodUnit = 'monthly' | 'yearly'
 export interface IScenarioDimensionColumn {
   key: string
   label: string
+  /** 분기 항목 선정 근거 (헤더 인포 툴팁) */
+  description?: string | null
+  /** 분기 항목 선정 근거 (v4 헤더) */
+  rationale?: string | null
 }
 
 /** 차원값 (dimensionColumns의 key와 매칭) */
@@ -26,6 +33,10 @@ export interface IScenarioDimension {
   label: string
   value: string
   valueLabel: string
+  /** 분기 기준값 ID (dimensionValueOptions 매칭) */
+  valueId?: string | null
+  /** 해당 시나리오에 기준값이 적용된 사유 (셀 인포 툴팁) */
+  rationale?: string | null
 }
 
 /** 그룹 목록 표 본문의 시나리오 행 */
@@ -34,6 +45,9 @@ export interface IScenarioRow {
   scenarioName: string
   baseCase: boolean
   displayOrder: number
+  scenarioRole?: ScenarioRole | null
+  scenarioRoleLabel?: string | null
+  scenarioType?: string | null
   dimensions: IScenarioDimension[]
   probability: number
   adjustedProbability: number
@@ -76,6 +90,9 @@ export interface IScenarioIndividualItem {
   scenarioName: string
   baseCase: boolean
   displayOrder: number
+  scenarioRole?: ScenarioRole | null
+  scenarioRoleLabel?: string | null
+  scenarioType?: string | null
   createdAt: string
   updatedAt: string
   group: IScenarioGroupRef
@@ -100,7 +117,7 @@ export interface IGetScenarioGroupListParams {
   keyword?: string
 }
 
-/** 그룹 상세 - 기반 이벤트 */
+/** 그룹 상세 - 기반 이벤트 (v1 단건) */
 export interface IScenarioBaseEvent {
   eventId: number
   eventName: string
@@ -109,12 +126,31 @@ export interface IScenarioBaseEvent {
   updatedAt: string
 }
 
+/** 그룹 상세 - 구성 이벤트 (v4 멀티 이벤트) */
+export interface IScenarioEventBundle {
+  eventId: number
+  eventName: string
+  eventTypeLv1?: string
+  eventTypeLv1Label?: string
+  isScenarioSuggested?: boolean
+  latestRecordFirstCreated?: string
+}
+
+/** 그룹 생성 근거 마크다운 ('근거 보기') */
+export interface IScenarioGroupEvidence {
+  eventAnalysisMarkdown?: string | null
+  roleSelectionMarkdown?: string | null
+}
+
 /** 그룹 상세 - 가정 및 실행 가능성 표 행 (판정 상태 포함) */
 export interface IScenarioGroupDetailRow {
   scenarioId: number
   scenarioName: string
   baseCase: boolean
   displayOrder: number
+  scenarioRole?: ScenarioRole | null
+  scenarioRoleLabel?: string | null
+  scenarioType?: string | null
   dimensions: IScenarioDimension[]
   probability: number
   adjustedProbability: number
@@ -179,7 +215,10 @@ export interface IScenarioGroupDetailRes {
   groupName: string
   createdAt: string
   updatedAt: string
-  baseEvent: IScenarioBaseEvent
+  /** v1 단건 기반 이벤트. v4는 eventBundles 사용 */
+  baseEvent?: IScenarioBaseEvent
+  eventBundles?: IScenarioEventBundle[]
+  evidence?: IScenarioGroupEvidence | null
   summary: string
   scenarioCount: number
   dimensionColumns: IScenarioDimensionColumn[]
@@ -189,6 +228,7 @@ export interface IScenarioGroupDetailRes {
 
 /** 시나리오 상세 - Signpost 정의 */
 export interface IScenarioSignpostDefinition {
+  signpostId?: number | null
   label: string
   direction: 'sup'
   directionLabel: string
@@ -214,6 +254,9 @@ export interface IScenarioDetailViewRes {
   scenarioName: string
   baseCase: boolean
   displayOrder: number
+  scenarioRole?: ScenarioRole | null
+  scenarioRoleLabel?: string | null
+  scenarioType?: string | null
   createdAt: string
   updatedAt: string
   narrative: string

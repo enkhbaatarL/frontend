@@ -2,21 +2,16 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { CircularProgress, ClickAwayListener, Divider, Paper, Popper, Stack, Typography, type TypographyProps } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { type MouseEvent, type ReactNode, type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type MouseEvent, type ReactNode, type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react'
 
-import type { EventConnectedScenarioGroup, EventDesignStep, EventScenarioDesignStatus } from '@/service/mi/nextGenMI/event'
-import type { IScenarioBaseEvent } from '@/service/mi/nextGenMI/scenarioGroup'
+import type { EventDesignStep, EventLinkedScenarioGroup, ScenarioGroupLifecycleStatus } from '@/service/mi/nextGenMI/event'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
-import {
-  isEventDesignOccupiedByOther,
-  normalizeEventDesignStep,
-  normalizeEventScenarioDesignStatus,
-} from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
-import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
+import { normalizeEventDesignStep } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
+import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 
 const POPOVER_POPPER_MODIFIERS = [
   {
@@ -63,18 +58,8 @@ const releaseExclusivePopover = (close: ExclusiveCloseFn) => {
 
 export type EventConnectedScenarioGroupPopoverProps = {
   children: (params: { open: boolean; onClick: (e: MouseEvent<HTMLElement>) => void }) => ReactNode
-  /** 다중 연결 그룹 (있으면 우선 사용) */
-  connectedScenarioGroups?: EventConnectedScenarioGroup[]
-  scenarioGroupId?: number | null
   eventId?: number
-  eventName?: string
-  designStep?: EventDesignStep | string | null
-  scenarioDesignStatus?: EventScenarioDesignStatus | string | null
-  occupied?: boolean
-  occupantUserId?: number | null
-  occupantUserName?: string | null
-  currentUserNo?: number | null
-  onContinue: (group: EventConnectedScenarioGroup) => void
+  onContinue: (group: EventLinkedScenarioGroup) => void
 }
 
 const ConnectedGroupEllipsisText = ({ value, sx, ...typographyProps }: Omit<TypographyProps, 'children'> & { value: string }) => {
@@ -192,17 +177,19 @@ const ConnectedGroupCompletedBadge = ({ onClick }: { onClick: (e: MouseEvent<HTM
   </MIBaseButton>
 )
 
+const isCompletedLinkedGroup = (group: EventLinkedScenarioGroup) => {
+  const status = (group.status ?? group.stage ?? '').toLowerCase() as ScenarioGroupLifecycleStatus | string
+  return status === 'created' || status === 'realized'
+}
+
 const ConnectedGroupStatusCell = ({
   group,
-  currentUserNo,
   onClick,
 }: {
-  group: EventConnectedScenarioGroup
-  currentUserNo?: number | null
+  group: EventLinkedScenarioGroup
   onClick: (e: MouseEvent<HTMLButtonElement>) => void
 }) => {
-  const status = normalizeEventScenarioDesignStatus(group.scenarioDesignStatus)
-  if (status === 'created') {
+  if (isCompletedLinkedGroup(group)) {
     return (
       <Stack width="76px" minWidth="76px" height="36px" alignItems="center" justifyContent="center">
         <ConnectedGroupCompletedBadge onClick={onClick} />
@@ -210,105 +197,26 @@ const ConnectedGroupStatusCell = ({
     )
   }
 
-  const locked = isEventDesignOccupiedByOther(
-    {
-      scenarioDesignStatus: status ?? 'creating',
-      occupied: group.occupied,
-      occupantUserId: group.occupantUserId,
-      occupantUserName: group.occupantUserName,
-    },
-    currentUserNo,
-  )
-
   return (
     <Stack width="76px" minWidth="76px" height="36px" alignItems="center" justifyContent="center">
-      <ConnectedGroupStepBadge locked={locked} designStep={group.designStep} onClick={onClick} />
+      <ConnectedGroupStepBadge designStep={group.designStep} onClick={onClick} />
     </Stack>
   )
 }
 
-const EventConnectedScenarioGroupPopover = ({
-  children,
-  connectedScenarioGroups,
-  scenarioGroupId,
-  eventId,
-  eventName,
-  designStep,
-  scenarioDesignStatus,
-  occupied,
-  occupantUserId,
-  occupantUserName,
-  currentUserNo,
-  onContinue,
-}: EventConnectedScenarioGroupPopoverProps) => {
+const EventConnectedScenarioGroupPopover = ({ children, eventId, onContinue }: EventConnectedScenarioGroupPopoverProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
-  const hasProvidedGroups = (connectedScenarioGroups?.length ?? 0) > 0
-  const fallbackGroupId = scenarioGroupId ?? null
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['nextGenMIEventConnectedScenarioGroup', fallbackGroupId],
-    queryFn: () => nextGenMIScenarioGroupService.getScenarioGroupDetail(fallbackGroupId!),
-    enabled: open && !hasProvidedGroups && fallbackGroupId !== null,
+    queryKey: ['nextGenMIEventScenarioGroups', eventId],
+    queryFn: () => nextGenMIEventService.getEventScenarioGroups(eventId!),
+    enabled: open && eventId !== undefined,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
-  const groups = useMemo((): EventConnectedScenarioGroup[] => {
-    if (hasProvidedGroups) return connectedScenarioGroups ?? []
-
-    const events: IScenarioBaseEvent[] = []
-    if (data?.baseEvent) events.push(data.baseEvent)
-
-    const currentName = eventName?.trim()
-    if (currentName && eventId !== undefined && !events.some((item) => item.eventId === eventId)) {
-      events.push({
-        eventId,
-        eventName: currentName,
-        eventTypeLv1: '',
-        eventTypeLv1Label: '',
-        updatedAt: '',
-      })
-    }
-
-    if (events.length === 0 && currentName && eventId !== undefined) {
-      events.push({
-        eventId,
-        eventName: currentName,
-        eventTypeLv1: '',
-        eventTypeLv1Label: '',
-        updatedAt: '',
-      })
-    }
-
-    if (fallbackGroupId === null && events.length === 0) return []
-
-    return [
-      {
-        scenarioGroupId: fallbackGroupId ?? 0,
-        groupName: data?.groupName?.trim() || eventName?.trim() || '시나리오 그룹',
-        designStep,
-        scenarioDesignStatus,
-        occupied,
-        occupantUserId,
-        occupantUserName,
-        events: events.map((event) => ({ eventId: event.eventId, eventName: event.eventName })),
-      },
-    ]
-  }, [
-    connectedScenarioGroups,
-    data?.baseEvent,
-    data?.groupName,
-    designStep,
-    eventId,
-    eventName,
-    fallbackGroupId,
-    hasProvidedGroups,
-    occupied,
-    occupantUserId,
-    occupantUserName,
-    scenarioDesignStatus,
-  ])
+  const groups = data ?? []
 
   const groupCount = groups.length
   const anchorElRef = useRef<HTMLElement | null>(null)
@@ -352,7 +260,7 @@ const EventConnectedScenarioGroupPopover = ({
     setAnchorEl(e.currentTarget)
   }
 
-  const handleContinue = (e: MouseEvent<HTMLElement>, group: EventConnectedScenarioGroup) => {
+  const handleContinue = (e: MouseEvent<HTMLElement>, group: EventLinkedScenarioGroup) => {
     e.stopPropagation()
     exclusiveClose()
     onContinue(group)
@@ -412,11 +320,11 @@ const EventConnectedScenarioGroupPopover = ({
                   />
                 </Stack>
 
-                {isLoading && !hasProvidedGroups ? (
+                {isLoading ? (
                   <Stack alignItems="center" justifyContent="center" minHeight="72px">
                     <CircularProgress size={20} />
                   </Stack>
-                ) : isError && !hasProvidedGroups && groupCount === 0 ? (
+                ) : isError && groupCount === 0 ? (
                   <Stack padding="12px 10px">
                     <Typography variant="body3M12" color="contentText.Subtext">
                       연결된 시나리오 그룹을 불러오지 못했습니다.
@@ -440,15 +348,15 @@ const EventConnectedScenarioGroupPopover = ({
                         >
                           <Stack minWidth={0} padding="0 10px" gap="5px">
                             <ConnectedGroupEllipsisText
-                              value={group.groupName}
+                              value={group.title?.trim() || '시나리오 그룹'}
                               variant="body2SB14"
                               color="contentText.Normal"
                               lineHeight="20px"
                             />
                             <Stack gap="4px" minWidth={0}>
-                              {group.events.map((event, eventIndex) => (
+                              {(group.events ?? []).map((eventName, eventIndex) => (
                                 <Stack
-                                  key={`${group.scenarioGroupId}-${event.eventId}-${eventIndex}`}
+                                  key={`${group.scenarioGroupId}-${eventIndex}-${eventName}`}
                                   direction="row"
                                   alignItems="flex-start"
                                   gap="6px"
@@ -466,7 +374,7 @@ const EventConnectedScenarioGroupPopover = ({
                                     {'\u2022'}
                                   </Typography>
                                   <ConnectedGroupEllipsisText
-                                    value={event.eventName}
+                                    value={eventName}
                                     variant="body3R12"
                                     color="contentText.Normal"
                                     lineHeight="17px"
@@ -476,7 +384,7 @@ const EventConnectedScenarioGroupPopover = ({
                               ))}
                             </Stack>
                           </Stack>
-                          <ConnectedGroupStatusCell group={group} currentUserNo={currentUserNo} onClick={(e) => handleContinue(e, group)} />
+                          <ConnectedGroupStatusCell group={group} onClick={(e) => handleContinue(e, group)} />
                         </Stack>
                       </Stack>
                     ))}

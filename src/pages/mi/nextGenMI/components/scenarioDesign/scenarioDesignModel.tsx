@@ -37,6 +37,7 @@ export type ScenarioDesignColumn = {
   valueEnums?: string[]
   description?: string | null
   valueEnumDescriptions?: Record<string, string>
+  valueEnumLabels?: Record<string, string>
 }
 
 export const SCENARIO_DESIGN_MAX_ROW_COUNT = 15
@@ -93,6 +94,7 @@ export const createScenarioDesignColumn = (
     valueEnums: template?.valueEnums,
     description: column.description?.trim() || template?.description?.trim() || null,
     valueEnumDescriptions: template?.valueEnumDescriptions,
+    valueEnumLabels: template?.valueEnumLabels,
   }
 }
 
@@ -131,6 +133,7 @@ export const createScenarioDesignTemplateColumns = (
         valueEnums: template.valueEnums,
         description: template.description?.trim() || null,
         valueEnumDescriptions: template.valueEnumDescriptions,
+        valueEnumLabels: template.valueEnumLabels,
       })),
   )
 }
@@ -142,10 +145,15 @@ export const getScenarioDesignRowId = (row: DesignScenarioRow, fallback = 0) => 
 export const getScenarioDesignDimension = (row: DesignScenarioRow, key: string) =>
   row.dimensions?.find((dimension) => dimension.key === key)
 
-export const getScenarioDesignDimensionSelectedValue = (row: DesignScenarioRow, key: string) => {
-  const value = getScenarioDesignDimension(row, key)?.value
+export const getScenarioDesignDimensionSelectedValue = (row: DesignScenarioRow, key: string, column?: ScenarioDesignColumn) => {
+  const dimension = getScenarioDesignDimension(row, key)
+  const valueId = dimension?.valueId?.trim()
+  const value = dimension?.value?.trim()
+  if (valueId) return valueId
   if (value === undefined || value === null || value === '') return ''
-  return value
+  if (column?.valueEnums?.includes(value)) return value
+  const matchedByLabel = column?.valueEnums?.find((enumValue) => column.valueEnumLabels?.[enumValue] === value)
+  return matchedByLabel ?? value
 }
 
 export const getScenarioDesignDimensionRationale = (row: DesignScenarioRow, key: string) =>
@@ -159,18 +167,25 @@ export const getScenarioDesignColumnItems = (column: ScenarioDesignColumn): Sele
     .filter(
       (value) => value !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value && value !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label,
     )
-    .map((value) => ({ value, label: value }))
+    .map((value) => ({
+      value,
+      label: column.valueEnumLabels?.[value]?.trim() || value,
+    }))
 
 const getScenarioDesignColumnValueLabel = (column: ScenarioDesignColumn, value: string) =>
   String(getScenarioDesignColumnItems(column).find((item) => item.value === value)?.label ?? value)
 
 export const getScenarioDesignColumnDisplayValue = (column: ScenarioDesignColumn, row: DesignScenarioRow) => {
-  const dimension = getScenarioDesignDimension(row, column.key)
-  const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+  const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
   if (selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value) return SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label
   if (selectedValue === '') return ''
 
-  return String(dimension?.valueLabel?.trim() || getScenarioDesignColumnValueLabel(column, selectedValue))
+  const optionLabel = getScenarioDesignColumnValueLabel(column, selectedValue)
+  if (optionLabel !== selectedValue) return optionLabel
+
+  const valueLabel = getScenarioDesignDimension(row, column.key)?.valueLabel?.trim()
+  if (valueLabel && valueLabel !== selectedValue) return valueLabel
+  return optionLabel
 }
 
 export const getInitialScenarioDesignColumnValue = (
@@ -182,7 +197,7 @@ export const getInitialScenarioDesignColumnValue = (
   const initialRow = initialRows.find((item, index) => getScenarioDesignRowId(item, index + 1) === rowId)
   if (!initialRow) return ''
 
-  return getScenarioDesignDimensionSelectedValue(initialRow, column.key)
+  return getScenarioDesignDimensionSelectedValue(initialRow, column.key, column)
 }
 
 export const updateScenarioDesignRowScenarioName = (row: DesignScenarioRow, scenarioName: string): DesignScenarioRow => ({
@@ -203,6 +218,7 @@ export const updateScenarioDesignRowDimension = (
     key: column.key,
     label: column.label,
     value,
+    valueId: isAgentValue || isEmptyValue ? null : value,
     valueLabel: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, value),
     rationale: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueDescription(column, value) || null,
   }
@@ -250,14 +266,14 @@ export const createScenarioDesignEditTable = (columns: ScenarioDesignColumn[], r
     displayOrder: row.displayOrder ?? index + 1,
     scenarioName: row.scenarioName ?? '',
     dimensions: columns.map((column) => {
-      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
       const isAgentValue = selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
       const isEmptyValue = selectedValue === ''
 
       return {
         key: column.key,
         label: column.label,
-        value: isAgentValue ? null : selectedValue,
+        value: isAgentValue ? null : isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, selectedValue),
         valueLabel: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, selectedValue),
       }
     }),

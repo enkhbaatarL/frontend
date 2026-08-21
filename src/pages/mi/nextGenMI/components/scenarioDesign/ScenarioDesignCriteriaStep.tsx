@@ -949,7 +949,7 @@ const ScenarioDesignCriteriaLoadingOverlay = ({ visible, message }: { visible: b
     }}
   >
     <MIAgentSpinner size={40} tone="gray" />
-    <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} noWrap>
+    <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center" maxWidth="360px">
       {message}
     </Typography>
   </Stack>
@@ -983,6 +983,7 @@ type ScenarioDesignCriteriaStepProps = {
   criteria: ScenarioDesignCriteriaTableProps
   baseEvent: Omit<ScenarioDesignBaseEventSectionProps, 'loading'>
   isLoading: boolean
+  loadingMessage?: string
   review: ScenarioDesignCriteriaReviewProps
   actions: {
     onCancel: () => void
@@ -991,7 +992,14 @@ type ScenarioDesignCriteriaStepProps = {
   }
 }
 
-const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, isLoading, review, actions }: ScenarioDesignCriteriaStepProps) => {
+const ScenarioDesignCriteriaStep = ({
+  criteria,
+  baseEvent,
+  isLoading,
+  loadingMessage,
+  review,
+  actions,
+}: ScenarioDesignCriteriaStepProps) => {
   const { showSnackbar } = useSnackbar()
   const {
     rows,
@@ -1445,7 +1453,7 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, isLoading, review, ac
           },
           renderCell: ({ row, rowIndex }) => {
             const rowId = getScenarioDesignRowId(row, rowIndex + 1)
-            const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+            const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
             const isLocked = row.locked === true
             const items = getScenarioDesignColumnItems(column).map((item) => {
               const description = getScenarioDesignColumnValueDescription(column, item.value)
@@ -1671,7 +1679,7 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, isLoading, review, ac
             <MIFollowCursorTooltip
               title={
                 isLoading
-                  ? '시나리오 설계를 불러오는 중입니다.'
+                  ? (loadingMessage ?? '시나리오 설계를 불러오는 중입니다.')
                   : reviewPending
                     ? '변경사항을 검토하는 중입니다.'
                     : rows.length >= SCENARIO_DESIGN_MAX_ROW_COUNT
@@ -1707,7 +1715,7 @@ const ScenarioDesignCriteriaStep = ({ criteria, baseEvent, isLoading, review, ac
             </MIFollowCursorTooltip>
             <ScenarioDesignCriteriaLoadingOverlay
               visible={criteriaEditingDisabled}
-              message={isLoading ? '시나리오 설계를 불러오는 중입니다.' : '변경사항을 검토하고 있습니다.'}
+              message={isLoading ? (loadingMessage ?? '시나리오 설계를 불러오는 중입니다.') : '변경사항을 검토하고 있습니다.'}
             />
           </Stack>
           <ScenarioDesignReviewErrorPanel

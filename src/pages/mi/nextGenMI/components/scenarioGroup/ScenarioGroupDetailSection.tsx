@@ -21,10 +21,12 @@ import {
   NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
+import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import useNextGenMIDetailStickyTop from '@/pages/mi/nextGenMI/components/common/useNextGenMIDetailStickyTop'
 import ScenarioGroupScenarioReviewDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupScenarioReviewDialog'
 import SignpostDefinitionDetailDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/SignpostDefinitionDetailDialog'
@@ -122,6 +124,7 @@ const ScenarioSelectSidebar = ({
         >
           <NextGenMIDisplayOrderBadge value={scenario.displayOrder} disabled={isDiscarded} />
           {scenario.baseCase && <NextGenMIBaseCaseChip disabled={isDiscarded} />}
+          <ScenarioRoleBadge role={scenario.scenarioRole} type={scenario.scenarioType} label={scenario.scenarioRoleLabel} />
           <NextGenMITableBodyText
             value={scenario.scenarioName}
             variant={isSelected ? 'body1SB16' : 'body1M16'}
@@ -286,9 +289,17 @@ const ScenarioAssumptionCards = ({ dimensions, loading = false }: ScenarioAssump
                 <Typography color="contentText.Normal" fontSize="13px" fontWeight={600} lineHeight={1.6} noWrap title={dimension.label}>
                   {dimension.label}
                 </Typography>
-                <Typography color="contentText.Black" fontSize="15px" fontWeight={500} lineHeight={1.6}>
-                  {dimension.valueLabel}
-                </Typography>
+                {dimension.rationale?.trim() ? (
+                  <NextGenMIFollowCursorTooltip title={dimension.rationale.trim()}>
+                    <Typography color="contentText.Black" fontSize="15px" fontWeight={500} lineHeight={1.6}>
+                      {dimension.valueLabel}
+                    </Typography>
+                  </NextGenMIFollowCursorTooltip>
+                ) : (
+                  <Typography color="contentText.Black" fontSize="15px" fontWeight={500} lineHeight={1.6}>
+                    {dimension.valueLabel}
+                  </Typography>
+                )}
               </Stack>
             </Stack>
           ))}
@@ -791,6 +802,7 @@ const ScenarioGroupDetailSection = ({
               </Typography>
               <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
                 {data?.displayOrder !== undefined && <NextGenMIDisplayOrderBadge value={data.displayOrder} height="24px" />}
+                <ScenarioRoleBadge role={data?.scenarioRole} type={data?.scenarioType} label={data?.scenarioRoleLabel} />
                 <Typography fontSize="22px" fontWeight={700} lineHeight={1.4} color="contentText.Black" minWidth={0}>
                   {data?.scenarioName ?? '-'}
                 </Typography>

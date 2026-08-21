@@ -16,18 +16,18 @@ import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNe
 
 interface EventDetailRelatedScenariosSectionProps {
   eventId?: string | number
-  relatedEventScenario?: RelatedEventScenario | null
+  relatedEventScenarios?: RelatedEventScenario[]
   scenarioSuggestReason?: string | null
   scenarioDesignDisabled?: boolean
   scenarioDesignDisabledTooltipTitle?: string
   onScenarioDesignClick?: () => void
-  onScenarioRowClick?: (row: RelatedScenario) => void
+  onScenarioRowClick?: (group: RelatedEventScenario, row: RelatedScenario) => void
   loading?: boolean
 }
 
 const EventDetailRelatedScenariosSection = ({
   eventId,
-  relatedEventScenario,
+  relatedEventScenarios = [],
   scenarioSuggestReason,
   scenarioDesignDisabled = false,
   scenarioDesignDisabledTooltipTitle,
@@ -36,16 +36,8 @@ const EventDetailRelatedScenariosSection = ({
   loading = false,
 }: EventDetailRelatedScenariosSectionProps) => {
   const navigate = useNavigate()
-  const rows = relatedEventScenario?.scenarios ?? []
-  const scenarioGroupId = relatedEventScenario?.scenarioGroupId
-  const scenarioGroupLabel = relatedEventScenario?.groupName?.trim() ?? ''
+  const groups = relatedEventScenarios.filter((group) => (group.scenarios?.length ?? 0) > 0)
   const trimmedScenarioSuggestReason = scenarioSuggestReason?.trim() ?? ''
-
-  const hasScenarioGroupLink = scenarioGroupLabel.length > 0 && scenarioGroupId !== undefined && scenarioGroupId !== null
-  const handleScenarioGroupClick = () => {
-    if (scenarioGroupId === undefined || scenarioGroupId === null) return
-    navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId))
-  }
 
   const handleScenarioDesignClick = () => {
     if (onScenarioDesignClick) {
@@ -56,9 +48,7 @@ const EventDetailRelatedScenariosSection = ({
       navigate(getNextGenMITabPath('scenarios'))
       return
     }
-    navigate(getNextGenMIEventDesignPath(eventId), {
-      state: { eventName: scenarioGroupLabel || undefined },
-    })
+    navigate(getNextGenMIEventDesignPath(eventId))
   }
 
   const scenarioDesignButton = (
@@ -109,7 +99,7 @@ const EventDetailRelatedScenariosSection = ({
         title="관련 시나리오"
         tooltipTitle=""
       />
-      {rows.length === 0 ? (
+      {groups.length === 0 ? (
         <Box position="relative" height="260px" bgcolor="gray.5" borderBottom="1px solid" borderColor="gray.30" overflow="hidden">
           <Stack
             position="absolute"
@@ -167,41 +157,64 @@ const EventDetailRelatedScenariosSection = ({
           </Stack>
         </Box>
       ) : (
-        <Box width="100%" minWidth={0} maxWidth="100%" bgcolor="gray.5" borderRadius="10px" p="24px" boxSizing="border-box">
-          <Stack gap="8px" py="6px" mb="8px">
-            <Typography variant="body2SB14" color="contentText.Normal" px="6px" lineHeight={1.4}>
-              시나리오 그룹
-            </Typography>
-            {hasScenarioGroupLink ? (
-              <Box px="6px" sx={{ width: 'fit-content', maxWidth: '100%' }}>
-                <NextGenMIHoverLinkCell value={scenarioGroupLabel} variant="body1B16" onClick={handleScenarioGroupClick} />
+        <Stack gap="16px">
+          {groups.map((group, groupIndex) => {
+            const scenarioGroupId = group.scenarioGroupId
+            const scenarioGroupLabel = group.groupName?.trim() ?? ''
+            const hasScenarioGroupLink = scenarioGroupLabel.length > 0 && scenarioGroupId !== undefined && scenarioGroupId !== null
+            const handleScenarioGroupClick = () => {
+              if (scenarioGroupId === undefined || scenarioGroupId === null) return
+              navigate(getNextGenMIScenarioGroupDetailPath(scenarioGroupId))
+            }
+
+            return (
+              <Box
+                key={scenarioGroupId ?? `related-group-${groupIndex}`}
+                width="100%"
+                minWidth={0}
+                maxWidth="100%"
+                bgcolor="gray.5"
+                borderRadius="10px"
+                p="24px"
+                boxSizing="border-box"
+              >
+                <Stack gap="8px" py="6px" mb="8px">
+                  <Typography variant="body2SB14" color="contentText.Normal" px="6px" lineHeight={1.4}>
+                    시나리오 그룹
+                  </Typography>
+                  {hasScenarioGroupLink ? (
+                    <Box px="6px" sx={{ width: 'fit-content', maxWidth: '100%' }}>
+                      <NextGenMIHoverLinkCell value={scenarioGroupLabel} variant="body1B16" onClick={handleScenarioGroupClick} />
+                    </Box>
+                  ) : (
+                    <Typography variant="body1B16" color="contentText.Black" px="6px" lineHeight={1.4}>
+                      {'-'}
+                    </Typography>
+                  )}
+                </Stack>
+                <Box
+                  width="100%"
+                  minWidth={0}
+                  maxWidth="100%"
+                  bgcolor="commonColor.White"
+                  border="1px solid"
+                  borderColor="contentBorder.Normal"
+                  borderRadius="10px"
+                  p="12px"
+                  boxSizing="border-box"
+                >
+                  <ScenarioGroupInnerTable<RelatedScenario>
+                    dimensionColumns={group.dimensionColumns ?? []}
+                    scenarios={group.scenarios ?? []}
+                    backgroundColor="commonColor.White"
+                    noRowMessage="관련 시나리오가 없습니다."
+                    onScenarioClick={(row) => onScenarioRowClick?.(group, row)}
+                  />
+                </Box>
               </Box>
-            ) : (
-              <Typography variant="body1B16" color="contentText.Black" px="6px" lineHeight={1.4}>
-                {'-'}
-              </Typography>
-            )}
-          </Stack>
-          <Box
-            width="100%"
-            minWidth={0}
-            maxWidth="100%"
-            bgcolor="commonColor.White"
-            border="1px solid"
-            borderColor="contentBorder.Normal"
-            borderRadius="10px"
-            p="12px"
-            boxSizing="border-box"
-          >
-            <ScenarioGroupInnerTable<RelatedScenario>
-              dimensionColumns={relatedEventScenario?.dimensionColumns ?? []}
-              scenarios={rows}
-              backgroundColor="commonColor.White"
-              noRowMessage="관련 시나리오가 없습니다."
-              onScenarioClick={onScenarioRowClick}
-            />
-          </Box>
-        </Box>
+            )
+          })}
+        </Stack>
       )}
     </Stack>
   )

@@ -1,7 +1,11 @@
 import type { EventDetail, EventInstitutionOutlook, EventRelatedRecord, EventImpactIndexTerm } from '@/service/mi/nextGenMI/event'
 import type { IScenarioDetailViewRes, IScenarioGroupDetailRes } from '@/service/mi/nextGenMI/scenarioGroup'
 
-import { formatNextGenMIDateTime, formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
+import {
+  formatNextGenMIDateTime,
+  formatNextGenMIDateTimeYmdHm,
+  toDisplayProbabilityPercent,
+} from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
 type MarkdownValue = string | number | boolean | null | undefined
 
@@ -71,7 +75,10 @@ const formatScenarioTableLabel = (displayOrder: number, baseCase: boolean, scena
 const formatScenarioDetailTitle = (displayOrder: number, baseCase: boolean, scenarioName: string) =>
   `시나리오 ${displayOrder} - ${baseCase ? '[BC] ' : ''}${displayValue(scenarioName)}`
 
-const formatProbability = (probability?: number | null) => (probability === null || probability === undefined ? '-' : `${probability}%`)
+const formatProbability = (probability?: number | null) => {
+  const display = toDisplayProbabilityPercent(probability)
+  return Number.isFinite(display) ? `${Math.round(display)}%` : '-'
+}
 
 export const getMarkdownFileName = (title: string, fallback: string) => {
   const fileName = title
@@ -94,8 +101,9 @@ export const buildEventDetailMarkdown = ({
   outlooks: EventInstitutionOutlook[]
 }) => {
   const impactAnalysis = detail.impactAnalysis
-  const relatedScenarios = (detail.relatedEventScenario?.scenarios ?? []).filter((scenario) => scenario.status !== 'discarded')
-  const relatedDimensionColumns = detail.relatedEventScenario?.dimensionColumns ?? []
+  const relatedGroups = detail.relatedEventScenarios ?? []
+  const relatedScenarios = relatedGroups.flatMap((group) => (group.scenarios ?? []).filter((scenario) => scenario.status !== 'discarded'))
+  const relatedDimensionColumns = relatedGroups[0]?.dimensionColumns ?? []
   const sections = [
     `# ${displayValue(detail.eventName)}`,
     [`- 생성: ${formatNextGenMIDateTimeYmdHm(detail.createdAt)}`, `- 갱신: ${formatNextGenMIDateTimeYmdHm(detail.updatedAt)}`]
@@ -174,9 +182,11 @@ export const buildEventDetailMarkdown = ({
     sections.push('### 시나리오 제안 사유', detail.scenarioSuggestReason.trim())
   }
 
-  if (detail.relatedEventScenario?.groupName?.trim()) {
-    sections.push(`- 시나리오 그룹: ${detail.relatedEventScenario.groupName.trim()}`)
-  }
+  relatedGroups.forEach((group) => {
+    if (group.groupName?.trim()) {
+      sections.push(`- 시나리오 그룹: ${group.groupName.trim()}`)
+    }
+  })
 
   sections.push(
     markdownTable(
@@ -199,9 +209,15 @@ export const buildScenarioGroupDetailMarkdown = (detail: IScenarioGroupDetailRes
     '### Base Event',
     markdownTable(
       ['이벤트', '이벤트 유형', '업데이트 일시'],
-      detail.baseEvent
-        ? [[detail.baseEvent.eventName, detail.baseEvent.eventTypeLv1Label, formatNextGenMIDateTimeYmdHm(detail.baseEvent.updatedAt)]]
-        : [],
+      (detail.eventBundles?.length ?? 0) > 0
+        ? detail.eventBundles!.map((event) => [
+          event.eventName,
+          event.eventTypeLv1Label ?? event.eventTypeLv1,
+          formatNextGenMIDateTimeYmdHm(event.latestRecordFirstCreated),
+        ])
+        : detail.baseEvent
+          ? [[detail.baseEvent.eventName, detail.baseEvent.eventTypeLv1Label, formatNextGenMIDateTimeYmdHm(detail.baseEvent.updatedAt)]]
+          : [],
     ),
     '### 시나리오 그룹 설명',
     detail.summary?.trim() || '_표시할 데이터가 없습니다._',

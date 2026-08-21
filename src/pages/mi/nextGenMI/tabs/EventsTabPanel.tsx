@@ -20,15 +20,11 @@ import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/c
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
-  findEventDesignAvailability,
   getEventDesignOccupiedMessage,
-  hasCreatingEventDesignAvailability,
-  isEventDesignOccupiedByOther,
-  isOwnEventDesignAvailability,
-  mergeEventListItemDesignAvailability,
+  isScenarioDesignStatusOccupiedByOther,
   normalizeEventDesignStep,
-  normalizeEventScenarioDesignStatus,
-  resolveMultiEventSelectionDesignState,
+  normalizeScenarioDesignStatusCode,
+  resolveSelectionDesignStateFromStatus,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
 import EventRecommendedStarCell from '@/pages/mi/nextGenMI/components/event/EventRecommendedStarCell'
@@ -40,14 +36,13 @@ import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusB
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
-  type EventConnectedScenarioGroup,
-  type EventDesignAvailability,
+  type EventLinkedScenarioGroup,
   type EventListItem,
   type EventSort,
   type EventStatus,
   type GetEventsParams,
 } from '@/service/mi/nextGenMI/event'
-import useAuthStore from '@/store/useAuthStore'
+import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
 import useDialog from '@/store/useDialog'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
@@ -80,12 +75,9 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
   return { startDate: today.subtract(1, 'month'), endDate: today }
 }
 
-const isEventSelectableForScenarioDesign = (row: EventListItem) => row.scenarioDesignStatus !== 'unavailable'
-
 const EventsTabPanel = () => {
   const navigate = useNavigate()
   const { onShow } = useDialog()
-  const currentUserNo = useAuthStore((state) => state.user?.userNo)
 
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
   const [sort, setSort] = useState<EventSort>('latest')
@@ -150,41 +142,24 @@ const EventsTabPanel = () => {
   }, [data?.events, pagination.page])
 
   const rawTableRows = useMemo(() => data?.events?.detail ?? [], [data?.events?.detail])
-  const designAvailabilityEventIds = useMemo(() => rawTableRows.map((row) => row.eventId), [rawTableRows])
+  const tableRows = rawTableRows
 
-  const { data: designAvailabilityData } = useQuery({
-    queryKey: ['nextGenMIEventDesignAvailability', 'events', designAvailabilityEventIds],
-    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: designAvailabilityEventIds }),
-    enabled: designAvailabilityEventIds.length > 0,
-    refetchInterval: (query) => {
-      if (query.state.data !== undefined) {
-        return hasCreatingEventDesignAvailability(query.state.data) ? 5000 : false
-      }
-      return rawTableRows.some((row) => row.scenarioDesignStatus === 'creating') ? 5000 : false
-    },
+  const selectedEventIds = useMemo(() => selectedEvents.map((item) => item.eventId), [selectedEvents])
+
+  const { data: selectionDesignStatus } = useQuery({
+    queryKey: ['nextGenMIScenarioDesignStatus', selectedEventIds],
+    queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: selectedEventIds }),
+    enabled: selectedEventIds.length > 0,
+    refetchInterval: (query) => (normalizeScenarioDesignStatusCode(query.state.data?.designStatus) === 'creating' ? 5000 : false),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
-
-  const designAvailabilityByEventId = useMemo(
-    () =>
-      new Map<number, EventDesignAvailability>(
-        (designAvailabilityData ?? []).flatMap((item) => (item.eventId === undefined ? [] : [[item.eventId, item]])),
-      ),
-    [designAvailabilityData],
-  )
-  const tableRows = useMemo(
-    () => rawTableRows.map((row) => mergeEventListItemDesignAvailability(row, designAvailabilityByEventId.get(row.eventId))),
-    [designAvailabilityByEventId, rawTableRows],
-  )
 
   const selectedEventIdSet = useMemo(() => new Set(selectedEvents.map((item) => item.eventId)), [selectedEvents])
 
   const isSelectionLimitReached = selectedEvents.length >= EVENT_SELECTION_MAX_COUNT
 
   const handleToggleEventSelection = useCallback((row: EventListItem, checked: boolean) => {
-    if (!isEventSelectableForScenarioDesign(row)) return
-
     setSelectedEvents((prev) => {
       if (!checked) return prev.filter((item) => item.eventId !== row.eventId)
       if (prev.some((item) => item.eventId === row.eventId)) return prev
@@ -197,63 +172,50 @@ const EventsTabPanel = () => {
     setSelectedEvents((prev) => prev.filter((item) => item.eventId !== eventId))
   }, [])
 
-  const selectedRowsForDesign = useMemo(() => {
-    const rowById = new Map(tableRows.map((row) => [row.eventId, row]))
-    return selectedEvents.map((item) => rowById.get(item.eventId)).filter((row): row is EventListItem => row !== undefined)
-  }, [selectedEvents, tableRows])
+  const selectionDesignState = useMemo(
+    () => resolveSelectionDesignStateFromStatus(selectionDesignStatus, selectedEvents),
+    [selectedEvents, selectionDesignStatus],
+  )
 
-  const selectionDesignState = useMemo(() => {
-    if (selectedEvents.length < 2) return null
+  const handleSelectedEventsDesignClick = useCallback(async () => {
+    if (selectedEvents.length === 0) return
 
-    // 현재 페이지/가용 데이터에 선택 행이 모두 없으면 신규 생성 CTA로 폴백
-    if (selectedRowsForDesign.length !== selectedEvents.length) {
-      const primary = selectedEvents[0]
-      return {
-        mode: 'designable' as const,
-        locked: false,
-        primaryEventId: primary.eventId,
-        primaryEventName: primary.eventName,
-      }
-    }
-
-    return resolveMultiEventSelectionDesignState(selectedRowsForDesign, currentUserNo)
-  }, [currentUserNo, selectedEvents, selectedRowsForDesign])
-
-  const handleSelectedEventsDesignClick = useCallback(() => {
-    if (!selectionDesignState) return
+    const currentStatus =
+      selectionDesignStatus ??
+      (await nextGenMIScenarioDesignService
+        .getScenarioDesignStatus({ miEventIds: selectedEvents.map((item) => item.eventId) })
+        .catch(() => undefined))
+    const currentState = resolveSelectionDesignStateFromStatus(currentStatus, selectedEvents)
+    if (!currentState) return
 
     // Case 2. 동일 조합을 다른 사용자가 진행 중 - 진입 불가 안내
-    if (selectionDesignState.mode === 'creating' && selectionDesignState.locked) {
+    if (currentState.mode === 'creating' && currentState.locked) {
       onShow({
         title: '시나리오 설계를 시작할 수 없습니다',
         width: 450,
-        children: getEventDesignOccupiedMessage(selectionDesignState.occupantUserName),
+        children: getEventDesignOccupiedMessage(currentState.occupantUserName),
       })
       return
     }
 
     // Case 3. 동일 조합의 시나리오 그룹이 완료된 경우 - 상세로 이동 (신규 생성 없음)
-    if (
-      selectionDesignState.mode === 'created' &&
-      selectionDesignState.scenarioGroupId !== undefined &&
-      selectionDesignState.scenarioGroupId !== null
-    ) {
-      navigate(getNextGenMIScenarioGroupDetailPath(selectionDesignState.scenarioGroupId), {
-        state: { eventName: selectionDesignState.primaryEventName },
+    if (currentState.mode === 'created' && currentState.scenarioGroupId !== undefined && currentState.scenarioGroupId !== null) {
+      navigate(getNextGenMIScenarioGroupDetailPath(currentState.scenarioGroupId), {
+        state: { eventName: currentState.primaryEventName },
       })
       return
     }
 
     // Case 1. 신규 생성 / Case 3. 내가 진행 중 - 현재 단계 설계 화면으로 이동
-    navigate(getNextGenMIEventDesignPath(selectionDesignState.primaryEventId), {
+    navigate(getNextGenMIEventDesignPath(currentState.primaryEventId), {
       state: {
-        eventName: selectionDesignState.primaryEventName,
+        eventName: currentState.primaryEventName,
         eventIds: selectedEvents.map((item) => item.eventId),
-        scenarioGroupId: selectionDesignState.scenarioGroupId ?? undefined,
-        designStep: selectionDesignState.designStep ?? null,
+        scenarioGroupId: currentState.scenarioGroupId ?? undefined,
+        designStep: currentState.designStep ?? null,
       },
     })
-  }, [navigate, onShow, selectedEvents, selectionDesignState])
+  }, [navigate, onShow, selectedEvents, selectionDesignStatus])
 
   const handleEventNameClick = useCallback(
     (row: EventListItem) =>
@@ -265,76 +227,54 @@ const EventsTabPanel = () => {
 
   const handleScenarioClick = useCallback(
     async (row: EventListItem) => {
-      if (row.scenarioDesignStatus === 'unavailable') return
+      const currentStatus = await nextGenMIScenarioDesignService
+        .getScenarioDesignStatus({ miEventIds: [row.eventId] })
+        .catch(() => undefined)
+      const designStatus = normalizeScenarioDesignStatusCode(currentStatus?.designStatus)
 
-      let currentRow = row
-      if (row.scenarioDesignStatus === 'creating') {
-        const availability =
-          designAvailabilityByEventId.get(row.eventId) ??
-          findEventDesignAvailability(
-            await nextGenMIEventService.getEventDesignAvailability({ eventIds: [row.eventId] }).catch(() => undefined),
-            row.eventId,
-          )
-        currentRow = mergeEventListItemDesignAvailability(row, availability)
-      }
-
-      if (currentRow.scenarioDesignStatus === 'unavailable') return
-
-      if (currentRow.scenarioDesignStatus === 'creating' && !isOwnEventDesignAvailability(currentRow, currentUserNo)) {
+      if (designStatus === 'unavailable') {
         onShow({
           title: '시나리오 설계를 시작할 수 없습니다',
           width: 450,
-          children: getEventDesignOccupiedMessage(currentRow.occupantUserName),
+          children: EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
         })
         return
       }
 
-      if (
-        currentRow.scenarioDesignStatus === 'created' &&
-        currentRow.scenarioGroupId !== undefined &&
-        currentRow.scenarioGroupId !== null
-      ) {
-        navigate(getNextGenMIScenarioGroupDetailPath(currentRow.scenarioGroupId), {
-          state: { eventName: currentRow.eventName },
+      if (isScenarioDesignStatusOccupiedByOther(currentStatus)) {
+        onShow({
+          title: '시나리오 설계를 시작할 수 없습니다',
+          width: 450,
+          children: getEventDesignOccupiedMessage(currentStatus?.occupantUserName),
         })
         return
       }
 
-      navigate(getNextGenMIEventDesignPath(currentRow.eventId), {
+      if (designStatus === 'created' && currentStatus?.scenarioGroupId !== undefined && currentStatus.scenarioGroupId !== null) {
+        navigate(getNextGenMIScenarioGroupDetailPath(currentStatus.scenarioGroupId), {
+          state: { eventName: row.eventName },
+        })
+        return
+      }
+
+      navigate(getNextGenMIEventDesignPath(row.eventId), {
         state: {
-          eventName: currentRow.eventName,
-          scenarioGroupId: currentRow.scenarioGroupId ?? undefined,
-          designStep: normalizeEventDesignStep(currentRow.designStep) ?? null,
+          eventName: row.eventName,
+          eventIds: [row.eventId],
+          scenarioGroupId: currentStatus?.scenarioGroupId ?? undefined,
+          designStep: normalizeEventDesignStep(currentStatus?.designStep) ?? null,
         },
       })
     },
-    [currentUserNo, designAvailabilityByEventId, navigate, onShow],
+    [navigate, onShow],
   )
 
   const handleConnectedGroupContinue = useCallback(
-    (row: EventListItem, group: EventConnectedScenarioGroup) => {
-      const groupStatus = normalizeEventScenarioDesignStatus(group.scenarioDesignStatus)
-      const isGroupOccupiedByOther = isEventDesignOccupiedByOther(
-        {
-          scenarioDesignStatus: groupStatus ?? row.scenarioDesignStatus,
-          occupied: group.occupied ?? row.occupied,
-          occupantUserId: group.occupantUserId ?? row.occupantUserId,
-          occupantUserName: group.occupantUserName ?? row.occupantUserName,
-        },
-        currentUserNo,
-      )
-
-      if (isGroupOccupiedByOther) {
-        onShow({
-          title: '시나리오 설계를 시작할 수 없습니다',
-          width: 450,
-          children: getEventDesignOccupiedMessage(group.occupantUserName ?? row.occupantUserName),
-        })
-        return
-      }
+    (row: EventListItem, group: EventLinkedScenarioGroup) => {
+      const groupStatus = (group.status ?? group.stage ?? '').toLowerCase()
 
       // 완료된 그룹만 상세로 이동. 1/2단계는 시나리오 설계 화면으로 이동
-      if (groupStatus === 'created') {
+      if (groupStatus === 'created' || groupStatus === 'realized') {
         navigate(getNextGenMIScenarioGroupDetailPath(group.scenarioGroupId), {
           state: { eventName: row.eventName },
         })
@@ -344,12 +284,13 @@ const EventsTabPanel = () => {
       navigate(getNextGenMIEventDesignPath(row.eventId), {
         state: {
           eventName: row.eventName,
+          eventIds: [row.eventId],
           scenarioGroupId: group.scenarioGroupId,
           designStep: normalizeEventDesignStep(group.designStep) ?? null,
         },
       })
     },
-    [currentUserNo, navigate, onShow],
+    [navigate],
   )
 
   const columns: GridColDef<EventListItem>[] = useMemo(
@@ -362,14 +303,13 @@ const EventsTabPanel = () => {
         headerAlign: 'center',
         sortable: false,
         renderCell: (params) => {
-          const selectable = isEventSelectableForScenarioDesign(params.row)
           const isSelected = selectedEventIdSet.has(params.row.eventId)
-          const selectionLimitDisabled = selectable && isSelectionLimitReached && !isSelected
+          const selectionLimitDisabled = isSelectionLimitReached && !isSelected
           const checkbox = (
             <AdminCheckbox
               size="small"
               checked={isSelected}
-              disabled={!selectable || selectionLimitDisabled}
+              disabled={selectionLimitDisabled}
               onChange={(_, checked) => handleToggleEventSelection(params.row, checked)}
               onClick={(e) => e.stopPropagation()}
               slotProps={{ input: { 'aria-label': `${params.row.eventName} 선택` } }}
@@ -508,45 +448,18 @@ const EventsTabPanel = () => {
         width: 120,
         align: 'center',
         sortable: false,
-        renderCell: (params) => {
-          const scenarioDesignUnavailable = params.row.scenarioDesignStatus === 'unavailable'
-          const connectedGroups = params.row.connectedScenarioGroups ?? []
-          const hasConnectedGroups = connectedGroups.length > 0
-
-          return (
-            <EventScenarioGenerateButton
-              recommended={params.row.isScenarioSuggested}
-              scenarioAvailable={params.row.scenarioDesignStatus === 'created'}
-              designing={params.row.scenarioDesignStatus === 'creating'}
-              designingLocked={isEventDesignOccupiedByOther(params.row, currentUserNo)}
-              designStep={params.row.designStep}
-              designStepLabel={params.row.designStepLabel}
-              scenarioGroupId={params.row.scenarioGroupId}
-              connectedScenarioGroups={connectedGroups}
-              eventId={params.row.eventId}
-              eventName={params.row.eventName}
-              scenarioDesignStatus={params.row.scenarioDesignStatus}
-              occupied={params.row.occupied}
-              occupantUserId={params.row.occupantUserId}
-              occupantUserName={params.row.occupantUserName}
-              currentUserNo={currentUserNo}
-              disabled={
-                scenarioDesignUnavailable ||
-                (!hasConnectedGroups &&
-                  params.row.scenarioDesignStatus === 'created' &&
-                  (params.row.scenarioGroupId === undefined || params.row.scenarioGroupId === null))
-              }
-              disabledTooltipTitle={scenarioDesignUnavailable ? EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE : undefined}
-              onClick={() => handleScenarioClick(params.row)}
-              onConnectedGroupContinue={(group) => handleConnectedGroupContinue(params.row, group)}
-              designingAlwaysExpanded
-            />
-          )
-        },
+        renderCell: (params) => (
+          <EventScenarioGenerateButton
+            recommended={params.row.isScenarioSuggested}
+            scenarioGroupCount={params.row.scenarioGroupCount ?? 0}
+            eventId={params.row.eventId}
+            onClick={() => handleScenarioClick(params.row)}
+            onConnectedGroupContinue={(group) => handleConnectedGroupContinue(params.row, group)}
+          />
+        ),
       },
     ],
     [
-      currentUserNo,
       handleConnectedGroupContinue,
       handleEventNameClick,
       handleScenarioClick,
