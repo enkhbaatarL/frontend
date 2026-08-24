@@ -2,7 +2,9 @@ import { useEffect } from 'react'
 import { Navigate, RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 
 import { useCompanyCondition } from '@/hooks/useCompanyCondition'
+import useEnvironment from '@/hooks/useEnvironment'
 import MILayout from '@/layouts/MILayout'
+import { isScreenElementInCompanyMenus } from '@/lib/miGnbMenuNav'
 import PolicyPage from '@/pages/common/PolicyPage'
 import AIMarketSummaryPage from '@/pages/mi/aiMarketSummary/AIMarketSummaryPage'
 import CustomPage from '@/pages/mi/custom/CustomPage'
@@ -109,6 +111,18 @@ const ForecastPageWrapper = () => {
   return <NewForecastPage />
 }
 
+const DevelopmentPositionPlay2Page = () => {
+  const { isDev } = useEnvironment()
+  const menus = useAuthStore((state) => state.accessCompanyInfo?.menus)
+
+  /** 직접 URL 접근도 개발기와 기존 Position Play 권한이 모두 충족될 때만 허용합니다. */
+  if (!isDev || !isScreenElementInCompanyMenus(menus, 'POSITION_PLAY')) {
+    return <Navigate to="/mi" replace />
+  }
+
+  return <PositionPlayRemotePage />
+}
+
 const MIRoutes: RouteObject = {
   path: '/mi',
   element: (
@@ -205,6 +219,10 @@ const MIRoutes: RouteObject = {
     {
       path: 'position-play/*',
       element: <PositionPlayRemotePage />,
+    },
+    {
+      path: 'position-play2/*',
+      element: <DevelopmentPositionPlay2Page />,
     },
     {
       path: 'market-data',
