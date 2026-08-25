@@ -1,16 +1,16 @@
 import { AxiosResponse } from 'axios'
 
-import type { IScenarioDimension, IScenarioDimensionColumn, ScenarioJudgementStatus } from '@/service/mi/nextGenMI/scenarioGroup'
+import type {
+  IScenarioDimension,
+  IScenarioDimensionColumn,
+  ScenarioJudgementStatus,
+  ScenarioRole,
+} from '@/service/mi/nextGenMI/scenarioGroup'
 
 import api from '@/lib/axios'
 import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
 // #DELETE: API 적용후엔 목데이터 삭제
-import {
-  buildMockEventDesignAvailability,
-  buildMockEventDetail,
-  buildMockEventList,
-  MOCK_EVENT_TYPE_L1_LIST,
-} from '@/service/mi/nextGenMI/eventListMock'
+import { buildMockEventDetail, buildMockEventList, MOCK_EVENT_TYPE_L1_LIST } from '@/service/mi/nextGenMI/eventListMock'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 export type EventSort = 'latest' | 'oldest'
@@ -18,8 +18,6 @@ export type EventSort = 'latest' | 'oldest'
 export type EventStatus = 'all' | 'new' | 'updated'
 
 export type EventSignalType = 'signal' | 'noise'
-
-export type EventScenarioDesignStatus = 'designable' | 'creating' | 'created' | 'unavailable'
 
 export type EventDesignStep = 'step1' | 'step2'
 
@@ -43,22 +41,21 @@ export interface EventImpactIndex {
   impactTermLabel?: string
 }
 
-export interface EventConnectedScenarioGroupEvent {
-  eventId: number
-  eventName: string
-}
+export type ScenarioGroupLifecycleStatus = 'creating' | 'created' | 'realized'
 
-export interface EventConnectedScenarioGroup {
+/** 이벤트 연결 시나리오 그룹 (그룹 N 펼침 패널) */
+export interface EventLinkedScenarioGroup {
   scenarioGroupId: number
-  groupName: string
+  title: string
+  status?: ScenarioGroupLifecycleStatus | string
+  statusLabel?: string
+  stage?: string
+  stageLabel?: string
   designStep?: EventDesignStep | string | null
   designStepLabel?: string | null
-  /** creating이면 N단계 배지, created이면 보기(>) */
-  scenarioDesignStatus?: EventScenarioDesignStatus | string | null
-  occupied?: boolean
-  occupantUserId?: number | null
-  occupantUserName?: string | null
-  events: EventConnectedScenarioGroupEvent[]
+  /** 설계중 그룹 진행자가 로그인 사용자인지. false면 잠금 배지. 설계중이 아니면 null */
+  mine?: boolean | null
+  events?: string[]
 }
 
 export interface EventListItem {
@@ -75,16 +72,8 @@ export interface EventListItem {
   latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
-  scenarioDesignStatus?: EventScenarioDesignStatus
-  scenarioDesignStatusLabel?: string
-  designStep?: EventDesignStep | string | null
-  designStepLabel?: string | null
-  scenarioGroupId?: number | null
-  /** 이벤트에 연결된 시나리오 그룹 목록 (다중 연결 시) */
-  connectedScenarioGroups?: EventConnectedScenarioGroup[]
-  occupied?: boolean
-  occupantUserId?: number | null
-  occupantUserName?: string | null
+  /** 연결된 활성 시나리오 그룹 수. 0이면 설계 아이콘, 1 이상이면 그룹 N */
+  scenarioGroupCount?: number
   indexImpacts: EventImpactIndex[]
 }
 
@@ -113,22 +102,6 @@ export interface GetEventsParams {
   endDate?: string
   keyword?: string
   suggestedOnly?: boolean
-}
-
-export interface EventDesignAvailability {
-  eventId?: number
-  scenarioDesignStatus?: EventScenarioDesignStatus | string
-  scenarioDesignStatusLabel?: string
-  designStep?: EventDesignStep | string | null
-  designStepLabel?: string | null
-  occupied?: boolean
-  occupantUserId?: number | null
-  occupantUserName?: string | null
-  scenarioGroupId?: number | null
-}
-
-export interface GetEventDesignAvailabilityParams {
-  eventIds?: number[]
 }
 
 export interface EventImpactIndexTerm {
@@ -184,6 +157,9 @@ export interface RelatedScenario {
   dimensions?: IScenarioDimension[]
   probability: number
   adjustedProbability?: number
+  scenarioRole?: ScenarioRole | null
+  scenarioRoleLabel?: string | null
+  scenarioType?: string | null
   status?: ScenarioJudgementStatus
   statusLabel?: string
 }
@@ -228,10 +204,6 @@ export interface EventDetail {
   signalTypeLabel?: string | null
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
-  scenarioDesignStatus?: EventScenarioDesignStatus
-  scenarioDesignStatusLabel?: string | null
-  designStep?: EventDesignStep | string | null
-  designStepLabel?: string | null
   latestRecordFirstCreated?: string
   createdAt: string
   updatedAt: string
@@ -240,7 +212,7 @@ export interface EventDetail {
   driverTreeScoreboard?: EventDriverTreeIndex[]
   institutionViewSynthesis?: string | null
   fundamentalDeepdive?: INextGenMIEventFundamentalDeepdive | INextGenMIEventFundamental
-  relatedEventScenario?: RelatedEventScenario | null
+  relatedEventScenarios?: RelatedEventScenario[]
 }
 
 export interface EventRelatedRecord {
@@ -349,21 +321,12 @@ const nextGenMIEventService = {
     }
   },
 
-  async getEventDesignAvailability(params?: GetEventDesignAvailabilityParams): Promise<EventDesignAvailability[]> {
-    try {
-      const response: AxiosResponse<ICommonResponse<EventDesignAvailability[]>> = await api.get('mi/next-gen/events/design-availability', {
-        params: {
-          eventIds: params?.eventIds,
-        },
-        paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
-        suppressGlobalErrorHandler: true,
-      } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean })
+  async getEventScenarioGroups(eventId: string | number): Promise<EventLinkedScenarioGroup[]> {
+    const response: AxiosResponse<ICommonResponse<EventLinkedScenarioGroup[]>> = await api.get(
+      `mi/next-gen/events/${encodeURIComponent(String(eventId))}/scenario-groups`,
+    )
 
-      return response.data.data ?? []
-    } catch {
-      // #DELETE: API 적용후엔 목데이터 삭제 - 시나리오 설계 상태 확인용 더미
-      return buildMockEventDesignAvailability(params?.eventIds)
-    }
+    return response.data.data ?? []
   },
 
   async getEventRecords(eventId: string, params?: IGetNextGenMIEventRecordsParams): Promise<IPaginationResponse<EventRelatedRecord>> {

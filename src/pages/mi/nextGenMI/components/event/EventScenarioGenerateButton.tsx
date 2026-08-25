@@ -1,11 +1,10 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined'
 import { Box } from '@mui/material'
 import { type SxProps, type Theme } from '@mui/material/styles'
 import { type MouseEvent } from 'react'
 
-import type { EventConnectedScenarioGroup, EventDesignStep, EventScenarioDesignStatus } from '@/service/mi/nextGenMI/event'
+import type { EventLinkedScenarioGroup } from '@/service/mi/nextGenMI/event'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ArrowDown from '@/components/common/icons/ArrowDown'
@@ -14,25 +13,12 @@ import EventConnectedScenarioGroupPopover from '@/pages/mi/nextGenMI/components/
 
 export interface EventScenarioGenerateButtonProps {
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void
-  onConnectedGroupContinue?: (group: EventConnectedScenarioGroup) => void
+  onConnectedGroupContinue?: (group: EventLinkedScenarioGroup) => void
   disabled?: boolean
   disabledTooltipTitle?: string
   recommended?: boolean
-  scenarioAvailable?: boolean
-  designing?: boolean
-  designingLocked?: boolean
-  designingAlwaysExpanded?: boolean
-  designStep?: EventDesignStep | string | null
-  designStepLabel?: string | null
-  scenarioGroupId?: number | null
-  connectedScenarioGroups?: EventConnectedScenarioGroup[]
+  scenarioGroupCount?: number
   eventId?: number
-  eventName?: string
-  scenarioDesignStatus?: EventScenarioDesignStatus | string | null
-  occupied?: boolean
-  occupantUserId?: number | null
-  occupantUserName?: string | null
-  currentUserNo?: number | null
 }
 
 type ScenarioTableButtonProps = {
@@ -146,12 +132,6 @@ const ScenarioDesignButtonIcon = ({ className }: { className?: string }) => (
   </Box>
 )
 
-const ScenarioViewButtonIcon = () => (
-  <Box component="span" sx={tableButtonIconSx}>
-    <ChevronRightRoundedIcon aria-hidden focusable="false" sx={{ width: '100%', height: '100%', fontSize: '20px' }} />
-  </Box>
-)
-
 const DesignScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) => (
   <MIBaseButton
     variant="outlined"
@@ -231,60 +211,6 @@ const RecommendedScenarioButton = ({ disabled, onClick }: ScenarioTableButtonPro
     }}
   >
     추천
-  </MIBaseButton>
-)
-
-const ViewScenarioButton = ({ disabled, onClick }: ScenarioTableButtonProps) => (
-  <MIBaseButton
-    variant="outlined"
-    disabled={disabled}
-    aria-label="시나리오 보기"
-    onClick={onClick}
-    prefix={<ScenarioViewButtonIcon />}
-    gap="0px"
-    sx={{
-      ...tableButtonBaseSx,
-      color: 'contentIcon.Enabled',
-      '&::before': {
-        ...tableButtonBaseSx['&::before'],
-        borderColor: 'contentBorder.Normal',
-        backgroundColor: 'commonColor.White',
-      },
-      '& > span > span': {
-        boxSizing: 'border-box',
-        width: '100%',
-        padding: '0 5px',
-        transform: 'translateX(3px)',
-        transition: 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-      },
-      '&:is(:hover:not(:disabled), :focus-visible)::before': {
-        borderRadius: '4.3px / 8px',
-        transform: 'translateX(-50%) scaleX(1.6667)',
-      },
-      '&:is(:hover:not(:disabled), :focus-visible) > span > span': {
-        transform: 'translateX(-14px)',
-      },
-      '&:hover:not(:disabled), &:focus-visible': {
-        borderColor: 'transparent',
-        backgroundColor: 'transparent',
-        color: 'contentText.Normal',
-        '&::before': {
-          borderColor: 'contentBorder.Hover',
-          backgroundColor: 'gray.5',
-        },
-      },
-      '&:active:not(:disabled)': {
-        borderColor: 'transparent',
-        backgroundColor: 'transparent',
-        color: 'contentText.Black',
-        '&::before': {
-          borderColor: 'contentBorder.Active',
-          backgroundColor: 'gray.5',
-        },
-      },
-    }}
-  >
-    보기
   </MIBaseButton>
 )
 
@@ -384,52 +310,18 @@ const EventScenarioGenerateButton = ({
   disabled,
   disabledTooltipTitle,
   recommended,
-  scenarioAvailable,
-  designing,
-  designingLocked: _designingLocked,
-  designingAlwaysExpanded: _designingAlwaysExpanded = false,
-  designStep,
-  designStepLabel: _designStepLabel,
-  scenarioGroupId,
-  connectedScenarioGroups,
+  scenarioGroupCount = 0,
   eventId,
-  eventName,
-  scenarioDesignStatus,
-  occupied,
-  occupantUserId,
-  occupantUserName,
-  currentUserNo,
 }: EventScenarioGenerateButtonProps) => {
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     onClick?.(e)
   }
 
-  const resolvedScenarioDesignStatus = scenarioDesignStatus ?? (scenarioAvailable ? 'created' : designing ? 'creating' : undefined)
-
-  // 연결 그룹 배열이 없으면 scenarioGroupId 1건으로 폴백 (목록 CTA는 "그룹 N"으로 통일)
-  const resolvedConnectedGroups: EventConnectedScenarioGroup[] =
-    (connectedScenarioGroups?.length ?? 0) > 0
-      ? (connectedScenarioGroups ?? [])
-      : scenarioGroupId !== undefined && scenarioGroupId !== null
-        ? [
-          {
-            scenarioGroupId,
-            groupName: eventName?.trim() || '시나리오 그룹',
-            designStep,
-            scenarioDesignStatus: resolvedScenarioDesignStatus,
-            occupied,
-            occupantUserId,
-            occupantUserName,
-            events: eventId !== undefined ? [{ eventId, eventName: eventName?.trim() || `이벤트 ${eventId}` }] : [],
-          },
-        ]
-        : []
-
-  const connectedGroupCount = resolvedConnectedGroups.length
+  const connectedGroupCount = scenarioGroupCount
   const hasConnectedGroups = connectedGroupCount > 0
 
-  const handleConnectedGroupContinue = (group: EventConnectedScenarioGroup) => {
+  const handleConnectedGroupContinue = (group: EventLinkedScenarioGroup) => {
     if (onConnectedGroupContinue) {
       onConnectedGroupContinue(group)
       return
@@ -437,22 +329,10 @@ const EventScenarioGenerateButton = ({
     onClick?.({} as MouseEvent<HTMLButtonElement>)
   }
 
-  // creating/created 등 연결 그룹이 있으면 이벤트 단위 락/"진행" 없이 "그룹 N" + 팝오버
+  // 연결 그룹이 있으면 이벤트 단위 락/"진행" 없이 "그룹 N" + 팝오버
   if (hasConnectedGroups) {
     const connectedGroupsButton = (
-      <EventConnectedScenarioGroupPopover
-        connectedScenarioGroups={resolvedConnectedGroups}
-        scenarioGroupId={scenarioGroupId}
-        eventId={eventId}
-        eventName={eventName}
-        designStep={designStep}
-        scenarioDesignStatus={resolvedScenarioDesignStatus}
-        occupied={occupied}
-        occupantUserId={occupantUserId}
-        occupantUserName={occupantUserName}
-        currentUserNo={currentUserNo}
-        onContinue={handleConnectedGroupContinue}
-      >
+      <EventConnectedScenarioGroupPopover eventId={eventId} onContinue={handleConnectedGroupContinue}>
         {({ open, onClick: openPopover }) => (
           <ConnectedGroupsButton
             disabled={disabled}
@@ -480,9 +360,7 @@ const EventScenarioGenerateButton = ({
     return connectedGroupsButton
   }
 
-  const button = scenarioAvailable ? (
-    <ViewScenarioButton disabled={disabled} onClick={handleClick} />
-  ) : recommended ? (
+  const button = recommended ? (
     <RecommendedScenarioButton disabled={disabled} onClick={handleClick} />
   ) : (
     <DesignScenarioButton disabled={disabled} onClick={handleClick} />

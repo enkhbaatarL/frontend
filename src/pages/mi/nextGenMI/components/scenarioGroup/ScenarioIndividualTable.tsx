@@ -11,11 +11,13 @@ import type {
 
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
+import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 const isDiscardedScenario = (status?: ScenarioJudgementStatus) => status === 'discarded'
@@ -107,23 +109,30 @@ const GroupRefMeta = ({
 /** 주요 가정 strip: dimensions[]를 상단 label(11 SemiBold) / 하단 valueLabel(14 Medium) 2줄 좌측정렬 셀(160px)로 나열 */
 const DimensionStrip = ({ dimensions, disabled = false }: { dimensions: IScenarioDimension[]; disabled?: boolean }) => (
   <Stack direction="row" alignItems="center" width="max-content">
-    {dimensions.map((dimension) => (
-      <Stack key={dimension.key} width="160px" minWidth="160px" padding="0 6px">
-        <NextGenMITableBodyText
-          value={dimension.label}
-          color={disabled ? 'contentText.Disabled' : 'contentText.Normal'}
-          tooltipWhenTruncated
-          sx={{ width: '100%', fontSize: '11px', fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.22px' }}
-        />
+    {dimensions.map((dimension) => {
+      const rationale = dimension.rationale?.trim()
+      const value = (
         <NextGenMITableBodyText
           value={dimension.valueLabel?.trim() || '-'}
           variant="body2M14"
           color={disabled ? 'contentText.Disabled' : 'contentText.Black'}
-          tooltipWhenTruncated
+          tooltipWhenTruncated={!rationale}
           sx={{ width: '100%' }}
         />
-      </Stack>
-    ))}
+      )
+
+      return (
+        <Stack key={dimension.key} width="160px" minWidth="160px" padding="0 6px">
+          <NextGenMITableBodyText
+            value={dimension.label}
+            color={disabled ? 'contentText.Disabled' : 'contentText.Normal'}
+            tooltipWhenTruncated
+            sx={{ width: '100%', fontSize: '11px', fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.22px' }}
+          />
+          {rationale ? <NextGenMIFollowCursorTooltip title={rationale}>{value}</NextGenMIFollowCursorTooltip> : value}
+        </Stack>
+      )
+    })}
   </Stack>
 )
 
@@ -149,6 +158,7 @@ const ScenarioIndividualTable = ({ scenarios, loading, skeletonRowCount }: Scena
             <Stack gap="4px" minWidth={0}>
               <GroupRefMeta group={row.group} displayOrder={row.displayOrder} baseCase={row.baseCase} disabled={discarded} />
               <Stack direction="row" alignItems="center" gap="4px" width="100%" minWidth={0} maxWidth="100%">
+                <ScenarioRoleBadge role={row.scenarioRole} type={row.scenarioType} label={row.scenarioRoleLabel} />
                 <ScenarioStatusBadge status={row.status} label={row.statusLabel} />
                 {discarded ? (
                   <NextGenMITableBodyText

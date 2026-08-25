@@ -1,5 +1,7 @@
 import { Divider, Stack, Typography, type TypographyProps } from '@mui/material'
 
+import { toDisplayProbabilityPercent } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
+
 type ScenarioPossibilityGaugeProps = {
   /** 발생 확률 (0~100 정수) */
   probability: number
@@ -31,7 +33,9 @@ const ScenarioPossibilityGauge = ({
       <Divider sx={{ width: '20px', borderColor: 'contentText.Disabled' }} />
     ) : (
       <Typography variant="body2M14" color="contentText.Black" fontSize={fontSize} whiteSpace="nowrap">
-        {Number.isFinite(probability) ? `${Math.round(Math.min(100, Math.max(0, probability)))}%` : '-'}
+        {Number.isFinite(toDisplayProbabilityPercent(probability))
+          ? `${Math.round(Math.min(100, Math.max(0, toDisplayProbabilityPercent(probability))))}%`
+          : '-'}
       </Typography>
     )}
   </Stack>

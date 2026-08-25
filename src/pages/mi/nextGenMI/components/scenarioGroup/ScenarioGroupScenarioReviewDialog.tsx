@@ -30,6 +30,7 @@ import {
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import { toDisplayProbabilityPercent } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
 const SCENARIO_REVIEW_CARD_DEFAULT_WIDTH = 400
@@ -520,7 +521,9 @@ const ScenarioReviewCard = ({
               시나리오 가능성
             </Typography>
             <Typography variant="body2M14" color="contentText.Normal" lineHeight={1.4}>
-              {scenario.adjustedProbability ?? scenario.probability}%
+              {Number.isFinite(toDisplayProbabilityPercent(scenario.adjustedProbability ?? scenario.probability))
+                ? `${Math.round(toDisplayProbabilityPercent(scenario.adjustedProbability ?? scenario.probability))}%`
+                : '-'}
             </Typography>
           </Stack>
         </Stack>

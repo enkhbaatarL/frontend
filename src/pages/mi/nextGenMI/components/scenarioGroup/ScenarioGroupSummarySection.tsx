@@ -1,16 +1,21 @@
-import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Dialog, DialogContent, Skeleton, Stack, Typography } from '@mui/material'
+import { useState } from 'react'
 
-import type { IScenarioBaseEvent } from '@/service/mi/nextGenMI/scenarioGroup'
+import type { IScenarioEventBundle, IScenarioGroupEvidence } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import MIBaseButton from '@/components/common/button/MIBaseButton'
+import DocumentIcon from '@/components/common/icons/DocumentIcon'
+import MIMarkdown from '@/components/common/markdown/MIMarkdown'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
 interface ScenarioGroupSummarySectionProps {
-  baseEvent?: IScenarioBaseEvent
+  eventBundles?: IScenarioEventBundle[]
+  evidence?: IScenarioGroupEvidence | null
   summary?: string
   loading?: boolean
-  onEventClick?: () => void
+  onEventClick?: (eventId: number, eventName?: string) => void
 }
 
 const BaseEventHeaderCell = ({ label, fixed = false }: { label: string; fixed?: boolean }) => (
@@ -31,82 +36,159 @@ const BaseEventHeaderCell = ({ label, fixed = false }: { label: string; fixed?: 
   </Typography>
 )
 
-const ScenarioGroupSummarySection = ({ baseEvent, summary, loading = false, onEventClick }: ScenarioGroupSummarySectionProps) => (
-  <Stack gap="24px">
-    <Stack gap="10px">
-      <Typography fontSize="16px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
-        Base Event
-      </Typography>
-      {loading ? (
-        <Skeleton variant="rounded" height={80} sx={{ borderRadius: '10px' }} />
-      ) : (
-        <Stack
-          width="100%"
-          maxWidth="100%"
-          minWidth={0}
-          bgcolor="gray.5"
-          borderRadius="10px"
-          padding="16px"
-          boxSizing="border-box"
-          overflow="hidden"
-        >
-          <Stack
-            direction="row"
-            alignItems="center"
-            height="30px"
-            sx={{ borderBottom: '0.5px solid', borderColor: 'contentBorder.Active' }}
-          >
-            <BaseEventHeaderCell label="이벤트" fixed />
-            <BaseEventHeaderCell label="이벤트 유형" />
-            <BaseEventHeaderCell label="업데이트 일시" />
-          </Stack>
-          <Stack direction="row" alignItems="center">
-            <Box flex="3 1 0" maxWidth="700px" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
-              <NextGenMIHoverLinkCell
-                value={baseEvent?.eventName ?? '-'}
-                variant="body1M16"
-                ariaLabel={`${baseEvent?.eventName ?? '이벤트'} 상세 보기`}
-                onClick={() => {
-                  onEventClick?.()
-                }}
-              />
-            </Box>
-            <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
-              <NextGenMITableBodyText
-                value={baseEvent?.eventTypeLv1Label ?? '-'}
-                variant="body2M14"
-                color="contentText.Black"
-                tooltipWhenTruncated
-              />
-            </Box>
-            <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
-              <NextGenMITableBodyText
-                value={formatNextGenMIDateTimeYmdHm(baseEvent?.updatedAt)}
-                variant="body2M14"
-                color="contentText.Black"
-                tooltipWhenTruncated
-              />
-            </Box>
-          </Stack>
-        </Stack>
-      )}
-    </Stack>
+const ScenarioGroupSummarySection = ({
+  eventBundles = [],
+  evidence,
+  summary,
+  loading = false,
+  onEventClick,
+}: ScenarioGroupSummarySectionProps) => {
+  const [evidenceOpen, setEvidenceOpen] = useState(false)
+  const eventAnalysisMarkdown = evidence?.eventAnalysisMarkdown?.trim() ?? ''
+  const roleSelectionMarkdown = evidence?.roleSelectionMarkdown?.trim() ?? ''
+  const hasEvidence = eventAnalysisMarkdown.length > 0 || roleSelectionMarkdown.length > 0
+  const rows = eventBundles
 
-    <Stack gap="8px">
-      <Typography fontSize="15px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
-        시나리오 그룹 설명
-      </Typography>
-      {loading ? (
-        <Skeleton variant="rounded" height={120} sx={{ borderRadius: '10px' }} />
-      ) : (
-        <Box bgcolor="gray.5" borderRadius="10px" padding="20px">
-          <Typography variant="body1M16" color="contentText.Black" lineHeight={1.6} sx={{ whiteSpace: 'pre-line' }}>
-            {summary ?? '-'}
+  return (
+    <Stack gap="24px">
+      <Stack gap="10px">
+        <Stack direction="row" alignItems="center" justifyContent="space-between" minWidth={0}>
+          <Typography fontSize="16px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
+            Base Event
           </Typography>
-        </Box>
-      )}
+          {hasEvidence && (
+            <MIBaseButton
+              variant="outlined"
+              onClick={() => setEvidenceOpen(true)}
+              prefix={<DocumentIcon width={20} height={20} aria-hidden focusable="false" style={{ color: '#495057' }} />}
+              labelColor="contentText.Normal"
+              gap="4px"
+              sx={{
+                height: '36px',
+                padding: '8px 10px 8px 6px',
+                borderRadius: '8px',
+                flexShrink: 0,
+                backgroundColor: 'commonColor.White',
+                borderColor: 'contentBorder.Normal',
+                '&:hover:not(:disabled)': {
+                  backgroundColor: 'commonColor.White',
+                  borderColor: 'contentBorder.Hover',
+                },
+                '& .MuiTypography-root': {
+                  fontWeight: 600,
+                },
+              }}
+            >
+              근거 보기
+            </MIBaseButton>
+          )}
+        </Stack>
+        {loading ? (
+          <Skeleton variant="rounded" height={80} sx={{ borderRadius: '10px' }} />
+        ) : (
+          <Stack
+            width="100%"
+            maxWidth="100%"
+            minWidth={0}
+            bgcolor="gray.5"
+            borderRadius="10px"
+            padding="16px"
+            boxSizing="border-box"
+            overflow="hidden"
+          >
+            <Stack
+              direction="row"
+              alignItems="center"
+              height="30px"
+              sx={{ borderBottom: '0.5px solid', borderColor: 'contentBorder.Active' }}
+            >
+              <BaseEventHeaderCell label="이벤트" fixed />
+              <BaseEventHeaderCell label="이벤트 유형" />
+              <BaseEventHeaderCell label="업데이트 일시" />
+            </Stack>
+            {rows.length === 0 ? (
+              <Stack direction="row" alignItems="center">
+                <Box flex="3 1 0" maxWidth="700px" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
+                  <Typography variant="body1M16" color="contentText.Black">
+                    -
+                  </Typography>
+                </Box>
+              </Stack>
+            ) : (
+              rows.map((event) => (
+                <Stack key={event.eventId} direction="row" alignItems="center">
+                  <Box flex="3 1 0" maxWidth="700px" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
+                    <NextGenMIHoverLinkCell
+                      value={event.eventName ?? '-'}
+                      variant="body1M16"
+                      ariaLabel={`${event.eventName ?? '이벤트'} 상세 보기`}
+                      onClick={() => {
+                        onEventClick?.(event.eventId, event.eventName)
+                      }}
+                    />
+                  </Box>
+                  <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
+                    <NextGenMITableBodyText
+                      value={event.eventTypeLv1Label ?? event.eventTypeLv1 ?? '-'}
+                      variant="body2M14"
+                      color="contentText.Black"
+                      tooltipWhenTruncated
+                    />
+                  </Box>
+                  <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
+                    <NextGenMITableBodyText
+                      value={formatNextGenMIDateTimeYmdHm(event.latestRecordFirstCreated)}
+                      variant="body2M14"
+                      color="contentText.Black"
+                      tooltipWhenTruncated
+                    />
+                  </Box>
+                </Stack>
+              ))
+            )}
+          </Stack>
+        )}
+      </Stack>
+
+      <Stack gap="8px">
+        <Typography fontSize="15px" fontWeight={700} lineHeight={1.4} color="contentText.Black">
+          시나리오 그룹 설명
+        </Typography>
+        {loading ? (
+          <Skeleton variant="rounded" height={120} sx={{ borderRadius: '10px' }} />
+        ) : (
+          <Box bgcolor="gray.5" borderRadius="10px" padding="20px">
+            <Typography variant="body1M16" color="contentText.Black" lineHeight={1.6} sx={{ whiteSpace: 'pre-line' }}>
+              {summary ?? '-'}
+            </Typography>
+          </Box>
+        )}
+      </Stack>
+
+      <Dialog open={evidenceOpen} onClose={() => setEvidenceOpen(false)} maxWidth="md" fullWidth>
+        <DialogContent>
+          <Stack gap="16px">
+            {eventAnalysisMarkdown && (
+              <Stack gap="8px">
+                <Typography fontSize="15px" fontWeight={700} color="contentText.Black">
+                  이벤트 분석
+                </Typography>
+                <MIMarkdown>{eventAnalysisMarkdown}</MIMarkdown>
+              </Stack>
+            )}
+            {roleSelectionMarkdown && (
+              <Stack gap="8px">
+                <Typography fontSize="15px" fontWeight={700} color="contentText.Black">
+                  역할 선정
+                </Typography>
+                <MIMarkdown>{roleSelectionMarkdown}</MIMarkdown>
+              </Stack>
+            )}
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </Stack>
-  </Stack>
-)
+  )
+}
 
 export default ScenarioGroupSummarySection

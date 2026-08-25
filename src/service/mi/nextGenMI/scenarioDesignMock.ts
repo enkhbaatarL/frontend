@@ -1,7 +1,7 @@
 // #DELETE: API 적용후엔 목데이터 삭제
 import type {
   ScenarioDesignStageData,
-  ScenarioDesignStart,
+  ScenarioDesignStartV4,
   ScenarioDesignState,
   ScenarioDimensionTemplate,
 } from '@/service/mi/nextGenMI/scenarioDesign'
@@ -11,8 +11,8 @@ const MOCK_SCENARIO_GROUP_ID_BASE = 88000
 export const getMockScenarioGroupId = (miEventId: number) => MOCK_SCENARIO_GROUP_ID_BASE + (miEventId % 1000)
 
 /** #DELETE: API 적용후엔 목데이터 삭제 - 시나리오 설계 시작 응답 */
-export const buildMockScenarioDesignStart = (payload: ScenarioDesignStart): ScenarioDesignStageData => ({
-  scenarioGroupId: getMockScenarioGroupId(payload.miEventId),
+export const buildMockScenarioDesignStart = (payload: ScenarioDesignStartV4): ScenarioDesignStageData => ({
+  scenarioGroupId: getMockScenarioGroupId(payload.miEventIds[0] ?? 0),
   status: 'CREATING',
   stage: 'SCENARIO_CREATED',
 })

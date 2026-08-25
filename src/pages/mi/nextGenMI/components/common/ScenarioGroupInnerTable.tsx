@@ -2,16 +2,23 @@ import { Stack, Typography } from '@mui/material'
 import { memo, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import type { IScenarioDimension, IScenarioDimensionColumn, ScenarioJudgementStatus } from '@/service/mi/nextGenMI/scenarioGroup'
+import type {
+  IScenarioDimension,
+  IScenarioDimensionColumn,
+  ScenarioJudgementStatus,
+  ScenarioRole,
+} from '@/service/mi/nextGenMI/scenarioGroup'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import { NextGenMIBaseCaseChip, NextGenMIDiscardedBadge } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
+import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 const SCENARIO_JUDGEMENT_ITEMS: { value: ScenarioJudgementStatus; label: string }[] = [
@@ -91,6 +98,7 @@ const isDiscardedScenario = (status?: ScenarioJudgementStatus) => status === 'di
 const isRealizedScenario = (status?: ScenarioJudgementStatus) => status === 'realized'
 const isJudgementLockedScenario = (status?: ScenarioJudgementStatus) => isDiscardedScenario(status) || isRealizedScenario(status)
 
+// eslint-disable-next-line react-refresh/only-export-components -- 판정 확인 다이얼로그와 상세 페이지에서 공유
 export const isLastRemainingScenarioDiscard = (
   scenarios: Array<{ scenarioId: number; status?: ScenarioJudgementStatus }>,
   targetScenarioId: number,
@@ -173,6 +181,9 @@ export type ScenarioGroupInnerTableRow = {
   scenarioName: string
   baseCase: boolean
   displayOrder: number
+  scenarioRole?: ScenarioRole | string | null
+  scenarioRoleLabel?: string | null
+  scenarioType?: string | null
   dimensions?: IScenarioDimension[]
   probability: number
   adjustedProbability?: number
@@ -194,9 +205,13 @@ type ScenarioGroupInnerTableProps<TRow extends ScenarioGroupInnerTableRow> = {
   onJudgementChange?: (scenario: TRow, next: ScenarioJudgementStatus) => void
 }
 
+const getDimensionCell = <TRow extends ScenarioGroupInnerTableRow>(row: TRow, column: IScenarioDimensionColumn) =>
+  row.dimensions?.find((item) => item.key === column.key)
+
 const getDimensionCellValue = <TRow extends ScenarioGroupInnerTableRow>(row: TRow, column: IScenarioDimensionColumn) => {
-  const dimensionValue = row.dimensions?.find((item) => item.key === column.key)?.valueLabel
-  if (dimensionValue !== null && dimensionValue !== undefined) return dimensionValue
+  const dimension = getDimensionCell(row, column)
+  const dimensionValue = dimension?.valueLabel
+  if (dimensionValue !== null && dimensionValue !== undefined && dimensionValue !== '') return dimensionValue
 
   return '-'
 }
@@ -245,18 +260,22 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
 
     return [
       {
-        field: 'baseCase',
+        field: 'scenarioRole',
         headerName: '',
-        width: '48px',
-        align: 'right',
-        headerCellSx: tableCellSx,
-        cellSx: { ...tableCellSx },
+        width: '64px',
+        minWidth: '64px',
+        align: 'center',
+        headerCellSx: { ...tableCellSx, padding: '10px 6px' },
+        cellSx: { ...tableCellSx, padding: '10px 6px' },
         renderCell: ({ row }) => {
           const discarded = isDiscardedScenario(row.status)
+          const hasRoleBadge = Boolean(row.scenarioRole || row.scenarioType || row.scenarioRoleLabel)
 
           return (
             <Stack width="100%" alignItems="center" justifyContent="center">
-              {row.baseCase ? <NextGenMIBaseCaseChip disabled={discarded} /> : discarded && <NextGenMIDiscardedBadge />}
+              <ScenarioRoleBadge role={row.scenarioRole} type={row.scenarioType} label={row.scenarioRoleLabel} />
+              {!hasRoleBadge && row.baseCase && <NextGenMIBaseCaseChip disabled={discarded} />}
+              {!hasRoleBadge && !row.baseCase && discarded && <NextGenMIDiscardedBadge />}
             </Stack>
           )
         },
@@ -300,16 +319,19 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           // sortable: true,
           sortComparator: (firstRow, secondRow) => compareDimensionCellValue(firstRow, secondRow, column),
           tooltipWhenHeaderTruncated: true,
+          headerTooltipTitle: column.description?.trim() || column.rationale?.trim() || undefined,
           renderCell: ({ row }) => {
             const discarded = isDiscardedScenario(row.status)
-
-            return (
+            const rationale = getDimensionCell(row, column)?.rationale?.trim()
+            const cell = (
               <NextGenMITableBodyText
                 value={getDimensionCellValue(row, column)}
                 color={discarded ? 'contentText.Disabled' : 'contentText.Black'}
-                tooltipWhenTruncated
+                tooltipWhenTruncated={!rationale}
               />
             )
+
+            return rationale ? <NextGenMIFollowCursorTooltip title={rationale}>{cell}</NextGenMIFollowCursorTooltip> : cell
           },
         }),
       ),
@@ -381,7 +403,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
   const fixedLeftColumnIndexes = useMemo(
     () =>
       columns.flatMap((column, index) => {
-        if (column.field === 'baseCase' || column.field === 'scenario') return [index]
+        if (column.field === 'scenarioRole' || column.field === 'scenario') return [index]
         return []
       }),
     [columns],

@@ -189,16 +189,29 @@ const ScenarioGroupDetailPage = () => {
     void Promise.all(refetches)
   }, [groupDetailQueryKey, queryClient, scenarioGroupId])
 
-  const baseEvent = data?.baseEvent
+  const eventBundles = useMemo(() => {
+    if ((data?.eventBundles?.length ?? 0) > 0) return data?.eventBundles ?? []
+    if (!data?.baseEvent) return []
+    return [
+      {
+        eventId: data.baseEvent.eventId,
+        eventName: data.baseEvent.eventName,
+        eventTypeLv1: data.baseEvent.eventTypeLv1,
+        eventTypeLv1Label: data.baseEvent.eventTypeLv1Label,
+        latestRecordFirstCreated: data.baseEvent.updatedAt,
+      },
+    ]
+  }, [data?.baseEvent, data?.eventBundles])
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
 
-  const handleBaseEventClick = useCallback(() => {
-    if (!baseEvent) return
-
-    navigate(`${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(baseEvent.eventId))}`, {
-      state: { eventName: baseEvent.eventName },
-    })
-  }, [baseEvent, navigate])
+  const handleEventClick = useCallback(
+    (eventId: number, eventName?: string) => {
+      navigate(`${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}`, {
+        state: { eventName },
+      })
+    },
+    [navigate],
+  )
 
   const queryScenarioId = searchParams.get('scenarioId')
   const hasViewableQueryScenarioId = useMemo(() => {
@@ -405,10 +418,11 @@ const ScenarioGroupDetailPage = () => {
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} />
           <ScenarioGroupSummarySection
-            baseEvent={baseEvent}
+            eventBundles={eventBundles}
+            evidence={data?.evidence}
             summary={data?.summary}
             loading={isLoading}
-            onEventClick={handleBaseEventClick}
+            onEventClick={handleEventClick}
           />
         </Stack>
 

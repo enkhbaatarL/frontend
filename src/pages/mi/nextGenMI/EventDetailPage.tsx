@@ -22,11 +22,10 @@ import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common
 import useNextGenMIDetailStickyTop from '@/pages/mi/nextGenMI/components/common/useNextGenMIDetailStickyTop'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
-  findEventDesignAvailability,
   getEventDesignOccupiedMessage,
-  hasCreatingEventDesignAvailability,
-  isEventDesignOccupiedByOther,
-  normalizeEventScenarioDesignStatus,
+  isScenarioDesignStatusOccupiedByOther,
+  normalizeEventDesignStep,
+  normalizeScenarioDesignStatusCode,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventDetailAiInsightsSection from '@/pages/mi/nextGenMI/components/event/EventDetailAiInsightsSection'
 import EventDetailDriverTreeScoreboardSection from '@/pages/mi/nextGenMI/components/event/EventDetailDriverTreeScoreboardSection'
@@ -39,7 +38,7 @@ import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUser
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { buildEventDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
-import useAuthStore from '@/store/useAuthStore'
+import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
 import useDialog from '@/store/useDialog'
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
@@ -188,7 +187,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const state = location.state as NextGenMIEventDetailLocationState | null
   const { showSnackbar } = useSnackbar()
   const { onShow } = useDialog()
-  const currentUserNo = useAuthStore((authState) => authState.user?.userNo)
   const eventIdNumber = eventId !== undefined && Number.isFinite(Number(eventId)) ? Number(eventId) : null
 
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 5 })
@@ -219,18 +217,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     gcTime: 0,
   })
 
-  const designAvailabilityEventIds = useMemo(() => (eventIdNumber === null ? [] : [eventIdNumber]), [eventIdNumber])
-
-  const { data: designAvailabilityData } = useQuery({
-    queryKey: ['nextGenMIEventDesignAvailability', 'eventDetail', eventIdNumber],
-    queryFn: () => nextGenMIEventService.getEventDesignAvailability({ eventIds: designAvailabilityEventIds }),
-    enabled: designAvailabilityEventIds.length > 0,
-    refetchInterval: (query) => {
-      if (query.state.data !== undefined) {
-        return hasCreatingEventDesignAvailability(query.state.data) ? 5000 : false
-      }
-      return detail?.scenarioDesignStatus === 'creating' ? 5000 : false
-    },
+  const { data: designStatus } = useQuery({
+    queryKey: ['nextGenMIScenarioDesignStatus', 'eventDetail', eventIdNumber],
+    queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: [eventIdNumber!] }),
+    enabled: eventIdNumber !== null,
+    refetchInterval: (query) => (normalizeScenarioDesignStatusCode(query.state.data?.designStatus) === 'creating' ? 5000 : false),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -296,15 +287,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
 
   const recordRows = useMemo(() => recordsData?.detail ?? [], [recordsData?.detail])
   const outlookRows = useMemo(() => outlooksData?.detail ?? [], [outlooksData?.detail])
-  const relatedEventScenario = detail?.relatedEventScenario
-  const designAvailability = useMemo(
-    () => findEventDesignAvailability(designAvailabilityData, eventIdNumber),
-    [designAvailabilityData, eventIdNumber],
-  )
-  const scenarioDesignStatus =
-    normalizeEventScenarioDesignStatus(designAvailability?.scenarioDesignStatus) ??
-    normalizeEventScenarioDesignStatus(detail?.scenarioDesignStatus)
-  const relatedScenarioGroupId = relatedEventScenario?.scenarioGroupId
+  const relatedEventScenarios = detail?.relatedEventScenarios ?? []
+  const scenarioDesignStatus = normalizeScenarioDesignStatusCode(designStatus?.designStatus)
+  const relatedScenarioGroupId = relatedEventScenarios.find(
+    (group) => group.scenarioGroupId !== null && group.scenarioGroupId !== undefined,
+  )?.scenarioGroupId
   const hasRelatedScenarioGroup = relatedScenarioGroupId !== undefined && relatedScenarioGroupId !== null
   const isScenarioDesignCreating = scenarioDesignStatus === 'creating'
   const isScenarioDesignCreated = scenarioDesignStatus === 'created' || (!isScenarioDesignCreating && hasRelatedScenarioGroup)
@@ -319,30 +306,22 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     if (!eventId) return
     if (isScenarioDesignCreated || scenarioDesignUnavailable) return
 
-    let currentDesignAvailability = designAvailability
-    if (scenarioDesignStatus === 'creating' && eventIdNumber !== null) {
-      currentDesignAvailability =
-        currentDesignAvailability ??
-        findEventDesignAvailability(
-          await nextGenMIEventService.getEventDesignAvailability({ eventIds: [eventIdNumber] }).catch(() => undefined),
-          eventIdNumber,
-        )
-    }
+    const currentDesignStatus =
+      designStatus ??
+      (eventIdNumber !== null
+        ? await nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: [eventIdNumber] }).catch(() => undefined)
+        : undefined)
 
-    const currentScenarioDesignStatus =
-      normalizeEventScenarioDesignStatus(currentDesignAvailability?.scenarioDesignStatus) ?? scenarioDesignStatus
-    const currentScenarioGroupId = currentDesignAvailability?.scenarioGroupId ?? relatedScenarioGroupId
+    const currentScenarioDesignStatus = normalizeScenarioDesignStatusCode(currentDesignStatus?.designStatus) ?? scenarioDesignStatus
+    const currentScenarioGroupId = currentDesignStatus?.scenarioGroupId ?? relatedScenarioGroupId
 
     if (currentScenarioDesignStatus === 'unavailable') return
 
-    if (
-      currentScenarioDesignStatus === 'creating' &&
-      isEventDesignOccupiedByOther(currentDesignAvailability ?? { scenarioDesignStatus: currentScenarioDesignStatus }, currentUserNo)
-    ) {
+    if (isScenarioDesignStatusOccupiedByOther(currentDesignStatus)) {
       onShow({
         title: '시나리오 설계를 시작할 수 없습니다',
         width: 450,
-        children: getEventDesignOccupiedMessage(currentDesignAvailability?.occupantUserName),
+        children: getEventDesignOccupiedMessage(currentDesignStatus?.occupantUserName),
       })
       return
     }
@@ -355,11 +334,15 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     }
 
     navigate(getNextGenMIEventDesignPath(eventId), {
-      state: { eventName: title },
+      state: {
+        eventName: title,
+        eventIds: eventIdNumber !== null ? [eventIdNumber] : undefined,
+        scenarioGroupId: currentScenarioGroupId ?? undefined,
+        designStep: normalizeEventDesignStep(currentDesignStatus?.designStep) ?? null,
+      },
     })
   }, [
-    currentUserNo,
-    designAvailability,
+    designStatus,
     eventId,
     eventIdNumber,
     isScenarioDesignCreated,
@@ -567,14 +550,14 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         <Stack id={SECTION_SCROLL_IDS.related}>
           <EventDetailRelatedScenariosSection
             eventId={eventId}
-            relatedEventScenario={relatedEventScenario}
+            relatedEventScenarios={relatedEventScenarios}
             scenarioSuggestReason={detail?.scenarioSuggestReason}
             scenarioDesignDisabled={scenarioDesignDisabled}
             scenarioDesignDisabledTooltipTitle={scenarioDesignDisabledTooltipTitle}
             onScenarioDesignClick={handleScenarioDesignClick}
-            onScenarioRowClick={(row) => {
-              if (relatedScenarioGroupId === undefined || relatedScenarioGroupId === null) return
-              navigate(getNextGenMIScenarioGroupDetailPath(relatedScenarioGroupId, row.scenarioId))
+            onScenarioRowClick={(group, row) => {
+              if (group.scenarioGroupId === undefined || group.scenarioGroupId === null) return
+              navigate(getNextGenMIScenarioGroupDetailPath(group.scenarioGroupId, row.scenarioId))
             }}
             loading={detailLoading}
           />

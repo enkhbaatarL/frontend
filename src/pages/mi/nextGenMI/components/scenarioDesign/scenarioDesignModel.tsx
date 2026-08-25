@@ -3,6 +3,7 @@ import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRena
 
 import type { SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 import type {
+  AdditionalDimensionCandidate,
   DesignEditTable,
   DesignScenarioRow,
   ScenarioDimension,
@@ -37,7 +38,11 @@ export type ScenarioDesignColumn = {
   valueEnums?: string[]
   description?: string | null
   valueEnumDescriptions?: Record<string, string>
+  valueEnumLabels?: Record<string, string>
+  additional?: boolean
 }
+
+export type ScenarioDesignAddCriteriaRequestResult = 'generating' | 'empty' | ScenarioDesignColumn[]
 
 export const SCENARIO_DESIGN_MAX_ROW_COUNT = 15
 
@@ -93,7 +98,67 @@ export const createScenarioDesignColumn = (
     valueEnums: template?.valueEnums,
     description: column.description?.trim() || template?.description?.trim() || null,
     valueEnumDescriptions: template?.valueEnumDescriptions,
+    valueEnumLabels: template?.valueEnumLabels,
+    additional: key.startsWith('ad_') ? true : undefined,
   }
+}
+
+export const isScenarioDesignAdditionalColumn = (column: Pick<ScenarioDesignColumn, 'key' | 'additional'>) =>
+  column.additional === true || column.key.startsWith('ad_')
+
+export const hasScenarioDesignColumnDisplayLabels = (column?: Pick<ScenarioDesignColumn, 'valueEnums' | 'valueEnumLabels'>) =>
+  (column?.valueEnums ?? []).some((value) => {
+    const label = column?.valueEnumLabels?.[value]?.trim()
+    return Boolean(label) && label !== value
+  })
+
+export const mergeScenarioDesignAdditionalColumnOptions = (
+  columns: ScenarioDesignColumn[],
+  sourceColumns: ScenarioDesignColumn[] = [],
+): ScenarioDesignColumn[] =>
+  columns.map((column) => {
+    if (!isScenarioDesignAdditionalColumn(column)) return column
+
+    const source = sourceColumns.find((item) => item.key === column.key)
+    const hasColumnEnums = (column.valueEnums?.length ?? 0) > 0
+    const useSourceLabels = !hasScenarioDesignColumnDisplayLabels(column) && hasScenarioDesignColumnDisplayLabels(source)
+
+    return {
+      ...column,
+      additional: true,
+      valueEnums: hasColumnEnums ? column.valueEnums : source?.valueEnums,
+      valueEnumLabels: useSourceLabels ? source?.valueEnumLabels : column.valueEnumLabels,
+      valueEnumDescriptions:
+        Object.keys(column.valueEnumDescriptions ?? {}).length > 0 ? column.valueEnumDescriptions : source?.valueEnumDescriptions,
+    }
+  })
+
+export const upsertScenarioDesignAdditionalColumnSources = (
+  currentColumns: ScenarioDesignColumn[],
+  nextColumns: ScenarioDesignColumn[],
+) => {
+  const mergedColumns = [...currentColumns]
+
+  nextColumns.forEach((column) => {
+    if (!isScenarioDesignAdditionalColumn(column) || !hasScenarioDesignColumnDisplayLabels(column)) return
+
+    const columnIndex = mergedColumns.findIndex((item) => item.key === column.key)
+    if (columnIndex >= 0) {
+      mergedColumns[columnIndex] = {
+        ...mergedColumns[columnIndex],
+        ...column,
+        additional: true,
+      }
+      return
+    }
+
+    mergedColumns.push({
+      ...column,
+      additional: true,
+    })
+  })
+
+  return mergedColumns
 }
 
 export const sortScenarioDesignColumns = <Column extends ScenarioDesignColumn>(columns: Column[]): Column[] =>
@@ -109,6 +174,47 @@ export const createScenarioDesignColumns = (
       return nextColumn ? [nextColumn] : []
     }),
   )
+
+export const mapAdditionalDimensionCandidatesToColumns = (
+  candidates: AdditionalDimensionCandidate[] = [],
+  visibleColumns: ScenarioDesignColumn[] = [],
+): ScenarioDesignColumn[] => {
+  const visibleColumnKeys = new Set(visibleColumns.map((column) => column.key))
+
+  return candidates.flatMap((candidate, index) => {
+    const key = candidate.key?.trim() ?? ''
+    if (!key || visibleColumnKeys.has(key)) return []
+
+    const valueEnums: string[] = []
+    const valueEnumLabels: Record<string, string> = {}
+    const valueEnumDescriptions: Record<string, string> = {}
+
+    candidate.values?.forEach((value) => {
+      const valueId = value.valueId?.trim()
+      if (!valueId) return
+
+      valueEnums.push(valueId)
+      const valueLabel = value.label?.trim()
+      if (valueLabel) valueEnumLabels[valueId] = valueLabel
+      const valueDescription = value.rationale?.trim()
+      if (valueDescription) valueEnumDescriptions[valueId] = valueDescription
+    })
+
+    return [
+      {
+        key,
+        label: candidate.label?.trim() || key,
+        width: '200px',
+        displayOrder: index,
+        valueEnums,
+        description: candidate.description?.trim() || candidate.rationale?.trim() || null,
+        valueEnumLabels,
+        valueEnumDescriptions,
+        additional: true,
+      },
+    ]
+  })
+}
 
 export const createScenarioDesignTemplateColumns = (
   templates: ScenarioDimensionTemplateItem[] = [],
@@ -131,6 +237,7 @@ export const createScenarioDesignTemplateColumns = (
         valueEnums: template.valueEnums,
         description: template.description?.trim() || null,
         valueEnumDescriptions: template.valueEnumDescriptions,
+        valueEnumLabels: template.valueEnumLabels,
       })),
   )
 }
@@ -142,10 +249,15 @@ export const getScenarioDesignRowId = (row: DesignScenarioRow, fallback = 0) => 
 export const getScenarioDesignDimension = (row: DesignScenarioRow, key: string) =>
   row.dimensions?.find((dimension) => dimension.key === key)
 
-export const getScenarioDesignDimensionSelectedValue = (row: DesignScenarioRow, key: string) => {
-  const value = getScenarioDesignDimension(row, key)?.value
+export const getScenarioDesignDimensionSelectedValue = (row: DesignScenarioRow, key: string, column?: ScenarioDesignColumn) => {
+  const dimension = getScenarioDesignDimension(row, key)
+  const valueId = dimension?.valueId?.trim()
+  const value = dimension?.value?.trim()
+  if (valueId) return valueId
   if (value === undefined || value === null || value === '') return ''
-  return value
+  if (column?.valueEnums?.includes(value)) return value
+  const matchedByLabel = column?.valueEnums?.find((enumValue) => column.valueEnumLabels?.[enumValue] === value)
+  return matchedByLabel ?? value
 }
 
 export const getScenarioDesignDimensionRationale = (row: DesignScenarioRow, key: string) =>
@@ -159,18 +271,25 @@ export const getScenarioDesignColumnItems = (column: ScenarioDesignColumn): Sele
     .filter(
       (value) => value !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value && value !== SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label,
     )
-    .map((value) => ({ value, label: value }))
+    .map((value) => ({
+      value,
+      label: column.valueEnumLabels?.[value]?.trim() || value,
+    }))
 
 const getScenarioDesignColumnValueLabel = (column: ScenarioDesignColumn, value: string) =>
   String(getScenarioDesignColumnItems(column).find((item) => item.value === value)?.label ?? value)
 
 export const getScenarioDesignColumnDisplayValue = (column: ScenarioDesignColumn, row: DesignScenarioRow) => {
-  const dimension = getScenarioDesignDimension(row, column.key)
-  const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+  const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
   if (selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value) return SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label
   if (selectedValue === '') return ''
 
-  return String(dimension?.valueLabel?.trim() || getScenarioDesignColumnValueLabel(column, selectedValue))
+  const optionLabel = getScenarioDesignColumnValueLabel(column, selectedValue)
+  if (optionLabel !== selectedValue) return optionLabel
+
+  const valueLabel = getScenarioDesignDimension(row, column.key)?.valueLabel?.trim()
+  if (valueLabel && valueLabel !== selectedValue) return valueLabel
+  return optionLabel
 }
 
 export const getInitialScenarioDesignColumnValue = (
@@ -182,7 +301,7 @@ export const getInitialScenarioDesignColumnValue = (
   const initialRow = initialRows.find((item, index) => getScenarioDesignRowId(item, index + 1) === rowId)
   if (!initialRow) return ''
 
-  return getScenarioDesignDimensionSelectedValue(initialRow, column.key)
+  return getScenarioDesignDimensionSelectedValue(initialRow, column.key, column)
 }
 
 export const updateScenarioDesignRowScenarioName = (row: DesignScenarioRow, scenarioName: string): DesignScenarioRow => ({
@@ -203,6 +322,7 @@ export const updateScenarioDesignRowDimension = (
     key: column.key,
     label: column.label,
     value,
+    valueId: isAgentValue || isEmptyValue ? null : value,
     valueLabel: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, value),
     rationale: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueDescription(column, value) || null,
   }
@@ -250,15 +370,24 @@ export const createScenarioDesignEditTable = (columns: ScenarioDesignColumn[], r
     displayOrder: row.displayOrder ?? index + 1,
     scenarioName: row.scenarioName ?? '',
     dimensions: columns.map((column) => {
-      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key)
+      const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
       const isAgentValue = selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
       const isEmptyValue = selectedValue === ''
+      const additionalValueEnums = isScenarioDesignAdditionalColumn(column) ? (column.valueEnums ?? []) : []
+      const shouldResolveAdditionalAgent = isAgentValue && additionalValueEnums.length > 0
+      const resolvedValueId = shouldResolveAdditionalAgent
+        ? additionalValueEnums[index % additionalValueEnums.length]
+        : isAgentValue || isEmptyValue
+          ? null
+          : selectedValue
+      const resolvedValueLabel = resolvedValueId === null ? null : getScenarioDesignColumnValueLabel(column, resolvedValueId)
 
       return {
         key: column.key,
         label: column.label,
-        value: isAgentValue ? null : selectedValue,
-        valueLabel: isAgentValue || isEmptyValue ? null : getScenarioDesignColumnValueLabel(column, selectedValue),
+        value: resolvedValueLabel,
+        valueLabel: resolvedValueLabel,
+        valueId: resolvedValueId,
       }
     }),
   })),
