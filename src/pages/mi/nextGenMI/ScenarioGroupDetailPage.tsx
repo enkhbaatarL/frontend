@@ -150,16 +150,10 @@ const ScenarioGroupDetailPage = () => {
     isLastDiscard: boolean
   } | null>(null)
   const [detailScrollRequestSeq, setDetailScrollRequestSeq] = useState(0)
-  const [parameterProposalTarget, setParameterProposalTarget] = useState<boolean>()
-
   // 시나리오를 직접 눌러 진입(초기 URL에 scenarioId)했는지 — 진입 시 '시나리오 상세' 섹션으로 포커스
   const [arrivedWithScenarioId] = useState(() => searchParams.get('scenarioId') !== null)
 
   const groupDetailQueryKey = useMemo(() => ['nextGenMIScenarioGroupDetail', scenarioGroupId], [scenarioGroupId])
-
-  useLayoutEffect(() => {
-    setParameterProposalTarget(undefined)
-  }, [scenarioGroupId])
 
   const { data, isLoading } = useQuery({
     queryKey: groupDetailQueryKey,
@@ -310,13 +304,7 @@ const ScenarioGroupDetailPage = () => {
   }, [discardLastScenarioAndDeleteGroup, judgementTarget])
 
   const groupName = data?.groupName ?? ''
-  const visibleDetailSections = useMemo(
-    () =>
-      parameterProposalTarget
-        ? SCENARIO_GROUP_DETAIL_SECTIONS
-        : SCENARIO_GROUP_DETAIL_SECTIONS.filter((section) => section.id !== 'scenario-group-detail-section-price-forecast-interpretation'),
-    [parameterProposalTarget],
-  )
+  const visibleDetailSections = SCENARIO_GROUP_DETAIL_SECTIONS
 
   const headerTitleSlot = useMemo(
     () => (
@@ -446,20 +434,17 @@ const ScenarioGroupDetailPage = () => {
           <ScenarioGroupGraphView
             scenarioGroupId={Number(scenarioGroupId)}
             enabled={Boolean(scenarioGroupId)}
-            onParameterProposalTargetChange={setParameterProposalTarget}
             headingSlot={<SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[2].id} />}
           />
         </Stack>
 
-        {parameterProposalTarget && (
-          <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} py="20px">
-            <ScenarioGroupPriceForecastInterpretation
-              scenarioGroupId={Number(scenarioGroupId)}
-              enabled={Boolean(scenarioGroupId)}
-              initialSection={data?.priceInterpretation}
-            />
-          </Stack>
-        )}
+        <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[3].id} py="20px">
+          <ScenarioGroupPriceForecastInterpretation
+            scenarioGroupId={Number(scenarioGroupId)}
+            enabled={Boolean(scenarioGroupId)}
+            initialSection={data?.priceInterpretation}
+          />
+        </Stack>
 
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[4].id} />

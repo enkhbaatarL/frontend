@@ -1383,7 +1383,6 @@ const ScenarioDesignCriteriaStep = ({
           const rowId = getScenarioDesignRowId(row, rowIndex + 1)
           const scenarioName = row.scenarioName ?? ''
           const isLocked = row.locked === true
-          // BR/BL/MX 는 8월 표출 대상 아님. scenarioType 이 null 이면 없는 것처럼 처리(배지 미노출)
           const typeBadge =
             row.baseCase === true ? (
               <ScenarioDesignTypeBadge type="BC" reason="기존에 생성된 Base Case 시나리오입니다." />

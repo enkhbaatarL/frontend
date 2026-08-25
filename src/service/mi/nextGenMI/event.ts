@@ -9,8 +9,6 @@ import type {
 
 import api from '@/lib/axios'
 import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
-// #DELETE: API 적용후엔 목데이터 삭제
-import { buildMockEventDetail, buildMockEventList, MOCK_EVENT_TYPE_L1_LIST } from '@/service/mi/nextGenMI/eventListMock'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 export type EventSort = 'latest' | 'oldest'
@@ -271,54 +269,34 @@ const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string
 
 const nextGenMIEventService = {
   async getEventTypesL1(): Promise<EventTypeL1[]> {
-    try {
-      const response: AxiosResponse<ICommonResponse<EventTypeL1[]>> = await api.get('mi/next-gen/events/event-types/lv1', {
-        suppressGlobalErrorHandler: true,
-      } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean })
+    const response: AxiosResponse<ICommonResponse<EventTypeL1[]>> = await api.get('mi/next-gen/events/event-types/lv1')
 
-      return response.data.data
-    } catch {
-      // #DELETE: API 적용후엔 목데이터 삭제 - 카테고리 필터 확인용 더미
-      return MOCK_EVENT_TYPE_L1_LIST
-    }
+    return response.data.data
   },
 
   async getEvents(params: GetEventsParams): Promise<EventList> {
-    try {
-      const response: AxiosResponse<ICommonResponse<EventList>> = await api.get('mi/next-gen/events', {
-        params: {
-          page: params.page ?? 1,
-          size: params.size ?? 20,
-          sort: params.sort,
-          startDate: params.startDate,
-          endDate: params.endDate,
-          keyword: params.keyword,
-          eventStatus: params.eventStatus,
-          eventTypeL1Id: params.eventTypeL1Id,
-          suggestedOnly: params.suggestedOnly,
-        },
-        paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
-        suppressGlobalErrorHandler: true,
-      } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean })
+    const response: AxiosResponse<ICommonResponse<EventList>> = await api.get('mi/next-gen/events', {
+      params: {
+        page: params.page ?? 1,
+        size: params.size ?? 20,
+        sort: params.sort,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        keyword: params.keyword,
+        eventStatus: params.eventStatus,
+        eventTypeL1Id: params.eventTypeL1Id,
+        suggestedOnly: params.suggestedOnly,
+      },
+      paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
+    })
 
-      return response.data.data
-    } catch {
-      // #DELETE: API 적용후엔 목데이터 삭제 - Event List 화면 확인용 더미
-      return buildMockEventList(params)
-    }
+    return response.data.data
   },
 
   async getEventDetail(eventId: string): Promise<EventDetail> {
-    try {
-      const response: AxiosResponse<ICommonResponse<EventDetail>> = await api.get(`mi/next-gen/events/${encodeURIComponent(eventId)}`, {
-        suppressGlobalErrorHandler: true,
-      } as Parameters<typeof api.get>[1] & { suppressGlobalErrorHandler: boolean })
+    const response: AxiosResponse<ICommonResponse<EventDetail>> = await api.get(`mi/next-gen/events/${encodeURIComponent(eventId)}`)
 
-      return response.data.data
-    } catch {
-      // #DELETE: API 적용후엔 목데이터 삭제 - 시나리오 설계/상세 화면 확인용 더미
-      return buildMockEventDetail(eventId)
-    }
+    return response.data.data
   },
 
   async getEventScenarioGroups(eventId: string | number): Promise<EventLinkedScenarioGroup[]> {

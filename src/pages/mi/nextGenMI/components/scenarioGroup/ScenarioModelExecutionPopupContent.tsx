@@ -10,6 +10,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import CloseIcon from '@/components/common/icons/CloseIcon'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
+import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ParameterSuggestionIcon from '@/components/common/icons/ParameterSuggestionIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
 import ResetInitialDataIcon from '@/components/common/icons/ResetInitialDataIcon'
@@ -134,6 +135,7 @@ const createTextWidthMeasurer = () => {
 }
 
 const getContentBasedColumnWidth = ({
+  bodyAccessoryWidth = 0,
   bodyValues,
   editable,
   headerValues,
@@ -142,6 +144,7 @@ const getContentBasedColumnWidth = ({
   minimumWidth,
   showUserFix,
 }: {
+  bodyAccessoryWidth?: number
   bodyValues: string[]
   editable: boolean
   headerValues: string[]
@@ -155,7 +158,11 @@ const getContentBasedColumnWidth = ({
 
   return `${Math.min(
     maximumWidth,
-    Math.max(minimumWidth, Math.ceil(headerTextWidth + 26 + (showUserFix ? 24 : 0)), Math.ceil(bodyTextWidth + 26 + (editable ? 22 : 0))),
+    Math.max(
+      minimumWidth + bodyAccessoryWidth,
+      Math.ceil(headerTextWidth + 26 + (showUserFix ? 24 : 0)),
+      Math.ceil(bodyTextWidth + 26 + (editable ? 22 : 0) + bodyAccessoryWidth),
+    ),
   )}px`
 }
 
@@ -279,6 +286,38 @@ const NumericParameterValueInput = ({
         setIsEditing(false)
       }}
     />
+  )
+}
+
+const ParameterValueWithRationale = ({ children, rationale }: { children: ReactNode; rationale?: string }) => {
+  const tooltipTitle = rationale?.trim()
+  if (!tooltipTitle) return children
+
+  return (
+    <Stack direction="row" alignItems="center" gap="4px" width="100%" minWidth={0}>
+      <Box flex="1 1 0" minWidth={0}>
+        {children}
+      </Box>
+      <NextGenMIFollowCursorTooltip title={tooltipTitle} tooltipSx={{ maxWidth: '800px' }}>
+        <Box
+          component="span"
+          role="img"
+          aria-label={`추천 근거: ${tooltipTitle}`}
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          width="16px"
+          height="16px"
+          flexShrink={0}
+          lineHeight={0}
+          color="contentIcon.Disabled"
+          onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <InfoOutlineIcon aria-hidden focusable="false" width="16px" height="16px" />
+        </Box>
+      </NextGenMIFollowCursorTooltip>
+    </Stack>
   )
 }
 
@@ -574,11 +613,12 @@ const ScenarioModelExecutionPopupContent = ({
 
     selectedParameterRows.forEach((row, sourceRowIndex) => {
       const slotKey = JSON.stringify(slotColumns.map((column) => getMatrixAxisValue(row, column)))
-      const matrixRow = rowsBySlot.get(slotKey) ?? { ...row, [parameterSourceRowIndexes]: {} }
+      const matrixRow = rowsBySlot.get(slotKey) ?? {
+        ...row,
+        rationale: groupedRationalesBySlot.get(slotKey),
+        [parameterSourceRowIndexes]: {},
+      }
       const timeKey = JSON.stringify(timeAxisColumns.map((column) => getMatrixAxisValue(row, column)))
-      const groupedRationale = groupedRationalesBySlot.get(slotKey)
-
-      if (groupedRationale) matrixRow.rationale = groupedRationale
 
       valueColumns.forEach((column, valueColumnIndex) => {
         const field = matrixColumnFields.get(`${timeKey}-${valueColumnIndex}`)
@@ -663,7 +703,7 @@ const ScenarioModelExecutionPopupContent = ({
         },
         cellSx: { padding: 0 },
         renderCell: ({ row }) => {
-          const rationale = getStringValue(row.rationale) ?? selectedParameter.parameter.rationale
+          const rationale = getStringValue(row.rationale)?.trim()
           if (!rationale) return null
 
           return (
@@ -679,6 +719,8 @@ const ScenarioModelExecutionPopupContent = ({
         if (!column.column) return []
 
         const editable = isEditableValueColumn(column, selectedParameter.parameter.modelTarget?.valueFieldNames ?? [])
+        const hasValueRationale =
+          column.kind === 'VALUE' && parameterTableRows.some((row) => Boolean(getStringValue(row.rationale)?.trim()))
         const headerLabel = column.role || column.column
         const headerAlign = isMatrixTimeColumns ? 'left' : getColumnAlign(column.align)
 
@@ -698,6 +740,7 @@ const ScenarioModelExecutionPopupContent = ({
             tooltipWhenHeaderTruncated: true,
             headerTooltipTitle: headerLabel,
             width: getContentBasedColumnWidth({
+              bodyAccessoryWidth: hasValueRationale ? 20 : 0,
               bodyValues: parameterTableRows.map((row) => {
                 const value = getParameterValue(row, column.column ?? '', column.role, column.kind)
                 return editable && typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value)
@@ -726,28 +769,36 @@ const ScenarioModelExecutionPopupContent = ({
 
               if (editable && typeof value === 'number') {
                 return (
-                  <NumericParameterValueInput
-                    value={value}
-                    disabled={isSubmitting || isResetting}
-                    textAlign={headerAlign}
-                    onChange={(nextValue) =>
-                      onChangeParameterValue(
-                        activeModelFileIndex,
-                        activeModelSheetIndex,
-                        activeModelTableIndex,
-                        activeParameterIndex,
-                        rowIndex,
-                        nextValue,
-                      )
-                    }
-                  />
+                  <ParameterValueWithRationale rationale={getStringValue(row.rationale)}>
+                    <NumericParameterValueInput
+                      value={value}
+                      disabled={isSubmitting || isResetting}
+                      textAlign={headerAlign}
+                      onChange={(nextValue) =>
+                        onChangeParameterValue(
+                          activeModelFileIndex,
+                          activeModelSheetIndex,
+                          activeModelTableIndex,
+                          activeParameterIndex,
+                          rowIndex,
+                          nextValue,
+                        )
+                      }
+                    />
+                  </ParameterValueWithRationale>
                 )
               }
 
-              return (
+              const valueContent = (
                 <Typography variant="body3M12" color="contentText.Normal" noWrap width="100%">
                   {isUnavailable ? 'N/A' : getDisplayValue(value)}
                 </Typography>
+              )
+
+              return column.kind === 'VALUE' ? (
+                <ParameterValueWithRationale rationale={getStringValue(row.rationale)}>{valueContent}</ParameterValueWithRationale>
+              ) : (
+                valueContent
               )
             },
           },
@@ -755,6 +806,10 @@ const ScenarioModelExecutionPopupContent = ({
       }),
       ...matrixTimeColumns.map((column): NextGenMIStickyTableColumn<ModelParamProposalRow> => {
         const editable = isEditableValueColumn(column.valueColumn, selectedParameter.parameter.modelTarget?.valueFieldNames ?? [])
+        const hasValueRationale = parameterTableRows.some((row) => {
+          const sourceRowIndex = row[parameterSourceRowIndexes]?.[column.field]
+          return sourceRowIndex !== undefined && Boolean(getStringValue(selectedParameterRows[sourceRowIndex]?.rationale)?.trim())
+        })
 
         return {
           field: column.field,
@@ -762,6 +817,7 @@ const ScenarioModelExecutionPopupContent = ({
           tooltipWhenHeaderTruncated: true,
           headerTooltipTitle: column.headerTooltipTitle,
           width: getContentBasedColumnWidth({
+            bodyAccessoryWidth: hasValueRationale ? 20 : 0,
             bodyValues: parameterTableRows.map((row) => {
               const value = row[column.field]
               return editable && typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value)
@@ -782,32 +838,37 @@ const ScenarioModelExecutionPopupContent = ({
           renderCell: ({ row }) => {
             const value = row[column.field]
             const sourceRowIndex = row[parameterSourceRowIndexes]?.[column.field]
+            const rationale = sourceRowIndex === undefined ? undefined : getStringValue(selectedParameterRows[sourceRowIndex]?.rationale)
             const isUnavailable = value === null
 
             if (editable && sourceRowIndex !== undefined && typeof value === 'number') {
               return (
-                <NumericParameterValueInput
-                  value={value}
-                  disabled={isSubmitting || isResetting}
-                  textAlign="right"
-                  onChange={(nextValue) =>
-                    onChangeParameterValue(
-                      activeModelFileIndex,
-                      activeModelSheetIndex,
-                      activeModelTableIndex,
-                      activeParameterIndex,
-                      sourceRowIndex,
-                      nextValue,
-                    )
-                  }
-                />
+                <ParameterValueWithRationale rationale={rationale}>
+                  <NumericParameterValueInput
+                    value={value}
+                    disabled={isSubmitting || isResetting}
+                    textAlign="right"
+                    onChange={(nextValue) =>
+                      onChangeParameterValue(
+                        activeModelFileIndex,
+                        activeModelSheetIndex,
+                        activeModelTableIndex,
+                        activeParameterIndex,
+                        sourceRowIndex,
+                        nextValue,
+                      )
+                    }
+                  />
+                </ParameterValueWithRationale>
               )
             }
 
             return (
-              <Typography variant="body3M12" color="contentText.Normal" noWrap width="100%">
-                {isUnavailable ? 'N/A' : getDisplayValue(value)}
-              </Typography>
+              <ParameterValueWithRationale rationale={rationale}>
+                <Typography variant="body3M12" color="contentText.Normal" noWrap width="100%">
+                  {isUnavailable ? 'N/A' : getDisplayValue(value)}
+                </Typography>
+              </ParameterValueWithRationale>
             )
           },
         }
@@ -830,6 +891,7 @@ const ScenarioModelExecutionPopupContent = ({
     parameterTableRows,
     parameterInformationKey,
     selectedParameter,
+    selectedParameterRows,
   ])
   const matrixXAxisStartColumnIndex = matrixTimeColumns.length > 0 ? tableColumns.length - matrixTimeColumns.length : -1
   const showMatrixSplitTable =

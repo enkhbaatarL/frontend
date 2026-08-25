@@ -9,23 +9,14 @@ import MIConfirm from '@/components/common/confirm/MIConfirm'
 import CollapseIcon from '@/components/common/icons/agent/CollapseIcon'
 import ExpandIcon from '@/components/common/icons/agent/ExpandIcon'
 import useSnackbar from '@/hooks/useSnackbar'
-import {
-  FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_BYTES,
-  FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_MB,
-  FUNDAMENTAL_UPLOAD_MAX_FILES,
-  hasRequiredFundamentalModelFiles,
-  isFundamentalUploadExcelFile,
-  isSameFundamentalUploadFile,
-} from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
-import ScenarioModelExecutionFileUploadContent from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionFileUploadContent'
 import ScenarioModelExecutionPopupContent, {
   type ScenarioModelExecutionOption,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
 import ScenarioModelExecutionRerunConfirmDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionRerunConfirmDialog'
 import fileService, { type IFileDownloadRequest } from '@/service/admin/file'
 import nextGenMIModelExecutionService, {
-  type FileModelExecutionAccept,
   type CurrentModelParamProposal,
+  type ModelExecutionAccept,
   type ModelParamPayloadItem,
 } from '@/service/mi/nextGenMI/modelExecution'
 import { downloadFile } from '@/utils/file'
@@ -37,7 +28,6 @@ export interface ScenarioModelExecutionPopupRef {
 
 interface ScenarioModelExecutionPopupProps {
   scenarioOptions: ScenarioModelExecutionOption[]
-  parameterProposalTarget: boolean
   executingScenarioIds: Set<number>
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
@@ -91,19 +81,18 @@ const getDownloadableExecutionInputFiles = (proposal: CurrentModelParamProposal 
 }
 
 const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, ScenarioModelExecutionPopupProps>(
-  ({ scenarioOptions, parameterProposalTarget, executingScenarioIds, onAccepted, onCompleted }, ref) => {
+  ({ scenarioOptions, executingScenarioIds, onAccepted, onCompleted }, ref) => {
     const { showSnackbar } = useSnackbar()
     const [open, setOpen] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [isScenarioChanging, setIsScenarioChanging] = useState(false)
     const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null)
-    const [files, setFiles] = useState<File[]>([])
     const [parameterProposal, setParameterProposal] = useState<CurrentModelParamProposal | null>(null)
     const [currentProposalState, setCurrentProposalState] = useState<CurrentModelParamProposal['currentState']>()
     const [isProposalGenerationPending, setIsProposalGenerationPending] = useState(false)
     const [isCurrentProposalLoading, setIsCurrentProposalLoading] = useState(false)
     const [isCurrentProposalLoadFailed, setIsCurrentProposalLoadFailed] = useState(false)
-    const [modelExecution, setModelExecution] = useState<FileModelExecutionAccept | null>(null)
+    const [modelExecution, setModelExecution] = useState<ModelExecutionAccept | null>(null)
     const [confirmType, setConfirmType] = useState<ModelExecutionConfirmType | null>(null)
     const [pendingScenarioId, setPendingScenarioId] = useState<number | null>(null)
     const modelParamProposalFailureKeyRef = useRef<string | null>(null)
@@ -115,9 +104,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const queuedRefreshScenarioIdsRef = useRef(new Set<number>())
     const queuedFailureNotificationScenarioIdsRef = useRef(new Set<number>())
 
-    const isParameterProposalMode = parameterProposalTarget
-    const isFileUploadMode = !parameterProposalTarget
-    const hasGeneratedParameters = isParameterProposalMode && (parameterProposal?.modelFiles?.length ?? 0) > 0
+    const hasGeneratedParameters = (parameterProposal?.modelFiles?.length ?? 0) > 0
     const downloadableExecutionInputFiles = useMemo(() => getDownloadableExecutionInputFiles(parameterProposal), [parameterProposal])
 
     const notifyModelParamProposalFailure = useCallback(
@@ -232,7 +219,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       setIsMaximized(false)
       setIsScenarioChanging(false)
       setSelectedScenarioId(null)
-      setFiles([])
       setParameterProposal(null)
       setCurrentProposalState(undefined)
       setIsProposalGenerationPending(false)
@@ -249,50 +235,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [reset])
 
     const handleClose = useCallback(() => {
-      if (isParameterProposalMode) {
-        setConfirmType('close')
-        return
-      }
-      closePopup()
-    }, [closePopup, isParameterProposalMode])
-
-    const handleFilesAdd = useCallback(
-      (selectedFiles: FileList | File[] | null) => {
-        const incomingFiles = Array.from(selectedFiles ?? [])
-        if (incomingFiles.length === 0) return
-
-        let failureBody = ''
-        const nextFiles = [...files]
-
-        incomingFiles.forEach((file) => {
-          if (nextFiles.length >= FUNDAMENTAL_UPLOAD_MAX_FILES) {
-            failureBody = `최대 ${FUNDAMENTAL_UPLOAD_MAX_FILES}개의 Excel 파일만 업로드할 수 있습니다.`
-            return
-          }
-          if (!isFundamentalUploadExcelFile(file)) {
-            failureBody = `${file.name}은(는) Excel 파일이 아닙니다.`
-            return
-          }
-          if (file.size > FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_BYTES) {
-            failureBody = `${file.name}은(는) ${FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_MB}MB를 초과합니다.`
-            return
-          }
-          if (nextFiles.some((uploadedFile) => isSameFundamentalUploadFile(uploadedFile, file))) return
-
-          nextFiles.push(file)
-        })
-
-        setFiles(nextFiles)
-
-        if (failureBody) {
-          showSnackbar('파일 업로드가 실패했습니다.', { variant: 'error', body: failureBody })
-        }
-      },
-      [files, showSnackbar],
-    )
-
-    const handleRemoveFile = useCallback((targetFile: File) => {
-      setFiles((prev) => prev.filter((file) => !isSameFundamentalUploadFile(file, targetFile)))
+      setConfirmType('close')
     }, [])
 
     const { mutate: createModelParamProposal, isPending: isCreatingModelParamProposal } = useMutation({
@@ -326,22 +269,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       },
     })
 
-    const { mutate: submitFileExecution, isPending: isSubmittingFiles } = useMutation({
-      mutationFn: ({ scenarioId, files: uploadFiles }: { scenarioId: number; files: File[] }) =>
-        nextGenMIModelExecutionService.submitModelExecutionFiles(scenarioId, uploadFiles),
-      onSuccess: (_data, variables) => {
-        onAccepted(variables.scenarioId)
-        closePopup()
-      },
-      onError: (error) => {
-        if (isExecutionValidationError(error)) {
-          showSnackbar('유효성 검사에 실패했습니다.', { variant: 'error', body: '파일 내용을 확인해 주세요.' })
-          return
-        }
-        showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
-      },
-    })
-
     const { mutate: submitModelParamProposalExecution, isPending: isSubmittingModelParamProposal } = useMutation({
       mutationFn: ({
         scenarioId,
@@ -370,7 +297,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           return
         }
 
-        // 파일 업로드 경로와 동일하게 실행 수락 시 완료 가드를 리셋한다.
         onAccepted(variables.scenarioId)
         setCurrentProposalState('EXECUTING')
         setModelExecution(data)
@@ -453,7 +379,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
 
     const isGenerating = isCreatingModelParamProposal || isProposalGenerationPending || currentProposalState === 'GENERATING'
     const isExecuting = modelExecution?.status === 'RUNNING'
-    const isSubmitting = isSubmittingFiles || isSubmittingModelParamProposal
+    const isSubmitting = isSubmittingModelParamProposal
     const isBusy = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
     const isCloseDisabled = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
     const isMaximizeActive = isMaximized
@@ -493,7 +419,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           return
         }
 
-        if (isParameterProposalMode && hasGeneratedParameters) {
+        if (hasGeneratedParameters) {
           setPendingScenarioId(scenarioId)
           setConfirmType('scenarioChange')
           return
@@ -501,7 +427,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
 
         changeScenario(scenarioId)
       },
-      [changeScenario, hasGeneratedParameters, isParameterProposalMode, scenarioOptions, selectedScenarioId],
+      [changeScenario, hasGeneratedParameters, scenarioOptions, selectedScenarioId],
     )
 
     const handleScenarioChangeConfirm = useCallback(() => {
@@ -519,7 +445,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [changeScenario, pendingScenarioId])
 
     const handleGenerateParameters = useCallback(() => {
-      if (!isParameterProposalMode || selectedScenarioId === null || isBusy || !canGenerate) return
+      if (selectedScenarioId === null || isBusy || !canGenerate) return
       if (executingScenarioIds.has(selectedScenarioId)) return
 
       initialModelParamProposalRef.current = null
@@ -527,11 +453,11 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       setCurrentProposalState('GENERATING')
       setIsProposalGenerationPending(true)
       createModelParamProposal(selectedScenarioId)
-    }, [canGenerate, createModelParamProposal, executingScenarioIds, isBusy, isParameterProposalMode, selectedScenarioId])
+    }, [canGenerate, createModelParamProposal, executingScenarioIds, isBusy, selectedScenarioId])
 
     const handleResetParameters = useCallback(
       (source: ModelParamProposalResetSource) => {
-        if (!isParameterProposalMode || selectedScenarioId === null || !parameterProposal || !canUseCurrentParameters || isBusy) return
+        if (selectedScenarioId === null || !parameterProposal || !canUseCurrentParameters || isBusy) return
         if (executingScenarioIds.has(selectedScenarioId)) return
 
         const selectedScenarioExecuted = scenarioOptions.some((option) => option.scenarioId === selectedScenarioId && option.executed)
@@ -575,7 +501,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         canUseCurrentParameters,
         executingScenarioIds,
         isBusy,
-        isParameterProposalMode,
         parameterProposal,
         resetModelParamProposal,
         scenarioOptions,
@@ -632,12 +557,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       [],
     )
 
-    const handleFileSubmit = useCallback(() => {
-      if (!isFileUploadMode || isSubmittingFiles || selectedScenarioId === null || !hasRequiredFundamentalModelFiles(files)) return
-      if (executingScenarioIds.has(selectedScenarioId)) return
-      submitFileExecution({ scenarioId: selectedScenarioId, files })
-    }, [executingScenarioIds, files, isFileUploadMode, isSubmittingFiles, selectedScenarioId, submitFileExecution])
-
     const handleDownloadInputFiles = useCallback(() => {
       if (selectedScenarioId === null || downloadableExecutionInputFiles.length === 0 || isDownloadingInputFiles) return
 
@@ -649,7 +568,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
 
     const handleModelParamProposalSubmitRequest = useCallback(() => {
       if (
-        !isParameterProposalMode ||
         isSubmitting ||
         selectedScenarioId === null ||
         parameterProposal?.modelParamProposalId === undefined ||
@@ -659,7 +577,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         return
 
       setConfirmType('submit')
-    }, [canUseCurrentParameters, executingScenarioIds, isParameterProposalMode, isSubmitting, parameterProposal, selectedScenarioId])
+    }, [canUseCurrentParameters, executingScenarioIds, isSubmitting, parameterProposal, selectedScenarioId])
 
     const handleModelParamProposalSubmitConfirm = useCallback(() => {
       if (selectedScenarioId === null || parameterProposal?.modelParamProposalId === undefined || isSubmitting) return
@@ -683,9 +601,9 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [isSubmitting, parameterProposal, selectedScenarioId, submitModelParamProposalExecution])
 
     useEffect(() => {
-      if (!open || !isParameterProposalMode || selectedScenarioId === null) return
+      if (!open || selectedScenarioId === null) return
       void loadCurrentModelParamProposal(selectedScenarioId, false, true)
-    }, [isParameterProposalMode, loadCurrentModelParamProposal, open, selectedScenarioId])
+    }, [loadCurrentModelParamProposal, open, selectedScenarioId])
 
     useEffect(() => {
       if (!isScenarioChanging || isCurrentProposalLoading || selectedScenarioId === null) return undefined
@@ -697,7 +615,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     useEffect(() => {
       if (
         !open ||
-        !isParameterProposalMode ||
         selectedScenarioId === null ||
         (currentProposalState !== undefined && parameterProposal !== null) ||
         isCurrentProposalLoadFailed ||
@@ -716,7 +633,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       isCreatingModelParamProposal,
       isCurrentProposalLoading,
       isCurrentProposalLoadFailed,
-      isParameterProposalMode,
       loadCurrentModelParamProposal,
       open,
       parameterProposal,
@@ -724,7 +640,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     ])
 
     useEffect(() => {
-      if (!open || !isParameterProposalMode || selectedScenarioId === null) return undefined
+      if (!open || selectedScenarioId === null) return undefined
 
       let hasConnected = false
       const controller = new AbortController()
@@ -747,10 +663,10 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
       return () => {
         controller.abort()
       }
-    }, [isParameterProposalMode, open, refreshModelParamProposal, selectedScenarioId])
+    }, [open, refreshModelParamProposal, selectedScenarioId])
 
     useEffect(() => {
-      if (!open || !isParameterProposalMode || !modelExecution || modelExecution.status !== 'RUNNING') return undefined
+      if (!open || !modelExecution || modelExecution.status !== 'RUNNING') return undefined
 
       const execution = modelExecution
       let isActive = true
@@ -794,7 +710,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         isActive = false
         if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId)
       }
-    }, [closePopup, isParameterProposalMode, modelExecution, onCompleted, open, showSnackbar])
+    }, [closePopup, modelExecution, onCompleted, open, showSnackbar])
 
     useImperativeHandle(
       ref,
@@ -817,159 +733,128 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         <MIConfirm
           open={open}
           title={
-            isParameterProposalMode ? (
-              <Stack component="span" direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
-                <Typography component="span" fontSize="18px" fontWeight={600} lineHeight={1.4} color="contentText.Black">
-                  MI 수급모델
-                </Typography>
-                <MIBaseButton
-                  variant="text"
-                  title={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
-                  aria-label={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
-                  aria-pressed={isMaximizeActive}
-                  aria-haspopup={false}
-                  onClick={() => setIsMaximized((maximized) => !maximized)}
-                  disableRipple
-                  buttonHoverBgColor="contentBG.Hover"
-                  sx={{
-                    flexShrink: 0,
-                    width: '36px',
-                    minWidth: '36px',
-                    height: '36px',
-                    padding: '8px',
-                    borderRadius: '8px',
-                    color: 'contentIcon.Enabled',
-                  }}
-                >
-                  {isMaximizeActive ? <CollapseIcon width={16} height={16} /> : <ExpandIcon width={24} height={24} />}
-                </MIBaseButton>
-              </Stack>
-            ) : (
-              'MI 수급모델'
-            )
+            <Stack component="span" direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
+              <Typography component="span" fontSize="18px" fontWeight={600} lineHeight={1.4} color="contentText.Black">
+                MI 수급모델
+              </Typography>
+              <MIBaseButton
+                variant="text"
+                title={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
+                aria-label={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
+                aria-pressed={isMaximizeActive}
+                aria-haspopup={false}
+                onClick={() => setIsMaximized((maximized) => !maximized)}
+                disableRipple
+                buttonHoverBgColor="contentBG.Hover"
+                sx={{
+                  flexShrink: 0,
+                  width: '36px',
+                  minWidth: '36px',
+                  height: '36px',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  color: 'contentIcon.Enabled',
+                }}
+              >
+                {isMaximizeActive ? <CollapseIcon width={16} height={16} /> : <ExpandIcon width={24} height={24} />}
+              </MIBaseButton>
+            </Stack>
           }
           handleClose={handleClose}
-          width={isParameterProposalMode ? 1200 : 600}
+          width={1200}
           hideFooter
           disableClose={isCloseDisabled}
           disableBackdropClick={isCloseDisabled}
-          paperSx={
-            isParameterProposalMode
-              ? {
-                border: '1px solid',
-                borderColor: 'contentBorder.Normal',
-                borderRadius: '10px',
-                boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
-                width: isMaximizeActive ? 'calc(100dvw - 32px)' : '1200px',
-                maxWidth: 'calc(100dvw - 32px)',
-                height: isMaximizeActive
-                  ? 'calc(100dvh - 32px)'
-                  : hasGeneratedParameters && !isSubmitting && !isExecuting
-                    ? 'auto'
-                    : 'min(604px, calc(100dvh - 32px))',
-                maxHeight: isMaximizeActive
-                  ? 'calc(100dvh - 32px)'
-                  : hasGeneratedParameters && !isSubmitting && !isExecuting
-                    ? 'calc(100dvh - 96px)'
-                    : 'calc(100dvh - 32px)',
-                margin: isMaximizeActive ? '16px' : hasGeneratedParameters && !isSubmitting && !isExecuting ? '48px 16px' : '16px',
-                overflow: 'hidden',
-                interpolateSize: 'allow-keywords',
-                transition: (theme: Theme) =>
-                  theme.transitions.create(
-                    isScenarioChanging ? ['width', 'max-width'] : ['width', 'height', 'max-width', 'max-height', 'margin'],
-                    {
-                      duration: 400,
-                      easing: theme.transitions.easing.easeInOut,
-                    },
-                  ),
-              }
-              : { borderRadius: '10px' }
-          }
-          titleSx={
-            isParameterProposalMode
-              ? {
-                height: '60px',
-                padding: '0 20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                boxSizing: 'border-box',
-                fontSize: '18px',
-                color: 'contentText.Black',
-                '& > span:first-of-type': {
-                  display: 'flex',
-                  flex: '1 1 auto',
-                  minWidth: 0,
-                  fontWeight: '600 !important',
+          paperSx={{
+            border: '1px solid',
+            borderColor: 'contentBorder.Normal',
+            borderRadius: '10px',
+            boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
+            width: isMaximizeActive ? 'calc(100dvw - 32px)' : '1200px',
+            maxWidth: 'calc(100dvw - 32px)',
+            height: isMaximizeActive
+              ? 'calc(100dvh - 32px)'
+              : hasGeneratedParameters && !isSubmitting && !isExecuting
+                ? 'auto'
+                : 'min(604px, calc(100dvh - 32px))',
+            maxHeight: isMaximizeActive
+              ? 'calc(100dvh - 32px)'
+              : hasGeneratedParameters && !isSubmitting && !isExecuting
+                ? 'calc(100dvh - 96px)'
+                : 'calc(100dvh - 32px)',
+            margin: isMaximizeActive ? '16px' : hasGeneratedParameters && !isSubmitting && !isExecuting ? '48px 16px' : '16px',
+            overflow: 'hidden',
+            interpolateSize: 'allow-keywords',
+            transition: (theme: Theme) =>
+              theme.transitions.create(
+                isScenarioChanging ? ['width', 'max-width'] : ['width', 'height', 'max-width', 'max-height', 'margin'],
+                {
+                  duration: 400,
+                  easing: theme.transitions.easing.easeInOut,
                 },
-                '& > span:last-of-type button': {
-                  width: '36px',
-                  height: '36px',
-                  padding: '8px',
-                },
-              }
-              : { padding: '12px 20px', fontSize: '18px', color: 'contentText.Black' }
-          }
-          contentSx={
-            isParameterProposalMode
-              ? {
-                padding: 0,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                flex: '1 1 auto',
-                minHeight: 0,
-                '& .MuiDialogContentText-root': {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  flex: '1 1 auto',
-                  minHeight: 0,
-                },
-              }
-              : { padding: 0 }
-          }
+              ),
+          }}
+          titleSx={{
+            height: '60px',
+            padding: '0 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxSizing: 'border-box',
+            fontSize: '18px',
+            color: 'contentText.Black',
+            '& > span:first-of-type': {
+              display: 'flex',
+              flex: '1 1 auto',
+              minWidth: 0,
+              fontWeight: '600 !important',
+            },
+            '& > span:last-of-type button': {
+              width: '36px',
+              height: '36px',
+              padding: '8px',
+            },
+          }}
+          contentSx={{
+            padding: 0,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            flex: '1 1 auto',
+            minHeight: 0,
+            '& .MuiDialogContentText-root': {
+              display: 'flex',
+              flexDirection: 'column',
+              flex: '1 1 auto',
+              minHeight: 0,
+            },
+          }}
         >
-          {isParameterProposalMode ? (
-            <ScenarioModelExecutionPopupContent
-              scenarioOptions={scenarioOptions}
-              selectedScenarioId={selectedScenarioId}
-              executingScenarioIds={executingScenarioIds}
-              parameterProposal={parameterProposal}
-              isMaximized={isMaximizeActive}
-              isLoading={isCurrentProposalLoading}
-              isGenerating={isGenerating}
-              isExecuting={isExecuting}
-              isSubmitting={isSubmitting}
-              isResetting={isResettingModelParamProposal}
-              isDownloadingInputFiles={isDownloadingInputFiles}
-              isCloseDisabled={isCloseDisabled}
-              canGenerate={canGenerate}
-              canReset={canUseCurrentParameters}
-              canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
-              canSubmit={canUseCurrentParameters}
-              onSelectScenario={handleSelectScenario}
-              onGenerateParameters={handleGenerateParameters}
-              onChangeParameterValue={handleChangeParameterValue}
-              onDownloadInputFiles={handleDownloadInputFiles}
-              onReset={handleResetParameters}
-              onSubmit={handleModelParamProposalSubmitRequest}
-              onCancel={handleClose}
-            />
-          ) : (
-            <ScenarioModelExecutionFileUploadContent
-              scenarioOptions={scenarioOptions}
-              selectedScenarioId={selectedScenarioId}
-              executingScenarioIds={executingScenarioIds}
-              onSelectScenario={handleSelectScenario}
-              files={files}
-              isSubmitting={isSubmittingFiles}
-              onFilesAdd={handleFilesAdd}
-              onRemoveFile={handleRemoveFile}
-              onSubmit={handleFileSubmit}
-              onCancel={handleClose}
-            />
-          )}
+          <ScenarioModelExecutionPopupContent
+            scenarioOptions={scenarioOptions}
+            selectedScenarioId={selectedScenarioId}
+            executingScenarioIds={executingScenarioIds}
+            parameterProposal={parameterProposal}
+            isMaximized={isMaximizeActive}
+            isLoading={isCurrentProposalLoading}
+            isGenerating={isGenerating}
+            isExecuting={isExecuting}
+            isSubmitting={isSubmitting}
+            isResetting={isResettingModelParamProposal}
+            isDownloadingInputFiles={isDownloadingInputFiles}
+            isCloseDisabled={isCloseDisabled}
+            canGenerate={canGenerate}
+            canReset={canUseCurrentParameters}
+            canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
+            canSubmit={canUseCurrentParameters}
+            onSelectScenario={handleSelectScenario}
+            onGenerateParameters={handleGenerateParameters}
+            onChangeParameterValue={handleChangeParameterValue}
+            onDownloadInputFiles={handleDownloadInputFiles}
+            onReset={handleResetParameters}
+            onSubmit={handleModelParamProposalSubmitRequest}
+            onCancel={handleClose}
+          />
         </MIConfirm>
 
         <MIConfirm

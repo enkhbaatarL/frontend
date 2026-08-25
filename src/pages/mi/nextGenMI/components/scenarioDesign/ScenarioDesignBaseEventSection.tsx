@@ -1,7 +1,7 @@
 import StarRoundedIcon from '@mui/icons-material/StarRounded'
 import { Collapse, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
 import type { EventDetail } from '@/service/mi/nextGenMI/event'
@@ -10,6 +10,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ArrowDown from '@/components/common/icons/ArrowDown'
 import DocumentIcon from '@/components/common/icons/DocumentIcon'
 import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
+import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import { nextGenMIIsEventNoiseSignal } from '@/pages/mi/nextGenMI/components/common/nextGenMIClassificationChip'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import EventDetailAiInsightsSection from '@/pages/mi/nextGenMI/components/event/EventDetailAiInsightsSection'
@@ -18,7 +19,7 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/ev
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import {
-  ScenarioDesignRationaleDialog,
+  ScenarioDesignRationalePopupContent,
   type ScenarioDesignRationaleSection,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignDialogs'
 import {
@@ -311,7 +312,7 @@ const ScenarioDesignBaseEventSection = ({
   rationaleText = '',
   rationaleSections,
 }: ScenarioDesignBaseEventSectionProps) => {
-  const [rationaleDialogOpen, setRationaleDialogOpen] = useState(false)
+  const rationalePopupRef = useRef<MIMorphingPopupRef>(null)
 
   return (
     <Stack id={SCENARIO_DESIGN_SECTIONS[0].id} gap="4px">
@@ -320,30 +321,42 @@ const ScenarioDesignBaseEventSection = ({
           Base Event
         </Typography>
         {showRationaleButton && (
-          <MIBaseButton
-            variant="outlined"
-            onClick={() => setRationaleDialogOpen(true)}
-            prefix={<DocumentIcon width={20} height={20} aria-hidden focusable="false" style={{ color: '#495057' }} />}
-            labelColor="contentText.Normal"
-            gap="4px"
-            sx={{
-              height: '36px',
-              padding: '8px 10px 8px 6px',
-              borderRadius: '8px',
-              flexShrink: 0,
-              backgroundColor: 'commonColor.White',
-              borderColor: 'contentBorder.Normal',
-              '&:hover:not(:disabled)': {
-                backgroundColor: 'commonColor.White',
-                borderColor: 'contentBorder.Hover',
-              },
-              '& .MuiTypography-root': {
-                fontWeight: 600,
-              },
+          <MIMorphingPopup
+            ref={rationalePopupRef}
+            display="inline-flex"
+            popup={{
+              title: '도출 근거',
+              content: <ScenarioDesignRationalePopupContent sections={rationaleSections} fallbackText={rationaleText} />,
+              measureContent: <ScenarioDesignRationalePopupContent sections={rationaleSections} fallbackText={rationaleText} />,
+              hideHeaderLine: true,
+              showSkeleton: false,
             }}
           >
-            근거 보기
-          </MIBaseButton>
+            <MIBaseButton
+              variant="outlined"
+              onClick={() => rationalePopupRef.current?.open()}
+              prefix={<DocumentIcon width={20} height={20} aria-hidden focusable="false" style={{ color: '#495057' }} />}
+              labelColor="contentText.Normal"
+              gap="4px"
+              sx={{
+                height: '36px',
+                padding: '8px 10px 8px 6px',
+                borderRadius: '8px',
+                flexShrink: 0,
+                backgroundColor: 'commonColor.White',
+                borderColor: 'contentBorder.Normal',
+                '&:hover:not(:disabled)': {
+                  backgroundColor: 'commonColor.White',
+                  borderColor: 'contentBorder.Hover',
+                },
+                '& .MuiTypography-root': {
+                  fontWeight: 600,
+                },
+              }}
+            >
+              근거 보기
+            </MIBaseButton>
+          </MIMorphingPopup>
         )}
       </Stack>
 
@@ -364,13 +377,6 @@ const ScenarioDesignBaseEventSection = ({
           events.map((event) => <ScenarioDesignBaseEventCard key={event.eventId} event={event} loading={loading} />)
         )}
       </Stack>
-
-      <ScenarioDesignRationaleDialog
-        open={rationaleDialogOpen}
-        sections={rationaleSections}
-        fallbackText={rationaleText}
-        onClose={() => setRationaleDialogOpen(false)}
-      />
     </Stack>
   )
 }

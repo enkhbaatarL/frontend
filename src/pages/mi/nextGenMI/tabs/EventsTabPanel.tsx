@@ -596,13 +596,7 @@ const EventsTabPanel = () => {
     if (isError) {
       return <EventsTableEmptyOverlay message="목록을 불러오지 못했습니다." />
     }
-    return (
-      <EventsTableEmptyOverlay
-        message="조건에 맞는 항목이 없습니다"
-        description="신규는 생성 후, 갱신은 수정 후 72시간 동안 표시됩니다"
-        onResetFilters={handleResetFilters}
-      />
-    )
+    return <EventsTableEmptyOverlay message="조건에 맞는 항목이 없습니다" onResetFilters={handleResetFilters} />
   }, [handleResetFilters, isError])
 
   return (

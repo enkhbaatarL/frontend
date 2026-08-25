@@ -44,11 +44,8 @@ const SCENARIO_DESIGN_TYPE_BADGE_STYLE: Record<
   },
 }
 
-/** 8월 대상 아님: BR/BL/MX 는 표출하지 않음. 값이 오더라도 null/빈값이면 없는 것처럼 처리 */
-const isAugustHiddenScenarioType = (type: ScenarioDesignTypeBadgeKind) => type === 'BR' || type === 'BL' || type === 'MX'
-
 export const ScenarioDesignTypeBadge = ({ type, reason }: { type: ScenarioDesignTypeBadgeKind; reason?: string | null }) => {
-  if (!type || isAugustHiddenScenarioType(type)) return null
+  if (!type) return null
 
   const style = SCENARIO_DESIGN_TYPE_BADGE_STYLE[type]
   if (!style) return null
