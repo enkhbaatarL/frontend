@@ -2,7 +2,7 @@ import { Box, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
@@ -33,6 +33,7 @@ import EventSelectionActionBar, { type EventSelectionItem } from '@/pages/mi/nex
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
+import { useNextGenMIListState } from '@/pages/mi/nextGenMI/NextGenMIListStateContext'
 import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
@@ -79,35 +80,41 @@ const EventsTabPanel = () => {
   const navigate = useNavigate()
   const { onShow } = useDialog()
 
-  const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('all')
-  const [sort, setSort] = useState<EventSort>('latest')
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultNextGenMIDateRange())
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>([])
-  const [keyword, setKeyword] = useState('')
-  const [committedKeyword, setCommittedKeyword] = useState('')
-  const [pagination, setPagination] = useState({ size: 20, page: 1 })
-  const [hideNonRecommended, setHideNonRecommended] = useState(false)
-  const [selectedEvents, setSelectedEvents] = useState<EventSelectionItem[]>([])
+  const [typeFilter, setTypeFilter] = useNextGenMIListState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('events.typeFilter', 'all')
+  const [sort, setSort] = useNextGenMIListState<EventSort>('events.sort', 'latest')
+  const [appliedDateRange, setAppliedDateRange] = useNextGenMIListState<DateRange>('events.appliedDateRange', defaultNextGenMIDateRange)
+  const [categoryFilter, setCategoryFilter] = useNextGenMIListState<CategoryFilterValue>('events.categoryFilter', [])
+  const [keyword, setKeyword] = useNextGenMIListState('events.keyword', '')
+  const [committedKeyword, setCommittedKeyword] = useNextGenMIListState('events.committedKeyword', '')
+  const [pagination, setPagination] = useNextGenMIListState('events.pagination', { size: 20, page: 1 })
+  const [hideNonRecommended, setHideNonRecommended] = useNextGenMIListState('events.hideNonRecommended', false)
+  const [selectedEvents, setSelectedEvents] = useNextGenMIListState<EventSelectionItem[]>('events.selectedEvents', [])
 
   useEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
     if (scrollEl) scrollEl.scrollTop = 0
   }, [])
 
-  const handleSearchChange = useCallback((value: string) => {
-    setKeyword(value)
-  }, [])
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setKeyword(value)
+    },
+    [setKeyword],
+  )
 
-  const handleSearch = useCallback((searchTerm: string) => {
-    setCommittedKeyword(searchTerm)
-    setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
+  const handleSearch = useCallback(
+    (searchTerm: string) => {
+      setCommittedKeyword(searchTerm)
+      setPagination((p) => ({ ...p, page: 1 }))
+    },
+    [setCommittedKeyword, setPagination],
+  )
 
   const handleSearchClear = useCallback(() => {
     setKeyword('')
     setCommittedKeyword('')
     setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
+  }, [setCommittedKeyword, setKeyword, setPagination])
 
   const listRequest = useMemo((): GetEventsParams => {
     const trimmedKeyword = committedKeyword.trim()
@@ -139,7 +146,7 @@ const EventsTabPanel = () => {
     if (tp > 0 && pagination.page > tp) {
       setPagination((p) => ({ ...p, page: tp }))
     }
-  }, [data?.events, pagination.page])
+  }, [data?.events, pagination.page, setPagination])
 
   const rawTableRows = useMemo(() => data?.events?.detail ?? [], [data?.events?.detail])
   const tableRows = rawTableRows
@@ -159,18 +166,24 @@ const EventsTabPanel = () => {
 
   const isSelectionLimitReached = selectedEvents.length >= EVENT_SELECTION_MAX_COUNT
 
-  const handleToggleEventSelection = useCallback((row: EventListItem, checked: boolean) => {
-    setSelectedEvents((prev) => {
-      if (!checked) return prev.filter((item) => item.eventId !== row.eventId)
-      if (prev.some((item) => item.eventId === row.eventId)) return prev
-      if (prev.length >= EVENT_SELECTION_MAX_COUNT) return prev
-      return [...prev, { eventId: row.eventId, eventName: row.eventName }]
-    })
-  }, [])
+  const handleToggleEventSelection = useCallback(
+    (row: EventListItem, checked: boolean) => {
+      setSelectedEvents((prev) => {
+        if (!checked) return prev.filter((item) => item.eventId !== row.eventId)
+        if (prev.some((item) => item.eventId === row.eventId)) return prev
+        if (prev.length >= EVENT_SELECTION_MAX_COUNT) return prev
+        return [...prev, { eventId: row.eventId, eventName: row.eventName }]
+      })
+    },
+    [setSelectedEvents],
+  )
 
-  const handleRemoveSelectedEvent = useCallback((eventId: number) => {
-    setSelectedEvents((prev) => prev.filter((item) => item.eventId !== eventId))
-  }, [])
+  const handleRemoveSelectedEvent = useCallback(
+    (eventId: number) => {
+      setSelectedEvents((prev) => prev.filter((item) => item.eventId !== eventId))
+    },
+    [setSelectedEvents],
+  )
 
   const selectionDesignState = useMemo(
     () => resolveSelectionDesignStateFromStatus(selectionDesignStatus, selectedEvents),
@@ -507,7 +520,7 @@ const EventsTabPanel = () => {
 
   const resetPage = useCallback(() => {
     setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
+  }, [setPagination])
 
   const getEventsTableCellSx = useCallback(({ field }: { field: string }) => {
     if (field === '__selection') return { px: '6px' }
@@ -550,36 +563,51 @@ const EventsTabPanel = () => {
       setCategoryFilter(next)
       resetPage()
     },
-    [resetPage],
+    [resetPage, setCategoryFilter],
   )
 
-  const handleDateRangeApply = useCallback((dates: DateRange) => {
-    setAppliedDateRange({
-      startDate: dates.startDate,
-      endDate: dates.endDate,
-    })
-    setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
-
-  const handleTypeFilterChange = useCallback((v: string) => {
-    if (v === 'all' || v === 'new' || v === 'updated') {
-      setTypeFilter(v)
+  const handleDateRangeApply = useCallback(
+    (dates: DateRange) => {
+      setAppliedDateRange({
+        startDate: dates.startDate,
+        endDate: dates.endDate,
+      })
       setPagination((p) => ({ ...p, page: 1 }))
-    }
-  }, [])
+    },
+    [setAppliedDateRange, setPagination],
+  )
 
-  const handleSortChange = useCallback((value: EventSort) => {
-    setSort(value)
-    setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
+  const handleTypeFilterChange = useCallback(
+    (v: string) => {
+      if (v === 'all' || v === 'new' || v === 'updated') {
+        setTypeFilter(v)
+        setPagination((p) => ({ ...p, page: 1 }))
+      }
+    },
+    [setPagination, setTypeFilter],
+  )
 
-  const handlePageSizeChange = useCallback((s: number) => {
-    setPagination({ size: s, page: 1 })
-  }, [])
+  const handleSortChange = useCallback(
+    (value: EventSort) => {
+      setSort(value)
+      setPagination((p) => ({ ...p, page: 1 }))
+    },
+    [setPagination, setSort],
+  )
 
-  const handlePageChange = useCallback((page: number) => {
-    setPagination((p) => ({ ...p, page }))
-  }, [])
+  const handlePageSizeChange = useCallback(
+    (s: number) => {
+      setPagination({ size: s, page: 1 })
+    },
+    [setPagination],
+  )
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      setPagination((p) => ({ ...p, page }))
+    },
+    [setPagination],
+  )
 
   const handleResetFilters = useCallback(() => {
     setTypeFilter('all')
@@ -590,7 +618,16 @@ const EventsTabPanel = () => {
     setCommittedKeyword('')
     setHideNonRecommended(false)
     setPagination((p) => ({ ...p, page: 1 }))
-  }, [])
+  }, [
+    setAppliedDateRange,
+    setCategoryFilter,
+    setCommittedKeyword,
+    setHideNonRecommended,
+    setKeyword,
+    setPagination,
+    setSort,
+    setTypeFilter,
+  ])
 
   const emptyOverlay = useMemo(() => {
     if (isError) {

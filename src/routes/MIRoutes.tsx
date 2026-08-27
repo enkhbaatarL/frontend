@@ -25,6 +25,7 @@ import NewsPage from '@/pages/mi/news/NewsPage'
 import NewsletterDetailPage from '@/pages/mi/newsletter/NewsletterDetailPage'
 import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
 import EventDetailPage from '@/pages/mi/nextGenMI/EventDetailPage.tsx'
+import NextGenMIListStateProvider from '@/pages/mi/nextGenMI/NextGenMIListStateProvider'
 import NextGenMIPage from '@/pages/mi/nextGenMI/NextGenMIPage'
 import { NEXT_GEN_MI_TAB_INFO } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import ScenarioDesignPage from '@/pages/mi/nextGenMI/ScenarioDesignPage'
@@ -205,6 +206,7 @@ const MIRoutes: RouteObject = {
     },
     {
       path: 'next-gen-mi',
+      element: <NextGenMIListStateProvider />,
       children: [
         { index: true, element: <Navigate to={NEXT_GEN_MI_TAB_INFO[0].segment} replace /> },
         {

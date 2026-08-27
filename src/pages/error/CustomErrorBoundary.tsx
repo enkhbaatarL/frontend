@@ -1,7 +1,8 @@
 import { ErrorInfo } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
+import { useLocation } from 'react-router-dom'
 
-import ErrorUnknownPage from './ErrorUnknownPage'
+import ErrorUnknownPage from '@/pages/error/ErrorUnknownPage'
 
 const onError = (_error: unknown, _info: ErrorInfo): void => undefined
 
@@ -10,10 +11,14 @@ type CustomErrorBoundaryProps = {
   fallbackComponent?: React.ReactNode
 }
 
-const CustomErrorBoundary = ({ children, fallbackComponent = <ErrorUnknownPage /> }: CustomErrorBoundaryProps) => (
-  <ErrorBoundary fallback={fallbackComponent} onError={onError} key={location.pathname}>
-    {children}
-  </ErrorBoundary>
-)
+const CustomErrorBoundary = ({ children, fallbackComponent = <ErrorUnknownPage /> }: CustomErrorBoundaryProps) => {
+  const { pathname } = useLocation()
+
+  return (
+    <ErrorBoundary fallback={fallbackComponent} onError={onError} resetKeys={[pathname]}>
+      {children}
+    </ErrorBoundary>
+  )
+}
 
 export default CustomErrorBoundary

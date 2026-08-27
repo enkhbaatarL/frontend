@@ -11,6 +11,7 @@ import { defaultNextGenMIDateRange } from '@/pages/mi/nextGenMI/components/commo
 import ScenarioGroupAccordionList from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupAccordionList'
 import ScenarioGroupToolbar, { type ScenarioGroupMode } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupToolbar'
 import ScenarioIndividualTable from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioIndividualTable'
+import { useNextGenMIListState } from '@/pages/mi/nextGenMI/NextGenMIListStateContext'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import { ListSort } from '@/service/mi/nextGenMI/common'
 import nextGenMIScenarioGroupService, {
@@ -32,12 +33,12 @@ const GROUP_HEADER_COLUMNS: GridColDef[] = [
 const ScenarioGroupsTabPanel = () => {
   useNavigationToast()
 
-  const [mode, setMode] = useState<ScenarioGroupMode>('group')
-  const [sort, setSort] = useState<ListSort>(ListSort.LATEST)
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => defaultNextGenMIDateRange())
-  const [keyword, setKeyword] = useState('')
-  const [committedKeyword, setCommittedKeyword] = useState('')
-  const [pagination, setPagination] = useState({ size: 20, page: 1 })
+  const [mode, setMode] = useNextGenMIListState<ScenarioGroupMode>('scenarios.mode', 'group')
+  const [sort, setSort] = useNextGenMIListState<ListSort>('scenarios.sort', ListSort.LATEST)
+  const [appliedDateRange, setAppliedDateRange] = useNextGenMIListState<DateRange>('scenarios.appliedDateRange', defaultNextGenMIDateRange)
+  const [keyword, setKeyword] = useNextGenMIListState('scenarios.keyword', '')
+  const [committedKeyword, setCommittedKeyword] = useNextGenMIListState('scenarios.committedKeyword', '')
+  const [pagination, setPagination] = useNextGenMIListState('scenarios.pagination', { size: 20, page: 1 })
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<number>>(() => new Set())
   const [expandAll, setExpandAll] = useState(false)
 
@@ -47,7 +48,7 @@ const ScenarioGroupsTabPanel = () => {
     setPagination((p) => ({ ...p, page: 1 }))
     setExpandedGroupIds(new Set())
     setExpandAll(false)
-  }, [])
+  }, [setPagination])
 
   const listRequest = useMemo((): IGetScenarioGroupListParams => {
     const resolvedRange = appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : defaultNextGenMIDateRange()
@@ -92,17 +93,15 @@ const ScenarioGroupsTabPanel = () => {
     if (tp > 0 && pagination.page > tp) {
       setPagination((p) => ({ ...p, page: tp }))
     }
-  }, [activePagination, pagination.page])
+  }, [activePagination, pagination.page, setPagination])
 
   const handleModeChange = useCallback(
     (nextMode: ScenarioGroupMode) => {
-      setMode((prev) => {
-        if (prev === nextMode) return prev
-        resetListState()
-        return nextMode
-      })
+      if (mode === nextMode) return
+      setMode(nextMode)
+      resetListState()
     },
-    [resetListState],
+    [mode, resetListState, setMode],
   )
 
   const handleDateRangeApply = useCallback(
@@ -110,7 +109,7 @@ const ScenarioGroupsTabPanel = () => {
       setAppliedDateRange({ startDate: dates.startDate, endDate: dates.endDate })
       resetListState()
     },
-    [resetListState],
+    [resetListState, setAppliedDateRange],
   )
 
   const handleSortChange = useCallback(
@@ -118,26 +117,29 @@ const ScenarioGroupsTabPanel = () => {
       setSort(value)
       resetListState()
     },
-    [resetListState],
+    [resetListState, setSort],
   )
 
-  const handleKeywordChange = useCallback((value: string) => {
-    setKeyword(value)
-  }, [])
+  const handleKeywordChange = useCallback(
+    (value: string) => {
+      setKeyword(value)
+    },
+    [setKeyword],
+  )
 
   const handleSearch = useCallback(
     (searchTerm: string) => {
       setCommittedKeyword(searchTerm)
       resetListState()
     },
-    [resetListState],
+    [resetListState, setCommittedKeyword],
   )
 
   const handleSearchClear = useCallback(() => {
     setKeyword('')
     setCommittedKeyword('')
     resetListState()
-  }, [resetListState])
+  }, [resetListState, setCommittedKeyword, setKeyword])
 
   const handleExpandAllChange = useCallback(
     (next: boolean) => {
@@ -160,17 +162,23 @@ const ScenarioGroupsTabPanel = () => {
     setExpandAll(false)
   }, [])
 
-  const handlePageSizeChange = useCallback((size: number) => {
-    setPagination({ size, page: 1 })
-    setExpandedGroupIds(new Set())
-    setExpandAll(false)
-  }, [])
+  const handlePageSizeChange = useCallback(
+    (size: number) => {
+      setPagination({ size, page: 1 })
+      setExpandedGroupIds(new Set())
+      setExpandAll(false)
+    },
+    [setPagination],
+  )
 
-  const handlePageChange = useCallback((page: number) => {
-    setPagination((p) => ({ ...p, page }))
-    setExpandedGroupIds(new Set())
-    setExpandAll(false)
-  }, [])
+  const handlePageChange = useCallback(
+    (page: number) => {
+      setPagination((p) => ({ ...p, page }))
+      setExpandedGroupIds(new Set())
+      setExpandAll(false)
+    },
+    [setPagination],
+  )
 
   return (
     <Box width="100%">

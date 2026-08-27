@@ -196,17 +196,13 @@ const useSearchFilter = <Req, Res>(
   // 낙관적 업데이트 데이터가 있으면 우선 반환, 없으면 실제 데이터 반환
   const displayData = optimisticData ?? data
 
-  const runInitialize = useCallback(
-    (initialVal: Partial<Req>) => {
-      // React 18의 startTransition을 사용하여 배치 업데이트
-      startTransition(() => {
-        setFilter(initialVal)
-        setFetchParams(initialVal)
-        setPagination(initialPagination)
-      })
-    },
-    [initialPagination],
-  )
+  const runInitialize = useCallback((initialVal: Partial<Req>) => {
+    // React 18의 startTransition을 사용하여 배치 업데이트
+    startTransition(() => {
+      setFilter(initialVal)
+      setFetchParams(initialVal)
+    })
+  }, [])
 
   const savedParams = useMemo(() => state?.params, [state])
 
