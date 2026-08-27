@@ -5,7 +5,6 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded'
-import DriveFileRenameOutlineRoundedIcon from '@mui/icons-material/DriveFileRenameOutlineRounded'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
@@ -397,73 +396,43 @@ const ScenarioDesignSelectFooterAction = ({
 const ScenarioDesignSelectFooter = ({
   selected,
   defaultValue,
-  manualValue,
-  manualSelected,
   disabled = false,
-  onManualSave,
+  showAgentOption,
   onSelected,
   onReset,
 }: {
   selected: string
   defaultValue: string
-  manualValue: string
-  manualSelected: boolean
   disabled?: boolean
-  onManualSave: (value: string) => void
+  showAgentOption: boolean
   onSelected: (value: string) => void
   onReset: () => void
 }) => {
-  const hasManualValue = manualValue.trim().length > 0
   const resetDisabled = disabled || selected === defaultValue
   const isAgentSelected = selected === scenarioDesignAgentItem.value || selected === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label
 
   return (
     <Stack gap="8px" padding="0 12px 8px">
       <Divider />
-      <ScenarioDesignSelectFooterAction
-        icon={
-          <AutoAwesomeRoundedIcon
-            sx={{
-              fontSize: '18px',
-              color: disabled ? 'contentIcon.Disabled' : isAgentSelected ? 'mari.Primary' : 'contentIcon.Enabled',
-            }}
+      {showAgentOption && (
+        <>
+          <ScenarioDesignSelectFooterAction
+            icon={
+              <AutoAwesomeRoundedIcon
+                sx={{
+                  fontSize: '18px',
+                  color: disabled ? 'contentIcon.Disabled' : isAgentSelected ? 'mari.Primary' : 'contentIcon.Enabled',
+                }}
+              />
+            }
+            label={String(scenarioDesignAgentItem.label)}
+            selected={isAgentSelected}
+            disabled={disabled}
+            onClick={() => onSelected(scenarioDesignAgentItem.value)}
           />
-        }
-        label={String(scenarioDesignAgentItem.label)}
-        selected={isAgentSelected}
-        disabled={disabled}
-        onClick={() => onSelected(scenarioDesignAgentItem.value)}
-      />
-
-      <Divider />
-      <NextGenMIInlineEditableInput
-        value={manualValue}
-        emptyMode="trigger"
-        placeholder={SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.inputLabel}
-        modePrefix={{
-          trigger: (
-            <DriveFileRenameOutlineRoundedIcon
-              sx={{ fontSize: '20px', color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }}
-            />
-          ),
-          input: <DriveFileRenameOutlineRoundedIcon sx={{ fontSize: '20px', color: 'contentIcon.Activeb', flexShrink: 0 }} />,
-          display: <DriveFileRenameOutlineRoundedIcon sx={{ fontSize: '20px', color: 'mari.Primary', flexShrink: 0 }} />,
-        }}
-        selected={manualSelected}
-        disabled={disabled}
-        autoFocus
-        showSaveButton
-        showEditButton={hasManualValue}
-        resetOnBlur
-        trimOnSave
-        onCommit={onManualSave}
-        onClick={() => {
-          if (disabled) return
-          onSelected(manualValue.trim() || SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label)
-        }}
-      />
-
-      <Divider />
+          <Divider />
+        </>
+      )}
       <ScenarioDesignSelectFooterAction
         icon={<RefreshRoundedIcon sx={{ fontSize: '20px', color: resetDisabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled' }} />}
         label={SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.reset.label}
@@ -481,6 +450,7 @@ const ScenarioDesignSelectCell = ({
   defaultValue,
   valueRationale,
   disabled = false,
+  showAgentOption,
   onSelected,
 }: {
   selected: string
@@ -488,6 +458,7 @@ const ScenarioDesignSelectCell = ({
   defaultValue: string
   valueRationale?: string
   disabled?: boolean
+  showAgentOption: boolean
   onSelected: (value: string) => void
 }) => {
   const selectedColumnItem = items.find((item) => item.value === selected)
@@ -516,18 +487,6 @@ const ScenarioDesignSelectCell = ({
     }
 
     onSelected(value)
-    setOpen(false)
-  }
-
-  const handleManualSave = (value: string) => {
-    if (disabled) {
-      setOpen(false)
-      return
-    }
-
-    const nextValue = value.trim()
-    if (!nextValue) return
-    onSelected(nextValue)
     setOpen(false)
   }
 
@@ -653,7 +612,7 @@ const ScenarioDesignSelectCell = ({
           boxShadow: '0px 0px 2px rgba(0, 0, 0, 0.1)',
           overflow: 'hidden',
           '& .disabledScroll > div > .MuiStack-root': {
-            padding: '8px 12px 0',
+            padding: '8px 12px',
           },
         },
       }}
@@ -661,10 +620,8 @@ const ScenarioDesignSelectCell = ({
         <ScenarioDesignSelectFooter
           selected={selected}
           defaultValue={defaultValue}
-          manualValue={manualValue}
-          manualSelected={isManualSelected}
           disabled={disabled}
-          onManualSave={handleManualSave}
+          showAgentOption={showAgentOption}
           onSelected={handleSelected}
           onReset={handleReset}
         />
@@ -1497,6 +1454,7 @@ const ScenarioDesignCriteriaStep = ({
                 }
                 valueRationale={valueRationale}
                 disabled={criteriaEditingDisabled || isLocked}
+                showAgentOption={agentScenarioDesignColumnKeys.has(column.key)}
                 onSelected={(value) => onRowValueChange(rowId, column.key, value)}
               />
             )

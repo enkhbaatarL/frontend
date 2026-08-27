@@ -43,6 +43,7 @@ import {
   isScenarioDesignRequiredColumn,
   mapAdditionalDimensionCandidatesToColumns,
   mergeScenarioDesignAdditionalColumnOptions,
+  restoreScenarioDesignRowDimension,
   upsertScenarioDesignAdditionalColumnSources,
   SCENARIO_DESIGN_MAX_ROW_COUNT,
   SCENARIO_DESIGN_SELECT_COMMON_ACTIONS,
@@ -1544,7 +1545,6 @@ const ScenarioDesignPage = () => {
       if (!column || isScenarioDesignRequiredColumn(column)) return
 
       setVisibleScenarioDesignColumns((currentColumns) => currentColumns.filter((item) => item.key !== key))
-      setAdditionalDimensionColumnSources((currentColumns) => currentColumns.filter((item) => item.key !== key))
       setAgentScenarioDesignColumnKeys((currentKeys) => {
         const nextKeys = new Set(currentKeys)
         nextKeys.delete(key)
@@ -1567,32 +1567,52 @@ const ScenarioDesignPage = () => {
     if (isAdditionalDimensionGenerating(additionalDimensions.generationStatus)) return 'generating'
     if (!isAdditionalDimensionReady(additionalDimensions.generationStatus)) return 'empty'
 
-    const columns = mapAdditionalDimensionCandidatesToColumns(additionalDimensions.candidates, visibleScenarioDesignColumns)
+    const visibleColumnKeys = new Set(visibleScenarioDesignColumns.map((column) => column.key))
+    const receivedColumns = initialScenarioDesignColumns.filter(
+      (column) => !visibleColumnKeys.has(column.key) && !isScenarioDesignRequiredColumn(column),
+    )
+    const candidateColumns = mapAdditionalDimensionCandidatesToColumns(additionalDimensions.candidates, visibleScenarioDesignColumns)
+    const columns = mergeScenarioDesignAdditionalColumnOptions(
+      [
+        ...receivedColumns,
+        ...candidateColumns.filter((column) => !receivedColumns.some((receivedColumn) => receivedColumn.key === column.key)),
+      ],
+      candidateColumns,
+    )
     return columns.length > 0 ? columns : 'empty'
-  }, [scenarioGroupId, visibleScenarioDesignColumns])
+  }, [initialScenarioDesignColumns, scenarioGroupId, visibleScenarioDesignColumns])
 
-  const handleAddCriteriaColumns = useCallback((selectedColumns: ScenarioDesignColumn[]) => {
-    if (selectedColumns.length === 0) return
+  const handleAddCriteriaColumns = useCallback(
+    (selectedColumns: ScenarioDesignColumn[]) => {
+      if (selectedColumns.length === 0) return
 
-    const selectedColumnKeys = selectedColumns.map((column) => column.key)
+      const receivedColumnKeys = new Set(initialScenarioDesignColumns.map((column) => column.key))
+      const newColumnKeys = selectedColumns.filter((column) => !receivedColumnKeys.has(column.key)).map((column) => column.key)
 
-    setVisibleScenarioDesignColumns((currentColumns) =>
-      sortScenarioDesignColumns([
-        ...currentColumns,
-        ...selectedColumns.filter((column) => !currentColumns.some((currentColumn) => currentColumn.key === column.key)),
-      ]),
-    )
-    setAdditionalDimensionColumnSources((currentColumns) => upsertScenarioDesignAdditionalColumnSources(currentColumns, selectedColumns))
-    setAgentScenarioDesignColumnKeys((currentKeys) => new Set([...currentKeys, ...selectedColumnKeys]))
-    setRows((currentRows) =>
-      currentRows.map((row) =>
-        selectedColumns.reduce(
-          (nextRow, column) => updateScenarioDesignRowDimension(nextRow, column, SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value),
-          row,
+      setVisibleScenarioDesignColumns((currentColumns) =>
+        sortScenarioDesignColumns([
+          ...currentColumns,
+          ...selectedColumns.filter((column) => !currentColumns.some((currentColumn) => currentColumn.key === column.key)),
+        ]),
+      )
+      setAdditionalDimensionColumnSources((currentColumns) => upsertScenarioDesignAdditionalColumnSources(currentColumns, selectedColumns))
+      setAgentScenarioDesignColumnKeys((currentKeys) => new Set([...currentKeys, ...newColumnKeys]))
+      setRows((currentRows) =>
+        currentRows.map((row) =>
+          selectedColumns.reduce((nextRow, column) => {
+            if (!receivedColumnKeys.has(column.key)) {
+              return updateScenarioDesignRowDimension(nextRow, column, SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value)
+            }
+
+            const rowId = getScenarioDesignRowId(row)
+            const receivedRow = initialRows.find((candidateRow, index) => getScenarioDesignRowId(candidateRow, index + 1) === rowId)
+            return restoreScenarioDesignRowDimension(nextRow, column, receivedRow)
+          }, row),
         ),
-      ),
-    )
-  }, [])
+      )
+    },
+    [initialRows, initialScenarioDesignColumns],
+  )
 
   const handleDeleteRow = useCallback((rowId: number) => {
     setRows((currentRows) =>

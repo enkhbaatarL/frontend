@@ -342,6 +342,34 @@ export const updateScenarioDesignRowDimension = (
   }
 }
 
+export const restoreScenarioDesignRowDimension = (
+  row: DesignScenarioRow,
+  column: ScenarioDesignColumn,
+  sourceRow?: DesignScenarioRow,
+): DesignScenarioRow => {
+  const sourceDimension = sourceRow ? getScenarioDesignDimension(sourceRow, column.key) : undefined
+  if (!sourceDimension) return updateScenarioDesignRowDimension(row, column, '')
+
+  const nextDimensions = [...(row.dimensions ?? [])]
+  const dimensionIndex = nextDimensions.findIndex((dimension) => dimension.key === column.key)
+  const nextDimension: ScenarioDimension = {
+    ...sourceDimension,
+    key: column.key,
+    label: sourceDimension.label?.trim() || column.label,
+  }
+
+  if (dimensionIndex >= 0) {
+    nextDimensions[dimensionIndex] = nextDimension
+  } else {
+    nextDimensions.push(nextDimension)
+  }
+
+  return {
+    ...row,
+    dimensions: nextDimensions,
+  }
+}
+
 export const createScenarioDesignRow = (
   displayOrder: number,
   columns: ScenarioDesignColumn[],
