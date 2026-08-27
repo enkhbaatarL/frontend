@@ -7,6 +7,7 @@ import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { HttpResponse } from '@/lib/axios'
+import type { ScenarioRationaleSection } from '@/pages/mi/nextGenMI/components/common/ScenarioRationalePopupContent'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
@@ -29,7 +30,6 @@ import ScenarioDesignCriteriaStep, {
 import {
   ScenarioDesignConfirmDialog,
   type ScenarioDesignConfirmDialogContent,
-  type ScenarioDesignRationaleSection,
   ScenarioDesignReviewFailedDialog,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignDialogs'
 import {
@@ -585,9 +585,9 @@ const ScenarioDesignPage = () => {
 
   const eventTitle = detail?.eventName ?? eventNameFromState ?? (id ? `이벤트 ${id}` : '이벤트')
   const eventDetailPath = id ? `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(id)}` : getNextGenMITabPath('events')
-  const designRationaleSections = useMemo((): ScenarioDesignRationaleSection[] => {
+  const designRationaleSections = useMemo((): ScenarioRationaleSection[] => {
     const evidence = scenarioDesignPresentation?.evidence
-    const sections: ScenarioDesignRationaleSection[] = []
+    const sections: ScenarioRationaleSection[] = []
     const eventAnalysis = evidence?.eventAnalysisMarkdown?.trim()
     const roleSelection = evidence?.roleSelectionMarkdown?.trim()
     if (eventAnalysis) sections.push({ title: undefined, blocks: [{ markdown: eventAnalysis }] })

@@ -13,15 +13,14 @@ import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import { nextGenMIIsEventNoiseSignal } from '@/pages/mi/nextGenMI/components/common/nextGenMIClassificationChip'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
+import ScenarioRationalePopupContent, {
+  type ScenarioRationaleSection,
+} from '@/pages/mi/nextGenMI/components/common/ScenarioRationalePopupContent'
 import EventDetailAiInsightsSection from '@/pages/mi/nextGenMI/components/event/EventDetailAiInsightsSection'
 import EventDetailDriverTreeScoreboardSection from '@/pages/mi/nextGenMI/components/event/EventDetailDriverTreeScoreboardSection'
 import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/event/EventDetailImpactAnalysisSection'
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
-import {
-  ScenarioDesignRationalePopupContent,
-  type ScenarioDesignRationaleSection,
-} from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignDialogs'
 import {
   SCENARIO_DESIGN_BASE_EVENT_TABS,
   SCENARIO_DESIGN_SECTIONS,
@@ -47,7 +46,7 @@ export type ScenarioDesignBaseEventSectionProps = {
   showRationaleButton?: boolean
   rationaleText?: string
   /** 도출 근거 팝업 섹션 (형식 미정 - 틀용) */
-  rationaleSections?: ScenarioDesignRationaleSection[]
+  rationaleSections?: ScenarioRationaleSection[]
 }
 
 const ScenarioDesignBaseEventTabButton = ({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) => (
@@ -326,8 +325,8 @@ const ScenarioDesignBaseEventSection = ({
             display="inline-flex"
             popup={{
               title: '도출 근거',
-              content: <ScenarioDesignRationalePopupContent sections={rationaleSections} fallbackText={rationaleText} />,
-              measureContent: <ScenarioDesignRationalePopupContent sections={rationaleSections} fallbackText={rationaleText} />,
+              content: <ScenarioRationalePopupContent sections={rationaleSections} fallbackText={rationaleText} />,
+              measureContent: <ScenarioRationalePopupContent sections={rationaleSections} fallbackText={rationaleText} />,
               hideHeaderLine: true,
               showSkeleton: false,
             }}

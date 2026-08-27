@@ -1,14 +1,15 @@
-import { Box, Dialog, DialogContent, Skeleton, Stack, Typography } from '@mui/material'
-import { useState } from 'react'
+import { Box, Skeleton, Stack, Typography } from '@mui/material'
+import { useRef } from 'react'
 
 import type { IScenarioEventBundle, IScenarioGroupEvidence } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import DocumentIcon from '@/components/common/icons/DocumentIcon'
-import MIMarkdown from '@/components/common/markdown/MIMarkdown'
+import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
+import ScenarioRationalePopupContent from '@/pages/mi/nextGenMI/components/common/ScenarioRationalePopupContent'
 
 interface ScenarioGroupSummarySectionProps {
   eventBundles?: IScenarioEventBundle[]
@@ -43,11 +44,16 @@ const ScenarioGroupSummarySection = ({
   loading = false,
   onEventClick,
 }: ScenarioGroupSummarySectionProps) => {
-  const [evidenceOpen, setEvidenceOpen] = useState(false)
+  const evidencePopupRef = useRef<MIMorphingPopupRef>(null)
   const eventAnalysisMarkdown = evidence?.eventAnalysisMarkdown?.trim() ?? ''
   const roleSelectionMarkdown = evidence?.roleSelectionMarkdown?.trim() ?? ''
   const hasEvidence = eventAnalysisMarkdown.length > 0 || roleSelectionMarkdown.length > 0
   const rows = eventBundles
+  const evidenceSections = [
+    ...(eventAnalysisMarkdown ? [{ title: undefined, blocks: [{ markdown: eventAnalysisMarkdown }] }] : []),
+    ...(roleSelectionMarkdown ? [{ title: undefined, blocks: [{ markdown: roleSelectionMarkdown }] }] : []),
+  ]
+  const evidenceContent = <ScenarioRationalePopupContent sections={evidenceSections} />
 
   return (
     <Stack gap="24px">
@@ -57,30 +63,42 @@ const ScenarioGroupSummarySection = ({
             Base Event
           </Typography>
           {hasEvidence && (
-            <MIBaseButton
-              variant="outlined"
-              onClick={() => setEvidenceOpen(true)}
-              prefix={<DocumentIcon width={20} height={20} aria-hidden focusable="false" style={{ color: '#495057' }} />}
-              labelColor="contentText.Normal"
-              gap="4px"
-              sx={{
-                height: '36px',
-                padding: '8px 10px 8px 6px',
-                borderRadius: '8px',
-                flexShrink: 0,
-                backgroundColor: 'commonColor.White',
-                borderColor: 'contentBorder.Normal',
-                '&:hover:not(:disabled)': {
-                  backgroundColor: 'commonColor.White',
-                  borderColor: 'contentBorder.Hover',
-                },
-                '& .MuiTypography-root': {
-                  fontWeight: 600,
-                },
+            <MIMorphingPopup
+              ref={evidencePopupRef}
+              display="inline-flex"
+              popup={{
+                title: '도출 근거',
+                content: evidenceContent,
+                measureContent: evidenceContent,
+                hideHeaderLine: true,
+                showSkeleton: false,
               }}
             >
-              근거 보기
-            </MIBaseButton>
+              <MIBaseButton
+                variant="outlined"
+                onClick={() => evidencePopupRef.current?.open()}
+                prefix={<DocumentIcon width={20} height={20} aria-hidden focusable="false" style={{ color: '#495057' }} />}
+                labelColor="contentText.Normal"
+                gap="4px"
+                sx={{
+                  height: '36px',
+                  padding: '8px 10px 8px 6px',
+                  borderRadius: '8px',
+                  flexShrink: 0,
+                  backgroundColor: 'commonColor.White',
+                  borderColor: 'contentBorder.Normal',
+                  '&:hover:not(:disabled)': {
+                    backgroundColor: 'commonColor.White',
+                    borderColor: 'contentBorder.Hover',
+                  },
+                  '& .MuiTypography-root': {
+                    fontWeight: 600,
+                  },
+                }}
+              >
+                근거 보기
+              </MIBaseButton>
+            </MIMorphingPopup>
           )}
         </Stack>
         {loading ? (
@@ -164,29 +182,6 @@ const ScenarioGroupSummarySection = ({
           </Box>
         )}
       </Stack>
-
-      <Dialog open={evidenceOpen} onClose={() => setEvidenceOpen(false)} maxWidth="md" fullWidth>
-        <DialogContent>
-          <Stack gap="16px">
-            {eventAnalysisMarkdown && (
-              <Stack gap="8px">
-                <Typography fontSize="15px" fontWeight={700} color="contentText.Black">
-                  이벤트 분석
-                </Typography>
-                <MIMarkdown>{eventAnalysisMarkdown}</MIMarkdown>
-              </Stack>
-            )}
-            {roleSelectionMarkdown && (
-              <Stack gap="8px">
-                <Typography fontSize="15px" fontWeight={700} color="contentText.Black">
-                  역할 선정
-                </Typography>
-                <MIMarkdown>{roleSelectionMarkdown}</MIMarkdown>
-              </Stack>
-            )}
-          </Stack>
-        </DialogContent>
-      </Dialog>
     </Stack>
   )
 }

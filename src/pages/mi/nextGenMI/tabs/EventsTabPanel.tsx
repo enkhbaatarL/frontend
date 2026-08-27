@@ -153,7 +153,7 @@ const EventsTabPanel = () => {
 
   const selectedEventIds = useMemo(() => selectedEvents.map((item) => item.eventId), [selectedEvents])
 
-  const { data: selectionDesignStatus } = useQuery({
+  const { data: selectionDesignStatus, isLoading: selectionDesignStatusLoading } = useQuery({
     queryKey: ['nextGenMIScenarioDesignStatus', selectedEventIds],
     queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: selectedEventIds }),
     enabled: selectedEventIds.length > 0,
@@ -737,6 +737,7 @@ const EventsTabPanel = () => {
         designMode={selectionDesignState?.mode}
         designLocked={selectionDesignState?.locked}
         designStep={selectionDesignState?.designStep}
+        designStatusLoading={selectionDesignStatusLoading}
         onRemove={handleRemoveSelectedEvent}
         onDesignClick={handleSelectedEventsDesignClick}
       />

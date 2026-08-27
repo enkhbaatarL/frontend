@@ -2,10 +2,11 @@ import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import { Box, Collapse, type CollapseProps, Divider, Fade, IconButton, Slide, Stack, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
-import { SwitchTransition, TransitionGroup } from 'react-transition-group'
+import { TransitionGroup } from 'react-transition-group'
 
 import type { EventDesignStep } from '@/service/mi/nextGenMI/event'
 
+import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ArrowDown from '@/components/common/icons/ArrowDown'
 import CloseIcon from '@/components/common/icons/CloseIcon'
@@ -23,6 +24,7 @@ export type EventSelectionActionBarProps = {
   designMode?: MultiEventSelectionDesignMode
   designLocked?: boolean
   designStep?: EventDesignStep | string | null
+  designStatusLoading?: boolean
   onRemove: (eventId: number) => void
   onDesignClick: () => void
 }
@@ -208,6 +210,7 @@ const EventSelectionActionBar = ({
   designMode = 'designable',
   designLocked = false,
   designStep,
+  designStatusLoading = false,
   onRemove,
   onDesignClick,
 }: EventSelectionActionBarProps) => {
@@ -215,16 +218,8 @@ const EventSelectionActionBar = ({
   const [lastSelectedEvents, setLastSelectedEvents] = useState(selectedEvents)
   const selectedCount = selectedEvents.length
   const displayedEvents = selectedCount > 0 ? selectedEvents : lastSelectedEvents
-  const designCtaTransitionKey =
-    designMode === 'creating'
-      ? `${designMode}-${normalizeEventDesignStep(designStep) ?? 'step1'}-${designLocked ? 'locked' : 'unlocked'}`
-      : designMode
-
-  useEffect(() => {
-    if (selectedCount > 0) setLastSelectedEvents(selectedEvents)
-  }, [selectedCount, selectedEvents])
-
-  const designCta =
+  const showDesignCta = selectedCount > 0 && !designStatusLoading
+  const resolvedDesignCta =
     designMode === 'creating' ? (
       <SelectionDesignProgressCta locked={designLocked} designStep={designStep} onClick={onDesignClick} />
     ) : designMode === 'created' ? (
@@ -232,6 +227,10 @@ const EventSelectionActionBar = ({
     ) : (
       <SelectionDesignCreateCta onClick={onDesignClick} />
     )
+
+  useEffect(() => {
+    if (selectedCount > 0) setLastSelectedEvents(selectedEvents)
+  }, [selectedCount, selectedEvents])
 
   return (
     <Fade
@@ -261,8 +260,15 @@ const EventSelectionActionBar = ({
         }}
       >
         <Slide in={selectedCount > 0} direction="up" appear timeout={{ enter: 240, exit: 240 }}>
-          <Stack bgcolor="#14181F" borderRadius="8px" padding="12px 16px" boxShadow="0px 6px 12px rgba(0, 0, 0, 0.1)">
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px">
+          <Stack
+            bgcolor="#14181F"
+            borderRadius="8px"
+            padding="12px 16px"
+            boxShadow="0px 6px 12px rgba(0, 0, 0, 0.1)"
+            minHeight="60px"
+            boxSizing="border-box"
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px" flex={1}>
               <Stack
                 component="button"
                 type="button"
@@ -307,13 +313,17 @@ const EventSelectionActionBar = ({
                 </Stack>
               </Stack>
 
-              <SwitchTransition mode="out-in">
-                <Fade key={designCtaTransitionKey} appear={false} timeout={{ enter: 160, exit: 100 }}>
-                  <Box display="flex" flexShrink={0}>
-                    {designCta}
-                  </Box>
-                </Fade>
-              </SwitchTransition>
+              <Box display="flex" justifyContent="flex-end" minWidth="132px" flexShrink={0}>
+                {designStatusLoading && selectedCount > 0 ? (
+                  <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
+                ) : (
+                  showDesignCta && (
+                    <Fade in timeout={160}>
+                      <Box display="flex">{resolvedDesignCta}</Box>
+                    </Fade>
+                  )
+                )}
+              </Box>
             </Stack>
 
             <Collapse in={expanded} timeout={220} unmountOnExit sx={{ width: '100%' }}>
