@@ -203,15 +203,13 @@ const ScenarioDesignCriteriaHeaderLabel = ({ label }: { label: string }) => {
       ref={ref}
       component="span"
       sx={{
-        display: '-webkit-box',
+        display: 'block',
         minWidth: 0,
         maxWidth: '100%',
         boxSizing: 'border-box',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        whiteSpace: 'normal',
-        WebkitBoxOrient: 'vertical',
-        WebkitLineClamp: 1,
+        whiteSpace: 'nowrap',
         typography: 'body2M14',
         color: 'contentText.Normal',
       }}
@@ -292,50 +290,51 @@ const ScenarioDesignCriteriaHeader = ({
         <Box component="span" minWidth={0} flex={1} overflow="hidden">
           <ScenarioDesignCriteriaHeaderLabel label={label} />
         </Box>
+        <Stack
+          component="span"
+          data-scenario-design-header-action-container="true"
+          minWidth={0}
+          flexShrink={0}
+          order={required ? 1 : 0}
+          alignItems="center"
+          justifyContent="center"
+        >
+          {required ? (
+            <Typography
+              data-scenario-design-header-action="true"
+              variant="body3SB12"
+              color="contentText.Error"
+              noWrap
+              sx={{
+                height: '22px',
+                padding: '2px 6px',
+                border: '1px solid',
+                borderColor: 'contentText.Error',
+                borderRadius: '8px',
+                boxSizing: 'border-box',
+                userSelect: 'none',
+              }}
+            >
+              필수
+            </Typography>
+          ) : disabled ? null : (
+            <DeleteRoundedIcon
+              data-scenario-design-header-action="true"
+              onClick={(event) => {
+                event.stopPropagation()
+                onDelete?.()
+              }}
+              sx={{
+                fontSize: '20px',
+                color: 'contentText.Error',
+                cursor: 'pointer',
+              }}
+            />
+          )}
+        </Stack>
         {description?.trim() ? <ScenarioDesignInfoTooltipIcon title={description} /> : null}
       </Stack>
     </Box>
-    <Stack
-      component="span"
-      data-scenario-design-header-action-container="true"
-      minWidth={0}
-      flexShrink={0}
-      alignItems="center"
-      justifyContent="center"
-    >
-      {required ? (
-        <Typography
-          data-scenario-design-header-action="true"
-          variant="body3SB12"
-          color="contentText.Error"
-          noWrap
-          sx={{
-            height: '22px',
-            padding: '2px 6px',
-            border: '1px solid',
-            borderColor: 'contentText.Error',
-            borderRadius: '8px',
-            boxSizing: 'border-box',
-            userSelect: 'none',
-          }}
-        >
-          필수
-        </Typography>
-      ) : disabled ? null : (
-        <DeleteRoundedIcon
-          data-scenario-design-header-action="true"
-          onClick={(event) => {
-            event.stopPropagation()
-            onDelete?.()
-          }}
-          sx={{
-            fontSize: '20px',
-            color: 'contentText.Error',
-            cursor: 'pointer',
-          }}
-        />
-      )}
-    </Stack>
   </Box>
 )
 

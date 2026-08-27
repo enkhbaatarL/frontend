@@ -24,6 +24,7 @@ const DefaultTooltipSx: SxProps<Theme> = (theme) => ({
   lineHeight: 1.4,
   fontWeight: 400,
   letterSpacing: 0,
+  whiteSpace: 'pre-line',
   fontFamily: theme.typography.fontFamily,
   boxSizing: 'border-box',
   '& .MuiTypography-root': {

@@ -1,3 +1,4 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { Stack, Typography } from '@mui/material'
 import { memo, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -308,8 +309,10 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           )
         },
       },
-      ...dimensionColumns.map(
-        (column): NextGenMIStickyTableColumn<TRow> => ({
+      ...dimensionColumns.map((column): NextGenMIStickyTableColumn<TRow> => {
+        const headerTooltipTitle = column.description?.trim() || column.rationale?.trim()
+
+        return {
           field: column.key,
           headerName: column.label,
           width: '160px',
@@ -319,7 +322,21 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           // sortable: true,
           sortComparator: (firstRow, secondRow) => compareDimensionCellValue(firstRow, secondRow, column),
           tooltipWhenHeaderTruncated: true,
-          headerTooltipTitle: column.description?.trim() || column.rationale?.trim() || undefined,
+          headerSuffix: headerTooltipTitle ? (
+            <NextGenMIFollowCursorTooltip title={headerTooltipTitle}>
+              <Stack
+                component="span"
+                alignItems="center"
+                justifyContent="center"
+                width="16px"
+                height="16px"
+                flexShrink={0}
+                color="contentIcon.Enabled"
+              >
+                <InfoOutlinedIcon aria-hidden sx={{ fontSize: '16px', color: 'inherit' }} />
+              </Stack>
+            </NextGenMIFollowCursorTooltip>
+          ) : undefined,
           renderCell: ({ row }) => {
             const discarded = isDiscardedScenario(row.status)
             const rationale = getDimensionCell(row, column)?.rationale?.trim()
@@ -327,14 +344,34 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
               <NextGenMITableBodyText
                 value={getDimensionCellValue(row, column)}
                 color={discarded ? 'contentText.Disabled' : 'contentText.Black'}
-                tooltipWhenTruncated={!rationale}
+                tooltipWhenTruncated
+                sx={{ flex: '1 1 0%', minWidth: 0 }}
               />
             )
 
-            return rationale ? <NextGenMIFollowCursorTooltip title={rationale}>{cell}</NextGenMIFollowCursorTooltip> : cell
+            if (!rationale) return cell
+
+            return (
+              <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
+                {cell}
+                <NextGenMIFollowCursorTooltip title={rationale}>
+                  <Stack
+                    component="span"
+                    alignItems="center"
+                    justifyContent="center"
+                    width="16px"
+                    height="16px"
+                    flexShrink={0}
+                    color="contentIcon.Enabled"
+                  >
+                    <InfoOutlinedIcon aria-hidden sx={{ fontSize: '16px', color: 'inherit' }} />
+                  </Stack>
+                </NextGenMIFollowCursorTooltip>
+              </Stack>
+            )
           },
-        }),
-      ),
+        }
+      }),
       {
         field: 'probability',
         headerName: '실행가능성',

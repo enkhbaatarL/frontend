@@ -47,6 +47,7 @@ export type NextGenMIStickyTableColumn<T> = {
   sortComparator?: (firstRow: T, secondRow: T, column: NextGenMIStickyTableColumn<T>) => number
   tooltipWhenHeaderTruncated?: boolean
   headerTooltipTitle?: ReactNode
+  headerSuffix?: ReactNode
   cellSx?: SxProps<Theme>
   headerCellSx?: SxProps<Theme>
   headerContentSx?: SxProps<Theme>
@@ -1270,6 +1271,22 @@ const NextGenMIStickyTable = <T,>({
     const canToggleUserFix = userFix && !configuredFixedColumnIndexSet.has(columnIndex)
     const isUserFixed = activeUserFixedColumnIndexSet.has(columnIndex)
 
+    const headerLabel = (
+      <NextGenMIStickyTableHeaderLabel
+        label={column.headerName}
+        tooltipTitle={column.headerTooltipTitle}
+        tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
+      />
+    )
+    const headerLabelWithSuffix = column.headerSuffix ? (
+      <Stack component="span" direction="row" alignItems="center" gap="4px" width="100%" minWidth={0}>
+        {headerLabel}
+        {column.headerSuffix}
+      </Stack>
+    ) : (
+      headerLabel
+    )
+
     const renderHeaderContent = () =>
       sortable ? (
         <Box
@@ -1307,11 +1324,7 @@ const NextGenMIStickyTable = <T,>({
             ...toSxArray(column.headerContentSx),
           ]}
         >
-          <NextGenMIStickyTableHeaderLabel
-            label={column.headerName}
-            tooltipTitle={column.headerTooltipTitle}
-            tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
-          />
+          {headerLabelWithSuffix}
           <Box
             component="span"
             aria-hidden
@@ -1346,11 +1359,7 @@ const NextGenMIStickyTable = <T,>({
             ...toSxArray(column.headerContentSx),
           ]}
         >
-          <NextGenMIStickyTableHeaderLabel
-            label={column.headerName}
-            tooltipTitle={column.headerTooltipTitle}
-            tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
-          />
+          {headerLabelWithSuffix}
         </Box>
       )
 
