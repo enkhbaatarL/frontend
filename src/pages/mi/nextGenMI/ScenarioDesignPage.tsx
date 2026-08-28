@@ -70,6 +70,7 @@ import nextGenMIScenarioDesignService, {
   mapScenarioDesignPresentationToState,
   saveScenarioGroupCreationCursor,
   type DesignConfirmSignpost,
+  type DesignOperationType,
   type DesignScenarioRow,
   type ScenarioDesignState,
   type ScenarioDesignStageValue,
@@ -158,6 +159,11 @@ const getScenarioDesignConfirmContent = (type: ScenarioDesignConfirmType): Scena
 const normalizeScenarioDesignStage = (stage?: ScenarioDesignStageValue) => stage?.toLowerCase()
 
 const isScenarioDesignOneViewStage = (stage?: string | null) => stage === 'signpost_created' || stage === 'completed'
+
+const getScenarioDesignRunningTaskMessage = (type?: DesignOperationType | null, label?: string | null) => {
+  if (label?.trim()) return `${label.trim()} 작업을 진행 중입니다.`
+  return type === 'validation' ? '변경사항을 검토하고 있습니다.' : '시나리오 One-view를 생성하고 있습니다.'
+}
 
 const getScenarioDesignActiveTable = (state?: ScenarioDesignState | null) => state?.step2?.table ?? state?.step1 ?? null
 
@@ -722,6 +728,11 @@ const ScenarioDesignPage = () => {
   const scenarioDesignActiveTable = useMemo(() => getScenarioDesignActiveTable(scenarioDesignState), [scenarioDesignState])
   const scenarioDesignActiveTableRowCount = scenarioDesignActiveTable?.scenarios?.length ?? 0
   const scenarioDesignStage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
+  const scenarioDesignTaskRunning = scenarioDesignPresentation?.refinementState?.taskRunning === true
+  const scenarioDesignRunningTaskType = scenarioDesignPresentation?.refinementState?.runningTaskType
+  const scenarioDesignRunningTaskLabel = scenarioDesignPresentation?.refinementState?.runningTaskTypeLabel
+  const scenarioDesignValidationTaskRunning = scenarioDesignTaskRunning && scenarioDesignRunningTaskType === 'validation'
+  const scenarioDesignSignpostTaskRunning = scenarioDesignTaskRunning && scenarioDesignRunningTaskType === 'signpost'
   const scenarioDesignGenerationFailed = scenarioDesignGenerationFailure !== null
   const scenarioDesignWaitingForInitialTable =
     scenarioGroupId !== null && currentStep === 'criteria' && scenarioDesignActiveTable === null && !scenarioDesignGenerationFailed
@@ -740,11 +751,35 @@ const ScenarioDesignPage = () => {
     resetScenarioDesignMutation.isPending ||
     scenarioDesignWaitingForInitialTable ||
     scenarioDesignWaitingForInitialRows ||
-    signpostPending
-  const scenarioDesignLoadingMessage = signpostPending
-    ? '시나리오 One-view를 생성하고 있습니다.'
-    : creationProgressText?.trim() ||
-      (scenarioDesignCreationPending ? '시나리오 그룹 생성을 진행 중입니다.' : '시나리오 설계를 불러오는 중입니다.')
+    signpostPending ||
+    scenarioDesignTaskRunning
+  const scenarioDesignLoadingMessage =
+    signpostPending || scenarioDesignTaskRunning
+      ? getScenarioDesignRunningTaskMessage(scenarioDesignRunningTaskType, scenarioDesignRunningTaskLabel)
+      : creationProgressText?.trim() ||
+        (scenarioDesignCreationPending ? '시나리오 그룹 생성을 진행 중입니다.' : '시나리오 설계를 불러오는 중입니다.')
+
+  useEffect(() => {
+    if (!scenarioDesignTaskRunning) return
+
+    if (scenarioDesignRunningTaskType === 'validation') {
+      reviewStartedScenarioDesignUpdatedAtRef.current = 0
+      reviewValidationStreamReceivedRef.current = false
+      reviewValidationStreamStageRef.current = null
+      setReviewPending(true)
+      setReviewMinimumLoadingComplete(true)
+      setReviewCompletedVisible(false)
+      setReviewFailedDialogOpen(false)
+      return
+    }
+
+    if (scenarioDesignRunningTaskType === 'signpost') {
+      signpostStreamReceivedRef.current = false
+      signpostStartedScenarioDesignUpdatedAtRef.current = 0
+      setSignpostPending(true)
+    }
+  }, [scenarioDesignRunningTaskType, scenarioDesignTaskRunning])
+
   const scenarioNameErrorMessages = useMemo(() => {
     const scenarioNameSet = new Set<string>()
     const errorMessages = new Map<number, string>()
@@ -1311,6 +1346,7 @@ const ScenarioDesignPage = () => {
       reviewMinimumLoadingComplete &&
       pendingFrontendReviewItemsRef.current === null &&
       receivedCurrentReviewValidation &&
+      !scenarioDesignTaskRunning &&
       scenarioDesignStateUpdatedAt > reviewStartedScenarioDesignUpdatedAtRef.current &&
       (hasValidationResult || reviewValidationStreamStageRef.current === 'scenario_validated')
     const reviewValidationResultReady = !reviewPending || backendValidationResultReady
@@ -1413,6 +1449,7 @@ const ScenarioDesignPage = () => {
 
     const signpostResultReady =
       signpostPending &&
+      !scenarioDesignTaskRunning &&
       scenarioDesignStateUpdatedAt > signpostStartedScenarioDesignUpdatedAtRef.current &&
       (signpostStreamReceivedRef.current || isScenarioDesignOneViewStage(stage))
 
@@ -1437,6 +1474,7 @@ const ScenarioDesignPage = () => {
     scenarioDesignStateUpdatedAt,
     scenarioDimensionTemplates,
     reviewMinimumLoadingComplete,
+    scenarioDesignTaskRunning,
     showSnackbar,
     signpostPending,
     queryClient,
@@ -1827,7 +1865,8 @@ const ScenarioDesignPage = () => {
       loadingMessage: scenarioDesignLoadingMessage,
       review: {
         reviewed: isCurrentCriteriaReviewed,
-        pending: reviewPending || validateScenarioDesignMutation.isPending,
+        pending: reviewPending || validateScenarioDesignMutation.isPending || scenarioDesignValidationTaskRunning,
+        completionPending: signpostPending || scenarioDesignSignpostTaskRunning,
         completedVisible: reviewCompletedVisible,
         canComplete: canCompleteScenarioDesignReview,
         errorItems: reviewErrorItems,
@@ -1863,6 +1902,9 @@ const ScenarioDesignPage = () => {
       reviewCompletedVisible,
       reviewErrorItems,
       reviewPending,
+      scenarioDesignSignpostTaskRunning,
+      scenarioDesignValidationTaskRunning,
+      signpostPending,
       rows,
       scenarioDesignLoading,
       scenarioDesignLoadingMessage,

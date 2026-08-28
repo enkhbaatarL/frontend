@@ -20,6 +20,8 @@ export type ScenarioDesignStageValue =
   | 'signpost_created'
   | 'completed'
 
+export type DesignOperationType = 'validation' | 'signpost'
+
 export type ScenarioSignpostStrength = 'verystrong' | 'strong' | 'medium' | 'weak' | 'veryweak'
 
 export type ScenarioDesignStatusCode = 'designable' | 'unavailable' | 'creating' | 'created'
@@ -193,6 +195,9 @@ export interface ScenarioGroupMeta {
 export interface ScenarioGroupRefinementState {
   stage?: ScenarioDesignStageValue
   stageLabel?: string
+  taskRunning?: boolean
+  runningTaskType?: DesignOperationType | null
+  runningTaskTypeLabel?: string | null
   occupied?: boolean
   mine?: boolean | null
   occupantUserId?: number | null

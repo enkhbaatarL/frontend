@@ -929,6 +929,7 @@ type ScenarioDesignCriteriaTableProps = {
 type ScenarioDesignCriteriaReviewProps = {
   reviewed: boolean
   pending: boolean
+  completionPending: boolean
   completedVisible: boolean
   canComplete: boolean
   errorItems: ScenarioDesignReviewErrorItem[]
@@ -973,6 +974,7 @@ const ScenarioDesignCriteriaStep = ({
   const {
     reviewed,
     pending: reviewPending,
+    completionPending,
     completedVisible: reviewCompletedVisible,
     canComplete: canCompleteScenarioDesignReview,
     errorItems: reviewErrorItems,
@@ -996,6 +998,7 @@ const ScenarioDesignCriteriaStep = ({
   const previousReviewErrorItemsSignatureRef = useRef('')
   const criteriaEditingDisabled = isLoading || reviewPending
   const reviewButtonDisabled = criteriaEditingDisabled || reviewCompletedVisible || (reviewed && canCompleteScenarioDesignReview)
+  const completionButtonDisabled = criteriaEditingDisabled || completionPending || !reviewed || !canCompleteScenarioDesignReview
   const reviewButtonStatusColor = reviewCompletedVisible ? 'point.green1' : 'contentText.Disabled'
   const reviewButtonStatus: ScenarioDesignReviewButtonStatus = reviewPending ? 'loading' : reviewCompletedVisible ? 'completed' : null
   const criteriaConfirmContent = criteriaConfirmType ? getScenarioDesignCriteriaConfirmContent(criteriaConfirmType) : null
@@ -1781,8 +1784,9 @@ const ScenarioDesignCriteriaStep = ({
               </MIBaseButton>
               <MIBaseButton
                 variant="contained"
+                prefix={<ScenarioDesignReviewStatusPrefix status={completionPending ? 'loading' : null} />}
                 suffix={<ChevronRightRoundedIcon sx={{ fontSize: '20px' }} />}
-                disabled={criteriaEditingDisabled || !reviewed || !canCompleteScenarioDesignReview}
+                disabled={completionButtonDisabled}
                 onClick={onComplete}
                 labelColor="contentText.White"
                 sx={{
