@@ -28,8 +28,23 @@ export const getNextGenMIScenarioGroupDetailPath = (scenarioGroupId: string | nu
   return `${base}?scenarioId=${encodeURIComponent(String(scenarioId))}`
 }
 
-export const getNextGenMIEventDesignPath = (eventId: string | number) =>
-  `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}/design`
+export const getNextGenMIScenarioDesignPath = ({
+  eventIds,
+  scenarioGroupId,
+}: {
+  eventIds: Array<string | number>
+  scenarioGroupId?: string | number | null
+}) => {
+  if (scenarioGroupId !== undefined && scenarioGroupId !== null) {
+    return `${NEXT_GEN_MI_BASE_PATH}/scenario-design/groups/${encodeURIComponent(String(scenarioGroupId))}`
+  }
+
+  const searchParams = new URLSearchParams()
+  Array.from(new Set(eventIds.map(String))).forEach((eventId) => searchParams.append('eventId', eventId))
+
+  const query = searchParams.toString()
+  return query ? `${NEXT_GEN_MI_BASE_PATH}/scenario-design?${query}` : `${NEXT_GEN_MI_BASE_PATH}/scenario-design`
+}
 
 export const resolveNextGenMITabFromPathname = (pathname: string): NextGenMITabKey => {
   const defaultKey = NEXT_GEN_MI_TAB_INFO[0].key

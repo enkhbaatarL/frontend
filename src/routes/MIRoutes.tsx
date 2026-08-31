@@ -27,7 +27,7 @@ import NewsletterPage from '@/pages/mi/newsletter/NewsletterPage'
 import EventDetailPage from '@/pages/mi/nextGenMI/EventDetailPage.tsx'
 import NextGenMIListStateProvider from '@/pages/mi/nextGenMI/NextGenMIListStateProvider'
 import NextGenMIPage from '@/pages/mi/nextGenMI/NextGenMIPage'
-import { NEXT_GEN_MI_TAB_INFO } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIScenarioDesignPath, NEXT_GEN_MI_TAB_INFO } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import ScenarioDesignPage from '@/pages/mi/nextGenMI/ScenarioDesignPage'
 import ScenarioGroupDetailPage from '@/pages/mi/nextGenMI/ScenarioGroupDetailPage'
 import NoticesDetailPage from '@/pages/mi/notice/NoticeDetailPage'
@@ -97,6 +97,28 @@ const LegacyNewsletterRedirect = () => {
   }
 
   return <Navigate to={`/mi/newsletters/${resolvedNewsletterId}/${resolvedIssueNo}`} replace />
+}
+
+const LegacyScenarioDesignRedirect = () => {
+  const { id } = useParams<{ id: string }>()
+  const location = useLocation()
+  const state = location.state as { scenarioGroupId?: string | number } | null
+  const eventId = id !== undefined && Number.isFinite(Number(id)) ? Number(id) : null
+
+  if (eventId === null) return <Navigate to="/mi/next-gen-mi/events" replace />
+
+  return (
+    <Navigate to={getNextGenMIScenarioDesignPath({ eventIds: [eventId], scenarioGroupId: state?.scenarioGroupId })} state={state} replace />
+  )
+}
+
+const ScenarioDesignGroupRoute = () => {
+  const { scenarioGroupId } = useParams<{ scenarioGroupId: string }>()
+  const location = useLocation()
+
+  if (!scenarioGroupId || location.search.length === 0) return <ScenarioDesignPage />
+
+  return <Navigate to={getNextGenMIScenarioDesignPath({ eventIds: [], scenarioGroupId })} state={location.state} replace />
 }
 
 // 조건부 Forecast 컴포넌트 래퍼
@@ -213,7 +235,9 @@ const MIRoutes: RouteObject = {
           element: <NextGenMIPage />,
           children: NEXT_GEN_MI_TAB_INFO.map((tab) => ({ path: tab.segment })),
         },
-        { path: 'events/:id/design', element: <ScenarioDesignPage /> },
+        { path: 'scenario-design', element: <ScenarioDesignPage /> },
+        { path: 'scenario-design/groups/:scenarioGroupId', element: <ScenarioDesignGroupRoute /> },
+        { path: 'events/:id/design', element: <LegacyScenarioDesignRedirect /> },
         { path: 'events/:eventId', element: <EventDetailPage /> },
         { path: 'scenarios/group/:scenarioGroupId', element: <ScenarioGroupDetailPage /> },
       ],

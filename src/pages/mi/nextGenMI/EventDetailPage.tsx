@@ -35,7 +35,11 @@ import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/Eve
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
 import NextGenMIMarkdownDownloadButton from '@/pages/mi/nextGenMI/components/NextGenMIMarkdownDownloadButton'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
-import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import {
+  getNextGenMIScenarioDesignPath,
+  getNextGenMIScenarioGroupDetailPath,
+  getNextGenMITabPath,
+} from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { buildEventDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
@@ -333,14 +337,20 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
       return
     }
 
-    navigate(getNextGenMIEventDesignPath(eventId), {
-      state: {
-        eventName: title,
-        eventIds: eventIdNumber !== null ? [eventIdNumber] : undefined,
-        scenarioGroupId: currentScenarioGroupId ?? undefined,
-        designStep: normalizeEventDesignStep(currentDesignStatus?.designStep) ?? null,
+    navigate(
+      getNextGenMIScenarioDesignPath({
+        eventIds: eventIdNumber !== null ? [eventIdNumber] : [],
+        scenarioGroupId: currentScenarioGroupId,
+      }),
+      {
+        state: {
+          eventName: title,
+          eventIds: eventIdNumber !== null ? [eventIdNumber] : undefined,
+          scenarioGroupId: currentScenarioGroupId ?? undefined,
+          designStep: normalizeEventDesignStep(currentDesignStatus?.designStep) ?? null,
+        },
       },
-    })
+    )
   }, [
     designStatus,
     eventId,

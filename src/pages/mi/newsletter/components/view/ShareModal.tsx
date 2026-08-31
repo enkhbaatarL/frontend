@@ -169,6 +169,36 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
     [toEmails, ccEmails, bccEmails],
   )
 
+  const addRecipientEmails = useCallback(
+    (values: string[]): string[] => {
+      const existingEmails = new Set([...toEmails, ...ccEmails, ...bccEmails].map((email) => email.trim().toLowerCase()))
+      const emailsToAdd: string[] = []
+
+      for (const value of values) {
+        const email = value.trim()
+        const normalizedEmail = email.toLowerCase()
+        if (!email || !isValidEmail(email) || existingEmails.has(normalizedEmail) || totalCount + emailsToAdd.length >= MAX_RECIPIENTS) {
+          continue
+        }
+        existingEmails.add(normalizedEmail)
+        emailsToAdd.push(email)
+      }
+
+      if (emailsToAdd.length === 0) return emailsToAdd
+
+      if (recipientType === 'To') {
+        setToEmails((prev) => [...prev, ...emailsToAdd])
+      } else if (recipientType === 'Cc') {
+        setCcEmails((prev) => [...prev, ...emailsToAdd])
+      } else {
+        setBccEmails((prev) => [...prev, ...emailsToAdd])
+      }
+
+      return emailsToAdd
+    },
+    [toEmails, ccEmails, bccEmails, totalCount, recipientType, isValidEmail],
+  )
+
   const handleCopyLink = useCallback(async () => {
     if (shareUrl) {
       try {
@@ -181,18 +211,23 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
   }, [shareUrl, showSnackbar])
 
   const handleAddEmail = useCallback(() => {
-    const trimmed = emailInput.trim()
-    if (!trimmed || totalCount >= MAX_RECIPIENTS) return
-    if (!isValidEmail(trimmed) || isDuplicate(trimmed)) return
-    if (recipientType === 'To') {
-      setToEmails((prev) => [...prev, trimmed])
-    } else if (recipientType === 'Cc') {
-      setCcEmails((prev) => [...prev, trimmed])
+    const enteredEmails = emailInput
+      .split(/[;,]/)
+      .map((email) => email.trim())
+      .filter(Boolean)
+    const addedRecipientEmails = addRecipientEmails(enteredEmails)
+    if (addedRecipientEmails.length === 0) return
+
+    const addedEmails = new Set(addedRecipientEmails.map((email) => email.toLowerCase()))
+    const unprocessedEmails = enteredEmails.filter((email) => !addedEmails.has(email.toLowerCase()))
+    setEmailInput(unprocessedEmails.join('; '))
+
+    if (addedRecipientEmails.length === 1) {
+      showSnackbar(`${addedRecipientEmails[0]}을 추가하였습니다.`, { variant: 'success' })
     } else {
-      setBccEmails((prev) => [...prev, trimmed])
+      showSnackbar(`${addedRecipientEmails[0]} 외 ${addedRecipientEmails.length - 1}건을 추가하였습니다.`, { variant: 'success' })
     }
-    setEmailInput('')
-  }, [emailInput, totalCount, recipientType, isValidEmail, isDuplicate])
+  }, [emailInput, addRecipientEmails, showSnackbar])
 
   const handleKeyDownEmail = useCallback(
     (e: KeyboardEvent) => {
@@ -226,12 +261,12 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
         const payload: StoredBuckets = { to: toEmails, cc: ccEmails, bcc: bccEmails }
         localStorage.setItem(RECIPIENT_LIST_STORAGE_KEY, JSON.stringify(payload))
       } catch {
-        // localStorage full or unavailable - ignore
+        showSnackbar('수신자 목록을 저장하지 못했습니다.', { variant: 'warning' })
       }
     } else {
       localStorage.removeItem(RECIPIENT_LIST_STORAGE_KEY)
     }
-  }, [toEmails, ccEmails, bccEmails, saveRecipientList])
+  }, [toEmails, ccEmails, bccEmails, saveRecipientList, showSnackbar])
 
   const handleSend = useCallback(async () => {
     const toTrimmed = toEmails.map((e) => e.trim()).filter(Boolean)
@@ -296,7 +331,11 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
     showSnackbar,
   ])
 
-  const canAdd = emailInput.trim() && totalCount < MAX_RECIPIENTS && isValidEmail(emailInput.trim()) && !isDuplicate(emailInput.trim())
+  const canAdd =
+    emailInput
+      .split(/[;,]/)
+      .map((email) => email.trim())
+      .some((email) => isValidEmail(email) && !isDuplicate(email)) && totalCount < MAX_RECIPIENTS
 
   const isDuplicateError = emailInput.trim() !== '' && isValidEmail(emailInput.trim()) && isDuplicate(emailInput.trim())
 
@@ -407,9 +446,9 @@ const ShareModal = ({ open, onClose, shareUrl, onSend, editionMail }: ShareModal
                 <MIMaskInput
                   embedded
                   value={emailInput}
-                  onUpdateValue={(v) => setEmailInput(v ?? '')}
+                  onUpdateValue={(value) => setEmailInput(value ?? '')}
                   slotProps={{ input: { onKeyDown: handleKeyDownEmail } }}
-                  placeholder="이메일 입력"
+                  placeholder="이메일 입력 (; 또는 ,로 구분)"
                   error={isDuplicateError}
                   sx={{
                     flex: 1,

@@ -7,3 +7,6 @@ export const markdownRemarkGfmOptions: RemarkGfmOptions = {
 }
 
 export const markdownRemarkPlugins: PluggableList = [[remarkGfm, markdownRemarkGfmOptions]]
+
+export const normalizeMarkdownStrongDelimiter = (markdown: string) =>
+  markdown.replaceAll(/(?<!\\)\*\*([^*\n]*[^\p{L}\p{N}\s*])\*\*(?=\p{Script=Hangul})/gu, '**$1**&#8203;')

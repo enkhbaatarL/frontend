@@ -13,8 +13,8 @@ const RN_BODY_OUTLOOK_FONT_PX = 12
 const RN_BODY_LINE_HEIGHT_INTRA_PX = 24
 /** 불릿 열과 본문 열 사이 — 메일 본문 12px 기준 글자 약 1.5개분 */
 const RN_BULLET_TO_TEXT_GAP_PX = Math.round(RN_BODY_OUTLOOK_FONT_PX * 1.7)
-/** 서로 다른 글머리 행 사이 (메일에서 margin보다 행 하단 패딩이 안정적) */
-const RN_BULLET_PARAGRAPH_GAP_PX = 10
+/** 서로 다른 글머리 행 사이 여백 — 본문 항목을 연속해서 표시 */
+const RN_BULLET_PARAGRAPH_GAP_PX = 0
 /** 글머리 블록(기호) 시작 — 왼쪽 들여쓰기 */
 const RN_BULLET_INDENT_LEFT_PX = 30
 

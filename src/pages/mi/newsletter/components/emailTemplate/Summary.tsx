@@ -47,7 +47,7 @@ const Summary = ({ summary, summaryDiffHtml }: SummaryProps) => (
                     } as CSSProperties),
                   }}
                 >
-                  핵심 요약
+                  주요 시사점
                 </td>
               </tr>
               <tr>

@@ -1104,7 +1104,7 @@ const NewsletterDetailPage = () => {
         summaryCount += 1
         items.push({
           id: `section-summary-${s.id}`,
-          label: summaryCount === 1 ? '핵심 요약' : `핵심 요약 (${summaryCount})`,
+          label: summaryCount === 1 ? '주요 시사점' : `주요 시사점 (${summaryCount})`,
         })
         continue
       }

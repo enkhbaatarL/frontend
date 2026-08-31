@@ -450,7 +450,7 @@ const ScenarioDesignReviewTextSection = ({
         </Typography>
         {modified && <ScenarioDesignReviewModifiedBadge />}
       </Stack>
-      <ScenarioDesignReviewResetButton disabled={!modified} onClick={onReset} />
+      {editable && <ScenarioDesignReviewResetButton disabled={!modified} onClick={onReset} />}
     </Stack>
     <ScenarioDesignReviewParagraphField
       ariaLabel={title}
@@ -552,10 +552,12 @@ const ScenarioDesignReviewCriteriaCard = ({ label, value, fullWidth }: { label: 
 const ScenarioDesignReviewPossibilityField = ({
   value,
   hasError,
+  disabled = false,
   onChange,
 }: {
   value: string
   hasError?: boolean
+  disabled?: boolean
   onChange: (value: string) => void
 }) => {
   const errorIcon = hasError ? (
@@ -614,6 +616,7 @@ const ScenarioDesignReviewPossibilityField = ({
             component="input"
             aria-label="시나리오 가능성"
             value={value}
+            disabled={disabled}
             inputMode="numeric"
             pattern="[0-9]*"
             onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)}
@@ -623,7 +626,7 @@ const ScenarioDesignReviewPossibilityField = ({
               border: 0,
               outline: 'none',
               bgcolor: 'transparent',
-              color: 'contentText.Normal',
+              color: disabled ? 'contentText.Disabled' : 'contentText.Normal',
               fontFamily: 'inherit',
               fontSize: '14px',
               fontWeight: 500,
@@ -887,6 +890,7 @@ const ScenarioDesignReviewSignpost = ({
   signpost,
   resetKey,
   rowResetKey,
+  readOnly = false,
   onModifiedChange,
   onValueChange,
 }: {
@@ -895,6 +899,7 @@ const ScenarioDesignReviewSignpost = ({
   signpost: DesignConfirmSignpost
   resetKey: number
   rowResetKey: number
+  readOnly?: boolean
   onModifiedChange?: (rowId: number, index: number, modified: boolean) => void
   onValueChange: (rowId: number, index: number, value: DesignConfirmSignpost) => void
 }) => {
@@ -1041,6 +1046,7 @@ const ScenarioDesignReviewSignpost = ({
         <MIMenu
           open={menuOpen}
           onOpenChange={handleOpenChange}
+          disabled={readOnly}
           placement="bottom-end"
           menuPositionOffset={{ top: 8 }}
           variant="outlined"
@@ -1218,6 +1224,7 @@ const ScenarioDesignReviewScenarioCard = ({
   resetKey,
   signpostResetKey,
   signpostModified,
+  readOnly = false,
   onNarrativeBlur,
   onNarrativeChange,
   onNarrativeReset,
@@ -1247,6 +1254,7 @@ const ScenarioDesignReviewScenarioCard = ({
   resetKey: number
   signpostResetKey: number
   signpostModified?: boolean
+  readOnly?: boolean
   onNarrativeBlur: () => void
   onNarrativeChange: (value: string) => void
   onNarrativeReset: () => void
@@ -1311,6 +1319,7 @@ const ScenarioDesignReviewScenarioCard = ({
           title="시나리오 내러티브"
           modified={narrativeModified}
           resetDisabled={!narrativeModified}
+          showReset={!readOnly}
           onReset={onNarrativeReset}
         />
         <ScenarioDesignReviewParagraphField
@@ -1320,7 +1329,7 @@ const ScenarioDesignReviewScenarioCard = ({
           minHeight="194px"
           minResizeHeight="120px"
           maxHeight="600px"
-          editable
+          editable={!readOnly}
           errorMessage={narrativeErrorMessage}
           resetKey={resetKey}
           onBlur={onNarrativeBlur}
@@ -1349,9 +1358,15 @@ const ScenarioDesignReviewScenarioCard = ({
           title="시나리오 가능성"
           modified={possibilityModified}
           resetDisabled={!possibilityModified}
+          showReset={!readOnly}
           onReset={onPossibilityReset}
         />
-        <ScenarioDesignReviewPossibilityField value={possibility} hasError={possibilityError} onChange={onPossibilityChange} />
+        <ScenarioDesignReviewPossibilityField
+          value={possibility}
+          hasError={possibilityError}
+          disabled={readOnly}
+          onChange={onPossibilityChange}
+        />
       </Stack>
       <Divider />
 
@@ -1360,6 +1375,7 @@ const ScenarioDesignReviewScenarioCard = ({
           title="주요 Signpost"
           modified={signpostModified}
           resetDisabled={!signpostModified}
+          showReset={!readOnly}
           onReset={onSignpostReset}
         />
         <Stack gap="8px">
@@ -1376,6 +1392,7 @@ const ScenarioDesignReviewScenarioCard = ({
                 signpost={signpost}
                 resetKey={resetKey}
                 rowResetKey={signpostResetKey}
+                readOnly={readOnly}
                 onModifiedChange={onSignpostModifiedChange}
                 onValueChange={onSignpostValueChange}
               />
@@ -1384,7 +1401,7 @@ const ScenarioDesignReviewScenarioCard = ({
         </Stack>
       </Stack>
     </Stack>
-    {showSplitter && (
+    {showSplitter && !readOnly && (
       <Stack
         role="separator"
         aria-label={`${row.scenarioName || '시나리오'} 카드 너비 조절`}
@@ -1443,6 +1460,7 @@ type ScenarioDesignOneViewStepProps = {
   groupSummary: string
   groupDescription: string
   loading: boolean
+  readOnly?: boolean
   creatingScenarioGroup?: boolean
   onCancel: () => void
   onCreate: (value: ScenarioDesignReviewCreateValue) => void
@@ -1455,6 +1473,7 @@ const ScenarioDesignOneViewStep = ({
   groupSummary,
   groupDescription,
   loading,
+  readOnly = false,
   creatingScenarioGroup = false,
   onCancel,
   onCreate,
@@ -1551,7 +1570,7 @@ const ScenarioDesignOneViewStep = ({
   )
   const possibilityTotal = useMemo(() => getScenarioDesignReviewPossibilityTotal(scenarioPossibilities), [scenarioPossibilities])
   const canCreateScenarioPossibilities = possibilityTotal === 100 && possibilityErrorRowId === null
-  const interactionDisabled = loading || creatingScenarioGroup
+  const interactionDisabled = loading || creatingScenarioGroup || readOnly
 
   useEffect(
     () => () => {
@@ -2041,7 +2060,7 @@ const ScenarioDesignOneViewStep = ({
                 maxLength={100}
                 minHeight="68px"
                 modified={scenarioGroupNameModified}
-                editable
+                editable={!readOnly}
                 errorMessage={scenarioGroupNameErrorMessage}
                 resetKey={resetKey}
                 preventLineBreak
@@ -2059,7 +2078,7 @@ const ScenarioDesignOneViewStep = ({
                 maxLength={500}
                 minHeight="160px"
                 modified={scenarioGroupDescriptionModified}
-                editable
+                editable={!readOnly}
                 errorMessage={scenarioGroupDescriptionErrorMessage}
                 resetKey={resetKey}
                 onBlur={() => setTouchedFieldNames((current) => ({ ...current, scenarioGroupDescription: true }))}
@@ -2133,6 +2152,7 @@ const ScenarioDesignOneViewStep = ({
                           resetKey={resetKey}
                           signpostResetKey={signpostResetKeys[rowId] ?? 0}
                           signpostModified={Object.values(signpostModifiedRows[rowId] ?? {}).some(Boolean)}
+                          readOnly={readOnly}
                           onNarrativeBlur={() => setTouchedScenarioNarrativeRows((currentRows) => ({ ...currentRows, [rowId]: true }))}
                           onNarrativeChange={(value) => handleScenarioNarrativeChange(rowId, value)}
                           onNarrativeReset={() => handleScenarioNarrativeReset(rowId)}
@@ -2266,7 +2286,7 @@ const ScenarioDesignOneViewStep = ({
                   </Stack>
 
                   <Stack direction="row" alignItems="center" gap="8px">
-                    <MIBaseButton variant="outlined" onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
+                    <MIBaseButton variant="outlined" disabled={readOnly} onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
                       취소
                     </MIBaseButton>
                     <MIBaseButton

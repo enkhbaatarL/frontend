@@ -250,7 +250,7 @@ const ScenarioDesignCriteriaHeader = ({
       boxSizing: 'border-box',
       overflow: 'visible',
       '&:hover, &:focus-within': {
-        backgroundColor: 'contentBG.Hover',
+        backgroundColor: disabled ? 'transparent' : 'contentBG.Hover',
       },
       '& [data-scenario-design-header-action="true"]': {
         opacity: 0,
@@ -504,129 +504,146 @@ const ScenarioDesignSelectCell = ({
     setOpen(!disabled && nextOpen)
   }
 
-  const valueInfoIcon = valueRationale?.trim() ? <ScenarioDesignInfoTooltipIcon title={valueRationale} size="18px" /> : null
+  const valueInfoIcon = valueRationale?.trim() ? (
+    <ScenarioDesignInfoTooltipIcon title={valueRationale} size="18px" color={disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled'} />
+  ) : null
 
   return (
-    <MISelectMenu<string>
-      selected={selected}
-      onSelected={handleSelected}
-      items={items}
-      variant="outlined"
-      selectionIconPosition="left"
-      closeOnScroll
-      enableHoverBackground
-      maxHeight="260px"
-      open={open}
-      onOpenChange={handleOpenChange}
-      disabled={disabled}
-      showSelectedSuffix={false}
-      labelPrefix={isInlineBadgeValue ? null : undefined}
-      textLabel={
-        isInlineBadgeValue ? (
-          <Stack
-            component="span"
-            data-scenario-design-inline-value
-            direction="row"
-            alignItems="center"
-            gap="2px"
-            width="100%"
-            flex={1}
-            minWidth={0}
-            maxWidth="100%"
-            padding="4px"
-            bgcolor="contentBG.PrimaryFade"
-            borderRadius="8px"
-            boxSizing="border-box"
-          >
-            {selectedItem?.icon}
-            <Typography
+    <Stack position="relative" width="100%" minWidth={0}>
+      <MISelectMenu<string>
+        selected={selected}
+        onSelected={handleSelected}
+        items={items}
+        variant="outlined"
+        selectionIconPosition="left"
+        closeOnScroll
+        enableHoverBackground
+        maxHeight="260px"
+        open={open}
+        onOpenChange={handleOpenChange}
+        disabled={disabled}
+        showSelectedSuffix={false}
+        labelPrefix={isInlineBadgeValue ? null : undefined}
+        textLabel={
+          isInlineBadgeValue ? (
+            <Stack
               component="span"
-              variant="body2M14"
-              color="contentText.Normal"
+              data-scenario-design-inline-value
+              direction="row"
+              alignItems="center"
+              gap="2px"
+              width="100%"
               flex={1}
               minWidth={0}
-              overflow="hidden"
-              textOverflow="ellipsis"
-              textAlign="left"
-              noWrap
-              sx={{
-                display: 'block',
-              }}
+              maxWidth="100%"
+              padding={disabled ? '4px 28px 4px 4px' : '4px'}
+              bgcolor={disabled ? 'contentBG.Disabled' : 'contentBG.PrimaryFade'}
+              borderRadius="8px"
+              boxSizing="border-box"
             >
-              {inlineBadgeLabel}
-            </Typography>
-            {valueInfoIcon}
-          </Stack>
-        ) : (
-          <Stack direction="row" alignItems="center" gap="6px" width="100%" minWidth={0} flex={1}>
-            <Typography
-              variant="body2M14"
-              color={isEmptySelected ? 'contentText.Subtext' : open ? 'contentText.Black' : 'contentText.Normal'}
-              minWidth={0}
-              flex={1}
-              overflow="hidden"
-              textOverflow="ellipsis"
-              textAlign="left"
-              noWrap
-            >
-              {isEmptySelected ? '선택하세요' : displayValueLabel}
-            </Typography>
-            {valueInfoIcon}
-          </Stack>
-        )
-      }
-      sx={{
-        width: '100%',
-        minWidth: 0,
-        height: '36px',
-        padding: isInlineBadgeValue ? '8px 12px 8px 4px' : '8px 12px',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        backgroundColor: open ? 'gray.5' : 'commonColor.White',
-        borderColor: open ? 'contentBorder.Active' : 'contentBorder.Normal',
-        ...(isInlineBadgeValue && {
-          '& > .MuiBox-root > .MuiBox-root > .MuiStack-root': {
-            gap: 0,
-          },
-        }),
-        '& > .MuiBox-root > .MuiBox-root > .MuiStack-root > .MuiStack-root': {
-          flex: 1,
+              {selectedItem?.icon}
+              <Typography
+                component="span"
+                variant="body2M14"
+                color={disabled ? 'contentText.Disabled' : 'contentText.Normal'}
+                flex={1}
+                minWidth={0}
+                overflow="hidden"
+                textOverflow="ellipsis"
+                textAlign="left"
+                noWrap
+                sx={{
+                  display: 'block',
+                }}
+              >
+                {inlineBadgeLabel}
+              </Typography>
+              {!disabled && valueInfoIcon}
+            </Stack>
+          ) : (
+            <Stack direction="row" alignItems="center" gap="6px" width="100%" minWidth={0} flex={1} pr={disabled ? '28px' : '0px'}>
+              <Typography
+                variant="body2M14"
+                color={
+                  disabled
+                    ? 'contentText.Disabled'
+                    : isEmptySelected
+                      ? 'contentText.Subtext'
+                      : open
+                        ? 'contentText.Black'
+                        : 'contentText.Normal'
+                }
+                minWidth={0}
+                flex={1}
+                overflow="hidden"
+                textOverflow="ellipsis"
+                textAlign="left"
+                noWrap
+              >
+                {isEmptySelected ? '선택하세요' : displayValueLabel}
+              </Typography>
+              {!disabled && valueInfoIcon}
+            </Stack>
+          )
+        }
+        sx={{
+          width: '100%',
           minWidth: 0,
-        },
-        '& > .MuiBox-root > .MuiBox-root > .MuiStack-root > .MuiStack-root > .MuiTypography-root': {
-          flex: 1,
-          minWidth: 0,
-          justifyContent: 'flex-start',
-        },
-        '& .MuiTypography-root': {
-          maxWidth: '100%',
-        },
-      }}
-      paperProps={{
-        elevation: 0,
-        sx: {
-          width: '260px',
-          borderRadius: '10px',
-          border: '1px solid',
-          borderColor: 'contentBorder.Normal',
-          boxShadow: '0px 0px 2px rgba(0, 0, 0, 0.1)',
+          height: '36px',
+          padding: isInlineBadgeValue ? '8px 12px 8px 4px' : '8px 12px',
+          borderRadius: '8px',
           overflow: 'hidden',
-          '& .disabledScroll > div > .MuiStack-root': {
-            padding: '8px 12px',
+          backgroundColor: disabled ? 'contentBG.Disabled' : open ? 'gray.5' : 'commonColor.White',
+          borderColor: disabled ? 'contentBorder.Disabled' : open ? 'contentBorder.Active' : 'contentBorder.Normal',
+          ...(isInlineBadgeValue && {
+            '& > .MuiBox-root > .MuiBox-root > .MuiStack-root': {
+              gap: 0,
+            },
+          }),
+          '& > .MuiBox-root > .MuiBox-root > .MuiStack-root > .MuiStack-root': {
+            flex: 1,
+            minWidth: 0,
           },
-        },
-      }}
-      footer={
-        <ScenarioDesignSelectFooter
-          selected={selected}
-          defaultValue={defaultValue}
-          disabled={disabled}
-          showAgentOption={showAgentOption}
-          onSelected={handleSelected}
-          onReset={handleReset}
-        />
-      }
-    />
+          '& > .MuiBox-root > .MuiBox-root > .MuiStack-root > .MuiStack-root > .MuiTypography-root': {
+            flex: 1,
+            minWidth: 0,
+            justifyContent: 'flex-start',
+          },
+          '& .MuiTypography-root': {
+            maxWidth: '100%',
+          },
+        }}
+        paperProps={{
+          elevation: 0,
+          sx: {
+            width: '260px',
+            borderRadius: '10px',
+            border: '1px solid',
+            borderColor: 'contentBorder.Normal',
+            boxShadow: '0px 0px 2px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden',
+            '& .disabledScroll > div > .MuiStack-root': {
+              padding: '8px 12px',
+            },
+          },
+        }}
+        footer={
+          <ScenarioDesignSelectFooter
+            selected={selected}
+            defaultValue={defaultValue}
+            disabled={disabled}
+            showAgentOption={showAgentOption}
+            onSelected={handleSelected}
+            onReset={handleReset}
+          />
+        }
+      />
+      {disabled && valueInfoIcon && (
+        <Stack position="absolute" top="50%" right="40px" zIndex={1} sx={{ transform: 'translateY(-50%)' }}>
+          {valueInfoIcon}
+        </Stack>
+      )}
+    </Stack>
   )
 }
 
@@ -942,6 +959,7 @@ type ScenarioDesignCriteriaStepProps = {
   baseEvent: Omit<ScenarioDesignBaseEventSectionProps, 'loading'>
   isLoading: boolean
   loadingMessage?: string
+  readOnly?: boolean
   review: ScenarioDesignCriteriaReviewProps
   actions: {
     onCancel: () => void
@@ -955,6 +973,7 @@ const ScenarioDesignCriteriaStep = ({
   baseEvent,
   isLoading,
   loadingMessage,
+  readOnly = false,
   review,
   actions,
 }: ScenarioDesignCriteriaStepProps) => {
@@ -996,7 +1015,7 @@ const ScenarioDesignCriteriaStep = ({
   const reviewErrorPanelRef = useRef<HTMLDivElement | null>(null)
   const reviewErrorPanelGuideRef = useRef<HTMLDivElement | null>(null)
   const previousReviewErrorItemsSignatureRef = useRef('')
-  const criteriaEditingDisabled = isLoading || reviewPending
+  const criteriaEditingDisabled = isLoading || reviewPending || readOnly
   const reviewButtonDisabled = criteriaEditingDisabled || reviewCompletedVisible || (reviewed && canCompleteScenarioDesignReview)
   const completionButtonDisabled = criteriaEditingDisabled || completionPending || !reviewed || !canCompleteScenarioDesignReview
   const reviewButtonStatusColor = reviewCompletedVisible ? 'point.green1' : 'contentText.Disabled'
@@ -1342,6 +1361,7 @@ const ScenarioDesignCriteriaStep = ({
           const rowId = getScenarioDesignRowId(row, rowIndex + 1)
           const scenarioName = row.scenarioName ?? ''
           const isLocked = row.locked === true
+          const rowEditingDisabled = criteriaEditingDisabled || isLocked
           const typeBadge =
             row.baseCase === true ? (
               <ScenarioDesignTypeBadge type="BC" reason="기존에 생성된 Base Case 시나리오입니다." />
@@ -1358,7 +1378,8 @@ const ScenarioDesignCriteriaStep = ({
               editOnClick
               commitOnBlur
               commitOnEnter
-              disabled={criteriaEditingDisabled || isLocked}
+              disabled={rowEditingDisabled}
+              displayColor={rowEditingDisabled ? 'contentText.Disabled' : 'contentText.Black'}
               suffix={
                 typeBadge ? (
                   <Stack component="span" direction="row" alignItems="center" gap="4px" flexShrink={0}>
@@ -1370,16 +1391,18 @@ const ScenarioDesignCriteriaStep = ({
                 if (value !== scenarioName) onRowValueChange(rowId, 'scenarioName', value)
               }}
               sx={{
-                borderColor: 'contentBorder.Normal',
-                bgcolor: 'commonColor.White',
-                '&:hover:not(:focus-within)': {
-                  backgroundColor: 'contentBG.Hover',
-                  borderColor: 'contentBorder.Hover',
-                },
-                '&:focus-within': {
-                  borderColor: 'contentBorder.Active',
-                  backgroundColor: 'commonColor.White',
-                },
+                borderColor: rowEditingDisabled ? 'contentBorder.Disabled' : 'contentBorder.Normal',
+                bgcolor: rowEditingDisabled ? 'contentBG.Disabled' : 'commonColor.White',
+                ...(!rowEditingDisabled && {
+                  '&:hover:not(:focus-within)': {
+                    backgroundColor: 'contentBG.Hover',
+                    borderColor: 'contentBorder.Hover',
+                  },
+                  '&:focus-within': {
+                    borderColor: 'contentBorder.Active',
+                    backgroundColor: 'commonColor.White',
+                  },
+                }),
               }}
             />
           )
@@ -1388,7 +1411,7 @@ const ScenarioDesignCriteriaStep = ({
             <Stack direction="row" alignItems="center" gap="8px" width="100%" minWidth={0}>
               <ScenarioDesignIconButton
                 label={`${scenarioName || '시나리오'} 삭제`}
-                disabled={criteriaEditingDisabled || isLocked || rows.length <= 1}
+                disabled={rowEditingDisabled || rows.length <= 1}
                 onClick={() => handleDeleteRowRequest(rowId)}
               />
               {isLocked ? (
@@ -1434,6 +1457,7 @@ const ScenarioDesignCriteriaStep = ({
             const rowId = getScenarioDesignRowId(row, rowIndex + 1)
             const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
             const isLocked = row.locked === true
+            const rowEditingDisabled = criteriaEditingDisabled || isLocked
             const items = getScenarioDesignColumnItems(column).map((item) => {
               const description = getScenarioDesignColumnValueDescription(column, item.value)
               if (!description) return item
@@ -1456,7 +1480,7 @@ const ScenarioDesignCriteriaStep = ({
                     : getInitialScenarioDesignColumnValue(initialRows, row, column)
                 }
                 valueRationale={valueRationale}
-                disabled={criteriaEditingDisabled || isLocked}
+                disabled={rowEditingDisabled}
                 showAgentOption={agentScenarioDesignColumnKeys.has(column.key)}
                 onSelected={(value) => onRowValueChange(rowId, column.key, value)}
               />
@@ -1696,7 +1720,7 @@ const ScenarioDesignCriteriaStep = ({
               </Stack>
             </MIFollowCursorTooltip>
             <ScenarioDesignCriteriaLoadingOverlay
-              visible={criteriaEditingDisabled}
+              visible={isLoading || reviewPending}
               message={isLoading ? (loadingMessage ?? '시나리오 설계를 불러오는 중입니다.') : '변경사항을 검토하고 있습니다.'}
             />
           </Stack>
@@ -1755,7 +1779,7 @@ const ScenarioDesignCriteriaStep = ({
             </MIBaseButton>
 
             <Stack direction="row" alignItems="center" gap="8px">
-              <MIBaseButton variant="outlined" onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
+              <MIBaseButton variant="outlined" disabled={readOnly} onClick={onCancel} sx={{ height: '36px', borderRadius: '8px' }}>
                 취소
               </MIBaseButton>
               <MIBaseButton

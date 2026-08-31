@@ -27,6 +27,8 @@ export type ScenarioDesignLocationState = {
   eventIds?: number[]
   scenarioGroupId?: number
   designStep?: string | null
+  readOnly?: boolean
+  occupantUserName?: string | null
 }
 
 export type ScenarioDesignColumn = {

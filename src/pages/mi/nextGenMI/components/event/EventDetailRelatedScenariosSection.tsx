@@ -12,7 +12,11 @@ import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common
 import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import ScenarioGroupInnerTable from '@/pages/mi/nextGenMI/components/common/ScenarioGroupInnerTable'
 import EventDetailSectionHeader from '@/pages/mi/nextGenMI/components/event/EventDetailSectionHeader'
-import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import {
+  getNextGenMIScenarioDesignPath,
+  getNextGenMIScenarioGroupDetailPath,
+  getNextGenMITabPath,
+} from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 
 interface EventDetailRelatedScenariosSectionProps {
   eventId?: string | number
@@ -48,7 +52,7 @@ const EventDetailRelatedScenariosSection = ({
       navigate(getNextGenMITabPath('scenarios'))
       return
     }
-    navigate(getNextGenMIEventDesignPath(eventId))
+    navigate(getNextGenMIScenarioDesignPath({ eventIds: [eventId] }))
   }
 
   const scenarioDesignButton = (

@@ -3,7 +3,7 @@ import ReactMarkdown, { type Components } from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 
 import style from '@/components/common/markdown/MIMarkdown.module.scss'
-import { markdownRemarkPlugins } from '@/utils/markdown'
+import { markdownRemarkPlugins, normalizeMarkdownStrongDelimiter } from '@/utils/markdown'
 
 interface MIMarkdownProps {
   children?: string | null
@@ -25,7 +25,7 @@ const markdownComponents: Components = {
 const MIMarkdown = ({ children, sx }: Readonly<MIMarkdownProps>) => (
   <Box className={style.markdownContent} sx={sx}>
     <ReactMarkdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
-      {children ?? ''}
+      {normalizeMarkdownStrongDelimiter(children ?? '')}
     </ReactMarkdown>
   </Box>
 )

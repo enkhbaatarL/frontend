@@ -1,6 +1,6 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded'
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded'
-import { Divider, Stack, Typography } from '@mui/material'
+import { Box, Divider, Stack, Typography } from '@mui/material'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -10,6 +10,7 @@ import type { HttpResponse } from '@/lib/axios'
 import type { ScenarioRationaleSection } from '@/pages/mi/nextGenMI/components/common/ScenarioRationalePopupContent'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
 import NextGenMIDetailHeader, {
@@ -58,7 +59,12 @@ import {
 import ScenarioDesignOneViewStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOneViewStep'
 import ScenarioDesignProgressStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignProgressStep'
 import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
-import { getNextGenMIScenarioGroupDetailPath, getNextGenMITabPath, NEXT_GEN_MI_BASE_PATH } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import {
+  getNextGenMIScenarioDesignPath,
+  getNextGenMIScenarioGroupDetailPath,
+  getNextGenMITabPath,
+  NEXT_GEN_MI_BASE_PATH,
+} from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { scrollNextGenMILayoutToTop } from '@/pages/mi/nextGenMI/nextGenMIScroll'
 import nextGenMIEventService, { type EventDetail } from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService, {
@@ -84,6 +90,7 @@ type ScenarioDesignHeaderContent = {
   backLabel: string
   backIcon?: ReactNode
   onBack: () => void
+  topSlot?: ReactNode
   titleSlot: ReactNode
   sectionSlot?: ReactNode
   rightAction?: ReactNode
@@ -118,12 +125,32 @@ const ScenarioDesignHeaderView = () => {
       backLabel={content.backLabel}
       backIcon={content.backIcon}
       onBack={content.onBack}
+      topSlot={content.topSlot}
       titleSlot={content.titleSlot}
       sectionSlot={content.sectionSlot}
       rightAction={content.rightAction}
     />
   )
 }
+
+const ScenarioDesignReadOnlyNotice = ({ occupantName }: { occupantName: string }) => (
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    width="100%"
+    height="36px"
+    bgcolor="commonColor.Black"
+    sx={{ transition: 'background-color 0.25s ease' }}
+  >
+    <Stack direction="row" justifyContent="center" alignItems="center" gap="8px" width="800px" style={{ userSelect: 'none' }}>
+      <LockOutlinedIcon width="14px" height="18px" aria-hidden focusable="false" color="#FFFFFF" />
+      <Typography variant="body2SB14" color="contentText.White">
+        {`다른 사용자(${occupantName})가 설계 중인 시나리오입니다. 현재 화면은 조회만 가능하며 수정할 수 없습니다.`}
+      </Typography>
+    </Stack>
+  </Box>
+)
 
 const assertUnhandledScenarioDesignConfirmType = (type: never): never => {
   throw new Error(`Unhandled scenario design confirm type: ${type}`)
@@ -383,19 +410,35 @@ const createScenarioDesignCriteriaDraftSnapshotKey = (draft: ScenarioDesignCrite
   createScenarioDesignCriteriaSnapshotKey(draft.columns, draft.rows, draft.agentColumnKeys)
 
 const ScenarioDesignPage = () => {
-  const { id } = useParams<{ id: string }>()
+  const { scenarioGroupId: routeScenarioGroupId } = useParams<{ scenarioGroupId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
   const { setStickyHeader } = useStickyHeader()
   const state = location.state as ScenarioDesignLocationState | null
-  const eventIdNumber = id !== undefined && Number.isFinite(Number(id)) ? Number(id) : null
+  const queryEventIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          new URLSearchParams(location.search)
+            .getAll('eventId')
+            .map(Number)
+            .filter((eventId) => Number.isFinite(eventId)),
+        ),
+      ),
+    [location.search],
+  )
+  const eventIdNumber = queryEventIds[0] ?? null
+  const routeScenarioGroupIdNumber =
+    routeScenarioGroupId !== undefined && Number.isFinite(Number(routeScenarioGroupId)) ? Number(routeScenarioGroupId) : null
   const locationScenarioGroupId =
-    state?.scenarioGroupId !== undefined && Number.isFinite(state.scenarioGroupId) ? state.scenarioGroupId : null
+    routeScenarioGroupIdNumber ??
+    (state?.scenarioGroupId !== undefined && Number.isFinite(state.scenarioGroupId) ? state.scenarioGroupId : null)
   const locationDesignStep = normalizeEventDesignStep(state?.designStep)
+  const locationReadOnly = state?.readOnly === true
   const designEventIds = useMemo(() => {
-    const fromState = (state?.eventIds ?? []).filter((eventId) => Number.isFinite(eventId))
+    const fromState = queryEventIds.length > 0 ? queryEventIds : (state?.eventIds ?? []).filter((eventId) => Number.isFinite(eventId))
     const uniqueIds = [...new Set(fromState)]
     if (uniqueIds.length > 0) {
       if (eventIdNumber !== null && !uniqueIds.includes(eventIdNumber)) {
@@ -404,7 +447,7 @@ const ScenarioDesignPage = () => {
       return uniqueIds
     }
     return eventIdNumber !== null ? [eventIdNumber] : []
-  }, [eventIdNumber, state?.eventIds])
+  }, [eventIdNumber, queryEventIds, state?.eventIds])
   const [scenarioGroupId, setScenarioGroupId] = useState<number | null>(locationScenarioGroupId)
   const [rows, setRows] = useState<DesignScenarioRow[]>([])
   const [initialRows, setInitialRows] = useState<DesignScenarioRow[]>([])
@@ -428,8 +471,6 @@ const ScenarioDesignPage = () => {
   const [reviewFailedDialogOpen, setReviewFailedDialogOpen] = useState(false)
   const [reviewErrorItems, setReviewErrorItems] = useState<ScenarioDesignReviewErrorItem[]>([])
   const confirmedScenarioDesignLeaveRef = useRef(false)
-  const leaveScenarioDesignRef = useRef<() => void>(() => undefined)
-  const initialScenarioDesignHistoryIndexRef = useRef<number | null>(null)
   const scenarioDesignStartRequestedRef = useRef(false)
   const scenarioGroupIdRef = useRef<number | null>(null)
   const creationOperationIdRef = useRef<string | null>(null)
@@ -466,14 +507,32 @@ const ScenarioDesignPage = () => {
     [navigate],
   )
 
+  useEffect(() => {
+    if (routeScenarioGroupIdNumber === null || location.search.length === 0) return
+
+    navigate(getNextGenMIScenarioDesignPath({ eventIds: [], scenarioGroupId: routeScenarioGroupIdNumber }), {
+      replace: true,
+      state,
+    })
+  }, [location.search.length, navigate, routeScenarioGroupIdNumber, state])
+
+  useEffect(() => {
+    if (scenarioGroupId === null || routeScenarioGroupIdNumber === scenarioGroupId) return
+
+    navigate(getNextGenMIScenarioDesignPath({ eventIds: [], scenarioGroupId }), {
+      replace: true,
+      state,
+    })
+  }, [navigate, routeScenarioGroupIdNumber, scenarioGroupId, state])
+
   const {
     data: detail,
     isLoading,
     isError: isDetailError,
     error: detailError,
   } = useQuery({
-    queryKey: ['nextGenMIScenarioDesignEvent', id],
-    queryFn: () => nextGenMIEventService.getEventDetail(id ?? ''),
+    queryKey: ['nextGenMIScenarioDesignEvent', eventIdNumber],
+    queryFn: () => nextGenMIEventService.getEventDetail(String(eventIdNumber ?? '')),
     enabled: eventIdNumber !== null,
     refetchOnWindowFocus: false,
     gcTime: 0,
@@ -487,11 +546,11 @@ const ScenarioDesignPage = () => {
   } = useQuery({
     queryKey: ['nextGenMIScenarioDesignStatus', designEventIds],
     queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: designEventIds }),
-    enabled: eventIdNumber !== null && scenarioGroupId === null && designEventIds.length > 0,
+    enabled: routeScenarioGroupIdNumber === null && eventIdNumber !== null && designEventIds.length > 0,
+    refetchInterval: (query) => (normalizeScenarioDesignStatusCode(query.state.data?.designStatus) === 'creating' ? 5000 : false),
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
-
   const createScenarioSignpostsMutation = useMutation({
     mutationFn: () => {
       if (scenarioGroupId === null) throw new Error('Scenario group is not ready')
@@ -537,9 +596,16 @@ const ScenarioDesignPage = () => {
         operationId: creationOperationIdRef.current ?? getScenarioGroupCreationCursor(designEventIds)?.operationId,
       }),
     enabled: isValidScenarioGroupId(scenarioGroupId),
+    refetchInterval: (query) =>
+      query.state.data?.refinementState?.occupied === true && query.state.data.refinementState.mine === false ? 5000 : false,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
+  const scenarioDesignReadOnly =
+    locationReadOnly ||
+    isScenarioDesignStatusOccupiedByOther(designStatus) ||
+    (scenarioDesignPresentation?.refinementState?.occupied === true && scenarioDesignPresentation.refinementState.mine === false)
+  const scenarioDesignOccupantName = state?.occupantUserName?.trim() || designStatus?.occupantUserName?.trim() || '-'
   const scenarioDesignState = useMemo(
     () => (scenarioDesignPresentation ? mapScenarioDesignPresentationToState(scenarioDesignPresentation) : undefined),
     [scenarioDesignPresentation],
@@ -569,7 +635,7 @@ const ScenarioDesignPage = () => {
 
   const eventNameFromState = state?.eventName?.trim()
 
-  const secondaryEventIds = useMemo(() => designEventIds.filter((eventId) => String(eventId) !== String(id)), [designEventIds, id])
+  const secondaryEventIds = useMemo(() => designEventIds.filter((eventId) => eventId !== eventIdNumber), [designEventIds, eventIdNumber])
 
   const secondaryEventQueries = useQueries({
     queries: secondaryEventIds.map((eventId) => ({
@@ -590,8 +656,9 @@ const ScenarioDesignPage = () => {
     return map
   }, [secondaryEventIds, secondaryEventQueries])
 
-  const eventTitle = detail?.eventName ?? eventNameFromState ?? (id ? `이벤트 ${id}` : '이벤트')
-  const eventDetailPath = id ? `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(id)}` : getNextGenMITabPath('events')
+  const eventTitle = detail?.eventName ?? eventNameFromState ?? (eventIdNumber !== null ? `이벤트 ${eventIdNumber}` : '이벤트')
+  const eventDetailPath =
+    eventIdNumber !== null ? `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventIdNumber))}` : getNextGenMITabPath('events')
   const designRationaleSections = useMemo((): ScenarioRationaleSection[] => {
     const evidence = scenarioDesignPresentation?.evidence
     const sections: ScenarioRationaleSection[] = []
@@ -608,7 +675,7 @@ const ScenarioDesignPage = () => {
     const eventIds = bundles.length > 0 ? bundles.map((bundle) => bundle.eventId) : designEventIds
 
     return eventIds.map((eventId) => {
-      const isRouteEvent = String(eventId) === String(id)
+      const isRouteEvent = eventId === eventIdNumber
       const eventDetail = isRouteEvent ? detail : secondaryEventDetailsById.get(eventId)
       const bundle = bundles.find((item) => item.eventId === eventId)
       const title =
@@ -632,7 +699,7 @@ const ScenarioDesignPage = () => {
         },
       }
     })
-  }, [designEventIds, detail, eventTitle, id, navigate, scenarioDesignPresentation?.eventBundles, secondaryEventDetailsById])
+  }, [designEventIds, detail, eventIdNumber, eventTitle, navigate, scenarioDesignPresentation?.eventBundles, secondaryEventDetailsById])
 
   // 템플릿이 state 동기화보다 늦게 도착하면 valueEnums가 비어 드롭다운 옵션이 사라지므로 보강한다
   useEffect(() => {
@@ -699,15 +766,15 @@ const ScenarioDesignPage = () => {
     }
   }, [scenarioGroupId, visibleScenarioDesignColumns])
   useEffect(() => {
-    if (eventIdNumber === null) {
+    if (routeScenarioGroupIdNumber === null && eventIdNumber === null) {
       navigate('/error/404', { replace: true })
       return
     }
-    if (isDetailError) {
+    if (routeScenarioGroupIdNumber === null && isDetailError) {
       navigateScenarioDesignErrorPage(detailError)
       return
     }
-    if (isDesignStatusError) {
+    if (routeScenarioGroupIdNumber === null && isDesignStatusError) {
       navigateScenarioDesignErrorPage(designStatusError)
       return
     }
@@ -723,6 +790,7 @@ const ScenarioDesignPage = () => {
     isScenarioDesignStateError,
     navigate,
     navigateScenarioDesignErrorPage,
+    routeScenarioGroupIdNumber,
     scenarioDesignStateError,
   ])
   const scenarioDesignActiveTable = useMemo(() => getScenarioDesignActiveTable(scenarioDesignState), [scenarioDesignState])
@@ -758,6 +826,7 @@ const ScenarioDesignPage = () => {
       ? getScenarioDesignRunningTaskMessage(scenarioDesignRunningTaskType, scenarioDesignRunningTaskLabel)
       : creationProgressText?.trim() ||
         (scenarioDesignCreationPending ? '시나리오 그룹 생성을 진행 중입니다.' : '시나리오 설계를 불러오는 중입니다.')
+  const scenarioDesignContentLoading = scenarioDesignReadOnly ? false : scenarioDesignLoading
 
   useEffect(() => {
     if (!scenarioDesignTaskRunning) return
@@ -828,31 +897,21 @@ const ScenarioDesignPage = () => {
   useEffect(() => {
     scenarioGroupIdRef.current = scenarioGroupId
   }, [scenarioGroupId])
-  const pushScenarioDesignHistoryGuard = useCallback(() => {
-    if (confirmedScenarioDesignLeaveRef.current) return
-
-    const currentState = globalThis.history.state as Record<string, unknown> | null
-    if (currentState?.scenarioDesignLeaveGuard === true) return
-
-    globalThis.history.pushState({ ...(currentState ?? {}), scenarioDesignLeaveGuard: true }, '', globalThis.location.href)
-  }, [])
   const handleLeaveScenarioDesign = useCallback(() => {
     confirmedScenarioDesignLeaveRef.current = true
 
-    const currentState = globalThis.history.state as { scenarioDesignLeaveGuard?: unknown } | null
-    if (initialScenarioDesignHistoryIndexRef.current !== null && initialScenarioDesignHistoryIndexRef.current > 0) {
-      navigate(currentState?.scenarioDesignLeaveGuard === true ? -2 : -1)
+    const currentState = globalThis.history.state as { idx?: unknown } | null
+    if (typeof currentState?.idx === 'number' && currentState.idx > 0) {
+      navigate(-1)
       return
     }
 
     navigate(eventDetailPath, { state: { eventName: eventTitle } })
   }, [eventDetailPath, eventTitle, navigate])
-  useEffect(() => {
-    leaveScenarioDesignRef.current = handleLeaveScenarioDesign
-  }, [handleLeaveScenarioDesign])
   const handleCancelScenarioDesignRequest = useCallback(() => {
+    if (scenarioDesignReadOnly) return
     setConfirmType('cancel')
-  }, [])
+  }, [scenarioDesignReadOnly])
   const handleCancelScenarioDesign = useCallback(async () => {
     const deleteResult = await requestDeleteScenarioDesignGroup()
     if (deleteResult === 'failed') {
@@ -1100,7 +1159,7 @@ const ScenarioDesignPage = () => {
     }
   }, [designEventIds, runScenarioGroupCreationStream, scenarioDesignGenerationRetryPending, showSnackbar])
   const startScenarioDesignReview = useCallback(async () => {
-    if (scenarioGroupId === null) return
+    if (scenarioDesignReadOnly || scenarioGroupId === null) return
 
     const nextReviewErrorItems = [...criteriaValidation.errorItems]
     const scenarioNameErrors = Array.from(scenarioNameErrorMessages.values())
@@ -1169,6 +1228,7 @@ const ScenarioDesignPage = () => {
     agentScenarioDesignColumnKeys,
     criteriaValidation.errorItems,
     rows,
+    scenarioDesignReadOnly,
     scenarioGroupId,
     scenarioDesignStateUpdatedAt,
     scenarioNameErrorMessages,
@@ -1188,6 +1248,7 @@ const ScenarioDesignPage = () => {
 
   useEffect(() => {
     if (
+      routeScenarioGroupIdNumber !== null ||
       eventIdNumber === null ||
       scenarioDesignStartRequestedRef.current ||
       designStatusLoading ||
@@ -1198,13 +1259,19 @@ const ScenarioDesignPage = () => {
 
     if (designStatus) {
       const status = normalizeScenarioDesignStatusCode(designStatus.designStatus)
-      if (status === 'created' && designStatus.scenarioGroupId !== undefined && designStatus.scenarioGroupId !== null) {
+      if (
+        status === 'created' &&
+        designStatus.scenarioGroupId !== undefined &&
+        designStatus.scenarioGroupId !== null &&
+        !locationReadOnly &&
+        (scenarioGroupId === null || scenarioGroupId === designStatus.scenarioGroupId)
+      ) {
         confirmedScenarioDesignLeaveRef.current = true
         navigate(getNextGenMIScenarioGroupDetailPath(designStatus.scenarioGroupId), { replace: true })
         return
       }
 
-      if (status === 'unavailable') {
+      if (status === 'unavailable' && !locationReadOnly) {
         confirmedScenarioDesignLeaveRef.current = true
         showSnackbar(EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE, { variant: 'error' })
         navigate(eventDetailPath, { replace: true, state: { eventName: eventTitle } })
@@ -1212,9 +1279,10 @@ const ScenarioDesignPage = () => {
       }
 
       if (isScenarioDesignStatusOccupiedByOther(designStatus)) {
-        confirmedScenarioDesignLeaveRef.current = true
-        showSnackbar('다른 사용자가 현재 시나리오 설계를 진행 중입니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
-        navigate(eventDetailPath, { replace: true, state: { eventName: eventTitle } })
+        creationAbortControllerRef.current?.abort()
+        if (designStatus.scenarioGroupId !== undefined && designStatus.scenarioGroupId !== null && scenarioGroupId === null) {
+          setScenarioGroupId(designStatus.scenarioGroupId)
+        }
         return
       }
 
@@ -1271,8 +1339,10 @@ const ScenarioDesignPage = () => {
     eventIdNumber,
     eventTitle,
     isDesignStatusError,
+    locationReadOnly,
     navigate,
     navigateScenarioDesignErrorPage,
+    routeScenarioGroupIdNumber,
     runScenarioGroupCreationStream,
     scenarioDesignPresentation,
     scenarioDesignStateLoading,
@@ -1288,7 +1358,7 @@ const ScenarioDesignPage = () => {
   )
 
   useEffect(() => {
-    if (scenarioGroupId === null || !creationReadyForRefinement) {
+    if (scenarioDesignReadOnly || scenarioGroupId === null || !creationReadyForRefinement) {
       return undefined
     }
 
@@ -1330,6 +1400,7 @@ const ScenarioDesignPage = () => {
     handleScenarioDesignStreamFailure,
     navigateScenarioDesignErrorPage,
     refreshScenarioDesignStateFromStream,
+    scenarioDesignReadOnly,
     scenarioGroupId,
   ])
 
@@ -1340,12 +1411,10 @@ const ScenarioDesignPage = () => {
     const stage = normalizeScenarioDesignStage(scenarioDesignState?.stage)
     const validationResult = scenarioDesignState?.validation?.isValid
     const hasValidationResult = validationResult === true || validationResult === false
-    const receivedCurrentReviewValidation = reviewValidationStreamReceivedRef.current
     const backendValidationResultReady =
       reviewPending &&
       reviewMinimumLoadingComplete &&
       pendingFrontendReviewItemsRef.current === null &&
-      receivedCurrentReviewValidation &&
       !scenarioDesignTaskRunning &&
       scenarioDesignStateUpdatedAt > reviewStartedScenarioDesignUpdatedAtRef.current &&
       (hasValidationResult || reviewValidationStreamStageRef.current === 'scenario_validated')
@@ -1510,23 +1579,6 @@ const ScenarioDesignPage = () => {
     }
   }, [currentCriteriaSnapshotKey, reviewMinimumLoadingComplete, reviewPending, showSnackbar])
 
-  useEffect(() => {
-    const currentState = globalThis.history.state as { idx?: unknown; scenarioDesignLeaveGuard?: unknown } | null
-    const currentHistoryIndex = typeof currentState?.idx === 'number' ? currentState.idx : null
-    initialScenarioDesignHistoryIndexRef.current =
-      currentState?.scenarioDesignLeaveGuard === true && currentHistoryIndex !== null ? currentHistoryIndex - 1 : currentHistoryIndex
-
-    pushScenarioDesignHistoryGuard()
-
-    const handlePopState = () => {
-      if (confirmedScenarioDesignLeaveRef.current) return
-      leaveScenarioDesignRef.current()
-    }
-
-    globalThis.addEventListener('popstate', handlePopState)
-    return () => globalThis.removeEventListener('popstate', handlePopState)
-  }, [pushScenarioDesignHistoryGuard])
-
   const criteriaResetDisabled = useMemo(
     () =>
       JSON.stringify(rows) === JSON.stringify(initialRows) &&
@@ -1539,6 +1591,7 @@ const ScenarioDesignPage = () => {
   )
   const handleRowValueChange = useCallback(
     (rowId: number, key: string, value: string) => {
+      if (scenarioDesignReadOnly) return
       setRows((currentRows) => {
         let changed = false
         const nextRows = currentRows.map((row, index) => {
@@ -1559,10 +1612,11 @@ const ScenarioDesignPage = () => {
         return changed ? nextRows : currentRows
       })
     },
-    [visibleScenarioDesignColumns],
+    [scenarioDesignReadOnly, visibleScenarioDesignColumns],
   )
 
   const handleAddRow = useCallback(() => {
+    if (scenarioDesignReadOnly) return
     setRows((currentRows) => {
       if (currentRows.length >= SCENARIO_DESIGN_MAX_ROW_COUNT) return currentRows
 
@@ -1575,10 +1629,11 @@ const ScenarioDesignPage = () => {
         ),
       ]
     })
-  }, [agentScenarioDesignColumnKeys, visibleScenarioDesignColumns])
+  }, [agentScenarioDesignColumnKeys, scenarioDesignReadOnly, visibleScenarioDesignColumns])
 
   const handleDeleteCriteriaColumn = useCallback(
     (key: string) => {
+      if (scenarioDesignReadOnly) return
       const column = visibleScenarioDesignColumns.find((item) => item.key === key)
       if (!column || isScenarioDesignRequiredColumn(column)) return
 
@@ -1595,7 +1650,7 @@ const ScenarioDesignPage = () => {
         })),
       )
     },
-    [visibleScenarioDesignColumns],
+    [scenarioDesignReadOnly, visibleScenarioDesignColumns],
   )
 
   const handleRequestAddCriteriaColumns = useCallback(async (): Promise<ScenarioDesignAddCriteriaRequestResult> => {
@@ -1622,6 +1677,7 @@ const ScenarioDesignPage = () => {
 
   const handleAddCriteriaColumns = useCallback(
     (selectedColumns: ScenarioDesignColumn[]) => {
+      if (scenarioDesignReadOnly) return
       if (selectedColumns.length === 0) return
 
       const receivedColumnKeys = new Set(initialScenarioDesignColumns.map((column) => column.key))
@@ -1649,17 +1705,21 @@ const ScenarioDesignPage = () => {
         ),
       )
     },
-    [initialRows, initialScenarioDesignColumns],
+    [initialRows, initialScenarioDesignColumns, scenarioDesignReadOnly],
   )
 
-  const handleDeleteRow = useCallback((rowId: number) => {
-    setRows((currentRows) =>
-      currentRows.length <= 1 ? currentRows : currentRows.filter((row, index) => getScenarioDesignRowId(row, index + 1) !== rowId),
-    )
-  }, [])
+  const handleDeleteRow = useCallback(
+    (rowId: number) => {
+      if (scenarioDesignReadOnly) return
+      setRows((currentRows) =>
+        currentRows.length <= 1 ? currentRows : currentRows.filter((row, index) => getScenarioDesignRowId(row, index + 1) !== rowId),
+      )
+    },
+    [scenarioDesignReadOnly],
+  )
 
   const handleResetCriteriaStep = useCallback(() => {
-    if (scenarioGroupId === null) return
+    if (scenarioDesignReadOnly || scenarioGroupId === null) return
 
     resetScenarioDesignReviewState()
     resetScenarioDesignMutation.mutate(undefined, {
@@ -1696,6 +1756,7 @@ const ScenarioDesignPage = () => {
     refetchScenarioDesignState,
     resetScenarioDesignMutation,
     resetScenarioDesignReviewState,
+    scenarioDesignReadOnly,
     scenarioGroupId,
     scenarioDimensionTemplates,
     showSnackbar,
@@ -1706,7 +1767,7 @@ const ScenarioDesignPage = () => {
   }, [])
 
   const handleCreateScenarioSignposts = useCallback(async () => {
-    if (scenarioGroupId === null) return
+    if (scenarioDesignReadOnly || scenarioGroupId === null) return
 
     signpostStreamReceivedRef.current = false
     signpostStartedScenarioDesignUpdatedAtRef.current = scenarioDesignStateUpdatedAt
@@ -1719,10 +1780,11 @@ const ScenarioDesignPage = () => {
       setSignpostPending(false)
       showSnackbar('시나리오 One-view 생성을 요청하지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
     }
-  }, [createScenarioSignpostsMutation, scenarioDesignStateUpdatedAt, scenarioGroupId, showSnackbar])
+  }, [createScenarioSignpostsMutation, scenarioDesignReadOnly, scenarioDesignStateUpdatedAt, scenarioGroupId, showSnackbar])
 
   const handleConfirm = useCallback(
     (type: ScenarioDesignConfirmType) => {
+      if (scenarioDesignReadOnly) return
       setConfirmType(null)
 
       if (type === 'cancel') {
@@ -1735,13 +1797,20 @@ const ScenarioDesignPage = () => {
         void handleCreateScenarioSignposts()
       }
     },
-    [canCompleteScenarioDesignReview, handleCancelScenarioDesign, handleCreateScenarioSignposts, isCurrentCriteriaReviewed],
+    [
+      canCompleteScenarioDesignReview,
+      handleCancelScenarioDesign,
+      handleCreateScenarioSignposts,
+      isCurrentCriteriaReviewed,
+      scenarioDesignReadOnly,
+    ],
   )
 
   const handleComplete = useCallback(() => {
+    if (scenarioDesignReadOnly) return
     if (!isCurrentCriteriaReviewed || !canCompleteScenarioDesignReview) return
     setConfirmType(hasWarningScenarioDesignReviewItem(reviewErrorItems) ? 'reviewCompleteWithWarning' : 'reviewComplete')
-  }, [canCompleteScenarioDesignReview, isCurrentCriteriaReviewed, reviewErrorItems])
+  }, [canCompleteScenarioDesignReview, isCurrentCriteriaReviewed, reviewErrorItems, scenarioDesignReadOnly])
 
   const handleCreateScenarioGroup = useCallback(
     async (value: {
@@ -1752,6 +1821,7 @@ const ScenarioDesignPage = () => {
       scenarioPossibilities: Array<{ rowId: number; possibility: number }>
       scenarioSignposts: Array<{ rowId: number; signposts: DesignConfirmSignpost[] }>
     }) => {
+      if (scenarioDesignReadOnly) return
       const editTable = createScenarioDesignEditTable(visibleScenarioDesignColumns, rows)
       const narrativeMap = new Map(value.scenarioNarratives.map((item) => [item.rowId, item.narrative]))
       const possibilityMap = new Map(value.scenarioPossibilities.map((item) => [item.rowId, item.possibility]))
@@ -1800,7 +1870,7 @@ const ScenarioDesignPage = () => {
         showSnackbar('시나리오 그룹 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
       }
     },
-    [confirmScenarioDesignMutation, navigate, rows, scenarioGroupId, showSnackbar, visibleScenarioDesignColumns],
+    [confirmScenarioDesignMutation, navigate, rows, scenarioDesignReadOnly, scenarioGroupId, showSnackbar, visibleScenarioDesignColumns],
   )
 
   const headerTitleSlot = useMemo(
@@ -1861,12 +1931,15 @@ const ScenarioDesignPage = () => {
         rationaleText: '',
         rationaleSections: designRationaleSections,
       },
-      isLoading: scenarioDesignLoading,
+      isLoading: scenarioDesignContentLoading,
       loadingMessage: scenarioDesignLoadingMessage,
+      readOnly: scenarioDesignReadOnly,
       review: {
         reviewed: isCurrentCriteriaReviewed,
-        pending: reviewPending || validateScenarioDesignMutation.isPending || scenarioDesignValidationTaskRunning,
-        completionPending: signpostPending || scenarioDesignSignpostTaskRunning,
+        pending: scenarioDesignReadOnly
+          ? false
+          : reviewPending || validateScenarioDesignMutation.isPending || scenarioDesignValidationTaskRunning,
+        completionPending: scenarioDesignReadOnly ? false : signpostPending || scenarioDesignSignpostTaskRunning,
         completedVisible: reviewCompletedVisible,
         canComplete: canCompleteScenarioDesignReview,
         errorItems: reviewErrorItems,
@@ -1903,10 +1976,11 @@ const ScenarioDesignPage = () => {
       reviewErrorItems,
       reviewPending,
       scenarioDesignSignpostTaskRunning,
+      scenarioDesignReadOnly,
       scenarioDesignValidationTaskRunning,
       signpostPending,
       rows,
-      scenarioDesignLoading,
+      scenarioDesignContentLoading,
       scenarioDesignLoadingMessage,
       scenarioNameErrorMessages,
       showDesignRationaleButton,
@@ -1917,6 +1991,13 @@ const ScenarioDesignPage = () => {
   )
 
   const confirmContent = useMemo(() => (confirmType ? getScenarioDesignConfirmContent(confirmType) : null), [confirmType])
+  const scenarioDesignStickyHeightsPx = useMemo(
+    () => ({
+      expanded: NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.expanded + (scenarioDesignReadOnly ? 36 : 0),
+      collapsed: NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.collapsed + (scenarioDesignReadOnly ? 36 : 0),
+    }),
+    [scenarioDesignReadOnly],
+  )
   const handleConfirmSubmit = useCallback(() => {
     if (!confirmType) return
     handleConfirm(confirmType)
@@ -1927,23 +2008,24 @@ const ScenarioDesignPage = () => {
       backLabel: 'Back',
       backIcon: <ArrowBackRoundedIcon sx={{ fontSize: '20px' }} />,
       onBack: handleLeaveScenarioDesign,
+      topSlot: scenarioDesignReadOnly ? <ScenarioDesignReadOnlyNotice occupantName={scenarioDesignOccupantName} /> : undefined,
       titleSlot: headerTitleSlot,
       sectionSlot: headerSectionSlot,
       rightAction: headerRightAction,
     })
-  }, [handleLeaveScenarioDesign, headerRightAction, headerSectionSlot, headerTitleSlot])
+  }, [handleLeaveScenarioDesign, headerRightAction, headerSectionSlot, headerTitleSlot, scenarioDesignOccupantName, scenarioDesignReadOnly])
 
   useLayoutEffect(() => {
     setStickyHeader(<ScenarioDesignHeaderView />, {
       pinMariPosition: true,
-      stickyHeightsPx: NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
+      stickyHeightsPx: scenarioDesignStickyHeightsPx,
     })
 
     return () => {
       setStickyHeader(null)
       scenarioDesignHeaderContent = null
     }
-  }, [setStickyHeader])
+  }, [scenarioDesignStickyHeightsPx, setStickyHeader])
 
   return (
     <>
@@ -1963,8 +2045,9 @@ const ScenarioDesignPage = () => {
             groupName={scenarioDesignState?.step2?.groupName ?? ''}
             groupSummary={scenarioDesignState?.step2?.summary ?? ''}
             groupDescription={scenarioDesignState?.step2?.description ?? ''}
-            loading={scenarioDesignLoading}
-            creatingScenarioGroup={scenarioGroupCreatePending || confirmScenarioDesignMutation.isPending}
+            loading={scenarioDesignContentLoading}
+            readOnly={scenarioDesignReadOnly}
+            creatingScenarioGroup={scenarioDesignReadOnly ? false : scenarioGroupCreatePending || confirmScenarioDesignMutation.isPending}
             onCancel={handleCancelScenarioDesignRequest}
             onCreate={handleCreateScenarioGroup}
           />

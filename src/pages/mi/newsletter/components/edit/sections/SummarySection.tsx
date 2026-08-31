@@ -31,8 +31,8 @@ const SummarySection = ({
   >
     <Stack>
       <MIMaskInput
-        label="핵심 요약"
-        placeholder="핵심 요약 입력"
+        label="주요 시사점"
+        placeholder="주요 시사점 입력"
         value={summary}
         onUpdateValue={onSummaryChange}
         multiline

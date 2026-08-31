@@ -48,6 +48,8 @@ interface NextGenMIDetailHeaderProps {
   backLabel: string
   backIcon?: ReactNode
   onBack?: () => void
+  /** GNB 바로 아래에 표시할 전체 폭 상단 콘텐츠 */
+  topSlot?: ReactNode
   titleSlot: ReactNode
   collapsedSummarySlot?: ReactNode
   rightAction?: ReactNode
@@ -67,6 +69,7 @@ const NextGenMIDetailHeader = ({
   backLabel,
   backIcon,
   onBack,
+  topSlot,
   titleSlot,
   collapsedSummarySlot,
   rightAction,
@@ -410,6 +413,7 @@ const NextGenMIDetailHeader = ({
       }}
     >
       <Stack bgcolor="commonColor.White" width="100%">
+        {topSlot}
         {hasCollapsedSummary && (
           <Collapse
             in={isMainScrolled}

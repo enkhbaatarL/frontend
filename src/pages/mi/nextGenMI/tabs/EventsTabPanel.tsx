@@ -34,7 +34,7 @@ import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSort
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
 import { useNextGenMIListState } from '@/pages/mi/nextGenMI/NextGenMIListStateContext'
-import { getNextGenMIEventDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import { getNextGenMIScenarioDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, {
   type EventLinkedScenarioGroup,
@@ -44,6 +44,7 @@ import nextGenMIEventService, {
   type GetEventsParams,
 } from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
+import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 import useDialog from '@/store/useDialog'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
@@ -78,7 +79,7 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
 
 const EventsTabPanel = () => {
   const navigate = useNavigate()
-  const { onShow } = useDialog()
+  const { onHide, onShow } = useDialog()
 
   const [typeFilter, setTypeFilter] = useNextGenMIListState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('events.typeFilter', 'all')
   const [sort, setSort] = useNextGenMIListState<EventSort>('events.sort', 'latest')
@@ -201,12 +202,42 @@ const EventsTabPanel = () => {
     const currentState = resolveSelectionDesignStateFromStatus(currentStatus, selectedEvents)
     if (!currentState) return
 
-    // Case 2. 동일 조합을 다른 사용자가 진행 중 - 진입 불가 안내
+    // Case 2. 동일 조합을 다른 사용자가 진행 중 - 읽기 전용으로 확인
     if (currentState.mode === 'creating' && currentState.locked) {
       onShow({
-        title: '시나리오 설계를 시작할 수 없습니다',
+        title: '시나리오 설계 확인',
         width: 450,
         children: getEventDesignOccupiedMessage(currentState.occupantUserName),
+        actions: [
+          {
+            label: '닫기',
+            variant: 'outlined',
+            color: 'gray',
+            onClick: onHide,
+          },
+          {
+            label: '확인',
+            onClick: () => {
+              onHide()
+              navigate(
+                getNextGenMIScenarioDesignPath({
+                  eventIds: selectedEvents.map((item) => item.eventId),
+                  scenarioGroupId: currentState.scenarioGroupId,
+                }),
+                {
+                  state: {
+                    eventName: currentState.primaryEventName,
+                    eventIds: selectedEvents.map((item) => item.eventId),
+                    scenarioGroupId: currentState.scenarioGroupId ?? undefined,
+                    designStep: currentState.designStep ?? null,
+                    readOnly: true,
+                    occupantUserName: currentState.occupantUserName,
+                  },
+                },
+              )
+            },
+          },
+        ],
       })
       return
     }
@@ -220,15 +251,21 @@ const EventsTabPanel = () => {
     }
 
     // Case 1. 신규 생성 / Case 3. 내가 진행 중 - 현재 단계 설계 화면으로 이동
-    navigate(getNextGenMIEventDesignPath(currentState.primaryEventId), {
-      state: {
-        eventName: currentState.primaryEventName,
+    navigate(
+      getNextGenMIScenarioDesignPath({
         eventIds: selectedEvents.map((item) => item.eventId),
-        scenarioGroupId: currentState.scenarioGroupId ?? undefined,
-        designStep: currentState.designStep ?? null,
+        scenarioGroupId: currentState.scenarioGroupId,
+      }),
+      {
+        state: {
+          eventName: currentState.primaryEventName,
+          eventIds: selectedEvents.map((item) => item.eventId),
+          scenarioGroupId: currentState.scenarioGroupId ?? undefined,
+          designStep: currentState.designStep ?? null,
+        },
       },
-    })
-  }, [navigate, onShow, selectedEvents, selectionDesignStatus])
+    )
+  }, [navigate, onHide, onShow, selectedEvents, selectionDesignStatus])
 
   const handleEventNameClick = useCallback(
     (row: EventListItem) =>
@@ -270,7 +307,7 @@ const EventsTabPanel = () => {
         return
       }
 
-      navigate(getNextGenMIEventDesignPath(row.eventId), {
+      navigate(getNextGenMIScenarioDesignPath({ eventIds: [row.eventId], scenarioGroupId: currentStatus?.scenarioGroupId }), {
         state: {
           eventName: row.eventName,
           eventIds: [row.eventId],
@@ -283,7 +320,7 @@ const EventsTabPanel = () => {
   )
 
   const handleConnectedGroupContinue = useCallback(
-    (row: EventListItem, group: EventLinkedScenarioGroup) => {
+    async (row: EventListItem, group: EventLinkedScenarioGroup) => {
       const groupStatus = (group.status ?? group.stage ?? '').toLowerCase()
 
       // 완료된 그룹만 상세로 이동. 1/2단계는 시나리오 설계 화면으로 이동
@@ -295,15 +332,45 @@ const EventsTabPanel = () => {
       }
 
       if (group.mine === false) {
+        const groupDetail = await nextGenMIScenarioGroupService.getScenarioGroupDetail(group.scenarioGroupId).catch(() => undefined)
+        const miEventIds = groupDetail?.eventBundles?.map((event) => event.eventId)
+        const designStatus = await nextGenMIScenarioDesignService
+          .getScenarioDesignStatus({ miEventIds: miEventIds?.length ? miEventIds : [row.eventId] })
+          .catch(() => undefined)
+        const occupantUserName = designStatus?.scenarioGroupId === group.scenarioGroupId ? designStatus.occupantUserName?.trim() : undefined
         onShow({
-          title: '시나리오 설계를 시작할 수 없습니다',
+          title: '시나리오 설계 확인',
           width: 450,
-          children: getEventDesignOccupiedMessage(),
+          children: getEventDesignOccupiedMessage(occupantUserName),
+          actions: [
+            {
+              label: '닫기',
+              variant: 'outlined',
+              color: 'gray',
+              onClick: onHide,
+            },
+            {
+              label: '확인',
+              onClick: () => {
+                onHide()
+                navigate(getNextGenMIScenarioDesignPath({ eventIds: [row.eventId], scenarioGroupId: group.scenarioGroupId }), {
+                  state: {
+                    eventName: row.eventName,
+                    eventIds: [row.eventId],
+                    scenarioGroupId: group.scenarioGroupId,
+                    designStep: normalizeEventDesignStep(group.designStep) ?? null,
+                    readOnly: true,
+                    occupantUserName,
+                  },
+                })
+              },
+            },
+          ],
         })
         return
       }
 
-      navigate(getNextGenMIEventDesignPath(row.eventId), {
+      navigate(getNextGenMIScenarioDesignPath({ eventIds: [row.eventId], scenarioGroupId: group.scenarioGroupId }), {
         state: {
           eventName: row.eventName,
           eventIds: [row.eventId],
@@ -312,7 +379,7 @@ const EventsTabPanel = () => {
         },
       })
     },
-    [navigate, onShow],
+    [navigate, onHide, onShow],
   )
 
   const columns: GridColDef<EventListItem>[] = useMemo(
