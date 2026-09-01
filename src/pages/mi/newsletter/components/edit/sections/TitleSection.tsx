@@ -77,35 +77,33 @@ const TitleSection = ({
           onUpdateValue={onSubtitleChange}
           maxLength={100}
         />
-        {showOilRow && (
-          <Stack gap="6px" sx={{ pt: '6px' }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
-              <Typography component="div" variant="body2" fontWeight={600} color="contentText.Normal" sx={{ lineHeight: 1.4 }}>
-                유가 변동(USD/bbl)
-              </Typography>
-              <Box
-                component="span"
-                width={4}
-                height={4}
-                borderRadius="50%"
-                bgcolor="point.red1"
-                sx={{ mt: '5px', ml: '4px', flexShrink: 0 }}
-              />
-            </Box>
+        <Stack gap="6px" sx={{ pt: '6px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
+            <Typography component="div" variant="body2" fontWeight={600} color="contentText.Normal" sx={{ lineHeight: 1.4 }}>
+              유가 변동(USD/bbl)
+            </Typography>
             <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                flexWrap: 'wrap',
-              }}
-            >
-              <MIMaskInput value={fromStr} onUpdateValue={onPriceChangeFromChange} width={160} inputProps={{ inputMode: 'decimal' }} />
-              <EastIcon sx={{ fontSize: 24, color: 'contentText.Normal', flexShrink: 0 }} />
-              <MIMaskInput value={toStr} onUpdateValue={onPriceChangeToChange} width={160} inputProps={{ inputMode: 'decimal' }} />
-            </Box>
-          </Stack>
-        )}
+              component="span"
+              width={4}
+              height={4}
+              borderRadius="50%"
+              bgcolor="point.red1"
+              sx={{ mt: '5px', ml: '4px', flexShrink: 0 }}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <MIMaskInput value={fromStr} onUpdateValue={onPriceChangeFromChange} width={160} inputProps={{ inputMode: 'decimal' }} />
+            <EastIcon sx={{ fontSize: 24, color: 'contentText.Normal', flexShrink: 0 }} />
+            <MIMaskInput value={toStr} onUpdateValue={onPriceChangeToChange} width={160} inputProps={{ inputMode: 'decimal' }} />
+          </Box>
+        </Stack>
       </Stack>
     </Block>
   )
