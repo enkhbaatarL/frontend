@@ -91,20 +91,32 @@ export const ScenarioRoleBadge = ({
   return (
     <Stack
       component="span"
+      display="inline-flex"
       direction="row"
       alignItems="center"
       justifyContent="center"
       gap="2px"
       height="20px"
       padding="0 6px"
-      border="1px solid"
-      borderColor={style.borderColor}
+      lineHeight={0}
       borderRadius="8px"
       bgcolor="commonColor.White"
       color={style.color}
       boxSizing="border-box"
       flexShrink={0}
-      sx={{ verticalAlign: 'middle' }}
+      sx={{
+        position: 'relative',
+        verticalAlign: 'middle',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          border: `1px solid ${style.borderColor}`,
+          borderRadius: 'inherit',
+          boxSizing: 'border-box',
+          pointerEvents: 'none',
+        },
+      }}
     >
       {style.icon}
       <Typography component="span" color="inherit" fontSize="12px" fontWeight={600} lineHeight={1.4} noWrap>

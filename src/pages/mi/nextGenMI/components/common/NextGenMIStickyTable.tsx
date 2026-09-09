@@ -51,6 +51,8 @@ export type NextGenMIStickyTableColumn<T> = {
   cellSx?: SxProps<Theme>
   headerCellSx?: SxProps<Theme>
   headerContentSx?: SxProps<Theme>
+  /** 고정 컬럼 내부 렌더링 래퍼의 클리핑 동작 */
+  fixedCellContentOverflow?: 'hidden' | 'visible'
 }
 
 type NextGenMIStickyTableProps<T> = {
@@ -1553,7 +1555,15 @@ const NextGenMIStickyTable = <T,>({
         ]}
       >
         {isFixedColumn ? (
-          <Box sx={{ width: '100%', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <Box
+            sx={{
+              width: '100%',
+              minWidth: 0,
+              overflow: column.fixedCellContentOverflow ?? 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {column.renderCell({ row, rowIndex, column })}
           </Box>
         ) : (

@@ -31,6 +31,7 @@ import {
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIInlineEditableInput from '@/pages/mi/nextGenMI/components/common/NextGenMIInlineEditableInput'
 import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
+import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import ScenarioDesignBaseEventSection, {
   type ScenarioDesignBaseEventSectionProps,
 } from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignBaseEventSection'
@@ -1365,6 +1366,8 @@ const ScenarioDesignCriteriaStep = ({
           const typeBadge =
             row.baseCase === true ? (
               <ScenarioDesignTypeBadge type="BC" reason="기존에 생성된 Base Case 시나리오입니다." />
+            ) : row.scenarioRole || row.scenarioRoleLabel ? (
+              <ScenarioRoleBadge role={row.scenarioRole} label={row.scenarioRoleLabel} type={row.scenarioType} />
             ) : row.scenarioType ? (
               <ScenarioDesignTypeBadge type={row.scenarioType} reason={row.scenarioTypeReason} />
             ) : null

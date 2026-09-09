@@ -31,6 +31,7 @@ import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/N
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { toDisplayProbabilityPercent } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
+import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 
 const SCENARIO_REVIEW_CARD_DEFAULT_WIDTH = 400
@@ -408,6 +409,9 @@ const ScenarioReviewCard = ({
             <Stack direction="row" alignItems="center" gap="4px" width="100%">
               <NextGenMIDisplayOrderBadge value={scenario.displayOrder} height="21px" />
               {scenario.baseCase && <NextGenMIBaseCaseChip height="21px" padding="2px 6px" />}
+              {!scenario.baseCase && (scenario.scenarioRole || scenario.scenarioRoleLabel || scenario.scenarioType) && (
+                <ScenarioRoleBadge role={scenario.scenarioRole} type={scenario.scenarioType} label={scenario.scenarioRoleLabel} />
+              )}
               <Box
                 component="button"
                 type="button"

@@ -38,6 +38,7 @@ import {
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMIResizableTextarea from '@/pages/mi/nextGenMI/components/common/NextGenMIResizableTextarea'
+import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import {
   getScenarioDesignColumnDisplayValue,
   getScenarioDesignRowId,
@@ -1295,6 +1296,9 @@ const ScenarioDesignReviewScenarioCard = ({
         <Stack direction="row" alignItems="center" gap="4px">
           {row.displayOrder !== undefined && <NextGenMIDisplayOrderBadge value={row.displayOrder} height="21px" />}
           {row.baseCase && <NextGenMIBaseCaseChip height="21px" padding="2px 6px" />}
+          {!row.baseCase && (row.scenarioRole || row.scenarioRoleLabel || row.scenarioType) && (
+            <ScenarioRoleBadge role={row.scenarioRole} label={row.scenarioRoleLabel} type={row.scenarioType} />
+          )}
         </Stack>
         <Typography
           fontSize="18px"

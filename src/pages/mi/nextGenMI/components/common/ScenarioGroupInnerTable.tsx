@@ -266,6 +266,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         width: '64px',
         minWidth: '64px',
         align: 'center',
+        fixedCellContentOverflow: 'visible',
         headerCellSx: { ...tableCellSx, padding: '10px 6px' },
         cellSx: { ...tableCellSx, padding: '10px 6px' },
         renderCell: ({ row }) => {
@@ -315,7 +316,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         return {
           field: column.key,
           headerName: column.label,
-          width: '160px',
+          width: '159px',
           align: 'left',
           headerCellSx: tableCellSx,
           cellSx: tableCellSx,
