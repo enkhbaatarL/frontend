@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify'
-import { CSSProperties, Fragment } from 'react'
+import { CSSProperties } from 'react'
 
 import { IRelatedNewsEventItem } from '@/service/mi/newsletter'
 import { EMAIL_FONT_FAMILY, OUTLOOK_MSO_FONT_FAMILY, msoLineHeightAltScaled, msoPaddingAltScaled, outlookMsoFontSize } from '@/utils/email'
@@ -142,9 +142,11 @@ const withLeadBulletDiffHtml = (sanitizedHtml: string): string => {
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;table-layout:fixed;"><tbody><tr><td style="padding-left:${indent}px;vertical-align:top;"><table class="rn-bullet-body" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;table-layout:fixed;"><tbody>${rows}</tbody></table></td></tr></tbody></table>`
 }
 
-const RelatedNewsContentBlock = ({ content, visualRemoved }: { content: string; visualRemoved: boolean }) => {
+const RelatedNewsContentBlock = ({ content, visualRemoved }: { content: string[]; visualRemoved: boolean }) => {
   const dec = visualRemoved ? ('line-through' as const) : undefined
-  const lines = splitRelatedNewsBodyLines(content)
+  const lines = content.flatMap(splitRelatedNewsBodyLines)
+  if (lines.length === 0) return null
+
   return (
     <table width="100%" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'collapse' }}>
       <tbody>
@@ -339,28 +341,7 @@ const RelatedNews = ({ item, titleDiffHtml, contentDiffHtml, visualRemoved }: Re
               }}
             />
           ) : (
-            item.content.map((content, idx) => (
-              <Fragment key={idx}>
-                {idx > 0 ? (
-                  <table width="100%" cellPadding={0} cellSpacing={0} border={0} style={{ borderCollapse: 'collapse' }}>
-                    <tbody>
-                      <tr>
-                        <td
-                          style={{
-                            height: RN_BULLET_PARAGRAPH_GAP_PX,
-                            fontSize: 1,
-                            lineHeight: `${RN_BULLET_PARAGRAPH_GAP_PX}px`,
-                          }}
-                        >
-                          &nbsp;
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                ) : null}
-                <RelatedNewsContentBlock content={content} visualRemoved={!!visualRemoved} />
-              </Fragment>
-            ))
+            <RelatedNewsContentBlock content={item.content} visualRemoved={!!visualRemoved} />
           )}
         </td>
       </tr>
