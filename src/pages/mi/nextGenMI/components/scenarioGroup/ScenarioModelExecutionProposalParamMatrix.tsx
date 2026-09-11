@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
-import NextGenMIStickyTable, { type NextGenMIStickyTableColumn } from '@/pages/mi/nextGenMI/components/common/NextGenMIStickyTable'
+import ScenarioGroupStickyTable, {
+  type ScenarioGroupStickyTableColumn,
+} from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupStickyTable'
 // #DELETE: 파라미터 표 목 데이터 (API 연동 후 ParamMatrix와 함께 삭제)
 import {
   createProposalParamMatrixMock,
@@ -240,8 +242,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     [matrix.fixedRows, matrix.periods, visibleScenarios],
   )
 
-  const columns = useMemo<NextGenMIStickyTableColumn<ProposalParamMatrixRow>[]>(() => {
-    const fixedColumns: NextGenMIStickyTableColumn<ProposalParamMatrixRow>[] = matrix.fixedHeaders.map((header, headerIndex) => ({
+  const columns = useMemo<ScenarioGroupStickyTableColumn<ProposalParamMatrixRow>[]>(() => {
+    const fixedColumns: ScenarioGroupStickyTableColumn<ProposalParamMatrixRow>[] = matrix.fixedHeaders.map((header, headerIndex) => ({
       field: `fixed-${headerIndex}`,
       headerName: header,
       width: FIXED_COLUMN_WIDTH,
@@ -279,7 +281,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         },
       }
 
-      const baseColumn: NextGenMIStickyTableColumn<ProposalParamMatrixRow> = {
+      const baseColumn: ScenarioGroupStickyTableColumn<ProposalParamMatrixRow> = {
         field: `${period.periodLabel}::base`,
         headerName: 'MI Base',
         headerGroup: periodHeaderGroup,
@@ -307,7 +309,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         ),
       }
 
-      const scenarioColumns: NextGenMIStickyTableColumn<ProposalParamMatrixRow>[] = visibleScenarios.map((scenario, scenarioIndex) => {
+      const scenarioColumns: ScenarioGroupStickyTableColumn<ProposalParamMatrixRow>[] = visibleScenarios.map((scenario, scenarioIndex) => {
         const isLastScenarioInPeriod = scenarioIndex === visibleScenarios.length - 1
 
         return {
@@ -382,7 +384,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
 
   return (
     <Box width="100%" minWidth={0} overflow="hidden" bgcolor="commonColor.White">
-      <NextGenMIStickyTable
+      <ScenarioGroupStickyTable
         columns={columns}
         rows={rows}
         getRowKey={(row) => row.rowKey}
