@@ -469,6 +469,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         rowHeight="48px"
         headerFontSize="13px"
         containerShell={false}
+        hideVerticalScrollbar
       />
     </Stack>
   )

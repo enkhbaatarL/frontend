@@ -16,17 +16,17 @@ const SCENARIO_DESIGN_TYPE_BADGE_STYLE: Record<
 > = {
   BR: {
     label: 'BR',
-    color: '#498B47',
-    borderColor: '#498B47',
-    bgcolor: 'commonColor.White',
-    icon: <TrendingUpRoundedIcon sx={{ fontSize: '14px', color: 'inherit' }} />,
-  },
-  BL: {
-    label: 'BL',
     color: '#CC4D50',
     borderColor: '#CC4D50',
     bgcolor: 'commonColor.White',
     icon: <TrendingDownRoundedIcon sx={{ fontSize: '14px', color: 'inherit' }} />,
+  },
+  BL: {
+    label: 'BL',
+    color: '#498B47',
+    borderColor: '#498B47',
+    bgcolor: 'commonColor.White',
+    icon: <TrendingUpRoundedIcon sx={{ fontSize: '14px', color: 'inherit' }} />,
   },
   MX: {
     label: 'MX',

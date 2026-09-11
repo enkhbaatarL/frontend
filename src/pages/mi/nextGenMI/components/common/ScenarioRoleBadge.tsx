@@ -9,8 +9,8 @@ import type { ScenarioRole } from '@/service/mi/nextGenMI/scenarioGroup'
 type ScenarioRoleBadgeKind = 'BR' | 'BL' | 'MX'
 
 const ROLE_TO_BADGE_KIND: Record<ScenarioRole, ScenarioRoleBadgeKind> = {
-  ceiling: 'BR',
-  floor: 'BL',
+  ceiling: 'BL',
+  floor: 'BR',
   mixed: 'MX',
 }
 
@@ -18,26 +18,26 @@ const LABEL_TO_BADGE_KIND: Record<string, ScenarioRoleBadgeKind> = {
   br: 'BR',
   bl: 'BL',
   mx: 'MX',
-  ceiling: 'BR',
-  floor: 'BL',
+  ceiling: 'BL',
+  floor: 'BR',
   mixed: 'MX',
-  상단: 'BR',
-  하단: 'BL',
+  상단: 'BL',
+  하단: 'BR',
   혼합: 'MX',
 }
 
 const SCENARIO_ROLE_BADGE_STYLE: Record<ScenarioRoleBadgeKind, { label: string; color: string; borderColor: string; icon: ReactNode }> = {
   BR: {
     label: 'BR',
-    color: '#498B47',
-    borderColor: '#498B47',
-    icon: <TrendingUpRoundedIcon sx={{ width: '14px', height: '14px', fontSize: '14px', color: 'inherit' }} />,
-  },
-  BL: {
-    label: 'BL',
     color: '#CC4D50',
     borderColor: '#CC4D50',
     icon: <TrendingDownRoundedIcon sx={{ width: '14px', height: '14px', fontSize: '14px', color: 'inherit' }} />,
+  },
+  BL: {
+    label: 'BL',
+    color: '#498B47',
+    borderColor: '#498B47',
+    icon: <TrendingUpRoundedIcon sx={{ width: '14px', height: '14px', fontSize: '14px', color: 'inherit' }} />,
   },
   MX: {
     label: 'MX',
