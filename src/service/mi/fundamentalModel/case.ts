@@ -200,11 +200,29 @@ export interface FundamentalModelFilterOption {
   label: string
 }
 
+export interface FundamentalModelRegionFilterOption {
+  value: string
+  label: string
+  countries: FundamentalModelFilterOption[]
+}
+
+export interface GetFundamentalModelVolumesFilterOptionsParams {
+  caseId?: number
+  selector?: FundamentalModelTradeSelector
+  year?: number
+}
+
 export interface FundamentalModelVolumesSegmentFilterOptions {
   segment: FundamentalModelVolumesSegment
   types: FundamentalModelFilterOption[]
-  regions: FundamentalModelFilterOption[]
+  regions: FundamentalModelRegionFilterOption[]
   granularities: FundamentalModelFilterOption[]
+  periods?: FundamentalModelPeriodFilterOptions
+}
+
+export interface FundamentalModelPeriodFilterOptions {
+  yearly: FundamentalModelFilterOption[]
+  monthly: FundamentalModelFilterOption[]
 }
 
 export interface FundamentalModelVolumesFilterOptions {
@@ -231,6 +249,8 @@ export interface FundamentalModelVolumesRow {
 export interface FundamentalModelVolumesAppliedFilters {
   types?: FundamentalModelVolumesType[]
   regions?: FundamentalModelVolumesRegion[]
+  countryKeys?: string[]
+  periods?: string[]
 }
 
 export interface FundamentalModelVolumes {
@@ -246,6 +266,7 @@ export interface FundamentalModelVolumes {
 export interface FundamentalModelTradeFlowsAppliedFilters {
   types?: FundamentalModelTradeFlowsType[]
   regions?: FundamentalModelVolumesRegion[]
+  countryKeys?: string[]
 }
 
 export interface FundamentalModelTradeCountryHeader {
@@ -281,7 +302,10 @@ export interface GetFundamentalModelVolumesParams {
   segment: FundamentalModelVolumesSegment
   types?: FundamentalModelVolumesType[]
   regions?: FundamentalModelVolumesRegion[]
+  countryKeys?: string[]
   granularity?: FundamentalModelVolumesGranularity
+  /** YEARLY: yyyy, MONTHLY: yyyy-MM. 미전달 시 전체 기간 */
+  periods?: string[]
 }
 
 export interface GetFundamentalModelTradeFlowsParams {
@@ -290,6 +314,7 @@ export interface GetFundamentalModelTradeFlowsParams {
   unit?: FundamentalModelTradeUnit
   types?: FundamentalModelTradeFlowsType[]
   regions?: FundamentalModelVolumesRegion[]
+  countryKeys?: string[]
 }
 
 const fundamentalModelCaseService = {
@@ -369,9 +394,10 @@ const fundamentalModelCaseService = {
     await api.delete(`mi/fundamental-model/cases/${caseId}`)
   },
 
-  async getVolumesFilterOptions(): Promise<FundamentalModelVolumesFilterOptions> {
+  async getVolumesFilterOptions(params?: GetFundamentalModelVolumesFilterOptionsParams): Promise<FundamentalModelVolumesFilterOptions> {
     const response: AxiosResponse<ICommonResponse<FundamentalModelVolumesFilterOptions>> = await api.get(
       'mi/fundamental-model/cases/volumes/filter-options',
+      { params },
     )
     return response.data.data
   },
@@ -388,6 +414,8 @@ const fundamentalModelCaseService = {
           types,
           regions,
           granularity: params.granularity,
+          countryKeys: params.countryKeys?.length ? params.countryKeys.join(',') : undefined,
+          periods: params.periods?.length ? params.periods.join(',') : undefined,
         },
       },
     )
@@ -404,6 +432,7 @@ const fundamentalModelCaseService = {
         params: {
           selector: params.selector,
           year: params.year,
+          countryKeys: params.countryKeys?.length ? params.countryKeys.join(',') : undefined,
           unit: params.unit,
           types,
           regions,

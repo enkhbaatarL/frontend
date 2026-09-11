@@ -5,23 +5,20 @@ import { createPortal } from 'react-dom'
 
 import type { FundamentalModelScopeKey } from '@/pages/mi/fundamentalModel/fundamentalModelTypes'
 import type {
+  FundamentalModelTradeFlowsType,
   FundamentalModelTradeSelector,
-  FundamentalModelVolumesGranularity,
+  FundamentalModelVolumesRegion,
   FundamentalModelVolumesSegment,
+  FundamentalModelVolumesType,
 } from '@/service/mi/fundamentalModel/case'
 
 import FundamentalModelSectionVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSectionVolumesTable'
 import FundamentalModelSegmentToolbar from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelSegmentToolbar'
 import FundamentalModelTradeVolumesTable from '@/pages/mi/fundamentalModel/components/volumes/FundamentalModelTradeVolumesTable'
 import {
-  createDefaultVolumeFilters,
   FM_VOLUME_FILTERS_STORAGE_KEY,
-  isAllVolumeFiltersSelected,
   normalizeVolumeFiltersForScope,
   readSavedVolumeFilters,
-  toApiTradeFlowTypes,
-  toApiVolumeRegions,
-  toApiVolumeTypes,
   type FundamentalModelVolumeFilters,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumeFilters'
 import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
@@ -45,12 +42,12 @@ const SCOPE_TO_SEGMENT: Record<FundamentalModelScopeKey, FundamentalModelVolumes
 /** Volumes 탭 본문(툴바 + 매트릭스 - 레이아웃은 FundamentalModelPage) */
 const VolumesTabPanel = memo(({ caseId, stickySlotEl, detailLoading }: VolumesTabPanelProps) => {
   const [scope, setScope] = useState<FundamentalModelScopeKey>('global')
-  const [granularity, setGranularity] = useState<FundamentalModelVolumesGranularity>('YEARLY')
   const [tradeSelector, setTradeSelector] = useState<FundamentalModelTradeSelector>('LNG')
   const [tradeYear, setTradeYear] = useState(2026)
-  const savedFilters = readSavedVolumeFilters()
-  const [volumeFilters, setVolumeFilters] = useState<FundamentalModelVolumeFilters>(() => savedFilters ?? createDefaultVolumeFilters())
+  const [savedFilters] = useState(readSavedVolumeFilters)
+  const [volumeFilters, setVolumeFilters] = useState<FundamentalModelVolumeFilters | null>(savedFilters)
   const [saveFiltersOn, setSaveFiltersOn] = useState(Boolean(savedFilters))
+  const granularity = volumeFilters?.granularity ?? 'YEARLY'
 
   const handleApplyVolumeFilters = (filters: FundamentalModelVolumeFilters, save?: boolean) => {
     setVolumeFilters(filters)
@@ -65,54 +62,84 @@ const VolumesTabPanel = memo(({ caseId, stickySlotEl, detailLoading }: VolumesTa
 
   const segment = SCOPE_TO_SEGMENT[scope]
   const isSectionScope = scope === 'global' || scope === 'lng'
-  const scopedVolumeFilters = useMemo(() => normalizeVolumeFiltersForScope(volumeFilters, scope), [scope, volumeFilters])
-
-  // 전체 선택일 때는 types/regions 미전달(swagger - 미전달 시 전체)
-  const allFiltersSelected = isAllVolumeFiltersSelected(scopedVolumeFilters, scope)
-  const apiTypes = useMemo(
-    () => (allFiltersSelected ? undefined : toApiVolumeTypes(scopedVolumeFilters.types)),
-    [allFiltersSelected, scopedVolumeFilters.types],
-  )
-  const apiRegions = useMemo(
-    () => (allFiltersSelected ? undefined : toApiVolumeRegions(scopedVolumeFilters.regions)),
-    [allFiltersSelected, scopedVolumeFilters.regions],
-  )
-  const apiTradeTypes = useMemo(
-    () => (allFiltersSelected ? undefined : toApiTradeFlowTypes(scopedVolumeFilters.types)),
-    [allFiltersSelected, scopedVolumeFilters.types],
-  )
-  const sectionTableKey = useMemo(
-    () => [caseId ?? 'empty', segment, granularity, apiTypes?.join(',') ?? 'ALL', apiRegions?.join(',') ?? 'ALL'].join('|'),
-    [apiRegions, apiTypes, caseId, granularity, segment],
-  )
-  const tradeTableKey = useMemo(
-    () => [caseId ?? 'empty', tradeSelector, tradeYear, apiTradeTypes?.join(',') ?? 'ALL', apiRegions?.join(',') ?? 'ALL'].join('|'),
-    [apiRegions, apiTradeTypes, caseId, tradeSelector, tradeYear],
-  )
-
   const isValidCaseId = typeof caseId === 'number' && Number.isFinite(caseId) && caseId > 0
-  const enableSectionQuery = isSectionScope && isValidCaseId
-  const enableTradeQuery = scope === 'trade' && isValidCaseId
 
-  const { data: filterOptions } = useQuery({
-    queryKey: ['fundamentalModel', 'volumes', 'filterOptions'],
-    queryFn: fundamentalModelCaseService.getVolumesFilterOptions,
+  const { data: filterOptions, isLoading: filterOptionsLoading } = useQuery({
+    queryKey: [
+      'fundamentalModel',
+      'volumes',
+      'filterOptions',
+      caseId,
+      scope === 'trade' ? tradeSelector : null,
+      scope === 'trade' ? tradeYear : null,
+    ],
+    queryFn: () =>
+      fundamentalModelCaseService.getVolumesFilterOptions({
+        caseId: caseId as number,
+        ...(scope === 'trade' ? { selector: tradeSelector, year: tradeYear } : {}),
+      }),
+    enabled: isValidCaseId && !detailLoading,
     refetchOnWindowFocus: false,
-    staleTime: Infinity,
   })
+
+  const segmentFilterOptions = filterOptions?.segments.find((option) => option.segment === segment)
+  const scopedVolumeFilters = useMemo(
+    () => normalizeVolumeFiltersForScope(volumeFilters, segmentFilterOptions),
+    [segmentFilterOptions, volumeFilters],
+  )
+  const apiTypes = scopedVolumeFilters.types.length === segmentFilterOptions?.types.length ? undefined : scopedVolumeFilters.types
+  const apiRegions = scopedVolumeFilters.regions.length === segmentFilterOptions?.regions.length ? undefined : scopedVolumeFilters.regions
+  const apiCountryKeys = scopedVolumeFilters.countryKeys
+  const noFiltersSelected =
+    scopedVolumeFilters.types.length === 0 || scopedVolumeFilters.regions.length === 0 || apiCountryKeys?.length === 0
+  const enableTradeQuery = scope === 'trade' && isValidCaseId && !detailLoading && !!segmentFilterOptions && !noFiltersSelected
+  const tradeTableKey = [
+    caseId ?? 'empty',
+    tradeSelector,
+    tradeYear,
+    apiTypes?.join(',') ?? 'ALL',
+    apiRegions?.join(',') ?? 'ALL',
+    apiCountryKeys?.join(',') ?? 'ALL',
+  ].join('|')
+
+  const periodOptions = segmentFilterOptions?.periods
+  const selectedPeriods = volumeFilters?.periods?.[granularity]
+  const apiPeriods = useMemo(() => {
+    if (!selectedPeriods || !periodOptions) return selectedPeriods
+    const options = granularity === 'YEARLY' ? periodOptions.yearly : periodOptions.monthly
+    return selectedPeriods.filter((period) => options.some((option) => option.value === period))
+  }, [granularity, periodOptions, selectedPeriods])
+  const noPeriodsSelected = apiPeriods?.length === 0
+  const enableSectionQuery =
+    isSectionScope && isValidCaseId && !detailLoading && !!segmentFilterOptions && !noPeriodsSelected && !noFiltersSelected
+  const sectionTableKey = useMemo(
+    () =>
+      [
+        caseId ?? 'empty',
+        segment,
+        granularity,
+        apiTypes?.join(',') ?? 'ALL',
+        apiRegions?.join(',') ?? 'ALL',
+        apiCountryKeys?.join(',') ?? 'ALL',
+        apiPeriods?.join(',') ?? 'ALL',
+      ].join('|'),
+    [apiCountryKeys, apiPeriods, apiRegions, apiTypes, caseId, granularity, segment],
+  )
 
   const {
     data: volumesRes,
     isLoading: volumesLoading,
     isFetching: volumesFetching,
   } = useQuery({
-    queryKey: ['fundamentalModel', 'volumes', caseId, segment, granularity, apiTypes, apiRegions],
+    queryKey: ['fundamentalModel', 'volumes', caseId, segment, granularity, apiTypes, apiRegions, apiPeriods, apiCountryKeys],
     queryFn: () =>
       fundamentalModelCaseService.getVolumes(caseId as number, {
         segment,
-        types: apiTypes,
-        regions: apiRegions,
+        types: apiTypes as FundamentalModelVolumesType[] | undefined,
+        regions: apiRegions as FundamentalModelVolumesRegion[] | undefined,
         granularity,
+        periods: apiPeriods,
+        countryKeys: apiCountryKeys,
       }),
     enabled: enableSectionQuery,
     refetchOnWindowFocus: false,
@@ -123,33 +150,37 @@ const VolumesTabPanel = memo(({ caseId, stickySlotEl, detailLoading }: VolumesTa
     isLoading: tradeFlowsLoading,
     isFetching: tradeFlowsFetching,
   } = useQuery({
-    queryKey: ['fundamentalModel', 'tradeFlows', caseId, tradeSelector, tradeYear, apiTradeTypes, apiRegions],
+    queryKey: ['fundamentalModel', 'tradeFlows', caseId, tradeSelector, tradeYear, apiTypes, apiRegions, apiCountryKeys],
     queryFn: () =>
       fundamentalModelCaseService.getTradeFlows(caseId as number, {
         selector: tradeSelector,
         year: tradeYear,
+        countryKeys: apiCountryKeys,
         unit: 'MTPA',
-        types: apiTradeTypes,
-        regions: apiRegions,
+        types: apiTypes as FundamentalModelTradeFlowsType[] | undefined,
+        regions: apiRegions as FundamentalModelVolumesRegion[] | undefined,
       }),
     enabled: enableTradeQuery,
     refetchOnWindowFocus: false,
   })
 
-  const sectionLoading = detailLoading || volumesLoading || volumesFetching
-  const tradeLoading = detailLoading || tradeFlowsLoading || tradeFlowsFetching
-  const volumeColumns = volumesRes?.columns ?? []
-  const sectionRows = volumesRes?.rows ?? []
+  const sectionLoading = detailLoading || filterOptionsLoading || volumesLoading || volumesFetching
+  const tradeLoading = detailLoading || filterOptionsLoading || tradeFlowsLoading || tradeFlowsFetching
+  const volumeColumns = noPeriodsSelected || noFiltersSelected ? [] : (volumesRes?.columns ?? [])
+  const sectionRows = noPeriodsSelected || noFiltersSelected ? [] : (volumesRes?.rows ?? [])
   const toolbar = (
     <FundamentalModelSegmentToolbar
-      loading={detailLoading}
+      key={[caseId, scope, scope === 'trade' ? tradeSelector : '', scope === 'trade' ? tradeYear : ''].join('|')}
+      loading={detailLoading || filterOptionsLoading}
       scope={scope}
       onScopeChange={setScope}
       volumeFilters={scopedVolumeFilters}
       onApplyVolumeFilters={handleApplyVolumeFilters}
       initialSaveFilters={saveFiltersOn}
       granularity={granularity}
-      onGranularityChange={setGranularity}
+      onGranularityChange={(nextGranularity) =>
+        handleApplyVolumeFilters({ ...scopedVolumeFilters, granularity: nextGranularity }, saveFiltersOn)
+      }
       filterOptions={filterOptions ?? null}
     />
   )
@@ -159,7 +190,7 @@ const VolumesTabPanel = memo(({ caseId, stickySlotEl, detailLoading }: VolumesTa
       {scope === 'trade' ? (
         <FundamentalModelTradeVolumesTable
           key={tradeTableKey}
-          tradeFlows={tradeFlows ?? null}
+          tradeFlows={noFiltersSelected ? null : (tradeFlows ?? null)}
           selector={tradeSelector}
           year={tradeYear}
           unit={tradeFlows?.unit ?? 'MTPA'}
