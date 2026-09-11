@@ -1,10 +1,11 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { type GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
+import MIDataTableBody from '@/components/common/table/MIDataTableBody'
 import MIDataTableHeader from '@/components/common/table/MIDataTableHeader'
 import useNavigationToast from '@/hooks/useNavigationToast'
 import { defaultNextGenMIDateRange } from '@/pages/mi/nextGenMI/components/common/nextGenMIDateRange'
@@ -28,7 +29,10 @@ const GROUP_HEADER_COLUMNS: GridColDef[] = [
   { field: 'groupName', headerName: '시나리오 그룹', flex: 408, align: 'left' },
   { field: 'summary', headerName: '시나리오 그룹 요약', flex: 700, align: 'left' },
   { field: 'scenarioCount', headerName: '시나리오 수', width: 120, align: 'right' },
+  { field: 'eventCount', headerName: '이벤트 수', width: 100, align: 'right' },
 ]
+
+const COUNT_HEADER_FIELDS = new Set(['scenarioCount', 'eventCount'])
 
 const ScenarioGroupsTabPanel = () => {
   useNavigationToast()
@@ -38,6 +42,7 @@ const ScenarioGroupsTabPanel = () => {
   const [appliedDateRange, setAppliedDateRange] = useNextGenMIListState<DateRange>('scenarios.appliedDateRange', defaultNextGenMIDateRange)
   const [keyword, setKeyword] = useNextGenMIListState('scenarios.keyword', '')
   const [committedKeyword, setCommittedKeyword] = useNextGenMIListState('scenarios.committedKeyword', '')
+  const [mineOnly, setMineOnly] = useNextGenMIListState('scenarios.mineOnly', false)
   const [pagination, setPagination] = useNextGenMIListState('scenarios.pagination', { size: 20, page: 1 })
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<number>>(() => new Set())
   const [expandAll, setExpandAll] = useState(false)
@@ -61,8 +66,9 @@ const ScenarioGroupsTabPanel = () => {
       startDate: resolvedRange.startDate!.startOf('day').format('YYYY-MM-DD'),
       endDate: resolvedRange.endDate!.endOf('day').format('YYYY-MM-DD'),
       keyword: trimmedKeyword || undefined,
+      mineOnly: mineOnly || undefined,
     }
-  }, [appliedDateRange, committedKeyword, pagination.page, pagination.size, sort])
+  }, [appliedDateRange, committedKeyword, mineOnly, pagination.page, pagination.size, sort])
 
   const groupQuery = useQuery({
     queryKey: ['nextGenMIScenarioGroups', listRequest],
@@ -82,6 +88,9 @@ const ScenarioGroupsTabPanel = () => {
 
   const groups = useMemo(() => groupQuery.data?.scenarioGroups.detail ?? [], [groupQuery.data?.scenarioGroups.detail])
   const individualScenarios = individualQuery.data?.scenarios.detail ?? []
+
+  // Event List와 동일: 데이터 없는 fetch 구간은 스켈레톤 유지 (로딩↔빈목록 전환으로 pulse가 끊기지 않게)
+  const isGroupListLoading = groupQuery.isLoading || (groupQuery.isFetching && groups.length === 0)
 
   const activePagination: IPaginationResponse<IScenarioGroupListItem | IScenarioIndividualItem> | undefined = isGroupMode
     ? groupQuery.data?.scenarioGroups
@@ -118,6 +127,14 @@ const ScenarioGroupsTabPanel = () => {
       resetListState()
     },
     [resetListState, setSort],
+  )
+
+  const handleMineOnlyChange = useCallback(
+    (next: boolean) => {
+      setMineOnly(next)
+      resetListState()
+    },
+    [resetListState, setMineOnly],
   )
 
   const handleKeywordChange = useCallback(
@@ -180,6 +197,24 @@ const ScenarioGroupsTabPanel = () => {
     [setPagination],
   )
 
+  const showGroupListCellSkeleton = useCallback((col: GridColDef) => String(col.headerName ?? '').trim() !== '', [])
+
+  const getGroupListCellSx = useCallback(({ field }: { field: string }) => {
+    if (COUNT_HEADER_FIELDS.has(field)) return { px: '24px' }
+    return {}
+  }, [])
+
+  const groupListEmptyOverlay = useMemo(
+    () => (
+      <Stack alignItems="center" justifyContent="center" minHeight="240px" width="100%">
+        <Typography variant="body2M14" color="contentText.Normal">
+          조건에 맞는 시나리오 그룹이 없습니다.
+        </Typography>
+      </Stack>
+    ),
+    [],
+  )
+
   return (
     <Box width="100%">
       <NextGenMIStickySlot tabKey="scenarios">
@@ -194,6 +229,8 @@ const ScenarioGroupsTabPanel = () => {
           onDateRangeApply={handleDateRangeApply}
           sort={sort}
           onSortChange={handleSortChange}
+          mineOnly={mineOnly}
+          onMineOnlyChange={handleMineOnlyChange}
           expandAll={expandAll}
           onExpandAllChange={handleExpandAllChange}
           keyword={keyword}
@@ -207,22 +244,51 @@ const ScenarioGroupsTabPanel = () => {
             <MIDataTableHeader
               columns={GROUP_HEADER_COLUMNS}
               headerCellPx={6}
-              getHeaderCellSx={(col) => (col.field === 'scenarioCount' ? { px: '24px' } : undefined)}
+              getHeaderCellSx={(col) => (COUNT_HEADER_FIELDS.has(col.field) ? { px: '24px' } : undefined)}
             />
           </Box>
         )}
       </NextGenMIStickySlot>
 
       {isGroupMode ? (
-        <ScenarioGroupAccordionList
-          groups={groups}
-          expandedGroupIds={expandedGroupIds}
-          onToggle={handleToggleGroup}
-          loading={groupQuery.isLoading}
-          skeletonRowCount={pagination.size}
-          emptyMessage="조건에 맞는 시나리오 그룹이 없습니다."
-          chartBackgroundColor="transparent"
-        />
+        <>
+          {/* Event List와 같이 MIDataTableBody는 유지 마운트. 데이터 행만 아코디언으로 교체 */}
+          <Box
+            aria-hidden={!isGroupListLoading && groups.length > 0}
+            sx={{ display: isGroupListLoading || groups.length === 0 ? 'block' : 'none' }}
+          >
+            <MIDataTableBody
+              columns={GROUP_HEADER_COLUMNS}
+              rows={[]}
+              loading={isGroupListLoading}
+              skeletonRowCount={pagination.size}
+              showCellSkeleton={showGroupListCellSkeleton}
+              disableHoverState
+              rowHeight={48}
+              cellPx={6}
+              topPaddingPx={0}
+              noRowsOverlay={groupListEmptyOverlay}
+              getCellSx={getGroupListCellSx}
+              sx={{
+                '& > .MuiBox-root': {
+                  minHeight: '400px',
+                  borderRadius: 0,
+                  borderBottom: '1px solid',
+                  borderColor: 'gray.30',
+                },
+              }}
+            />
+          </Box>
+          {!isGroupListLoading && groups.length > 0 && (
+            <ScenarioGroupAccordionList
+              groups={groups}
+              expandedGroupIds={expandedGroupIds}
+              onToggle={handleToggleGroup}
+              emptyMessage="조건에 맞는 시나리오 그룹이 없습니다."
+              chartBackgroundColor="transparent"
+            />
+          )}
+        </>
       ) : (
         <Box mt={2}>
           <ScenarioIndividualTable scenarios={individualScenarios} loading={individualQuery.isLoading} skeletonRowCount={pagination.size} />

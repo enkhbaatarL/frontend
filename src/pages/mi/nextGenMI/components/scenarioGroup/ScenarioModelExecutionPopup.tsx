@@ -12,6 +12,8 @@ import useSnackbar from '@/hooks/useSnackbar'
 import ScenarioModelExecutionPopupContent, {
   type ScenarioModelExecutionOption,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
+// #DELETE: 추천 파라미터 리스트 목 UI (USE_MOCK_PARAM_PROPOSAL_LIST 와 함께 삭제)
+import ScenarioModelExecutionProposalList from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionProposalList'
 import ScenarioModelExecutionRerunConfirmDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionRerunConfirmDialog'
 import fileService, { type IFileDownloadRequest } from '@/service/admin/file'
 import nextGenMIModelExecutionService, {
@@ -20,6 +22,9 @@ import nextGenMIModelExecutionService, {
   type ModelParamPayloadItem,
 } from '@/service/mi/nextGenMI/modelExecution'
 import { downloadFile } from '@/utils/file'
+
+/** #DELETE: true 면 수급모델 팝업에 추천 파라미터 리스트 목 UI 표시 (API 연동 후 false 또는 삭제) */
+export const USE_MOCK_PARAM_PROPOSAL_LIST = true
 
 export interface ScenarioModelExecutionPopupRef {
   open: () => void
@@ -235,8 +240,13 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [reset])
 
     const handleClose = useCallback(() => {
+      // #DELETE: 목 UI는 확인 없이 바로 닫기
+      if (USE_MOCK_PARAM_PROPOSAL_LIST) {
+        closePopup()
+        return
+      }
       setConfirmType('close')
-    }, [])
+    }, [closePopup])
 
     const { mutate: createModelParamProposal, isPending: isCreatingModelParamProposal } = useMutation({
       mutationFn: (scenarioId: number) => nextGenMIModelExecutionService.createModelParamProposal(scenarioId),
@@ -601,7 +611,8 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [isSubmitting, parameterProposal, selectedScenarioId, submitModelParamProposalExecution])
 
     useEffect(() => {
-      if (!open || selectedScenarioId === null) return
+      // #DELETE: 목 UI일 때 파라미터 조회 스킵
+      if (USE_MOCK_PARAM_PROPOSAL_LIST || !open || selectedScenarioId === null) return
       void loadCurrentModelParamProposal(selectedScenarioId, false, true)
     }, [loadCurrentModelParamProposal, open, selectedScenarioId])
 
@@ -613,7 +624,9 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     }, [isCurrentProposalLoading, isScenarioChanging, selectedScenarioId])
 
     useEffect(() => {
+      // #DELETE: 목 UI일 때 재조회 폴링 스킵
       if (
+        USE_MOCK_PARAM_PROPOSAL_LIST ||
         !open ||
         selectedScenarioId === null ||
         (currentProposalState !== undefined && parameterProposal !== null) ||
@@ -640,7 +653,8 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     ])
 
     useEffect(() => {
-      if (!open || selectedScenarioId === null) return undefined
+      // #DELETE: 목 UI일 때 SSE 스킵
+      if (USE_MOCK_PARAM_PROPOSAL_LIST || !open || selectedScenarioId === null) return undefined
 
       let hasConnected = false
       const controller = new AbortController()
@@ -735,7 +749,8 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           title={
             <Stack component="span" direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
               <Typography component="span" fontSize="18px" fontWeight={600} lineHeight={1.4} color="contentText.Black">
-                MI 수급모델
+                {/* #DELETE: 목 UI 제목 */}
+                {USE_MOCK_PARAM_PROPOSAL_LIST ? 'MI 수급모델 실행' : 'MI 수급모델'}
               </Typography>
               <MIBaseButton
                 variant="text"
@@ -772,17 +787,26 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
             boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
             width: isMaximizeActive ? 'calc(100dvw - 32px)' : '1200px',
             maxWidth: 'calc(100dvw - 32px)',
+            // #DELETE: 목 UI는 뷰포트 고정 높이 + 푸터 고정 (auto 시 하단 액션 잘림)
             height: isMaximizeActive
               ? 'calc(100dvh - 32px)'
-              : hasGeneratedParameters && !isSubmitting && !isExecuting
-                ? 'auto'
-                : 'min(604px, calc(100dvh - 32px))',
+              : USE_MOCK_PARAM_PROPOSAL_LIST
+                ? 'calc(100dvh - 96px)'
+                : hasGeneratedParameters && !isSubmitting && !isExecuting
+                  ? 'auto'
+                  : 'min(604px, calc(100dvh - 32px))',
             maxHeight: isMaximizeActive
               ? 'calc(100dvh - 32px)'
-              : hasGeneratedParameters && !isSubmitting && !isExecuting
+              : USE_MOCK_PARAM_PROPOSAL_LIST || (hasGeneratedParameters && !isSubmitting && !isExecuting)
                 ? 'calc(100dvh - 96px)'
                 : 'calc(100dvh - 32px)',
-            margin: isMaximizeActive ? '16px' : hasGeneratedParameters && !isSubmitting && !isExecuting ? '48px 16px' : '16px',
+            margin: isMaximizeActive
+              ? '16px'
+              : USE_MOCK_PARAM_PROPOSAL_LIST || (hasGeneratedParameters && !isSubmitting && !isExecuting)
+                ? '48px 16px'
+                : '16px',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
             interpolateSize: 'allow-keywords',
             transition: (theme: Theme) =>
@@ -830,31 +854,36 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
             },
           }}
         >
-          <ScenarioModelExecutionPopupContent
-            scenarioOptions={scenarioOptions}
-            selectedScenarioId={selectedScenarioId}
-            executingScenarioIds={executingScenarioIds}
-            parameterProposal={parameterProposal}
-            isMaximized={isMaximizeActive}
-            isLoading={isCurrentProposalLoading}
-            isGenerating={isGenerating}
-            isExecuting={isExecuting}
-            isSubmitting={isSubmitting}
-            isResetting={isResettingModelParamProposal}
-            isDownloadingInputFiles={isDownloadingInputFiles}
-            isCloseDisabled={isCloseDisabled}
-            canGenerate={canGenerate}
-            canReset={canUseCurrentParameters}
-            canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
-            canSubmit={canUseCurrentParameters}
-            onSelectScenario={handleSelectScenario}
-            onGenerateParameters={handleGenerateParameters}
-            onChangeParameterValue={handleChangeParameterValue}
-            onDownloadInputFiles={handleDownloadInputFiles}
-            onReset={handleResetParameters}
-            onSubmit={handleModelParamProposalSubmitRequest}
-            onCancel={handleClose}
-          />
+          {/* #DELETE: 목 추천 파라미터 리스트 UI */}
+          {USE_MOCK_PARAM_PROPOSAL_LIST ? (
+            <ScenarioModelExecutionProposalList onCancel={closePopup} />
+          ) : (
+            <ScenarioModelExecutionPopupContent
+              scenarioOptions={scenarioOptions}
+              selectedScenarioId={selectedScenarioId}
+              executingScenarioIds={executingScenarioIds}
+              parameterProposal={parameterProposal}
+              isMaximized={isMaximizeActive}
+              isLoading={isCurrentProposalLoading}
+              isGenerating={isGenerating}
+              isExecuting={isExecuting}
+              isSubmitting={isSubmitting}
+              isResetting={isResettingModelParamProposal}
+              isDownloadingInputFiles={isDownloadingInputFiles}
+              isCloseDisabled={isCloseDisabled}
+              canGenerate={canGenerate}
+              canReset={canUseCurrentParameters}
+              canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
+              canSubmit={canUseCurrentParameters}
+              onSelectScenario={handleSelectScenario}
+              onGenerateParameters={handleGenerateParameters}
+              onChangeParameterValue={handleChangeParameterValue}
+              onDownloadInputFiles={handleDownloadInputFiles}
+              onReset={handleResetParameters}
+              onSubmit={handleModelParamProposalSubmitRequest}
+              onCancel={handleClose}
+            />
+          )}
         </MIConfirm>
 
         <MIConfirm

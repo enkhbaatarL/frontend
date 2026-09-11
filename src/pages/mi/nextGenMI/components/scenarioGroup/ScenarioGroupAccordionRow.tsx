@@ -20,7 +20,7 @@ import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGe
 type ScenarioGroupViewMode = 'table' | 'graph'
 
 // 컬럼 폭은 ScenarioGroupsTabPanel의 GROUP_HEADER_COLUMNS와 동일해야 정렬됨
-const SCENARIO_GROUP_LIST_GRID_TEMPLATE = '32px 110px 10px minmax(0, 408fr) minmax(0, 700fr) 120px'
+const SCENARIO_GROUP_LIST_GRID_TEMPLATE = '32px 110px 10px minmax(0, 408fr) minmax(0, 700fr) 120px 100px'
 
 const MODE_OPTIONS = [
   {
@@ -151,6 +151,20 @@ const ScenarioGroupAccordionRow = ({ group, expanded, onToggle, chartBackgroundC
           }}
         >
           {group.scenarioCount}
+        </Typography>
+      </Stack>
+      <Stack minWidth={0} alignItems="flex-end" px="24px" boxSizing="border-box" overflow="hidden">
+        <Typography
+          variant="body2M14"
+          color="contentText.Black"
+          noWrap
+          sx={{
+            opacity: expanded ? 0 : 1,
+            pointerEvents: expanded ? 'none' : 'auto',
+            transition: 'opacity 150ms ease',
+          }}
+        >
+          {group.eventCount}
         </Typography>
       </Stack>
 
