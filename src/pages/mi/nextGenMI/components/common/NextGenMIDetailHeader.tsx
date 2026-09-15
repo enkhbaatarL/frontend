@@ -4,6 +4,7 @@ import { type ReactNode, type SyntheticEvent, useCallback, useEffect, useLayoutE
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MoveToParentPageIcon from '@/components/common/icons/MoveToParentPageIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
+import { useNextGenMIContentLayout, useNextGenMIFillSpace } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
 import useAuthStore from '@/store/useAuthStore'
 
 const NEXT_GEN_MI_DETAIL_LAYOUT_TRANSITION_MS = 220
@@ -82,12 +83,15 @@ const NextGenMIDetailHeader = ({
   pendingScrollSectionId,
   pendingScrollKey,
 }: NextGenMIDetailHeaderProps) => {
+  const { maxWidth, margin } = useNextGenMIContentLayout()
+  const fillSpace = useNextGenMIFillSpace()
   const { patchStickyHeaderOptions } = useStickyHeader()
   const hasMariButton = useAuthStore(
     (state) => state.accessCompanyInfo?.floating?.some((floating) => floating.screenElementCd === 'MARI') ?? false,
   )
   const collapsedSummaryHeightPx = hasMariButton ? 78 : 49
   const isEmbedded = scrollContainer !== undefined
+  const shouldFillSpace = fillSpace && !isEmbedded
   const hasCollapsedSummary = !isEmbedded && Boolean(collapsedSummarySlot)
 
   const getScrollEl = useCallback(() => {
@@ -436,14 +440,28 @@ const NextGenMIDetailHeader = ({
               padding="12px 0"
               boxSizing="border-box"
             >
-              <Stack width="100%" maxWidth="1380px" minWidth={0} boxSizing="border-box" paddingRight={hasMariButton ? '56px' : '0px'}>
+              <Stack
+                width={shouldFillSpace ? undefined : '100%'}
+                maxWidth={isEmbedded ? '1380px' : maxWidth}
+                margin={isEmbedded ? undefined : margin}
+                alignSelf={shouldFillSpace ? 'stretch' : undefined}
+                minWidth={0}
+                boxSizing="border-box"
+                paddingRight={hasMariButton ? '56px' : '0px'}
+              >
                 {collapsedSummarySlot}
               </Stack>
             </Stack>
           </Collapse>
         )}
 
-        <Stack maxWidth="1380px" margin="auto" px="12px" width="100%">
+        <Stack
+          maxWidth={isEmbedded ? '1380px' : maxWidth}
+          margin={isEmbedded ? 'auto' : margin}
+          px="12px"
+          width={shouldFillSpace ? undefined : '100%'}
+          alignSelf={shouldFillSpace ? 'stretch' : undefined}
+        >
           {!hideBackButton && (
             <Collapse
               in={!isMainScrolled}

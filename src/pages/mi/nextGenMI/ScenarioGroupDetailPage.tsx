@@ -26,6 +26,7 @@ import ScenarioGroupDetailSection from '@/pages/mi/nextGenMI/components/scenario
 import ScenarioGroupGraphView from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphView'
 import ScenarioGroupPriceForecastInterpretation from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupPriceForecastInterpretation'
 import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupSummarySection'
+import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
 import { NEXT_GEN_MI_BASE_PATH, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { buildScenarioGroupDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
 import nextGenMIScenarioGroupService, {
@@ -137,6 +138,7 @@ const resolveSelectedScenarioId = (scenarios: IScenarioGroupDetailRow[]): number
 }
 
 const ScenarioGroupDetailPage = () => {
+  const { maxWidth, margin } = useNextGenMIContentLayout()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { setStickyHeader } = useStickyHeader()
@@ -401,7 +403,7 @@ const ScenarioGroupDetailPage = () => {
   }, [setStickyHeader])
 
   return (
-    <Stack maxWidth="1380px" margin="auto" px="12px" pt="20px" position="relative" sx={{ overflowX: 'clip' }}>
+    <Stack maxWidth={maxWidth} margin={margin} px="12px" pt="20px" position="relative" sx={{ overflowX: 'clip' }}>
       <Stack gap="30px">
         <Stack id={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} gap="12px" py="20px">
           <SectionHeading sectionId={SCENARIO_GROUP_DETAIL_SECTIONS[0].id} />

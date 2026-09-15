@@ -5,6 +5,7 @@ import { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef
 import { NEXT_GEN_MI_STICKY_BOTTOM_EDGE_SHADOW_SCROLLED } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMITab from '@/pages/mi/nextGenMI/components/NextGenMITab'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
+import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
 import { NextGenMIHeaderCollapseProvider } from '@/pages/mi/nextGenMI/NextGenMIHeaderCollapseContext'
 import { getNextGenMITabIndex, resolveNextGenMITabFromPathname, NEXT_GEN_MI_TAB_INFO } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickyLayoutProvider } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
@@ -30,6 +31,7 @@ const getFirstContentSnapScrollTop = (
 }
 
 const NextGenMIPage = () => {
+  const { maxWidth, margin } = useNextGenMIContentLayout()
   const [isScrolled, setIsScrolled] = useState(false)
   const [selectedTab, setSelectedTab] = useState(() => getCurrentTabIndexFromLocation())
   const [stickySlotEl, setStickySlotEl] = useState<HTMLDivElement | null>(null)
@@ -202,7 +204,7 @@ const NextGenMIPage = () => {
   return (
     <NextGenMIHeaderCollapseProvider value={isScrolled}>
       <NextGenMIStickyLayoutProvider slotEl={stickySlotEl} activeTabKey={activeTabKey}>
-        <Stack maxWidth="1380px" margin="auto" pt="20px" position="relative" sx={{ userSelect: 'none' }}>
+        <Stack maxWidth={maxWidth} margin={margin} pt="20px" position="relative" sx={{ userSelect: 'none' }}>
           <Box
             ref={stickyHeaderRef}
             position="sticky"

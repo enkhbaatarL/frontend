@@ -59,6 +59,7 @@ import {
 import ScenarioDesignOneViewStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignOneViewStep'
 import ScenarioDesignProgressStep from '@/pages/mi/nextGenMI/components/scenarioDesign/ScenarioDesignProgressStep'
 import { createScenarioDesignBackendReviewItems } from '@/pages/mi/nextGenMI/components/scenarioDesign/scenarioDesignReview'
+import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
 import {
   getNextGenMIScenarioDesignPath,
   getNextGenMIScenarioGroupDetailPath,
@@ -410,6 +411,7 @@ const createScenarioDesignCriteriaDraftSnapshotKey = (draft: ScenarioDesignCrite
   createScenarioDesignCriteriaSnapshotKey(draft.columns, draft.rows, draft.agentColumnKeys)
 
 const ScenarioDesignPage = () => {
+  const { maxWidth, margin } = useNextGenMIContentLayout()
   const { scenarioGroupId: routeScenarioGroupId } = useParams<{ scenarioGroupId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
@@ -2047,7 +2049,7 @@ const ScenarioDesignPage = () => {
 
   return (
     <>
-      <Stack maxWidth="1380px" margin="auto" padding="12px 12px 0px" position="relative" sx={{ overflowX: 'clip' }}>
+      <Stack maxWidth={maxWidth} margin={margin} padding="12px 12px 0px" position="relative" sx={{ overflowX: 'clip' }}>
         {scenarioDesignGenerationFailure ? (
           <ScenarioDesignGenerationFailureState
             reason={scenarioDesignGenerationFailure.reason}

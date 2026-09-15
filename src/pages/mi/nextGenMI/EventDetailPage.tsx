@@ -35,6 +35,7 @@ import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/Eve
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
 import NextGenMIMarkdownDownloadButton from '@/pages/mi/nextGenMI/components/NextGenMIMarkdownDownloadButton'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
+import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
 import {
   getNextGenMIScenarioDesignPath,
   getNextGenMIScenarioGroupDetailPath,
@@ -184,6 +185,7 @@ const formatEventDetailTimestampLabel = (iso?: string) => {
 }
 
 const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: NextGenMIEventDetailPageProps = {}) => {
+  const { maxWidth, margin } = useNextGenMIContentLayout()
   const params = useParams()
   const eventId = eventIdProp ?? params.eventId
   const navigate = useNavigate()
@@ -493,8 +495,8 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
 
   return (
     <Stack
-      maxWidth={embedded ? undefined : '1380px'}
-      margin={embedded ? undefined : 'auto'}
+      maxWidth={embedded ? undefined : maxWidth}
+      margin={embedded ? undefined : margin}
       padding={embedded ? '0' : '20px 12px 0'}
       position="relative"
       sx={{
