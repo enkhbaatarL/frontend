@@ -62,6 +62,8 @@ export interface IScenarioGroupListItem {
   updatedAt: string
   summary: string
   scenarioCount: number
+  /** 시나리오 그룹 생성 시 포함된 이벤트 수 */
+  eventCount: number
   dimensionColumns: IScenarioDimensionColumn[]
   scenarios: IScenarioRow[]
 }
@@ -71,6 +73,8 @@ export interface IScenarioGroupAppliedFilter {
   endDate?: string
   sort: ListSort
   keyword?: string
+  /** 내가 만든 그룹만 조회 여부 */
+  mineOnly?: boolean
 }
 
 export interface IScenarioGroupListRes {
@@ -115,6 +119,8 @@ export interface IGetScenarioGroupListParams {
   endDate?: string
   sort?: ListSort
   keyword?: string
+  /** 내가 만든 그룹만 조회 (그룹 모드: 그룹 소유자 / 개별 모드: 부모 그룹 소유자 기준) */
+  mineOnly?: boolean
 }
 
 /** 그룹 상세 - 기반 이벤트 (v1 단건) */
@@ -366,6 +372,7 @@ const nextGenMIScenarioGroupService = {
         endDate: params.endDate,
         sort: params.sort,
         keyword: params.keyword,
+        mineOnly: params.mineOnly,
       },
     })
 
@@ -384,6 +391,7 @@ const nextGenMIScenarioGroupService = {
         endDate: params.endDate,
         sort: params.sort,
         keyword: params.keyword,
+        mineOnly: params.mineOnly,
       },
     })
 

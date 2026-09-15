@@ -23,6 +23,8 @@ interface ScenarioGroupToolbarProps {
   onDateRangeApply: (dates: DateRange) => void
   sort: ListSort
   onSortChange: (sort: ListSort) => void
+  mineOnly: boolean
+  onMineOnlyChange: (mineOnly: boolean) => void
   expandAll: boolean
   onExpandAllChange: (expandAll: boolean) => void
   keyword: string
@@ -38,6 +40,8 @@ const ScenarioGroupToolbar = ({
   onDateRangeApply,
   sort,
   onSortChange,
+  mineOnly,
+  onMineOnlyChange,
   expandAll,
   onExpandAllChange,
   keyword,
@@ -97,6 +101,12 @@ const ScenarioGroupToolbar = ({
       </Stack>
 
       <Stack direction="row" alignItems="center" gap="12px" flexShrink={0}>
+        <Stack direction="row" alignItems="center" height="36px" gap={0.5}>
+          <Switch size="small" checked={mineOnly} onChange={(_, checked) => onMineOnlyChange(checked)} />
+          <Typography variant="body2M14" color={mineOnly ? 'contentText.Black' : 'contentText.Normal'}>
+            내가 만든 그룹
+          </Typography>
+        </Stack>
         {isGroupMode && (
           <Stack direction="row" alignItems="center" height="36px" gap={0.5}>
             <Switch size="small" checked={expandAll} onChange={(_, checked) => onExpandAllChange(checked)} />
