@@ -74,7 +74,7 @@ const EventDetailImpactAnalysisSection = ({
       {
         field: 'indexName',
         headerName: '대상',
-        width: 296,
+        flex: 1,
         sortable: false,
         renderCell: (p) => (
           <NextGenMITableBodyText value={String(p.value ?? '')} component="span" sx={{ fontWeight: 600, color: 'contentText.Black' }} />
@@ -136,27 +136,26 @@ const EventDetailImpactAnalysisSection = ({
             tooltipTitle=""
           />
         )}
-        <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
-          <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
-            <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
+        <Stack gap="12px" width="100%">
+          <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
+            <Box width={{ xs: '100%', md: '660px' }} flexShrink={0} bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
               <Skeleton variant="rounded" height="40px" sx={{ borderRadius: '6px', mb: '8px' }} />
               {[0, 1, 2].map((idx) => (
                 <Skeleton key={idx} variant="rounded" height="48px" sx={{ borderRadius: '4px', mt: idx === 0 ? 0 : '8px' }} />
               ))}
             </Box>
-            <Stack direction="row" gap="12px" width="100%">
-              <Skeleton variant="rounded" sx={{ flex: 1, minHeight: 120 }} />
-              <Skeleton variant="rounded" sx={{ flex: 1, minHeight: 120 }} />
-            </Stack>
+            <Skeleton variant="rounded" sx={{ flex: 1, minWidth: 0, minHeight: 120 }} />
+            <Skeleton variant="rounded" sx={{ flex: 1, minWidth: 0, minHeight: 120 }} />
           </Stack>
           <Box
-            flex={1}
-            minWidth={{ xs: '100%', md: 280 }}
+            width="100%"
+            minHeight="120px"
             borderRadius="8px"
-            p="20px"
+            padding="20px"
             display="flex"
             flexDirection="column"
             gap="12px"
+            boxSizing="border-box"
             sx={{ bgcolor: 'gray.5' }}
           >
             <Skeleton variant="rounded" width="40%" height="22px" sx={{ borderRadius: '4px' }} />
@@ -198,9 +197,9 @@ const EventDetailImpactAnalysisSection = ({
           tooltipTitle=""
         />
       )}
-      <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
-        <Stack width={{ xs: '100%', md: 600 }} flexShrink={0} gap="12px" minWidth={0}>
-          <Box bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
+      <Stack gap="12px" width="100%">
+        <Stack direction="row" gap="12px" alignItems="stretch" width="100%" flexWrap={{ xs: 'wrap', md: 'nowrap' }}>
+          <Box width={{ xs: '100%', md: '660px' }} flexShrink={0} bgcolor="gray.5" borderRadius="10px" p="12px" overflow="hidden">
             <Box sx={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
               <MIDataTableHeader<EventDetailImpactIndex>
                 columns={columns}
@@ -224,20 +223,14 @@ const EventDetailImpactAnalysisSection = ({
               />
             </Box>
           </Box>
-          <Stack direction="row" gap="12px" width="100%">
-            <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
-              <KpiCard title={kpiItems[0].title} content={kpiItems[0].content} description={kpiItems[0].description ?? ''} />
-            </Box>
-            <Box flex={1} minWidth={0} sx={{ minHeight: 120 }}>
-              <KpiCard title={kpiItems[1].title} content={kpiItems[1].content} description={kpiItems[1].description ?? '\u00a0'} />
-            </Box>
-          </Stack>
+          <KpiCard title={kpiItems[0].title} content={kpiItems[0].content} description={kpiItems[0].description ?? ''} />
+          <KpiCard title={kpiItems[1].title} content={kpiItems[1].content} description={kpiItems[1].description ?? '\u00a0'} />
         </Stack>
         <Box
-          flex={1}
-          minWidth={{ xs: '100%', md: 280 }}
+          width="100%"
           borderRadius="8px"
           p="20px"
+          boxSizing="border-box"
           display="flex"
           flexDirection="column"
           gap="12px"
