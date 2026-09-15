@@ -1,5 +1,4 @@
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { Box, CircularProgress, Stack, Tooltip, Typography } from '@mui/material'
+import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 
 import type {
@@ -7,8 +6,6 @@ import type {
   ScenarioGroupGraphLegendItem,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 
-import AdjustedLineIcon from '@/components/common/icons/AdjustedLineIcon'
-import BaseCaseLineIcon from '@/components/common/icons/BaseCaseLineIcon'
 import VisibilityOffIcon from '@/components/common/icons/VisibilityOffIcon'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
@@ -52,35 +49,11 @@ const LegendIndicator = ({ item }: { item: ScenarioGroupGraphLegendItem }) => {
   }
 
   return (
-    <Stack width="26px" height="26px" alignItems="center" justifyContent="center" gap="3px" flexShrink={0}>
+    <Stack width="26px" height="26px" alignItems="center" justifyContent="center" flexShrink={0}>
       <Box width="26px" height="4px" borderRadius="100px" bgcolor={item.color} />
-      {item.hasUA && (
-        <Stack direction="row" alignItems="center" justifyContent="space-between" width="26px">
-          {[0, 1, 2, 3].map((dot) => (
-            <Box key={dot} width="5px" height="4px" borderRadius="100px" bgcolor={item.color} />
-          ))}
-        </Stack>
-      )}
     </Stack>
   )
 }
-
-const ScenarioInfoTooltipContent = () => (
-  <Stack gap="4px" color="commonColor.Primaryservice">
-    <Stack direction="row" alignItems="center" gap="8px">
-      <BaseCaseLineIcon />
-      <Typography variant="body3M12" color="contentText.Normal" whiteSpace="nowrap">
-        Base Case Price
-      </Typography>
-    </Stack>
-    <Stack direction="row" alignItems="center" gap="8px">
-      <AdjustedLineIcon />
-      <Typography variant="body3M12" color="contentText.Normal" whiteSpace="nowrap">
-        User Adjusted Price
-      </Typography>
-    </Stack>
-  </Stack>
-)
 
 const StatusBadge = ({ label, tone }: { label: string; tone: 'nonExecuted' | 'discarded' | 'realized' }) => (
   <Stack
@@ -308,37 +281,9 @@ const ScenarioGroupGraphLegend = ({
           width="100%"
           sx={{ padding: '4px 8px', boxSizing: 'border-box' }}
         >
-          <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
-            <Typography variant="body2SB14" color="contentText.Normal">
-              Scenarios
-            </Typography>
-            <Tooltip
-              title={<ScenarioInfoTooltipContent />}
-              placement="top-start"
-              slotProps={{
-                tooltip: {
-                  sx: {
-                    padding: '8px',
-                    bgcolor: 'commonColor.White',
-                    border: '1px solid',
-                    borderColor: 'contentBorder.Normal',
-                    borderRadius: '6px',
-                    boxShadow: '0 0 4px 0 rgba(0, 0, 0, 0.10)',
-                    '.MuiTooltip-popper[data-popper-placement*="top"] &': { marginBottom: '2px' },
-                  },
-                },
-              }}
-            >
-              <InfoOutlinedIcon
-                sx={{
-                  fontSize: '18px',
-                  color: 'contentIcon.Enabled',
-                  flexShrink: 0,
-                  '&:hover': { color: 'contentIcon.Hover' },
-                }}
-              />
-            </Tooltip>
-          </Stack>
+          <Typography variant="body2SB14" color="contentText.Normal">
+            Scenarios
+          </Typography>
           <ScenarioGroupGraphFilterMenu filter={filter} onChange={onFilterChange} />
         </Stack>
         {renderItems(scenarioItems)}

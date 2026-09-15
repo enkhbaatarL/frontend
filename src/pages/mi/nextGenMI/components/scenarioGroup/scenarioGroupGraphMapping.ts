@@ -17,7 +17,6 @@ export type ScenarioGroupGraphChart = ChartData & {
   startDates: string[]
   visibilityKey: string
   isDashed?: boolean
-  badge?: 'BC' | 'UA'
   displayOrder?: number
 }
 
@@ -28,7 +27,6 @@ export interface ScenarioGroupGraphLegendItem {
   name: string
   displayOrder?: number
   color: string
-  hasUA: boolean
   variant: ScenarioGroupGraphLegendVariant
   statusLabel?: string
   realized?: boolean
@@ -78,8 +76,6 @@ export const scenarioGroupPriceInterpretationsQueryKey = (scenarioGroupId: numbe
   ['nextGenMIScenarioGroupPriceInterpretations', scenarioGroupId] as const
 
 export const baseSeriesVisibilityKey = (seriesId: string): string => `base:${seriesId}`
-
-export const scenarioBcVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}:BC`
 
 export const scenarioUaVisibilityKey = (scenarioId: number): string => `scenario:${scenarioId}:UA`
 
@@ -166,7 +162,6 @@ const buildChart = (
   resultDates: string[],
   startDates: string[],
   isDashed: boolean,
-  badge?: 'BC' | 'UA',
   displayOrder?: number,
 ): ScenarioGroupGraphChart => ({
   goodsDataSourceName: name,
@@ -179,7 +174,6 @@ const buildChart = (
   startDates,
   visibilityKey,
   isDashed,
-  badge,
   displayOrder,
   series: [
     {
@@ -206,7 +200,7 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
     const color = BASE_SERIES_COLORS[index] ?? BASE_SERIES_COLORS[BASE_SERIES_COLORS.length - 1]
     chartColorMap.set(series.seriesName, color)
     charts.push(buildChart(series.seriesName, visibilityKey, series.values, data.unit, timestamps, resultDates, startDates, false))
-    return { visibilityKey, name: series.seriesName, color, hasUA: false, variant: 'line', toggleKeys: [visibilityKey] }
+    return { visibilityKey, name: series.seriesName, color, variant: 'line', toggleKeys: [visibilityKey] }
   })
 
   const filteredScenarioSeries = data.scenarioSeries
@@ -220,20 +214,17 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
   const scenarioColors = buildDistinctSeriesColors(SCENARIO_CHART_COLORS, filteredScenarioSeries.length)
 
   const scenarioLegend = filteredScenarioSeries.map((series, index): ScenarioGroupGraphLegendItem => {
-    const bcKey = scenarioBcVisibilityKey(series.scenarioId)
     const uaKey = scenarioUaVisibilityKey(series.scenarioId)
-    const hasBC = series.baseCaseValues !== null
     const hasUA = series.userAdjustedValues !== null
     const isDiscarded = series.status === 'discarded'
     const isActive = isScenarioGraphModelExecuted(series)
 
     if (!isActive) {
       return {
-        visibilityKey: bcKey,
+        visibilityKey: uaKey,
         name: series.scenarioName,
         displayOrder: series.displayOrder,
         color: DISABLED_LEGEND_COLOR,
-        hasUA: false,
         variant: isDiscarded ? 'discarded' : 'nonExecuted',
         statusLabel: isDiscarded ? '폐기' : '미실행',
         scenarioId: series.scenarioId,
@@ -244,24 +235,6 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
     const color = scenarioColors[index] ?? SCENARIO_CHART_COLORS[0]
     chartColorMap.set(series.scenarioName, color)
 
-    const toggleKeys: string[] = []
-    if (hasBC) {
-      charts.push(
-        buildChart(
-          series.scenarioName,
-          bcKey,
-          series.baseCaseValues ?? [],
-          data.unit,
-          timestamps,
-          resultDates,
-          startDates,
-          false,
-          'BC',
-          series.displayOrder,
-        ),
-      )
-      toggleKeys.push(bcKey)
-    }
     if (hasUA) {
       charts.push(
         buildChart(
@@ -272,27 +245,24 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
           timestamps,
           resultDates,
           startDates,
-          true,
-          'UA',
+          false,
           series.displayOrder,
         ),
       )
-      toggleKeys.push(uaKey)
     }
 
     const isRealized = series.status === 'realized'
 
     return {
-      visibilityKey: hasBC ? bcKey : uaKey,
+      visibilityKey: uaKey,
       name: series.scenarioName,
       displayOrder: series.displayOrder,
       color,
-      hasUA,
       variant: 'line',
       statusLabel: isRealized ? '실현' : undefined,
       realized: isRealized,
       scenarioId: series.scenarioId,
-      toggleKeys,
+      toggleKeys: hasUA ? [uaKey] : [],
     }
   })
 
