@@ -322,6 +322,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
           cellSx: tableCellSx,
           // sortable: true,
           sortComparator: (firstRow, secondRow) => compareDimensionCellValue(firstRow, secondRow, column),
+          headerLineClamp: 2,
           tooltipWhenHeaderTruncated: true,
           headerSuffix: headerTooltipTitle ? (
             <NextGenMIFollowCursorTooltip title={headerTooltipTitle}>
@@ -467,6 +468,7 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
         skeletonRowCount={skeletonRowCount}
         noRowMessage={noRowMessage}
         rowHeight="48px"
+        autoHeaderHeight
         headerFontSize="13px"
         containerShell={false}
         hideVerticalScrollbar

@@ -45,6 +45,7 @@ export type NextGenMIStickyTableColumn<T> = {
   getRowSpan?: (params: { row: T; rowIndex: number; column: NextGenMIStickyTableColumn<T> }) => number
   sortable?: boolean
   sortComparator?: (firstRow: T, secondRow: T, column: NextGenMIStickyTableColumn<T>) => number
+  headerLineClamp?: number
   tooltipWhenHeaderTruncated?: boolean
   headerTooltipTitle?: ReactNode
   headerSuffix?: ReactNode
@@ -83,6 +84,8 @@ type NextGenMIStickyTableProps<T> = {
   maxHeight?: string
   rowHeight?: string
   headerHeight?: string
+  /** 헤더 콘텐츠가 줄바꿈될 때 실제 thead 높이를 구분선과 스크롤 효과 위치에 반영 */
+  autoHeaderHeight?: boolean
   /** 셀 좌우 패딩 (셀 사이 간격 = cellPaddingX * 2). 기본적으로 외곽(첫/마지막 컬럼)에는 CELL_EDGE_INSET이 추가된다 */
   cellPaddingX?: string
   cellEdgeInsetLeft?: boolean
@@ -196,10 +199,12 @@ const getDefaultSortValue = <T,>(row: T, field: string) => (row as Record<string
 const NextGenMIStickyTableHeaderLabel = ({
   label,
   tooltipTitle,
+  lineClamp,
   tooltipWhenTruncated = false,
 }: {
   label: ReactNode
   tooltipTitle?: ReactNode
+  lineClamp?: number
   tooltipWhenTruncated?: boolean
 }) => {
   const { ref, isEllipsis } = useEllipsisDetection(label)
@@ -209,13 +214,16 @@ const NextGenMIStickyTableHeaderLabel = ({
       ref={ref}
       component="span"
       sx={{
-        display: 'block',
+        display: lineClamp === undefined ? 'block' : '-webkit-box',
         flex: '1 1 0%',
         minWidth: 0,
         maxWidth: '100%',
         overflow: 'hidden',
+        overflowWrap: lineClamp === undefined ? undefined : 'anywhere',
         textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
+        whiteSpace: lineClamp === undefined ? 'nowrap' : 'normal',
+        WebkitBoxOrient: lineClamp === undefined ? undefined : 'vertical',
+        WebkitLineClamp: lineClamp,
       }}
     >
       {label}
@@ -368,6 +376,7 @@ const NextGenMIStickyTable = <T,>({
   maxHeight,
   rowHeight = '48px',
   headerHeight = '38px',
+  autoHeaderHeight = false,
   cellPaddingX = '6px',
   cellEdgeInsetLeft = true,
   cellEdgeInsetRight = true,
@@ -393,6 +402,7 @@ const NextGenMIStickyTable = <T,>({
   const tableRootRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const scrollFrameRef = useRef<HTMLDivElement | null>(null)
+  const tableHeaderRef = useRef<HTMLTableSectionElement | null>(null)
   const pageStickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const pageStickyHeaderScrollRef = useRef<HTMLDivElement | null>(null)
   const stickyHorizontalScrollbarRef = useRef<HTMLDivElement | null>(null)
@@ -447,6 +457,7 @@ const NextGenMIStickyTable = <T,>({
   const [resizedFixedColumnWidths, setResizedFixedColumnWidths] = useState<Record<number, number>>({})
   const [sortState, setSortState] = useState<NextGenMIStickyTableSortState>(null)
   const [sortSkeletonVisible, setSortSkeletonVisible] = useState(false)
+  const [measuredHeaderHeightPx, setMeasuredHeaderHeightPx] = useState(0)
   const [pageStickyHeaderLastRowHeightPx, setPageStickyHeaderLastRowHeightPx] = useState(0)
   const [pageStickyHeaderPinned, setPageStickyHeaderPinned] = useState(false)
   const [measuredColumnWidths, setMeasuredColumnWidths] = useState<Record<number, number>>({})
@@ -656,6 +667,42 @@ const NextGenMIStickyTable = <T,>({
       return null
     })
   }, [columns])
+
+  useLayoutEffect(() => {
+    if (!autoHeaderHeight || hideHeader) {
+      setMeasuredHeaderHeightPx(0)
+      return undefined
+    }
+
+    const header = tableHeaderRef.current
+    if (!header) {
+      setMeasuredHeaderHeightPx(0)
+      return undefined
+    }
+
+    let animationFrameId = 0
+    const measureHeaderHeight = () => {
+      animationFrameId = 0
+      const nextHeight = Math.ceil(header.getBoundingClientRect().height)
+      setMeasuredHeaderHeightPx((current) => (current === nextHeight ? current : nextHeight))
+    }
+    const scheduleMeasureHeaderHeight = () => {
+      if (animationFrameId !== 0) return
+      animationFrameId = globalThis.requestAnimationFrame(measureHeaderHeight)
+    }
+
+    measureHeaderHeight()
+
+    const resizeObserver = new ResizeObserver(scheduleMeasureHeaderHeight)
+    resizeObserver.observe(header)
+    globalThis.addEventListener('resize', scheduleMeasureHeaderHeight)
+
+    return () => {
+      if (animationFrameId !== 0) globalThis.cancelAnimationFrame(animationFrameId)
+      resizeObserver.disconnect()
+      globalThis.removeEventListener('resize', scheduleMeasureHeaderHeight)
+    }
+  }, [autoHeaderHeight, columns, hideHeader, showPageStickyHeader])
 
   useEffect(
     () => () => {
@@ -1126,9 +1173,10 @@ const NextGenMIStickyTable = <T,>({
   const horizontalScrollbarRight = horizontalScrollbarRightWidth > 0 ? `${horizontalScrollbarRightWidth}px` : 0
   const hasStickyHeaderRow = !hideHeader && leftAlignedHeaderSticky && !showPageStickyHeader
   const showPageStickyHeaderFixedColumnShadow = hasPageStickyHeader && !leftAlignedHeaderSticky
+  const resolvedHeaderHeight = autoHeaderHeight && measuredHeaderHeightPx > 0 ? `${measuredHeaderHeightPx}px` : headerHeight
   const scrollViewportMaxHeight = maxHeight && reserveExternalHorizontalScrollbarGutter ? `calc(${maxHeight} - 18px)` : maxHeight
   const stickyColumnShadowOverlaySx = {
-    top: hasStickyHeaderRow ? headerHeight : 0,
+    top: hasStickyHeaderRow ? resolvedHeaderHeight : 0,
     bottom: showPageStickyHeader && scrollLayoutState.horizontal ? '18px' : 0,
   }
   const initialScrollVisualStateSx = {
@@ -1277,6 +1325,7 @@ const NextGenMIStickyTable = <T,>({
       <NextGenMIStickyTableHeaderLabel
         label={column.headerName}
         tooltipTitle={column.headerTooltipTitle}
+        lineClamp={column.headerLineClamp}
         tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
       />
     )
@@ -1575,6 +1624,7 @@ const NextGenMIStickyTable = <T,>({
 
   const renderTableHeader = (sticky: boolean) => (
     <Box
+      ref={tableHeaderRef}
       component="thead"
       sx={{
         position: 'relative',
@@ -1717,7 +1767,7 @@ const NextGenMIStickyTable = <T,>({
         position: 'sticky',
         top: toCssLength(pageStickyHeaderTop!),
         zIndex: pageStickyHeaderZIndex,
-        minHeight: hasPageStickyHeaderBefore ? undefined : headerHeight,
+        minHeight: hasPageStickyHeaderBefore ? undefined : resolvedHeaderHeight,
         bgcolor: 'commonColor.White',
         transition: `top ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
         '&::before': {
@@ -1931,7 +1981,7 @@ const NextGenMIStickyTable = <T,>({
             aria-hidden
             sx={{
               position: 'absolute',
-              top: `calc(${headerHeight} - 1px)`,
+              top: `calc(${resolvedHeaderHeight} - 1px)`,
               right: 0,
               left: 0,
               height: '1px',
@@ -1989,7 +2039,7 @@ const NextGenMIStickyTable = <T,>({
             aria-hidden
             sx={{
               position: 'absolute',
-              top: hasStickyHeaderRow ? headerHeight : 0,
+              top: hasStickyHeaderRow ? resolvedHeaderHeight : 0,
               left: 0,
               bottom: showPageStickyHeader && scrollLayoutState.horizontal ? '18px' : 0,
               width: '100px',
@@ -2007,7 +2057,7 @@ const NextGenMIStickyTable = <T,>({
             aria-hidden
             sx={{
               position: 'absolute',
-              top: hasStickyHeaderRow ? headerHeight : 0,
+              top: hasStickyHeaderRow ? resolvedHeaderHeight : 0,
               right: 0,
               bottom: showPageStickyHeader && scrollLayoutState.horizontal ? '18px' : 0,
               width: `calc(100px + ${rightScrollEdgeOffset})`,
