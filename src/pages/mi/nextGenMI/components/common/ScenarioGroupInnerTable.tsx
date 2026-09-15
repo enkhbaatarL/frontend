@@ -263,8 +263,11 @@ const ScenarioGroupInnerTableComponent = <TRow extends ScenarioGroupInnerTableRo
       {
         field: 'scenarioRole',
         headerName: '',
-        width: '64px',
+        // 남는 테이블 폭은 다른 열에 배분하고 뱃지 열은 지정된 최소 폭으로 유지한다.
+        width: '1%',
         minWidth: '64px',
+        maxWidth: '64px',
+        fixedWidth: true,
         align: 'center',
         fixedCellContentOverflow: 'visible',
         headerCellSx: { ...tableCellSx, padding: '10px 6px' },

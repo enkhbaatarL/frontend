@@ -23,7 +23,6 @@ export type MiGnbSubmenuRow =
 
 export interface MiGnbTopMenu {
   key: string
-  screenElementCd: string
   topLabel: string
   defaultPath: string
   rows: MiGnbSubmenuRow[]
@@ -125,7 +124,6 @@ export const buildMiGnbFromCompanyMenus = (menus: IMenuNode[] | undefined, optio
     const rows = buildSubmenuRows(top.children)
     result.push({
       key: `${top.screenElementCd}-${index}`,
-      screenElementCd: top.screenElementCd,
       topLabel,
       defaultPath,
       rows,

@@ -35,7 +35,7 @@ interface MIHeaderMainLayoutProps {
 }
 
 const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
-  const { isDev, isProd } = useEnvironment()
+  const { isProd } = useEnvironment()
   const navigate = useNavigate()
   const location = useLocation()
   const { user, accessCompanyInfo, loadAccessCompanyInfo, clearAuth } = useAuthStore()
@@ -61,29 +61,13 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
 
   const { companyList, miHome } = useCompanyCondition()
 
-  const gnbMenus = useMemo(() => {
-    const menus = buildMiGnbFromCompanyMenus(accessCompanyInfo?.menus, {
-      defaultLandingCd: accessCompanyInfo?.defaultLandingCd,
-    })
-
-    if (!isDev) return menus
-
-    /** PP 개편 병행 개발용 탭은 기존 Position Play 권한을 상속해 바로 뒤에 노출합니다. */
-    const positionPlayIndex = menus.findIndex((menu) => menu.screenElementCd === 'POSITION_PLAY')
-    if (positionPlayIndex < 0) return menus
-
-    return [
-      ...menus.slice(0, positionPlayIndex + 1),
-      {
-        key: 'POSITION_PLAY_2-development',
-        screenElementCd: 'POSITION_PLAY_2',
-        topLabel: 'Position Play2',
-        defaultPath: '/mi/position-play2',
-        rows: [],
-      },
-      ...menus.slice(positionPlayIndex + 1),
-    ]
-  }, [accessCompanyInfo?.menus, accessCompanyInfo?.defaultLandingCd, isDev])
+  const gnbMenus = useMemo(
+    () =>
+      buildMiGnbFromCompanyMenus(accessCompanyInfo?.menus, {
+        defaultLandingCd: accessCompanyInfo?.defaultLandingCd,
+      }),
+    [accessCompanyInfo?.menus, accessCompanyInfo?.defaultLandingCd],
+  )
 
   const resolvedHomePath = miHome()
 
