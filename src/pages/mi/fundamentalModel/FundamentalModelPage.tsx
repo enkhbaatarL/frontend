@@ -514,6 +514,8 @@ const FundamentalModelPage = () => {
         ) : placeholderMode ? (
           <FundamentalModelRunPlaceholder
             mode={placeholderMode}
+            failureReason={caseDetail?.latestRun?.failureReason}
+            errorMessage={caseDetail?.latestRun?.errorMessage}
             onRun={handleRun}
             onRetry={handleRetry}
             runActionDisabled={isRunActionDisabled}

@@ -11,6 +11,10 @@ export type FundamentalModelRunPlaceholderMode = 'pending' | 'running' | 'error'
 export interface FundamentalModelRunPlaceholderProps {
   /** 표시할 자리표시자 모드 */
   mode: FundamentalModelRunPlaceholderMode
+  /** 실패 상태 - 최신 실행의 실패 사유 */
+  failureReason?: string
+  /** 실패 상태 - 최신 실행의 상세 오류 메시지 */
+  errorMessage?: string
   /** 대기 상태 - 실행 버튼 클릭 */
   onRun?: () => void
   /** 실패 상태 - 재실행 버튼 클릭 */
@@ -48,7 +52,14 @@ const contentStackSx = {
 } as const
 
 /** 본 페이지 우측 본문 자리표시자 (대기 - 실행중 - 실패) */
-const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry, runActionDisabled = false }: FundamentalModelRunPlaceholderProps) => {
+const FundamentalModelRunPlaceholder = ({
+  mode,
+  failureReason,
+  errorMessage,
+  onRun,
+  onRetry,
+  runActionDisabled = false,
+}: FundamentalModelRunPlaceholderProps) => {
   if (mode === 'running') {
     return (
       <Box sx={containerSx}>
@@ -68,6 +79,8 @@ const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry, runActionDisable
   }
 
   if (mode === 'error') {
+    const isExternalError = failureReason === 'EXTERNAL_ERROR'
+
     return (
       <Box sx={containerSx}>
         <Stack sx={contentStackSx} gap="20px">
@@ -87,12 +100,22 @@ const FundamentalModelRunPlaceholder = ({ mode, onRun, onRetry, runActionDisable
                 width: '100%',
               }}
             >
-              {'실행에 실패했습니다. 잠시 후 다시 시도하시거나 재실행 버튼을 눌러주세요.\n실행은 파일을 업로드한 사용자만 가능합니다.'}
+              {errorMessage && (
+                <>
+                  {errorMessage}
+                  {'\n'}
+                </>
+              )}
+              {isExternalError
+                ? '모델 실행 또는 외부 연동에 실패했습니다. 관리자에게 문의해 주세요.'
+                : '실행에 실패했습니다. 잠시 후 다시 시도하시거나 재실행 버튼을 눌러주세요.\n실행은 파일을 업로드한 사용자만 가능합니다.'}
             </Typography>
           </Stack>
-          <MIBaseButton variant="contained" disabled={runActionDisabled} onClick={onRetry} sx={{ py: '10px', px: '16px' }}>
-            재실행
-          </MIBaseButton>
+          {!isExternalError && (
+            <MIBaseButton variant="contained" disabled={runActionDisabled} onClick={onRetry} sx={{ py: '10px', px: '16px' }}>
+              재실행
+            </MIBaseButton>
+          )}
         </Stack>
       </Box>
     )
