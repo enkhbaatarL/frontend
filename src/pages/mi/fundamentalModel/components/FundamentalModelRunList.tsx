@@ -1,3 +1,4 @@
+import FlagOutlinedIcon from '@mui/icons-material/OutlinedFlag'
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -226,20 +227,110 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
     queryFn: () => fundamentalModelCaseService.listCases(listRequest),
     refetchOnWindowFocus: false,
     refetchInterval: (query) => {
-      const items = query.state.data?.cases ?? []
-      return items.some((item) => item.status === 'RUNNING') ? LIST_POLL_INTERVAL_MS : false
+      const { miBase, cases } = query.state.data ?? {}
+      return miBase?.status === 'RUNNING' || cases?.some((item) => item.status === 'RUNNING') ? LIST_POLL_INTERVAL_MS : false
     },
   })
 
   const cases = useMemo(() => caseList?.cases ?? [], [caseList?.cases])
-  const totalCount = caseList?.totalCount ?? cases.length
+  const miBase = caseList?.miBase ?? null
+  const totalCount = caseList?.totalCount ?? cases.length + (miBase ? 1 : 0)
 
   useEffect(() => {
     if (listLoading || !selectedId) return
-    const selectedCase = cases.find((item) => String(item.caseId) === selectedId)
+    const selectedCase = miBase?.caseId === Number(selectedId) ? miBase : cases.find((item) => String(item.caseId) === selectedId)
     if (!selectedCase) return
     onSelect(selectedId, selectedCase.status)
-  }, [cases, listLoading, onSelect, selectedId])
+  }, [cases, listLoading, miBase, onSelect, selectedId])
+
+  const renderCaseItem = (item: FundamentalModelCaseListItem) => {
+    const caseId = String(item.caseId)
+    const selected = caseId === selectedId
+    const sv = caseStatusVisual(item.status)
+    const createdAtLabel = formatNextGenMIDateTime(item.createdAt)
+    const updatedAtLabel = formatNextGenMIDateTime(item.updatedAt)
+
+    return (
+      <Box
+        key={caseId}
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelect(caseId, item.status)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onSelect(caseId, item.status)
+          }
+        }}
+        sx={{
+          px: '12px',
+          py: '16px',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          border: '1px solid',
+          borderColor: selected ? 'mari.Primary' : 'transparent',
+
+          bgcolor: selected ? 'gray.5' : 'commonColor.White',
+          outline: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          flexShrink: 0,
+          '&:hover': { bgcolor: 'gray.5' },
+        }}
+      >
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            height: 22,
+            px: '4px',
+            borderRadius: '4px',
+            bgcolor: sv.bg,
+          }}
+        >
+          <Typography
+            variant="body3SB12"
+            sx={{
+              color: sv.color,
+              fontSize: 13,
+              lineHeight: 1,
+              textTransform: 'uppercase',
+            }}
+          >
+            {sv.label}
+          </Typography>
+        </Box>
+
+        <TruncatedLabel text={item.title} />
+
+        <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0 }}>
+          <Typography variant="body3R12" color="content.textNormal" noWrap>
+            {createdAtLabel}
+          </Typography>
+          <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
+          <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
+            <Typography variant="body3M12" color="content.textNormal" noWrap>
+              업데이트
+            </Typography>
+            <Typography variant="body3R12" color="content.textNormal" noWrap>
+              {updatedAtLabel}
+            </Typography>
+          </Stack>
+        </Stack>
+
+        <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
+          <Typography variant="body3SB12" color="content.textNormal" flexShrink={0}>
+            담당자
+          </Typography>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <TruncatedLabel text={item.assigneeName} variant="body3R12" color="content.textNormal" />
+          </Box>
+        </Stack>
+      </Box>
+    )
+  }
 
   const uploadPopupContent = (
     <FundamentalModelFileUploadPopupContent
@@ -404,113 +495,50 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
               thumbWidth={4}
               thumbMaxHeight={LIST_SCROLL_THUMB_MAX_HEIGHT}
               showScrollbarOnHover
-              contentKey={listLoading ? 'loading' : cases.length}
+              contentKey={listLoading ? 'loading' : `${miBase?.caseId ?? ''}-${cases.length}`}
               sx={{
                 flex: 1,
                 minHeight: 0,
                 width: '100%',
               }}
             >
-              <Stack gap="4px">
-                {listLoading &&
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <Box key={`sk-card-${i}`} sx={{ px: '12px', py: '16px', borderRadius: '10px' }}>
-                      <Skeleton width={88} height={22} sx={{ borderRadius: '4px', mb: 1 }} />
-                      <Skeleton width="80%" height={22} sx={{ mb: 1 }} />
-                      <Skeleton width="60%" height={16} sx={{ mb: 0.5 }} />
-                      <Skeleton width="50%" height={16} />
-                    </Box>
-                  ))}
-
-                {!listLoading &&
-                  cases.map((item: FundamentalModelCaseListItem) => {
-                    const caseId = String(item.caseId)
-                    const selected = caseId === selectedId
-                    const sv = caseStatusVisual(item.status)
-                    const createdAtLabel = formatNextGenMIDateTime(item.createdAt)
-                    const updatedAtLabel = formatNextGenMIDateTime(item.updatedAt)
-
-                    return (
-                      <Box
-                        key={caseId}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onSelect(caseId, item.status)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            onSelect(caseId, item.status)
-                          }
-                        }}
-                        sx={{
-                          px: '12px',
-                          py: '16px',
-                          borderRadius: '10px',
-                          cursor: 'pointer',
-                          border: '1px solid',
-                          borderColor: selected ? 'mari.Primary' : 'transparent',
-
-                          bgcolor: selected ? 'gray.5' : 'commonColor.White',
-                          outline: 'none',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          flexShrink: 0,
-                          '&:hover': { bgcolor: 'gray.5' },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            alignSelf: 'flex-start',
-                            height: 22,
-                            px: '4px',
-                            borderRadius: '4px',
-                            bgcolor: sv.bg,
-                          }}
-                        >
-                          <Typography
-                            variant="body3SB12"
-                            sx={{
-                              color: sv.color,
-                              fontSize: 13,
-                              lineHeight: 1,
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            {sv.label}
-                          </Typography>
-                        </Box>
-
-                        <TruncatedLabel text={item.title} />
-
-                        <Stack direction="row" alignItems="center" gap="8px" sx={{ minWidth: 0 }}>
-                          <Typography variant="body3R12" color="content.textNormal" noWrap>
-                            {createdAtLabel}
-                          </Typography>
-                          <Divider orientation="vertical" flexItem sx={{ borderColor: 'gray.40', height: 10, alignSelf: 'center' }} />
-                          <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
-                            <Typography variant="body3M12" color="content.textNormal" noWrap>
-                              업데이트
-                            </Typography>
-                            <Typography variant="body3R12" color="content.textNormal" noWrap>
-                              {updatedAtLabel}
-                            </Typography>
-                          </Stack>
-                        </Stack>
-
-                        <Stack direction="row" alignItems="center" gap="4px" sx={{ minWidth: 0 }}>
-                          <Typography variant="body3SB12" color="content.textNormal" flexShrink={0}>
-                            담당자
-                          </Typography>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <TruncatedLabel text={item.assigneeName} variant="body3R12" color="content.textNormal" />
-                          </Box>
-                        </Stack>
+              <Stack gap="18px">
+                {listLoading && (
+                  <Stack gap="4px">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Box key={`sk-card-${i}`} sx={{ px: '12px', py: '16px', borderRadius: '10px' }}>
+                        <Skeleton width={88} height={22} sx={{ borderRadius: '4px', mb: 1 }} />
+                        <Skeleton width="80%" height={22} sx={{ mb: 1 }} />
+                        <Skeleton width="60%" height={16} sx={{ mb: 0.5 }} />
+                        <Skeleton width="50%" height={16} />
                       </Box>
-                    )
-                  })}
+                    ))}
+                  </Stack>
+                )}
+
+                {!listLoading && miBase && (
+                  <Stack>
+                    <Stack direction="row" alignItems="center" gap="2px" height="38px" padding="4px 12px" boxSizing="border-box">
+                      <FlagOutlinedIcon sx={{ fontSize: '16px', color: 'gray.50' }} />
+                      <Typography variant="body2M14" color="gray.50">
+                        기준값 (MI Base)
+                      </Typography>
+                    </Stack>
+                    {renderCaseItem(miBase)}
+                  </Stack>
+                )}
+                {!listLoading && cases.length > 0 && (
+                  <Stack>
+                    <Stack direction="row" alignItems="center" gap="10px" height="38px" padding="4px 0" boxSizing="border-box">
+                      <Divider sx={{ flex: 1, borderColor: 'gray.30' }} />
+                      <Typography variant="body2M14" color="gray.50" whiteSpace="nowrap">
+                        그 외 실행 케이스
+                      </Typography>
+                      <Divider sx={{ flex: 1, borderColor: 'gray.30' }} />
+                    </Stack>
+                    <Stack gap="4px">{cases.map(renderCaseItem)}</Stack>
+                  </Stack>
+                )}
               </Stack>
             </ScrollWrapper>
           </Box>

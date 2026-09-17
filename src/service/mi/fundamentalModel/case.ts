@@ -6,12 +6,14 @@ import { ICommonResponse } from '@/types/api'
 
 export type FundamentalModelCaseSearchType = 'TITLE' | 'ASSIGNEE_NAME'
 export type FundamentalModelCaseStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+export type FundamentalModelCaseExecType = 'INDEPENDENT' | 'MI_BASE'
 export type FundamentalModelRunStatus = 'RUNNING' | 'COMPLETED' | 'FAILED'
 
 export interface FundamentalModelCaseListItem {
   caseId: number
   title: string
   status: FundamentalModelCaseStatus
+  execType: FundamentalModelCaseExecType
   assigneeName: string
   createdAt: string
   updatedAt: string
@@ -19,6 +21,7 @@ export interface FundamentalModelCaseListItem {
 
 export interface FundamentalModelCaseList {
   totalCount: number
+  miBase: FundamentalModelCaseListItem | null
   cases: FundamentalModelCaseListItem[]
 }
 
@@ -42,8 +45,9 @@ export interface FundamentalModelDownloadFile {
 }
 
 export interface FundamentalModelCaseFiles {
-  input: FundamentalModelDownloadFile[]
+  input: { fileNm: string }[]
   output: FundamentalModelDownloadFile[]
+  intermediate: FundamentalModelDownloadFile[]
 }
 
 export interface FundamentalModelLatestRun {
@@ -61,6 +65,7 @@ export interface FundamentalModelCaseDetail {
   title: string
   description?: string | null
   status: FundamentalModelCaseStatus
+  execType: FundamentalModelCaseExecType
   assigneeName: string
   assigneeUserNo: number
   files: FundamentalModelCaseFiles
@@ -351,6 +356,13 @@ const fundamentalModelCaseService = {
 
   async getCaseDetail(caseId: number): Promise<FundamentalModelCaseDetail> {
     const response: AxiosResponse<ICommonResponse<FundamentalModelCaseDetail>> = await api.get(`mi/fundamental-model/cases/${caseId}`)
+    return response.data.data
+  },
+
+  async designateMiBase(caseId: number): Promise<FundamentalModelCaseListItem> {
+    const response: AxiosResponse<ICommonResponse<FundamentalModelCaseListItem>> = await api.put(
+      `mi/fundamental-model/cases/${caseId}/mi-base`,
+    )
     return response.data.data
   },
 

@@ -20,7 +20,10 @@ import {
   useFundamentalModelRunExecution,
 } from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelRunExecution'
 import fileService from '@/service/admin/file'
-import fundamentalModelCaseService, { type FundamentalModelCaseStatus } from '@/service/mi/fundamentalModel/case'
+import fundamentalModelCaseService, {
+  type FundamentalModelCaseStatus,
+  type FundamentalModelDownloadFile,
+} from '@/service/mi/fundamentalModel/case'
 import useAuthStore from '@/store/useAuthStore'
 import { downloadFile } from '@/utils/file'
 
@@ -294,7 +297,7 @@ const FundamentalModelPage = () => {
 
   const handleUpdateCase = useCallback(
     async (payload: { title: string; description: string }) => {
-      if (!isCaseAssignee || !Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
+      if (!isCaseAssignee || caseDetail?.execType === 'MI_BASE' || !Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
 
       try {
         await fundamentalModelCaseService.updateCase(parsedCaseId, {
@@ -309,11 +312,11 @@ const FundamentalModelPage = () => {
         return false
       }
     },
-    [invalidateCaseQueries, isCaseAssignee, parsedCaseId, showSnackbar],
+    [caseDetail?.execType, invalidateCaseQueries, isCaseAssignee, parsedCaseId, showSnackbar],
   )
 
   const handleDeleteCase = useCallback(async () => {
-    if (!isCaseAssignee || !Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
+    if (!isCaseAssignee || caseDetail?.execType === 'MI_BASE' || !Number.isFinite(parsedCaseId) || parsedCaseId <= 0) return false
 
     try {
       await fundamentalModelCaseService.deleteCase(parsedCaseId)
@@ -325,7 +328,34 @@ const FundamentalModelPage = () => {
     } catch {
       return false
     }
-  }, [activeCaseId, isCaseAssignee, parsedCaseId, queryClient])
+  }, [activeCaseId, caseDetail?.execType, isCaseAssignee, parsedCaseId, queryClient])
+
+  const handleDesignateMiBase = useCallback(async () => {
+    if (!isCaseAssignee || caseDetail?.status !== 'COMPLETED' || caseDetail.execType !== 'INDEPENDENT') return false
+    try {
+      await fundamentalModelCaseService.designateMiBase(parsedCaseId)
+      showSnackbar('MI Base로 지정되었습니다.', { variant: 'success' })
+      return true
+    } catch {
+      showSnackbar('MI Base 지정에 실패했습니다.', { variant: 'error' })
+      return false
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
+      await queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'caseDetail'] })
+    }
+  }, [caseDetail, isCaseAssignee, parsedCaseId, queryClient, showSnackbar])
+
+  const handleExportFile = useCallback(
+    async (file: FundamentalModelDownloadFile) => {
+      try {
+        const fileBlob = await fileService.downloadFile(file)
+        downloadFile(fileBlob, file.fileNm)
+      } catch {
+        showSnackbar('파일 다운로드에 실패했습니다.', { variant: 'error' })
+      }
+    },
+    [showSnackbar],
+  )
 
   const handleExportOutputFiles = useCallback(async () => {
     const outputFiles = caseDetail?.files.output ?? []
@@ -333,9 +363,8 @@ const FundamentalModelPage = () => {
 
     try {
       if (outputFiles.length === 1) {
-        const outputFile = outputFiles[0]
-        const fileBlob = await fileService.downloadFile(outputFile)
-        downloadFile(fileBlob, outputFile.fileNm)
+        const fileBlob = await fileService.downloadFile(outputFiles[0])
+        downloadFile(fileBlob, outputFiles[0].fileNm)
         return
       }
 
@@ -348,8 +377,8 @@ const FundamentalModelPage = () => {
 
   const isCaseDetailResolving = Boolean(activeCaseId) && detailLoading && !caseDetail
   const isCompletedCase = effectiveCaseStatus === 'COMPLETED'
-  const isRunActionDisabled = isRunPending || !isCaseAssignee
-  const isCaseEditDeleteDisabled = !isCaseAssignee
+  const isRunActionDisabled = isRunPending || !isCaseAssignee || caseDetail?.execType === 'MI_BASE'
+  const isCaseEditDeleteDisabled = !isCaseAssignee || caseDetail?.execType === 'MI_BASE'
   const placeholderMode = useMemo(
     () => (effectiveCaseStatus ? runStatusToPlaceholderMode(effectiveCaseStatus) : null),
     [effectiveCaseStatus],
@@ -406,7 +435,9 @@ const FundamentalModelPage = () => {
         onEdit={handleUpdateCase}
         onDelete={handleDeleteCase}
         caseEditDeleteDisabled={isCaseEditDeleteDisabled}
+        onDesignateMiBase={handleDesignateMiBase}
         onExportOutputFiles={handleExportOutputFiles}
+        onExportFile={handleExportFile}
       />
 
       <Box sx={{ position: 'relative', minWidth: 0 }}>

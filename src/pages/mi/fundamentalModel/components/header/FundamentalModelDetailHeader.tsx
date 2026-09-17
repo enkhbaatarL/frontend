@@ -1,10 +1,13 @@
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { FundamentalModelCaseDetail } from '@/service/mi/fundamentalModel/case'
+import type { FundamentalModelCaseDetail, FundamentalModelDownloadFile } from '@/service/mi/fundamentalModel/case'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
+import ArrowDown from '@/components/common/icons/ArrowDown'
+import ExportFileIcon from '@/components/common/icons/ExportFileIcon'
+import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import MoreVertIcon from '@/components/common/icons/MoreVertIcon'
 import MIDropdownMenu from '@/components/common/menu/MIDropdownMenu'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -12,6 +15,7 @@ import { FUNDAMENTAL_UPLOAD_POPUP_WIDTH } from '@/pages/mi/fundamentalModel/comp
 import FundamentalModelCaseEditPopupContent from '@/pages/mi/fundamentalModel/components/header/FundamentalModelCaseEditPopupContent'
 import FundamentalModelMemoSection from '@/pages/mi/fundamentalModel/components/header/FundamentalModelMemoSection'
 import { caseStatusVisual, formatCaseLatestRunDuration } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
+import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 
 export interface FundamentalModelCaseEditPayload {
@@ -30,9 +34,21 @@ export interface FundamentalModelDetailHeaderProps {
   onDelete?: () => boolean | void | Promise<boolean | void>
   /** 담당자가 아닐 때 수정·삭제 메뉴 숨김 */
   caseEditDeleteDisabled?: boolean
-  /** output 파일 다운로드 */
+  onDesignateMiBase?: () => Promise<boolean>
   onExportOutputFiles?: () => void
+  onExportFile?: (file: FundamentalModelDownloadFile) => void
 }
+
+const ExportFileMenuLabel = ({ fileName }: { fileName: string }) => (
+  <Stack direction="row" alignItems="center" gap="8px">
+    {/\.(?:csv|xls|xlsx|xlsm|xlsb|xlt|xltx|xltm)$/i.test(fileName.trim()) ? (
+      <ExportFileIcon style={{ flexShrink: 0 }} />
+    ) : (
+      <FileDownloadIcon style={{ flexShrink: 0 }} />
+    )}
+    {fileName}
+  </Stack>
+)
 
 interface AttachmentListProps {
   /** 첨부 파일명 목록 */
@@ -134,11 +150,15 @@ const FundamentalModelDetailHeader = ({
   onEdit,
   onDelete,
   caseEditDeleteDisabled = false,
+  onDesignateMiBase,
   onExportOutputFiles,
+  onExportFile,
 }: FundamentalModelDetailHeaderProps) => {
   const { showSnackbar } = useSnackbar()
   const [editPopupOpen, setEditPopupOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [miBaseConfirmOpen, setMiBaseConfirmOpen] = useState(false)
+  const [isDesignatingMiBase, setIsDesignatingMiBase] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [showTitleDuplicateError, setShowTitleDuplicateError] = useState(false)
@@ -226,6 +246,16 @@ const FundamentalModelDetailHeader = ({
     }
   }, [detail, onDelete, showSnackbar])
 
+  const handleDesignateMiBase = useCallback(async () => {
+    if (!detail || isDesignatingMiBase) return
+    setIsDesignatingMiBase(true)
+    try {
+      if (await onDesignateMiBase?.()) setMiBaseConfirmOpen(false)
+    } finally {
+      setIsDesignatingMiBase(false)
+    }
+  }, [detail, isDesignatingMiBase, onDesignateMiBase])
+
   if (loading || !detail) {
     return (
       <Box
@@ -258,7 +288,10 @@ const FundamentalModelDetailHeader = ({
   // 실행 완료 전(대기/실행중/실패)에는 Export 와 더보기 메뉴를 비활성화
   const headerActionsDisabled = detail.status !== 'COMPLETED'
   const outputFiles = detail.files.output ?? []
-  const exportDisabled = headerActionsDisabled || outputFiles.length === 0 || !onExportOutputFiles
+  const intermediateFiles = detail.files.intermediate ?? []
+  const outputExportDisabled = headerActionsDisabled || outputFiles.length === 0 || !onExportOutputFiles
+  const exportDisabled = headerActionsDisabled || (outputFiles.length === 0 && intermediateFiles.length === 0) || !onExportFile
+  const isMiBase = detail.execType === 'MI_BASE'
 
   const attachmentNames = (detail.files.input ?? []).map((file) => file.fileNm)
   const createdAtLabel = formatNextGenMIDateTime(detail.createdAt)
@@ -273,29 +306,70 @@ const FundamentalModelDetailHeader = ({
           pr: '10px',
         }}
       >
-        <Box
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            height: 22,
-            px: '4px',
-            borderRadius: '4px',
-            bgcolor: st.bg,
-            mb: '4px',
-          }}
-        >
-          <Typography variant="body3SB12" sx={{ color: st.color, fontSize: 13, lineHeight: 1, textTransform: 'uppercase' }}>
-            {st.label}
-          </Typography>
-        </Box>
+        <Stack direction="row" alignItems="center" gap="6px" marginBottom="4px">
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: 22,
+              px: '4px',
+              borderRadius: '4px',
+              bgcolor: st.bg,
+            }}
+          >
+            <Typography variant="body3SB12" sx={{ color: st.color, fontSize: 13, lineHeight: 1, textTransform: 'uppercase' }}>
+              {st.label}
+            </Typography>
+          </Box>
+          {isMiBase && <NextGenMIBaseCaseChip />}
+        </Stack>
 
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap="4px" sx={{ mb: '4px' }}>
           <HeaderTitle title={detail.title} />
           <Stack direction="row" alignItems="center" gap="4px" flexShrink={0}>
-            <MIBaseButton variant="contained" disabled={exportDisabled} onClick={onExportOutputFiles} sx={{ height: '36px' }}>
-              Export
-            </MIBaseButton>
-            {!caseEditDeleteDisabled && (
+            <Stack direction="row" alignItems="center">
+              <MIBaseButton
+                variant="contained"
+                disabled={outputExportDisabled}
+                onClick={onExportOutputFiles}
+                sx={{ height: '36px', borderRadius: '10px 0 0 10px' }}
+              >
+                Export
+              </MIBaseButton>
+              <MIDropdownMenu
+                label={<ArrowDown />}
+                variant="contained"
+                placement="bottom-end"
+                disabled={exportDisabled}
+                items={[
+                  ...outputFiles.map((file) => ({
+                    label: <ExportFileMenuLabel fileName={file.fileNm} />,
+                    action: () => onExportFile?.(file),
+                  })),
+                  ...intermediateFiles.map((file) => ({
+                    label: <ExportFileMenuLabel fileName={file.fileNm} />,
+                    action: () => onExportFile?.(file),
+                  })),
+                ]}
+                sx={{
+                  height: '36px',
+                  minWidth: '36px',
+                  width: '36px',
+                  padding: '8px',
+                  borderRadius: '0 10px 10px 0',
+                  '& svg path': { fill: 'commonColor.White' },
+                }}
+                paperProps={{
+                  sx: {
+                    minWidth: '200px',
+                    width: 'max-content',
+                    maxWidth: 'calc(100vw - 32px)',
+                    '& .MuiTypography-root': { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', overflowWrap: 'anywhere' },
+                  },
+                }}
+              />
+            </Stack>
+            {!caseEditDeleteDisabled && !isMiBase && (
               <MIDropdownMenu
                 label={<MoreVertIcon />}
                 variant="outlined"
@@ -304,6 +378,7 @@ const FundamentalModelDetailHeader = ({
                 items={[
                   { label: '수정', action: openEditPopup },
                   { label: '삭제', action: openDeleteConfirm },
+                  { label: 'MI Base로 지정', action: () => setMiBaseConfirmOpen(true) },
                 ]}
                 sx={{
                   height: '36px',
@@ -364,6 +439,23 @@ const FundamentalModelDetailHeader = ({
         titleSx={{ fontWeight: 700, fontSize: '16px' }}
       >
         {`삭제 후에는 복구할 수 없습니다.\n(${detail.title})을 삭제하시겠습니까?`}
+      </MIConfirm>
+
+      <MIConfirm
+        open={miBaseConfirmOpen}
+        title="해당 케이스를 MI Base로 지정할까요?"
+        width="480px"
+        handleClose={() => setMiBaseConfirmOpen(false)}
+        disableClose={isDesignatingMiBase}
+        actions={[
+          { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setMiBaseConfirmOpen(false), disabled: isDesignatingMiBase },
+          { label: '확인', variant: 'filled', color: 'primary', onClick: handleDesignateMiBase, disabled: isDesignatingMiBase },
+        ]}
+        paperSx={{ borderRadius: '12px' }}
+      >
+        {
+          '이 케이스의 입력값을 MI Base로 지정합니다.\n지정 후 실행되는 모든 수급모델은 이 값을 기준으로 생성됩니다.\n이미 실행된 결과에는 영향을 주지 않습니다.'
+        }
       </MIConfirm>
     </>
   )
