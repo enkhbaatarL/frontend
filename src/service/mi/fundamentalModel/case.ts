@@ -47,6 +47,7 @@ export interface FundamentalModelDownloadFile {
 export interface FundamentalModelCaseFiles {
   input: { fileNm: string }[]
   output: FundamentalModelDownloadFile[]
+  tradeOutput?: FundamentalModelDownloadFile[]
   intermediate: FundamentalModelDownloadFile[]
 }
 

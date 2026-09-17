@@ -20,7 +20,7 @@ import { getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGe
 type ScenarioGroupViewMode = 'table' | 'graph'
 
 // 컬럼 폭은 ScenarioGroupsTabPanel의 GROUP_HEADER_COLUMNS와 동일해야 정렬됨
-const SCENARIO_GROUP_LIST_GRID_TEMPLATE = '32px 110px 10px minmax(0, 408fr) minmax(0, 700fr) 120px 100px'
+const SCENARIO_GROUP_LIST_GRID_TEMPLATE = '32px 110px 10px minmax(0, 408fr) minmax(0, 700fr) 120px 120px'
 
 const MODE_OPTIONS = [
   {

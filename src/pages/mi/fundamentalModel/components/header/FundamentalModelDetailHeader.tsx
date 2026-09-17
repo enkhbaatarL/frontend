@@ -288,9 +288,11 @@ const FundamentalModelDetailHeader = ({
   // 실행 완료 전(대기/실행중/실패)에는 Export 와 더보기 메뉴를 비활성화
   const headerActionsDisabled = detail.status !== 'COMPLETED'
   const outputFiles = detail.files.output ?? []
+  const tradeOutputFiles = detail.files.tradeOutput ?? []
   const intermediateFiles = detail.files.intermediate ?? []
   const outputExportDisabled = headerActionsDisabled || outputFiles.length === 0 || !onExportOutputFiles
-  const exportDisabled = headerActionsDisabled || (outputFiles.length === 0 && intermediateFiles.length === 0) || !onExportFile
+  const exportDisabled =
+    headerActionsDisabled || (outputFiles.length === 0 && tradeOutputFiles.length === 0 && intermediateFiles.length === 0) || !onExportFile
   const isMiBase = detail.execType === 'MI_BASE'
 
   const attachmentNames = (detail.files.input ?? []).map((file) => file.fileNm)
@@ -343,14 +345,22 @@ const FundamentalModelDetailHeader = ({
                 disabled={exportDisabled}
                 items={[
                   ...outputFiles.map((file) => ({
+                    group: 'output',
+                    label: <ExportFileMenuLabel fileName={file.fileNm} />,
+                    action: () => onExportFile?.(file),
+                  })),
+                  ...tradeOutputFiles.map((file) => ({
+                    group: 'tradeOutput',
                     label: <ExportFileMenuLabel fileName={file.fileNm} />,
                     action: () => onExportFile?.(file),
                   })),
                   ...intermediateFiles.map((file) => ({
+                    group: 'intermediate',
                     label: <ExportFileMenuLabel fileName={file.fileNm} />,
                     action: () => onExportFile?.(file),
                   })),
                 ]}
+                groupLabels={{ output: 'Output File', tradeOutput: 'TradeOutputFile', intermediate: '중간파일' }}
                 sx={{
                   height: '36px',
                   minWidth: '36px',
@@ -364,6 +374,7 @@ const FundamentalModelDetailHeader = ({
                     minWidth: '200px',
                     width: 'max-content',
                     maxWidth: 'calc(100vw - 32px)',
+                    '& .MuiListSubheader-root': { textTransform: 'none' },
                     '& .MuiTypography-root': { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', overflowWrap: 'anywhere' },
                   },
                 }}

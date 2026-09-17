@@ -29,7 +29,7 @@ const GROUP_HEADER_COLUMNS: GridColDef[] = [
   { field: 'groupName', headerName: '시나리오 그룹', flex: 408, align: 'left' },
   { field: 'summary', headerName: '시나리오 그룹 요약', flex: 700, align: 'left' },
   { field: 'scenarioCount', headerName: '시나리오 수', width: 120, align: 'right' },
-  { field: 'eventCount', headerName: '이벤트 수', width: 100, align: 'right' },
+  { field: 'eventCount', headerName: '이벤트 수', width: 120, align: 'right' },
 ]
 
 const COUNT_HEADER_FIELDS = new Set(['scenarioCount', 'eventCount'])
