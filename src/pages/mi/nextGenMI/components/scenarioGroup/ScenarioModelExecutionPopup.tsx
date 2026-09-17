@@ -1,8 +1,6 @@
 import { Stack, Typography } from '@mui/material'
 import { type Theme } from '@mui/material/styles'
-import { forwardRef, useCallback, useImperativeHandle, useState } from 'react'
-
-import type { ScenarioModelExecutionOption } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
+import { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -17,25 +15,25 @@ export interface ScenarioModelExecutionPopupRef {
 
 interface ScenarioModelExecutionPopupProps {
   scenarioGroupId: number
-  scenarioOptions: ScenarioModelExecutionOption[]
   executingScenarioIds: Set<number>
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
 }
 
 const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, ScenarioModelExecutionPopupProps>(
-  ({ scenarioGroupId, scenarioOptions, executingScenarioIds, onAccepted, onCompleted }, ref) => {
+  ({ scenarioGroupId, executingScenarioIds, onAccepted, onCompleted }, ref) => {
     const [open, setOpen] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
     // 파라미터 패널(03+)일 때만 팝업을 뷰포트 높이로 채움. 생성 중(02)은 피그마처럼 콘텐츠 높이(400px 로딩 포함)에 맞춤
     const [fillsViewportHeight, setFillsViewportHeight] = useState(false)
+    const [contentHeight, setContentHeight] = useState<number | null>(null)
+    const [isResizing, setIsResizing] = useState(false)
+    const titleRef = useRef<HTMLSpanElement>(null)
 
     const closePopup = useCallback(() => {
       setOpen(false)
-      setIsMaximized(false)
       setCloseConfirmOpen(false)
-      setFillsViewportHeight(false)
     }, [])
 
     const handleCloseRequest = useCallback(() => {
@@ -49,27 +47,73 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           setIsMaximized(false)
           setCloseConfirmOpen(false)
           setFillsViewportHeight(false)
+          setContentHeight(null)
           setOpen(true)
         },
         openFor: () => {
           setIsMaximized(false)
           setCloseConfirmOpen(false)
           setFillsViewportHeight(false)
+          setContentHeight(null)
           setOpen(true)
         },
       }),
       [],
     )
 
-    const paperHeight = isMaximized || fillsViewportHeight ? (isMaximized ? 'calc(100dvh - 32px)' : 'calc(100dvh - 96px)') : 'auto'
+    // auto 높이의 내용 교체는 CSS transition으로 보간되지 않으므로 실측 높이를 사용한다.
+    const paperHeight = isMaximized
+      ? 'calc(100dvh - 32px)'
+      : fillsViewportHeight
+        ? 'calc(100dvh - 96px)'
+        : contentHeight === null
+          ? 'auto'
+          : `min(${contentHeight + 62}px, calc(100dvh - 96px))` // 제목 60px + 상하 테두리 2px
     const paperMaxHeight = isMaximized ? 'calc(100dvh - 32px)' : 'calc(100dvh - 96px)'
+
+    useLayoutEffect(() => {
+      const paper = titleRef.current?.closest('.MuiDialog-paper')
+      if (!open || !paper) return undefined
+
+      // 전환 시작 전에 스크롤바를 숨기고 실제 크기 전환이 모두 끝난 뒤 복원한다.
+      // 높이가 뷰포트에 제한되거나 모션 감소 설정으로 전환이 없으면 다음 프레임에 복원한다.
+      let active = true
+      setIsResizing(true)
+      const frameId = globalThis.requestAnimationFrame(() => {
+        const transitions = paper
+          .getAnimations()
+          .filter(
+            (animation) =>
+              animation instanceof CSSTransition &&
+              ['width', 'height', 'max-width', 'max-height', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left'].includes(
+                animation.transitionProperty,
+              ),
+          )
+        void Promise.allSettled(transitions.map((transition) => transition.finished)).then(() => {
+          if (active) setIsResizing(false)
+        })
+      })
+
+      return () => {
+        active = false
+        globalThis.cancelAnimationFrame(frameId)
+      }
+    }, [isMaximized, open, paperHeight])
 
     return (
       <>
         <MIConfirm
           open={open}
           title={
-            <Stack component="span" direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
+            <Stack
+              ref={titleRef}
+              component="span"
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              width="100%"
+              minWidth={0}
+            >
               <Typography component="span" fontSize="18px" fontWeight={600} lineHeight={1.4} color="contentText.Black">
                 MI 수급모델 실행
               </Typography>
@@ -112,15 +156,16 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            interpolateSize: 'allow-keywords',
             transition: (theme: Theme) =>
               theme.transitions.create(['width', 'height', 'max-width', 'max-height', 'margin'], {
-                duration: 400,
+                duration: 320,
                 easing: theme.transitions.easing.easeInOut,
               }),
+            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
           }}
           titleSx={{
             height: '60px',
+            flexShrink: 0,
             padding: '0 20px',
             display: 'flex',
             alignItems: 'center',
@@ -145,28 +190,26 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            flex: fillsViewportHeight || isMaximized ? '1 1 auto' : '0 0 auto',
-            minHeight: fillsViewportHeight || isMaximized ? 0 : undefined,
+            flex: '1 1 auto',
+            minHeight: 0,
             '& .MuiDialogContentText-root': {
               display: 'flex',
               flexDirection: 'column',
-              flex: fillsViewportHeight || isMaximized ? '1 1 auto' : '0 0 auto',
-              minHeight: fillsViewportHeight || isMaximized ? 0 : undefined,
+              flex: '1 1 auto',
+              minHeight: 0,
             },
           }}
         >
-          {open && (
-            <ScenarioModelExecutionProposalList
-              scenarioGroupId={scenarioGroupId}
-              scenarioOptions={scenarioOptions}
-              executingScenarioIds={executingScenarioIds}
-              fillsViewportHeight={fillsViewportHeight || isMaximized}
-              onFillsViewportHeightChange={setFillsViewportHeight}
-              onCancel={closePopup}
-              onAccepted={onAccepted}
-              onCompleted={onCompleted}
-            />
-          )}
+          <ScenarioModelExecutionProposalList
+            scenarioGroupId={scenarioGroupId}
+            executingScenarioIds={executingScenarioIds}
+            isResizing={isResizing}
+            onContentHeightChange={setContentHeight}
+            onFillsViewportHeightChange={setFillsViewportHeight}
+            onCancel={closePopup}
+            onAccepted={onAccepted}
+            onCompleted={onCompleted}
+          />
         </MIConfirm>
 
         <MIConfirm

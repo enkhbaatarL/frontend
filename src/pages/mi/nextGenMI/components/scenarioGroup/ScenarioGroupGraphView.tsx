@@ -260,7 +260,6 @@ const ScenarioGroupGraphView = ({
         <ScenarioModelExecutionPopup
           ref={executionPopupRef}
           scenarioGroupId={scenarioGroupId}
-          scenarioOptions={scenarioOptions}
           executingScenarioIds={executingScenarioIds}
           onAccepted={notifyExecutionAccepted}
           onCompleted={notifyExecutionCompleted}

@@ -1,13 +1,13 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
-import { Box, Checkbox, CircularProgress, Collapse, Stack, Typography } from '@mui/material'
+import { Box, Checkbox, CircularProgress, Collapse, Fade, Stack, Typography, useMediaQuery } from '@mui/material'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { SwitchTransition } from 'react-transition-group'
 
-import type { ScenarioModelExecutionOption } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
 import type {
   CurrentModelParamProposal,
   ModelExecutionAccept,
@@ -19,6 +19,7 @@ import type { ScenarioRole } from '@/service/mi/nextGenMI/scenarioGroup'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
+import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
 import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
@@ -75,9 +76,9 @@ const getDownloadableExecutionInputFiles = (proposal: CurrentModelParamProposal 
 
 interface ScenarioModelExecutionProposalListProps {
   scenarioGroupId: number
-  scenarioOptions: ScenarioModelExecutionOption[]
   executingScenarioIds: Set<number>
-  fillsViewportHeight?: boolean
+  isResizing: boolean
+  onContentHeightChange: (height: number) => void
   onFillsViewportHeightChange?: (fillsViewportHeight: boolean) => void
   onCancel: () => void
   onAccepted: (scenarioId: number) => void
@@ -101,7 +102,6 @@ interface ProposalListScenarioRow {
   possibility: number
   status: ModelParamProposalRowStatus
   failureReason?: string
-  discarded: boolean
 }
 
 const DimensionInfoIcon = ({ title }: { title: string }) => (
@@ -225,19 +225,25 @@ const StatusCell = ({
 
 const ScenarioModelExecutionProposalList = ({
   scenarioGroupId,
-  scenarioOptions,
   executingScenarioIds,
-  fillsViewportHeight = false,
+  isResizing,
+  onContentHeightChange,
   onFillsViewportHeightChange,
   onCancel,
   onAccepted,
   onCompleted,
 }: ScenarioModelExecutionProposalListProps) => {
   const { showSnackbar } = useSnackbar()
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const contentRef = useRef<HTMLDivElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(true)
   const [groupProposals, setGroupProposals] = useState<ScenarioGroupModelParamProposals | null>(null)
   const [compare, setCompare] = useState<ScenarioGroupModelParamCompare | null>(null)
+  const [compareLoadFailed, setCompareLoadFailed] = useState(false)
+  const [proposalsLoadFailed, setProposalsLoadFailed] = useState(false)
   const [pendingGenerateIds, setPendingGenerateIds] = useState<Set<number>>(() => new Set())
+  const [generationFailureReason, setGenerationFailureReason] = useState<string | null>(null)
   const [selectedScenarioIds, setSelectedScenarioIds] = useState<number[]>([])
   const [visibleScenarioIds, setVisibleScenarioIds] = useState<number[]>([])
   const [paramResetToken, setParamResetToken] = useState(0)
@@ -250,6 +256,23 @@ const ScenarioModelExecutionProposalList = ({
   const failureKeyRef = useRef<Map<number, string>>(new Map())
   const groupStreamControllerRef = useRef<AbortController | null>(null)
   const inputFilesRequestIdRef = useRef(0)
+  const proposalsRequestIdRef = useRef(0)
+  const compareRequestIdRef = useRef(0)
+  const previousColumnScenarioIdsRef = useRef<number[]>([])
+
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    const footer = footerRef.current
+    if (!content || !footer) return undefined
+
+    // 스크롤 영역의 자연 높이를 측정해야 팝업 높이 변경이 다시 측정을 유발하지 않는다.
+    const measure = () => onContentHeightChange(Math.ceil(content.getBoundingClientRect().height + footer.getBoundingClientRect().height))
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(content)
+    observer.observe(footer)
+    return () => observer.disconnect()
+  }, [onContentHeightChange])
 
   const groupQuery = useQuery({
     queryKey: ['nextGenMIScenarioGroupDetail', scenarioGroupId],
@@ -261,7 +284,6 @@ const ScenarioModelExecutionProposalList = ({
   const dimensionColumns = useMemo(() => groupQuery.data?.dimensionColumns ?? [], [groupQuery.data?.dimensionColumns])
   const createdAtLabel = groupQuery.data?.createdAt ? dayjs(groupQuery.data.createdAt).format('MM-DD HH:mm') : '-'
   const groupName = groupQuery.data?.groupName ?? groupProposals?.groupName ?? '-'
-
   const compareScenarioIds = useMemo(() => new Set((compare?.scenarios ?? []).map((scenario) => scenario.scenarioId)), [compare?.scenarios])
 
   const proposalByScenarioId = useMemo(() => {
@@ -274,16 +296,14 @@ const ScenarioModelExecutionProposalList = ({
 
   const scenarios = useMemo<ProposalListScenarioRow[]>(() => {
     const detailRows = groupQuery.data?.scenarios ?? []
-    const optionById = new Map(scenarioOptions.map((option) => [option.scenarioId, option]))
 
-    const rowsFromDetail = detailRows
+    return detailRows
       .filter((row) => row.status !== 'discarded')
       .map((row) => {
         const proposal = proposalByScenarioId.get(row.scenarioId)
-        const option = optionById.get(row.scenarioId)
         const status = pendingGenerateIds.has(row.scenarioId)
           ? ('generating' as const)
-          : mapProposalStateToRowStatus(proposal?.currentState, compareScenarioIds.has(row.scenarioId), proposal?.failureReason)
+          : mapProposalStateToRowStatus(proposal?.currentState, false, proposal?.failureReason)
 
         return {
           scenarioId: row.scenarioId,
@@ -303,37 +323,10 @@ const ScenarioModelExecutionProposalList = ({
           possibility: row.adjustedProbability ?? row.probability,
           status,
           failureReason: proposal?.failureReason ?? undefined,
-          discarded: option?.disabled === true,
         }
       })
       .sort((a, b) => a.displayOrder - b.displayOrder)
-
-    if (rowsFromDetail.length > 0) return rowsFromDetail
-
-    return scenarioOptions
-      .filter((option) => !option.disabled)
-      .map((option, index) => {
-        const proposal = proposalByScenarioId.get(option.scenarioId)
-        const status = pendingGenerateIds.has(option.scenarioId)
-          ? ('generating' as const)
-          : mapProposalStateToRowStatus(proposal?.currentState, compareScenarioIds.has(option.scenarioId), proposal?.failureReason)
-
-        return {
-          scenarioId: option.scenarioId,
-          displayOrder: index + 1,
-          scenarioName: option.scenarioName,
-          baseCase: false,
-          scenarioRole: null,
-          scenarioRoleLabel: null,
-          scenarioType: null,
-          dimensionCells: [],
-          possibility: 0,
-          status,
-          failureReason: proposal?.failureReason ?? undefined,
-          discarded: option.disabled,
-        }
-      })
-  }, [compareScenarioIds, dimensionColumns, groupQuery.data?.scenarios, pendingGenerateIds, proposalByScenarioId, scenarioOptions])
+  }, [dimensionColumns, groupQuery.data?.scenarios, pendingGenerateIds, proposalByScenarioId])
 
   const completedScenarioIds = useMemo(
     () => scenarios.filter((scenario) => scenario.status === 'completed').map((scenario) => scenario.scenarioId),
@@ -351,11 +344,15 @@ const ScenarioModelExecutionProposalList = ({
   const isGeneratingAny = scenarios.some((scenario) => scenario.status === 'generating')
   // 최초 생성 중(완료 0건)에는 스피너 영역만, 파라미터 패널은 완료 1건 이후
   const showGeneratingPlaceholder = !hasCompleted && isGeneratingAny
-  const showParamPanel = hasCompleted
+  const showFailurePlaceholder = !hasCompleted && !isGeneratingAny && Boolean(generationFailureReason)
+  const showTableLoading = hasCompleted && compare === null
+  const showLoadingPlaceholder = showGeneratingPlaceholder || showTableLoading || showFailurePlaceholder
+  const showParamPanel = hasCompleted && compare !== null
 
-  useEffect(() => {
-    onFillsViewportHeightChange?.(showParamPanel)
-  }, [onFillsViewportHeightChange, showParamPanel])
+  // 완료 상태와 팝업 높이를 같은 프레임에 반영해 표가 먼저 잘렸다가 확장되는 현상을 막는다.
+  useLayoutEffect(() => {
+    onFillsViewportHeightChange?.(hasCompleted)
+  }, [hasCompleted, onFillsViewportHeightChange])
 
   const downloadTargetScenarioIds = useMemo(() => {
     const selectedCompleted = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId))
@@ -468,10 +465,15 @@ const ScenarioModelExecutionProposalList = ({
 
   const loadGroupProposals = useCallback(
     async (notifyFailure = false) => {
+      const requestId = ++proposalsRequestIdRef.current
+      setProposalsLoadFailed(false)
       try {
         const proposals = await nextGenMIModelExecutionService.getGroupModelParamProposals(scenarioGroupId)
+        if (requestId !== proposalsRequestIdRef.current) return
         applyGroupProposals(proposals, notifyFailure)
       } catch (error) {
+        if (requestId !== proposalsRequestIdRef.current) return
+        setProposalsLoadFailed(true)
         if (isClientRequestError(error)) {
           showSnackbar('파라미터 상태 조회에 실패했습니다.', { variant: 'error' })
         }
@@ -481,10 +483,15 @@ const ScenarioModelExecutionProposalList = ({
   )
 
   const loadCompareProposals = useCallback(async () => {
+    const requestId = ++compareRequestIdRef.current
     try {
       const nextCompare = await nextGenMIModelExecutionService.getGroupModelParamProposalsCompare(scenarioGroupId)
+      if (requestId !== compareRequestIdRef.current) return
       setCompare(nextCompare)
+      setCompareLoadFailed(false)
     } catch (error) {
+      if (requestId !== compareRequestIdRef.current) return
+      setCompareLoadFailed(true)
       if (isClientRequestError(error)) {
         showSnackbar('파라미터 비교 조회에 실패했습니다.', { variant: 'error' })
       }
@@ -493,8 +500,7 @@ const ScenarioModelExecutionProposalList = ({
 
   const refreshProposals = useCallback(
     async (notifyFailure = false) => {
-      await loadGroupProposals(notifyFailure)
-      await loadCompareProposals()
+      await Promise.all([loadGroupProposals(notifyFailure), loadCompareProposals()])
     },
     [loadCompareProposals, loadGroupProposals],
   )
@@ -502,26 +508,26 @@ const ScenarioModelExecutionProposalList = ({
   useEffect(() => {
     if (!scenarioGroupId) return undefined
 
-    let cancelled = false
-    void (async () => {
-      if (cancelled) return
-      await loadGroupProposals()
-      if (cancelled) return
-      await loadCompareProposals()
-    })()
-
-    return () => {
-      cancelled = true
-    }
+    void loadGroupProposals()
+    void loadCompareProposals()
+    return undefined
     // groupQuery.dataUpdatedAt 에 묶지 않음 - 상세 갱신마다 proposals 재조회로 중복/취소 요청이 생김
   }, [loadCompareProposals, loadGroupProposals, scenarioGroupId])
 
-  useEffect(() => {
-    setSelectedScenarioIds((prev) => prev.filter((scenarioId) => completedScenarioIds.includes(scenarioId)))
+  useLayoutEffect(() => {
+    setSelectedScenarioIds((prev) => {
+      const next = prev.filter((scenarioId) => completedScenarioIds.includes(scenarioId))
+      return next.length === prev.length ? prev : next
+    })
+    const previousColumnScenarioIds = previousColumnScenarioIdsRef.current
+    previousColumnScenarioIdsRef.current = columnScenarioIds
     setVisibleScenarioIds((prev) => {
       const next = prev.filter((scenarioId) => columnScenarioIds.includes(scenarioId))
-      const missing = columnScenarioIds.filter((scenarioId) => !next.includes(scenarioId))
-      return missing.length === 0 ? next : [...next, ...missing]
+      const missing = columnScenarioIds.filter(
+        (scenarioId) => !previousColumnScenarioIds.includes(scenarioId) && !next.includes(scenarioId),
+      )
+      if (missing.length > 0) next.push(...missing)
+      return next.length === prev.length && next.every((scenarioId, index) => scenarioId === prev[index]) ? prev : next
     })
   }, [columnScenarioIds, completedScenarioIds])
 
@@ -623,42 +629,58 @@ const ScenarioModelExecutionProposalList = ({
       }
       void refreshProposals(true)
     },
-    onError: (_error, scenarioId) => {
+    onError: (error, scenarioId) => {
       setPendingGenerateIds((current) => {
         const next = new Set(current)
         next.delete(scenarioId)
         return next
       })
-      showSnackbar('파라미터 생성에 실패했습니다.', { variant: 'error' })
+      const responseData = axios.isAxiosError(error)
+        ? (error.response?.data as { data?: { failureReason?: string } | null } | undefined)
+        : undefined
+      const failureReason =
+        responseData?.data?.failureReason?.trim() || (error instanceof Error && !axios.isAxiosError(error) ? error.message : '')
+      setGenerationFailureReason(failureReason || null)
+      showSnackbar('파라미터 생성에 실패했습니다.', { variant: 'error', body: failureReason || undefined })
       void refreshProposals(true)
     },
   })
 
-  const startGeneration = (scenarioId: number) => {
-    if (executingScenarioIds.has(scenarioId) || pendingGenerateIds.has(scenarioId)) return
-    setPendingGenerateIds((current) => new Set(current).add(scenarioId))
-    setVisibleScenarioIds((prev) => (prev.includes(scenarioId) ? prev : [...prev, scenarioId]))
-    createModelParamProposal(scenarioId)
-  }
+  const startGeneration = useCallback(
+    (scenarioId: number) => {
+      if (executingScenarioIds.has(scenarioId) || pendingGenerateIds.has(scenarioId)) return
+      setGenerationFailureReason(null)
+      setPendingGenerateIds((current) => new Set(current).add(scenarioId))
+      setVisibleScenarioIds((prev) => (prev.includes(scenarioId) ? prev : [...prev, scenarioId]))
+      createModelParamProposal(scenarioId)
+    },
+    [createModelParamProposal, executingScenarioIds, pendingGenerateIds],
+  )
 
-  const handleToggleVisibility = (scenarioId: number) => {
+  const handleToggleVisibility = useCallback((scenarioId: number) => {
     setVisibleScenarioIds((prev) => {
       if (prev.includes(scenarioId)) return prev.filter((id) => id !== scenarioId)
       return [...prev, scenarioId]
     })
-  }
+  }, [])
 
-  const handleToggleScenario = (scenarioId: number, checked: boolean) => {
-    if (!selectableScenarioIds.includes(scenarioId)) return
-    setSelectedScenarioIds((prev) => {
-      if (checked) return prev.includes(scenarioId) ? prev : [...prev, scenarioId]
-      return prev.filter((id) => id !== scenarioId)
-    })
-  }
+  const handleToggleScenario = useCallback(
+    (scenarioId: number, checked: boolean) => {
+      if (!selectableScenarioIds.includes(scenarioId)) return
+      setSelectedScenarioIds((prev) => {
+        if (checked) return prev.includes(scenarioId) ? prev : [...prev, scenarioId]
+        return prev.filter((id) => id !== scenarioId)
+      })
+    },
+    [selectableScenarioIds],
+  )
 
-  const handleToggleAll = (checked: boolean) => {
-    setSelectedScenarioIds(checked ? [...selectableScenarioIds] : [])
-  }
+  const handleToggleAll = useCallback(
+    (checked: boolean) => {
+      setSelectedScenarioIds(checked ? [...selectableScenarioIds] : [])
+    },
+    [selectableScenarioIds],
+  )
 
   const handleExecuteClick = () => {
     if (selectedCompletedCount === 0) {
@@ -796,267 +818,348 @@ const ScenarioModelExecutionProposalList = ({
     [],
   )
 
-  return (
-    <Stack width="100%" height={fillsViewportHeight ? '100%' : 'auto'} minHeight={fillsViewportHeight ? 0 : undefined} overflow="hidden">
-      <Stack flex={fillsViewportHeight ? '1 1 0' : '0 0 auto'} minHeight={fillsViewportHeight ? 0 : undefined} overflow="hidden">
-        <Stack flexShrink={0} overflow="auto" padding="10px 20px 0">
+  const scenarioList = useMemo(
+    () =>
+      groupQuery.data ? (
+        <Stack paddingBottom="10px" margin="0 4px">
           <Stack
+            component="button"
+            type="button"
             direction="row"
-            alignItems="flex-start"
-            gap="8px"
-            padding="10px 12px"
-            borderRadius="8px"
-            bgcolor="gray.5"
-            border="1px solid"
+            alignItems="center"
+            gap="0"
+            width="100%"
+            height="48px"
+            padding="0"
+            border="none"
+            borderBottom="1px solid"
             borderColor="contentBorder.Normal"
+            bgcolor="commonColor.White"
+            onClick={() => setExpanded((prev) => !prev)}
+            sx={{
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
           >
-            <InfoOutlineIcon width="16px" height="16px" aria-hidden />
-            <Typography variant="body2M14" color="contentText.Normal" lineHeight={1.4}>
-              {BANNER_MESSAGE}
+            <Stack width="32px" flexShrink={0} alignItems="center" justifyContent="center">
+              <KeyboardArrowDownRounded
+                sx={{
+                  fontSize: '20px',
+                  color: expanded ? 'contentIcon.Activeb' : 'contentIcon.Enabled',
+                  transition: 'transform 150ms ease',
+                  transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </Stack>
+            <Typography variant="body2M14" color="contentText.Black" width="110px" flexShrink={0} noWrap>
+              {createdAtLabel}
             </Typography>
+            <Box width="10px" flexShrink={0} />
+            <Box flex="1 1 0" minWidth={0} paddingRight="12px">
+              <NextGenMITableBodyText value={groupName} variant="body1SB16" color="contentText.Black" tooltipWhenTruncated />
+            </Box>
           </Stack>
 
-          <Stack paddingTop="12px">
-            <Stack
-              component="button"
-              type="button"
-              direction="row"
-              alignItems="center"
-              gap="0"
-              width="100%"
-              height="48px"
-              padding="0"
-              border="1px solid"
-              borderColor="contentBorder.Normal"
-              borderRadius={expanded ? '8px 8px 0 0' : '8px'}
-              bgcolor={expanded ? 'gray.5' : 'commonColor.White'}
-              onClick={() => setExpanded((prev) => !prev)}
-              sx={{
-                cursor: 'pointer',
-                textAlign: 'left',
-                '&:hover': { bgcolor: expanded ? 'gray.5' : 'gray.10' },
-              }}
-            >
-              <Stack width="32px" flexShrink={0} alignItems="center" justifyContent="center">
-                <KeyboardArrowDownRounded
-                  sx={{
-                    fontSize: '20px',
-                    color: expanded ? 'contentIcon.Activeb' : 'contentIcon.Enabled',
-                    transition: 'transform 150ms ease',
-                    transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  }}
-                />
-              </Stack>
-              <Typography variant="body2M14" color="contentText.Subtext" width="110px" flexShrink={0} noWrap>
-                {createdAtLabel}
-              </Typography>
-              <Box width="10px" flexShrink={0} />
-              <Box flex="1 1 0" minWidth={0} paddingRight="12px">
-                <NextGenMITableBodyText value={groupName} variant="body2SB14" color="contentText.Black" tooltipWhenTruncated />
-              </Box>
-            </Stack>
-
-            <Collapse in={expanded} timeout={180} unmountOnExit={false}>
-              <Box border="1px solid" borderTop="none" borderColor="contentBorder.Normal" borderRadius="0 0 8px 8px" overflow="hidden">
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  height="48px"
-                  bgcolor="gray.5"
-                  borderBottom="1px solid"
-                  borderColor="contentBorder.Normal"
-                >
-                  <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
-                    {selectableScenarioIds.length > 0 ? (
-                      <Checkbox
-                        size="small"
-                        checked={allSelectableChecked}
-                        indeterminate={!allSelectableChecked && someSelectableChecked}
-                        onChange={(_, checked) => handleToggleAll(checked)}
-                        sx={{ padding: '4px' }}
-                      />
-                    ) : null}
-                  </Stack>
-                  <Box width="64px" flexShrink={0} />
-                  <Typography variant="body3SB12" color="contentText.Subtext" width="300px" flexShrink={0} padding="0 8px">
-                    시나리오
-                  </Typography>
-                  <Stack direction="row" flex="1 1 0" minWidth={0}>
-                    {dimensionColumns.map((column) => {
-                      const headerTooltipTitle = column.description?.trim() || column.rationale?.trim()
-                      return (
-                        <Stack key={column.key} direction="row" alignItems="center" gap="4px" flex="1 1 0" minWidth={0} padding="0 8px">
-                          <Box flex="1 1 0" minWidth={0}>
-                            <NextGenMITableBodyText
-                              value={column.label}
-                              variant="body3SB12"
-                              color="contentText.Subtext"
-                              tooltipWhenTruncated
-                            />
-                          </Box>
-                          {headerTooltipTitle ? <DimensionInfoIcon title={headerTooltipTitle} /> : null}
-                        </Stack>
-                      )
-                    })}
-                  </Stack>
-                  <Typography variant="body3SB12" color="contentText.Subtext" width="100px" flexShrink={0} textAlign="center">
-                    실행가능성
-                  </Typography>
-                  <Typography variant="body3SB12" color="contentText.Subtext" width="92px" flexShrink={0} textAlign="center">
-                    상태
-                  </Typography>
+          <Collapse in={expanded} timeout={180} unmountOnExit={false}>
+            <Box overflow="hidden">
+              <Stack
+                direction="row"
+                alignItems="center"
+                height="48px"
+                bgcolor="gray.5"
+                borderBottom="1px solid"
+                borderColor="contentBorder.Normal"
+              >
+                <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
+                  {selectableScenarioIds.length > 0 ? (
+                    <Checkbox
+                      size="small"
+                      checked={allSelectableChecked}
+                      indeterminate={!allSelectableChecked && someSelectableChecked}
+                      onChange={(_, checked) => handleToggleAll(checked)}
+                      sx={{ padding: '4px' }}
+                    />
+                  ) : null}
                 </Stack>
+                <Typography variant="body2SB14" color="contentText.Black" width="300px" flexShrink={0} padding="0 6px">
+                  시나리오
+                </Typography>
+                <Stack direction="row" flex="1 1 0" minWidth={0}>
+                  {dimensionColumns.map((column) => {
+                    const headerTooltipTitle = column.description?.trim() || column.rationale?.trim()
+                    return (
+                      <Stack key={column.key} direction="row" alignItems="center" gap="4px" flex="1 1 0" minWidth={0} padding="0 8px">
+                        <Box flex="1 1 0" minWidth={0}>
+                          <NextGenMITableBodyText value={column.label} variant="body2SB14" color="contentText.Black" tooltipWhenTruncated />
+                        </Box>
+                        {headerTooltipTitle ? <DimensionInfoIcon title={headerTooltipTitle} /> : null}
+                      </Stack>
+                    )
+                  })}
+                </Stack>
+                <Typography variant="body2SB14" color="contentText.Black" width="100px" flexShrink={0} textAlign="center">
+                  실행가능성
+                </Typography>
+                <Typography variant="body2SB14" color="contentText.Black" width="92px" flexShrink={0} textAlign="center">
+                  상태
+                </Typography>
+              </Stack>
 
-                {scenarios.map((scenario) => {
-                  const selectable = scenario.status === 'completed'
-                  const checked = selectedScenarioIds.includes(scenario.scenarioId)
-                  const dimmed = isDimmedStatus(scenario.status)
-                  // 생성 중만 있을 때는 눈 아이콘 없음. 파라미터 표가 열릴 때만 컬럼 On/Off
-                  const showEye = showParamPanel && canShowVisibilityToggle(scenario.status)
-                  const textColor = dimmed ? 'contentText.Disabled' : 'contentText.Black'
-                  const bodyColor = dimmed ? 'contentText.Disabled' : 'contentText.Normal'
-                  const generateDisabled = executingScenarioIds.has(scenario.scenarioId) || isSubmittingExecution
-                  const hasRoleBadge = Boolean(scenario.scenarioRole || scenario.scenarioType || scenario.scenarioRoleLabel)
+              {scenarios.map((scenario) => {
+                const selectable = scenario.status === 'completed'
+                const checked = selectedScenarioIds.includes(scenario.scenarioId)
+                const dimmed = isDimmedStatus(scenario.status)
+                // 완료된 시나리오가 있으면 비교 데이터 로딩과 관계없이 컬럼 표시 상태를 선택할 수 있다.
+                const showEye = hasCompleted && canShowVisibilityToggle(scenario.status)
+                const textColor = dimmed ? 'contentText.Disabled' : 'contentText.Black'
+                const bodyColor = dimmed ? 'contentText.Disabled' : 'contentText.Normal'
+                const generateDisabled = executingScenarioIds.has(scenario.scenarioId) || isSubmittingExecution
+                const hasRoleBadge = Boolean(scenario.scenarioRole || scenario.scenarioType || scenario.scenarioRoleLabel)
 
-                  return (
+                return (
+                  <Stack
+                    key={scenario.scenarioId}
+                    direction="row"
+                    alignItems="center"
+                    height="48px"
+                    borderBottom="1px solid"
+                    borderColor="contentBorder.Normal"
+                    sx={{ '&:last-of-type': { borderBottom: 'none' } }}
+                  >
+                    <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
+                      {selectable ? (
+                        <Checkbox
+                          size="small"
+                          checked={checked}
+                          onChange={(_, nextChecked) => handleToggleScenario(scenario.scenarioId, nextChecked)}
+                          sx={{ padding: '4px' }}
+                        />
+                      ) : null}
+                    </Stack>
                     <Stack
-                      key={scenario.scenarioId}
                       direction="row"
                       alignItems="center"
-                      height="48px"
-                      borderBottom="1px solid"
-                      borderColor="contentBorder.Normal"
-                      sx={{ '&:last-of-type': { borderBottom: 'none' } }}
+                      gap="6px"
+                      width="300px"
+                      flexShrink={0}
+                      minWidth={0}
+                      padding="0 6px"
+                      sx={{ opacity: dimmed ? 0.5 : 1 }}
                     >
-                      <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
-                        {selectable ? (
-                          <Checkbox
-                            size="small"
-                            checked={checked}
-                            onChange={(_, nextChecked) => handleToggleScenario(scenario.scenarioId, nextChecked)}
-                            sx={{ padding: '4px' }}
-                          />
-                        ) : null}
-                      </Stack>
-                      <Stack width="64px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
+                      <NextGenMIDisplayOrderBadge value={scenario.displayOrder} disabled={dimmed} />
+                      {hasRoleBadge ? (
                         <ScenarioRoleBadge role={scenario.scenarioRole} type={scenario.scenarioType} label={scenario.scenarioRoleLabel} />
-                        {!hasRoleBadge && scenario.baseCase ? <NextGenMIBaseCaseChip disabled={dimmed} /> : null}
-                      </Stack>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        gap="8px"
-                        width="300px"
-                        flexShrink={0}
-                        minWidth={0}
-                        padding="0 8px"
-                        sx={{ opacity: dimmed ? 0.5 : 1 }}
-                      >
-                        <NextGenMIDisplayOrderBadge value={scenario.displayOrder} disabled={dimmed} />
-                        <Box flex="1 1 0" minWidth={0}>
-                          <NextGenMITableBodyText value={scenario.scenarioName} variant="body2M14" color={textColor} tooltipWhenTruncated />
+                      ) : null}
+                      {!hasRoleBadge && scenario.baseCase ? <NextGenMIBaseCaseChip disabled={dimmed} /> : null}
+                      <Box flex="1 1 0" minWidth={0}>
+                        <NextGenMITableBodyText value={scenario.scenarioName} variant="body1SB16" color={textColor} tooltipWhenTruncated />
+                      </Box>
+                      {showEye && (
+                        <Box
+                          component="button"
+                          type="button"
+                          display="inline-flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          width="18px"
+                          height="18px"
+                          flexShrink={0}
+                          padding={0}
+                          border="none"
+                          bgcolor="transparent"
+                          color={visibleScenarioIds.includes(scenario.scenarioId) ? 'contentIcon.Enabled' : 'contentIcon.Disabled'}
+                          sx={{
+                            cursor: scenario.status === 'completed' || scenario.status === 'generating' ? 'pointer' : 'default',
+                            opacity: scenario.status === 'completed' || scenario.status === 'generating' ? 1 : 0.5,
+                          }}
+                          aria-label={visibleScenarioIds.includes(scenario.scenarioId) ? '파라미터 컬럼 숨기기' : '파라미터 컬럼 표시'}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            if (scenario.status !== 'completed' && scenario.status !== 'generating') return
+                            handleToggleVisibility(scenario.scenarioId)
+                          }}
+                        >
+                          {visibleScenarioIds.includes(scenario.scenarioId) ? (
+                            <VisibilityIcon width="16px" height="16px" />
+                          ) : (
+                            <VisibilityOffIcon width="16px" height="16px" />
+                          )}
                         </Box>
-                        {showEye && (
-                          <Box
-                            component="button"
-                            type="button"
-                            display="inline-flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            width="18px"
-                            height="18px"
-                            flexShrink={0}
-                            padding={0}
-                            border="none"
-                            bgcolor="transparent"
-                            color={visibleScenarioIds.includes(scenario.scenarioId) ? 'contentIcon.Enabled' : 'contentIcon.Disabled'}
-                            sx={{
-                              cursor: scenario.status === 'completed' || scenario.status === 'generating' ? 'pointer' : 'default',
-                              opacity: scenario.status === 'completed' || scenario.status === 'generating' ? 1 : 0.5,
-                            }}
-                            aria-label={visibleScenarioIds.includes(scenario.scenarioId) ? '파라미터 컬럼 숨기기' : '파라미터 컬럼 표시'}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              if (scenario.status !== 'completed' && scenario.status !== 'generating') return
-                              handleToggleVisibility(scenario.scenarioId)
-                            }}
-                          >
-                            {visibleScenarioIds.includes(scenario.scenarioId) ? (
-                              <VisibilityIcon width="16px" height="16px" />
-                            ) : (
-                              <VisibilityOffIcon width="16px" height="16px" />
-                            )}
-                          </Box>
-                        )}
-                      </Stack>
-                      <Stack direction="row" flex="1 1 0" minWidth={0} sx={{ opacity: dimmed ? 0.5 : 1 }}>
-                        {scenario.dimensionCells.map((cell, index) => (
-                          <Stack
-                            key={`${scenario.scenarioId}-${dimensionColumns[index]?.key ?? index}`}
-                            direction="row"
-                            alignItems="center"
-                            gap="4px"
-                            flex="1 1 0"
-                            minWidth={0}
-                            padding="0 8px"
-                          >
-                            <NextGenMITableBodyText
-                              value={cell.value}
-                              variant="body2M14"
-                              color={bodyColor}
-                              tooltipWhenTruncated
-                              sx={{ flex: '1 1 0%', minWidth: 0 }}
-                            />
-                            {cell.rationale ? <DimensionInfoIcon title={cell.rationale} /> : null}
-                          </Stack>
-                        ))}
-                      </Stack>
-                      <Stack width="100px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
-                        <ScenarioPossibilityGauge probability={scenario.possibility} disabled={dimmed} hideHoverBackground />
-                      </Stack>
-                      <Stack width="92px" flexShrink={0} alignItems="center" justifyContent="center" padding="0 6px">
-                        <StatusCell
-                          status={scenario.status}
-                          failureReason={scenario.failureReason}
-                          disabled={generateDisabled}
-                          onGenerate={() => startGeneration(scenario.scenarioId)}
-                          onRetry={() => startGeneration(scenario.scenarioId)}
-                        />
-                      </Stack>
+                      )}
                     </Stack>
-                  )
-                })}
-              </Box>
-            </Collapse>
-          </Stack>
+                    <Stack direction="row" flex="1 1 0" minWidth={0} sx={{ opacity: dimmed ? 0.5 : 1 }}>
+                      {scenario.dimensionCells.map((cell, index) => (
+                        <Stack
+                          key={`${scenario.scenarioId}-${dimensionColumns[index]?.key ?? index}`}
+                          direction="row"
+                          alignItems="center"
+                          gap="4px"
+                          flex="1 1 0"
+                          minWidth={0}
+                          padding="0 8px"
+                        >
+                          <NextGenMITableBodyText
+                            value={cell.value}
+                            variant="body2M14"
+                            color={bodyColor}
+                            tooltipWhenTruncated
+                            sx={{ flex: '1 1 0%', minWidth: 0 }}
+                          />
+                          {cell.rationale ? <DimensionInfoIcon title={cell.rationale} /> : null}
+                        </Stack>
+                      ))}
+                    </Stack>
+                    <Stack width="100px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
+                      <ScenarioPossibilityGauge probability={scenario.possibility} disabled={dimmed} hideHoverBackground />
+                    </Stack>
+                    <Stack width="92px" flexShrink={0} alignItems="center" justifyContent="center" padding="0 6px">
+                      <StatusCell
+                        status={scenario.status}
+                        failureReason={scenario.failureReason}
+                        disabled={generateDisabled}
+                        onGenerate={() => startGeneration(scenario.scenarioId)}
+                        onRetry={() => startGeneration(scenario.scenarioId)}
+                      />
+                    </Stack>
+                  </Stack>
+                )
+              })}
+            </Box>
+          </Collapse>
         </Stack>
+      ) : null,
+    [
+      allSelectableChecked,
+      createdAtLabel,
+      dimensionColumns,
+      executingScenarioIds,
+      expanded,
+      groupName,
+      groupQuery.data,
+      handleToggleAll,
+      handleToggleScenario,
+      handleToggleVisibility,
+      hasCompleted,
+      isSubmittingExecution,
+      scenarios,
+      selectableScenarioIds.length,
+      selectedScenarioIds,
+      someSelectableChecked,
+      startGeneration,
+      visibleScenarioIds,
+    ],
+  )
 
-        {showGeneratingPlaceholder && (
-          <Stack flexShrink={0} height="400px" alignItems="center" justifyContent="center" gap="10px" padding="0 20px">
-            <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
-            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
-              {GENERATING_MESSAGE}
-            </Typography>
-          </Stack>
-        )}
+  return (
+    <Stack width="100%" flex="1 1 auto" minHeight={0} overflow="hidden">
+      <Stack flex="1 1 auto" minHeight={0} overflow={isResizing ? 'hidden' : 'auto'}>
+        <Stack ref={contentRef} flexGrow={showParamPanel ? 1 : 0} flexShrink={0}>
+          <Stack flexShrink={0} padding="10px 20px 0">
+            <Stack
+              direction="row"
+              alignItems="flex-start"
+              gap="8px"
+              padding="10px 16px"
+              borderRadius="8px"
+              bgcolor="gray.5"
+              marginBottom="10px"
+            >
+              <InfoOutlineIcon width="18px" height="18px" aria-hidden />
+              <Typography fontSize="13px" fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
+                {BANNER_MESSAGE}
+              </Typography>
+            </Stack>
 
-        {showParamPanel && (
-          <Stack flex="1 1 0" minHeight={0} overflow="hidden">
-            <ScenarioModelExecutionProposalParamPanel
-              visibleScenarios={visibleScenarios}
-              compare={compare}
-              resetToken={paramResetToken}
-              canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
-              isDownloadingInputFiles={isDownloadingInputFiles}
-              onDownloadInputFiles={handleDownloadInputFiles}
-              onHasEditsChange={setHasParamEdits}
-              onChangeScenarioValue={handleChangeScenarioValue}
-            />
+            <SwitchTransition mode="out-in">
+              <Fade
+                key={groupQuery.data && groupProposals ? 'scenarios' : 'loading'}
+                timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
+              >
+                <Stack>
+                  {!groupQuery.data || !groupProposals ? (
+                    <Stack height="120px" alignItems="center" justifyContent="center" gap="8px">
+                      {groupQuery.isError || proposalsLoadFailed ? (
+                        <>
+                          <Typography variant="body3SB12" color="contentText.Subtext">
+                            시나리오 목록과 파라미터 상태를 불러오지 못했습니다.
+                          </Typography>
+                          <MIBaseButton
+                            variant="outlined"
+                            onClick={() => {
+                              void groupQuery.refetch()
+                              void refreshProposals()
+                            }}
+                          >
+                            다시 시도
+                          </MIBaseButton>
+                        </>
+                      ) : (
+                        <>
+                          <MIAgentSpinner size={24} tone="gray" />
+                          <Typography variant="body3SB12" color="contentText.Subtext">
+                            시나리오 목록과 파라미터 상태를 불러오는 중입니다.
+                          </Typography>
+                        </>
+                      )}
+                    </Stack>
+                  ) : (
+                    scenarioList
+                  )}
+                </Stack>
+              </Fade>
+            </SwitchTransition>
           </Stack>
-        )}
+
+          {(showLoadingPlaceholder || showParamPanel) && (
+            <SwitchTransition mode="out-in">
+              <Fade
+                key={showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
+                timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
+              >
+                <Stack minHeight="400px" flexGrow={showParamPanel ? 1 : 0} flexShrink={0}>
+                  {showParamPanel && compare ? (
+                    <ScenarioModelExecutionProposalParamPanel
+                      visibleScenarios={visibleScenarios}
+                      compare={compare}
+                      resetToken={paramResetToken}
+                      canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
+                      isDownloadingInputFiles={isDownloadingInputFiles}
+                      onDownloadInputFiles={handleDownloadInputFiles}
+                      onHasEditsChange={setHasParamEdits}
+                      onChangeScenarioValue={handleChangeScenarioValue}
+                    />
+                  ) : (
+                    <Stack minHeight="400px" flexGrow={1} alignItems="center" justifyContent="center" gap="10px" padding="0 20px">
+                      {showFailurePlaceholder ? (
+                        <>
+                          <ErrorOutlineIcon width={24} height={24} />
+                          <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
+                            {generationFailureReason}
+                          </Typography>
+                        </>
+                      ) : showTableLoading && compareLoadFailed ? (
+                        <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
+                          테이블 데이터를 불러오지 못했습니다.
+                        </Typography>
+                      ) : (
+                        <>
+                          <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
+                          <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
+                            {showTableLoading ? '테이블 데이터를 불러오는 중입니다.' : GENERATING_MESSAGE}
+                          </Typography>
+                        </>
+                      )}
+                    </Stack>
+                  )}
+                </Stack>
+              </Fade>
+            </SwitchTransition>
+          )}
+        </Stack>
       </Stack>
 
       <Stack
+        ref={footerRef}
         direction="row"
         alignItems="center"
         justifyContent="space-between"

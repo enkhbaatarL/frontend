@@ -380,6 +380,11 @@ const nextGenMIModelExecutionService = {
       } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
     )
 
+    if (!response.data.status) {
+      const failureReason = (response.data.data as { failureReason?: string } | null)?.failureReason?.trim()
+      throw new Error(failureReason || response.data.message)
+    }
+
     return response.data.data
   },
 

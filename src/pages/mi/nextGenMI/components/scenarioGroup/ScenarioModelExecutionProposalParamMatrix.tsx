@@ -1,5 +1,5 @@
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import type {
   ProposalParamColumnStatus,
@@ -22,6 +22,7 @@ export interface ProposalParamVisibleScenario {
 interface ScenarioModelExecutionProposalParamMatrixProps {
   visibleScenarios: ProposalParamVisibleScenario[]
   matrix: ProposalParamMatrixData | null
+  scrollResetKey: string
   /** 증가 시 수정값을 추천값으로 전부 초기화 */
   resetToken?: number
   onHasEditsChange?: (hasEdits: boolean) => void
@@ -35,9 +36,9 @@ interface ProposalParamMatrixRow {
   recommendedValues: Record<string, string>
 }
 
-const FIXED_COLUMN_WIDTH = '95px'
+const FIXED_COLUMN_WIDTH = '140px'
 const MI_BASE_COLUMN_WIDTH = 88
-const SCENARIO_COLUMN_WIDTH = 100
+const SCENARIO_COLUMN_WIDTH = 160
 const EDITED_INPUT_BORDER = '#efa460'
 const EDITED_INPUT_BG = 'rgba(245, 159, 0, 0.05)'
 
@@ -221,12 +222,37 @@ const ProposalParamEditableCell = ({
 const ScenarioModelExecutionProposalParamMatrix = ({
   visibleScenarios,
   matrix,
+  scrollResetKey,
   resetToken = 0,
   onHasEditsChange,
   onChangeScenarioValue,
 }: ScenarioModelExecutionProposalParamMatrixProps) => {
   const [editedValues, setEditedValues] = useState<Record<string, string>>({})
   const [baselineValues, setBaselineValues] = useState<Record<string, string>>({})
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+  const [tableHeight, setTableHeight] = useState<number | null>(null)
+  const hasMatrix = matrix !== null
+
+  useLayoutEffect(() => {
+    const container = tableContainerRef.current
+    if (!container) return undefined
+
+    const updateHeight = () => {
+      const height = Math.floor(container.getBoundingClientRect().height)
+      setTableHeight((current) => (current === height ? current : height))
+    }
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [hasMatrix])
+
+  useLayoutEffect(() => {
+    if (!tableScrollRef.current) return
+    tableScrollRef.current.scrollLeft = 0
+    tableScrollRef.current.scrollTop = 0
+  }, [scrollResetKey])
 
   // 표 구조(기간/시나리오/슬롯) 또는 초기화 토큰이 바뀔 때만 baseline 재스냅샷.
   // compare 편집으로 matrix 값만 바뀌는 경우에는 baseline을 유지해야 주황 수정 표시가 유지됨.
@@ -353,7 +379,12 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         borderBottom: '1px solid',
         borderColor: 'contentBorder.Normal',
       },
-      cellSx: { bgcolor: 'commonColor.White', color: 'contentText.Normal' },
+      cellSx: {
+        bgcolor: 'commonColor.White',
+        color: 'contentText.Normal',
+        borderBottom: '1px solid',
+        borderBottomColor: 'contentBorder.Normal',
+      },
       // 좌측 고정(독립) 컬럼: StickyTable이 ellipsis만 하고 툴팁을 안 주므로 본문에서 말줄임 hover 처리
       renderCell: ({ row }) => (
         <NextGenMITableBodyText
@@ -401,6 +432,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         },
         cellSx: {
           bgcolor: '#eef6ff',
+          borderBottom: '1px solid',
+          borderBottomColor: 'contentBorder.Normal',
           ...(visibleScenarios.length === 0 ? periodGroupDividerSx : undefined),
         },
         renderCell: ({ row }) => (
@@ -434,15 +467,15 @@ const ScenarioModelExecutionProposalParamMatrix = ({
           },
           cellSx: {
             bgcolor: 'commonColor.White',
+            borderBottom: '1px solid',
+            borderBottomColor: 'contentBorder.Normal',
             ...(isLastScenarioInPeriod ? periodGroupDividerSx : undefined),
           },
           renderCell: ({ row }) => {
             if (scenario.status === 'generating') {
               return (
                 <Stack width="100%" height="100%" alignItems="center" justifyContent="center">
-                  <Box width="72px">
-                    <ParamInputSkeleton />
-                  </Box>
+                  <ParamInputSkeleton />
                 </Stack>
               )
             }
@@ -508,21 +541,21 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   }
 
   return (
-    <Box width="100%" minWidth={0} overflow="hidden" bgcolor="commonColor.White">
+    <Box ref={tableContainerRef} width="100%" flex="1 1 0" minWidth={0} minHeight={0} overflow="hidden" bgcolor="commonColor.White">
       <ScenarioGroupStickyTable
         columns={columns}
         rows={rows}
         getRowKey={(row) => row.rowKey}
+        scrollContainerRef={tableScrollRef}
         fixedLeftColumnIndexes={fixedLeftColumnIndexes}
         headerHeight="48px"
         rowHeight="42px"
-        maxHeight="468px"
+        maxHeight={tableHeight === null ? '468px' : `${tableHeight}px`}
         cellPaddingX="8px"
         cellPaddingY="6px"
         headerFontSize="12px"
         bodyFontSize="12px"
         containerShell={false}
-        fitContentWidth
         noRowMessage="파라미터 데이터가 없습니다."
       />
     </Box>

@@ -1,5 +1,5 @@
 import { Stack, Tab, Tabs, Typography } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 
 import type { ScenarioGroupModelParamCompare } from '@/service/mi/nextGenMI/modelExecution'
 
@@ -124,7 +124,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
   )
 
   return (
-    <Stack width="100%" minHeight={0} borderTop="1px solid" borderColor="contentBorder.Normal">
+    <Stack width="100%" flex="1 1 auto" minHeight={0} borderTop="1px solid" borderColor="contentBorder.Normal">
       <Stack
         direction="row"
         alignItems="center"
@@ -187,18 +187,22 @@ const ScenarioModelExecutionProposalParamPanel = ({
         </HorizontalScrollContainer>
       </Stack>
 
-      <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5" gap="8px">
-        <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
-          {modelTables.map((tableName) => (
-            <ParameterChip
-              key={tableName}
-              label={tableName}
-              selected={tableName === activeModelTable}
-              onClick={() => setModelTable(tableName)}
-            />
-          ))}
-        </HorizontalScrollContainer>
-        {parameterChips.length > 1 && (
+      {modelTables.length > 1 && (
+        <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5" gap="8px">
+          <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+            {modelTables.map((tableName) => (
+              <ParameterChip
+                key={tableName}
+                label={tableName}
+                selected={tableName === activeModelTable}
+                onClick={() => setModelTable(tableName)}
+              />
+            ))}
+          </HorizontalScrollContainer>
+        </Stack>
+      )}
+      {parameterChips.length > 1 && (
+        <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
           <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
             {parameterChips.map((chip) => (
               <ParameterChip
@@ -209,10 +213,10 @@ const ScenarioModelExecutionProposalParamPanel = ({
               />
             ))}
           </HorizontalScrollContainer>
-        )}
-      </Stack>
+        </Stack>
+      )}
 
-      <Stack flexShrink={0} padding="12px 24px 16px" bgcolor="commonColor.White">
+      <Stack flex="1 1 0" minHeight={0} padding="20px 24px" bgcolor="commonColor.White">
         {visibleScenarios.length === 0 ? (
           <Stack
             height="240px"
@@ -230,6 +234,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
           <ScenarioModelExecutionProposalParamMatrix
             visibleScenarios={visibleScenarios}
             matrix={matrix}
+            scrollResetKey={JSON.stringify([activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex])}
             resetToken={resetToken}
             onHasEditsChange={onHasEditsChange}
             onChangeScenarioValue={(scenarioId, periodTimeKey, rowIndex, nextValue) =>
@@ -251,4 +256,4 @@ const ScenarioModelExecutionProposalParamPanel = ({
   )
 }
 
-export default ScenarioModelExecutionProposalParamPanel
+export default memo(ScenarioModelExecutionProposalParamPanel)
