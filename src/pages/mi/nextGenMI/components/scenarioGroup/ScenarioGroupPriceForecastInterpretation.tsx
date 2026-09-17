@@ -26,13 +26,13 @@ import {
   scenarioGroupGraphQueryKey,
   scenarioGroupPriceInterpretationsQueryKey,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
-import {
-  PRICE_FORECAST_INTERPRETATION_MAX_LENGTH,
-  PRICE_FORECAST_INTERPRETATION_SAVED_MESSAGE_DURATION_MS,
-  type PriceForecastInterpretationMap,
-} from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupPriceForecastInterpretationMock'
 import ScenarioGroupPriceForecastInterpretationResetDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupPriceForecastInterpretationResetDialog'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
+
+const PRICE_FORECAST_INTERPRETATION_MAX_LENGTH = 2000
+const PRICE_FORECAST_INTERPRETATION_SAVED_MESSAGE_DURATION_MS = 5000
+
+type PriceForecastInterpretationMap = Record<number, string>
 
 interface ScenarioGroupPriceForecastInterpretationProps {
   scenarioGroupId: number
