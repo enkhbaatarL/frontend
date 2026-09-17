@@ -1,30 +1,14 @@
 import { Stack, Typography } from '@mui/material'
 import { type Theme } from '@mui/material/styles'
-import { useMutation } from '@tanstack/react-query'
-import axios from 'axios'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useImperativeHandle, useState } from 'react'
+
+import type { ScenarioModelExecutionOption } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import CollapseIcon from '@/components/common/icons/agent/CollapseIcon'
 import ExpandIcon from '@/components/common/icons/agent/ExpandIcon'
-import useSnackbar from '@/hooks/useSnackbar'
-import ScenarioModelExecutionPopupContent, {
-  type ScenarioModelExecutionOption,
-} from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionPopupContent'
-// #DELETE: 추천 파라미터 리스트 목 UI (USE_MOCK_PARAM_PROPOSAL_LIST 와 함께 삭제)
 import ScenarioModelExecutionProposalList from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionProposalList'
-import ScenarioModelExecutionRerunConfirmDialog from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionRerunConfirmDialog'
-import fileService, { type IFileDownloadRequest } from '@/service/admin/file'
-import nextGenMIModelExecutionService, {
-  type CurrentModelParamProposal,
-  type ModelExecutionAccept,
-  type ModelParamPayloadItem,
-} from '@/service/mi/nextGenMI/modelExecution'
-import { downloadFile } from '@/utils/file'
-
-/** #DELETE: true 면 수급모델 팝업에 추천 파라미터 리스트 목 UI 표시 (API 연동 후 false 또는 삭제) */
-export const USE_MOCK_PARAM_PROPOSAL_LIST = true
 
 export interface ScenarioModelExecutionPopupRef {
   open: () => void
@@ -32,715 +16,53 @@ export interface ScenarioModelExecutionPopupRef {
 }
 
 interface ScenarioModelExecutionPopupProps {
+  scenarioGroupId: number
   scenarioOptions: ScenarioModelExecutionOption[]
   executingScenarioIds: Set<number>
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
 }
 
-type ModelExecutionConfirmType = 'close' | 'scenarioChange' | 'scenarioRerun' | 'submit'
-type ModelParamProposalResetSource = 'confirmed' | 'proposed'
-
-const isExecutionValidationError = (error: unknown) => {
-  if (!axios.isAxiosError(error)) return false
-
-  const status = error.response?.status
-  const responseData = error.response?.data as { code?: string; message?: string } | undefined
-  const code = responseData?.code?.toUpperCase() ?? ''
-  const message = responseData?.message ?? ''
-
-  return status === 400 || status === 422 || code.includes('VALID') || message.includes('유효성')
-}
-
-const isClientRequestError = (error: unknown) => {
-  if (!axios.isAxiosError(error)) return false
-
-  const status = error.response?.status
-  return status !== undefined && status >= 400 && status < 500
-}
-
-const isModelParamProposalFailure = (currentState: CurrentModelParamProposal['currentState']) =>
-  currentState === 'PROPOSAL_FAILED' || currentState === 'EXECUTION_FAILED'
-
-const getDownloadableExecutionInputFiles = (proposal: CurrentModelParamProposal | null): IFileDownloadRequest[] => {
-  const executionInputFiles = proposal?.executionInputFiles
-  if (executionInputFiles?.complete !== true || !executionInputFiles.files?.length) return []
-
-  const downloadableFiles = executionInputFiles.files.flatMap((file) => {
-    if (
-      typeof file.fileNo !== 'number' ||
-      !Number.isInteger(file.fileNo) ||
-      file.fileNo <= 0 ||
-      typeof file.fileNm !== 'string' ||
-      file.fileNm.trim().length === 0 ||
-      typeof file.fileSize !== 'number' ||
-      !Number.isFinite(file.fileSize) ||
-      file.fileSize < 0
-    )
-      return []
-
-    return [{ fileNo: file.fileNo, fileNm: file.fileNm, fileSize: file.fileSize }]
-  })
-
-  return downloadableFiles.length === executionInputFiles.files.length ? downloadableFiles : []
-}
-
 const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, ScenarioModelExecutionPopupProps>(
-  ({ scenarioOptions, executingScenarioIds, onAccepted, onCompleted }, ref) => {
-    const { showSnackbar } = useSnackbar()
+  ({ scenarioGroupId, scenarioOptions, executingScenarioIds, onAccepted, onCompleted }, ref) => {
     const [open, setOpen] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
-    const [isScenarioChanging, setIsScenarioChanging] = useState(false)
-    const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null)
-    const [parameterProposal, setParameterProposal] = useState<CurrentModelParamProposal | null>(null)
-    const [currentProposalState, setCurrentProposalState] = useState<CurrentModelParamProposal['currentState']>()
-    const [isProposalGenerationPending, setIsProposalGenerationPending] = useState(false)
-    const [isCurrentProposalLoading, setIsCurrentProposalLoading] = useState(false)
-    const [isCurrentProposalLoadFailed, setIsCurrentProposalLoadFailed] = useState(false)
-    const [modelExecution, setModelExecution] = useState<ModelExecutionAccept | null>(null)
-    const [confirmType, setConfirmType] = useState<ModelExecutionConfirmType | null>(null)
-    const [pendingScenarioId, setPendingScenarioId] = useState<number | null>(null)
-    const modelParamProposalFailureKeyRef = useRef<string | null>(null)
-    const initialModelParamProposalRef = useRef<CurrentModelParamProposal | null>(null)
-    const currentProposalRequestIdRef = useRef(0)
-    const proposalSessionIdRef = useRef(0)
-    const resettingModelParamProposalRef = useRef(false)
-    const refreshingScenarioIdsRef = useRef(new Set<number>())
-    const queuedRefreshScenarioIdsRef = useRef(new Set<number>())
-    const queuedFailureNotificationScenarioIdsRef = useRef(new Set<number>())
-
-    const hasGeneratedParameters = (parameterProposal?.modelFiles?.length ?? 0) > 0
-    const downloadableExecutionInputFiles = useMemo(() => getDownloadableExecutionInputFiles(parameterProposal), [parameterProposal])
-
-    const notifyModelParamProposalFailure = useCallback(
-      (scenarioId: number | undefined, state: string, failureReason?: string) => {
-        const failureKey = `${scenarioId ?? ''}:${state}:${failureReason ?? ''}`
-        if (modelParamProposalFailureKeyRef.current === failureKey) return
-
-        modelParamProposalFailureKeyRef.current = failureKey
-        showSnackbar('파라미터 생성에 실패했습니다.', {
-          variant: 'error',
-          body: failureReason?.trim() || '잠시 후 다시 시도해 주세요.',
-        })
-      },
-      [showSnackbar],
-    )
-
-    const applyCurrentModelParamProposal = useCallback(
-      (proposal: CurrentModelParamProposal, notifyFailure = false) => {
-        setParameterProposal(proposal)
-        setCurrentProposalState(proposal.currentState)
-
-        if (
-          proposal.modelParamProposalId !== undefined &&
-          proposal.modelFiles.length > 0 &&
-          (proposal.parameterSource === 'PROPOSAL_PARAMETERS' ||
-            (proposal.parameterSource === undefined && proposal.currentState === 'PROPOSAL_READY')) &&
-          initialModelParamProposalRef.current?.modelParamProposalId !== proposal.modelParamProposalId
-        ) {
-          initialModelParamProposalRef.current = structuredClone(proposal)
-        }
-
-        if (proposal.currentState === 'GENERATING') {
-          setIsProposalGenerationPending(true)
-          return
-        }
-
-        setIsProposalGenerationPending(false)
-        if (!isModelParamProposalFailure(proposal.currentState)) {
-          modelParamProposalFailureKeyRef.current = null
-          return
-        }
-        if (notifyFailure) {
-          notifyModelParamProposalFailure(proposal.scenarioId, proposal.currentState ?? 'FAILED', proposal.failureReason)
-        }
-      },
-      [notifyModelParamProposalFailure],
-    )
-
-    const loadCurrentModelParamProposal = useCallback(
-      async (scenarioId: number, notifyFailure = false, showLoading = false) => {
-        const requestId = ++currentProposalRequestIdRef.current
-        if (showLoading) setIsCurrentProposalLoading(true)
-
-        try {
-          const proposal = await nextGenMIModelExecutionService.getCurrentModelParamProposal(scenarioId)
-          if (requestId !== currentProposalRequestIdRef.current) return
-          setIsCurrentProposalLoadFailed(false)
-          applyCurrentModelParamProposal(proposal, notifyFailure)
-        } catch (error) {
-          if (requestId !== currentProposalRequestIdRef.current) return
-          if (isClientRequestError(error)) {
-            setIsCurrentProposalLoadFailed(true)
-            showSnackbar('파라미터 상태 조회에 실패했습니다.', { variant: 'error' })
-            return
-          }
-          if (notifyFailure) return
-          showSnackbar('파라미터 상태 조회에 실패했습니다.', { variant: 'error' })
-        } finally {
-          if (requestId === currentProposalRequestIdRef.current) setIsCurrentProposalLoading(false)
-        }
-      },
-      [applyCurrentModelParamProposal, showSnackbar],
-    )
-
-    const refreshModelParamProposal = useCallback(
-      async (scenarioId: number, notifyFailure = false) => {
-        if (resettingModelParamProposalRef.current) return
-        if (refreshingScenarioIdsRef.current.has(scenarioId)) {
-          queuedRefreshScenarioIdsRef.current.add(scenarioId)
-          if (notifyFailure) queuedFailureNotificationScenarioIdsRef.current.add(scenarioId)
-          return
-        }
-        refreshingScenarioIdsRef.current.add(scenarioId)
-        const sessionId = proposalSessionIdRef.current
-
-        try {
-          let shouldNotifyFailure = notifyFailure
-          do {
-            if (sessionId !== proposalSessionIdRef.current) return
-            queuedRefreshScenarioIdsRef.current.delete(scenarioId)
-            shouldNotifyFailure = queuedFailureNotificationScenarioIdsRef.current.delete(scenarioId) || shouldNotifyFailure
-
-            await loadCurrentModelParamProposal(scenarioId, shouldNotifyFailure)
-            if (sessionId !== proposalSessionIdRef.current) return
-          } while (queuedRefreshScenarioIdsRef.current.delete(scenarioId))
-        } finally {
-          refreshingScenarioIdsRef.current.delete(scenarioId)
-        }
-      },
-      [loadCurrentModelParamProposal],
-    )
-
-    const reset = useCallback(() => {
-      proposalSessionIdRef.current += 1
-      currentProposalRequestIdRef.current += 1
-      modelParamProposalFailureKeyRef.current = null
-      initialModelParamProposalRef.current = null
-      resettingModelParamProposalRef.current = false
-      refreshingScenarioIdsRef.current.clear()
-      queuedRefreshScenarioIdsRef.current.clear()
-      queuedFailureNotificationScenarioIdsRef.current.clear()
-      setIsMaximized(false)
-      setIsScenarioChanging(false)
-      setSelectedScenarioId(null)
-      setParameterProposal(null)
-      setCurrentProposalState(undefined)
-      setIsProposalGenerationPending(false)
-      setIsCurrentProposalLoading(false)
-      setIsCurrentProposalLoadFailed(false)
-      setModelExecution(null)
-      setConfirmType(null)
-      setPendingScenarioId(null)
-    }, [])
+    const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
+    // 파라미터 패널(03+)일 때만 팝업을 뷰포트 높이로 채움. 생성 중(02)은 피그마처럼 콘텐츠 높이(400px 로딩 포함)에 맞춤
+    const [fillsViewportHeight, setFillsViewportHeight] = useState(false)
 
     const closePopup = useCallback(() => {
       setOpen(false)
-      reset()
-    }, [reset])
-
-    const handleClose = useCallback(() => {
-      // #DELETE: 목 UI는 확인 없이 바로 닫기
-      if (USE_MOCK_PARAM_PROPOSAL_LIST) {
-        closePopup()
-        return
-      }
-      setConfirmType('close')
-    }, [closePopup])
-
-    const { mutate: createModelParamProposal, isPending: isCreatingModelParamProposal } = useMutation({
-      mutationFn: (scenarioId: number) => nextGenMIModelExecutionService.createModelParamProposal(scenarioId),
-      onSuccess: (accepted, scenarioId) => {
-        setIsCurrentProposalLoadFailed(false)
-        if (accepted.status === 'FAILED') {
-          setIsProposalGenerationPending(false)
-          setCurrentProposalState('PROPOSAL_FAILED')
-          void refreshModelParamProposal(accepted.scenarioId ?? scenarioId, true)
-          return
-        }
-
-        if (accepted.status === 'PROPOSED') {
-          setCurrentProposalState('PROPOSAL_READY')
-          setIsProposalGenerationPending(false)
-        } else if (accepted.status === 'CONFIRMED') {
-          setCurrentProposalState('CONFIRMED_PENDING_EXECUTION')
-          setIsProposalGenerationPending(false)
-        } else {
-          setCurrentProposalState('GENERATING')
-          setIsProposalGenerationPending(true)
-        }
-        void refreshModelParamProposal(scenarioId, true)
-      },
-      onError: () => {
-        setIsProposalGenerationPending(false)
-        setCurrentProposalState('PROPOSAL_FAILED')
-        setIsCurrentProposalLoadFailed(true)
-        showSnackbar('파라미터 생성에 실패했습니다.', { variant: 'error' })
-      },
-    })
-
-    const { mutate: submitModelParamProposalExecution, isPending: isSubmittingModelParamProposal } = useMutation({
-      mutationFn: ({
-        scenarioId,
-        modelParamProposalId,
-        confirmationParameters,
-      }: {
-        scenarioId: number
-        modelParamProposalId: number
-        confirmationParameters: ModelParamPayloadItem[]
-      }) =>
-        nextGenMIModelExecutionService.submitModelParamProposalExecution(scenarioId, {
-          modelParamProposalId,
-          confirmationParameters,
-        }),
-      onSuccess: (data, variables) => {
-        if (data.status === 'COMPLETED') {
-          // 재실행 시 settleExecution 가드 리셋 후 완료 처리 (가격전망 해석 refetch)
-          onAccepted(variables.scenarioId)
-          onCompleted(variables.scenarioId)
-          closePopup()
-          return
-        }
-        if (data.status === 'FAILED') {
-          setCurrentProposalState('EXECUTION_FAILED')
-          showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
-          return
-        }
-
-        onAccepted(variables.scenarioId)
-        setCurrentProposalState('EXECUTING')
-        setModelExecution(data)
-      },
-      onError: (error) => {
-        if (isExecutionValidationError(error)) {
-          showSnackbar('유효성 검사에 실패했습니다.', { variant: 'error', body: '파라미터 내용을 확인해 주세요.' })
-          return
-        }
-        showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
-      },
-    })
-
-    const { mutate: resetModelParamProposal, isPending: isResettingModelParamProposal } = useMutation({
-      mutationFn: ({
-        scenarioId,
-        source,
-      }: {
-        scenarioId: number
-        source: ModelParamProposalResetSource
-        proposal: CurrentModelParamProposal
-        sessionId: number
-      }) =>
-        source === 'confirmed'
-          ? nextGenMIModelExecutionService.getLatestConfirmedParameters(scenarioId)
-          : nextGenMIModelExecutionService.getLatestProposedParameters(scenarioId),
-      onSuccess: (data, variables) => {
-        if (variables.sessionId !== proposalSessionIdRef.current) return
-
-        if (
-          (data.scenarioId !== undefined && data.scenarioId !== variables.scenarioId) ||
-          (variables.source === 'proposed' && data.modelParamProposalId !== variables.proposal.modelParamProposalId)
-        ) {
-          showSnackbar('파라미터 초기화에 실패했습니다.', {
-            variant: 'error',
-            body: '현재 파라미터 제안과 초기화 데이터가 일치하지 않습니다.',
-          })
-          return
-        }
-
-        if (data.modelFiles.length === 0) {
-          showSnackbar('파라미터 초기화에 실패했습니다.', {
-            variant: 'error',
-            body: '초기화할 파라미터 정보를 확인할 수 없습니다.',
-          })
-          return
-        }
-
-        setParameterProposal({
-          ...variables.proposal,
-          parameterSource: data.parameterSource,
-          modelFiles: data.modelFiles,
-        })
-        showSnackbar(variables.source === 'confirmed' ? '직전 데이터로 초기화되었습니다.' : '최초 생성 데이터로 초기화되었습니다.', {
-          variant: 'success',
-        })
-      },
-      onError: (_error, variables) => {
-        if (variables.sessionId !== proposalSessionIdRef.current) return
-        showSnackbar('파라미터 초기화에 실패했습니다.', {
-          variant: 'error',
-          body: '초기화 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
-        })
-      },
-      onSettled: () => {
-        resettingModelParamProposalRef.current = false
-      },
-    })
-
-    const { mutate: downloadExecutionInputFiles, isPending: isDownloadingInputFiles } = useMutation({
-      mutationFn: ({ prefix, files: inputFiles }: { prefix: string; files: IFileDownloadRequest[] }) =>
-        fileService.downloadFiles(prefix, inputFiles),
-      onSuccess: (fileBlob, { prefix }) => {
-        downloadFile(fileBlob, `${prefix}.zip`)
-      },
-      onError: () => {
-        showSnackbar('인풋 파일 다운로드에 실패했습니다.', { variant: 'error' })
-      },
-    })
-
-    const isGenerating = isCreatingModelParamProposal || isProposalGenerationPending || currentProposalState === 'GENERATING'
-    const isExecuting = modelExecution?.status === 'RUNNING'
-    const isSubmitting = isSubmittingModelParamProposal
-    const isBusy = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
-    const isCloseDisabled = isGenerating || isCurrentProposalLoading || isExecuting || isSubmitting || isResettingModelParamProposal
-    const isMaximizeActive = isMaximized
-    const canGenerate =
-      currentProposalState === 'NOT_REQUESTED' || currentProposalState === 'PROPOSAL_FAILED' || currentProposalState === 'EXECUTION_FAILED'
-    const canUseCurrentParameters =
-      (currentProposalState === 'PROPOSAL_READY' ||
-        currentProposalState === 'EXECUTED_CONFIRMED' ||
-        currentProposalState === 'EXECUTION_FAILED') &&
-      hasGeneratedParameters &&
-      parameterProposal?.modelParamProposalId !== undefined
-
-    const changeScenario = useCallback((scenarioId: number) => {
-      proposalSessionIdRef.current += 1
-      currentProposalRequestIdRef.current += 1
-      modelParamProposalFailureKeyRef.current = null
-      initialModelParamProposalRef.current = null
-      resettingModelParamProposalRef.current = false
-      setIsScenarioChanging(true)
-      setSelectedScenarioId(scenarioId)
-      setParameterProposal(null)
-      setCurrentProposalState(undefined)
-      setIsProposalGenerationPending(false)
-      setIsCurrentProposalLoading(false)
-      setIsCurrentProposalLoadFailed(false)
-      setModelExecution(null)
+      setIsMaximized(false)
+      setCloseConfirmOpen(false)
+      setFillsViewportHeight(false)
     }, [])
 
-    const handleSelectScenario = useCallback(
-      (scenarioId: number) => {
-        if (selectedScenarioId === scenarioId) return
-
-        const selectedScenarioExecuted = scenarioOptions.some((option) => option.scenarioId === scenarioId && option.executed)
-        if (selectedScenarioExecuted) {
-          setPendingScenarioId(scenarioId)
-          setConfirmType('scenarioRerun')
-          return
-        }
-
-        if (hasGeneratedParameters) {
-          setPendingScenarioId(scenarioId)
-          setConfirmType('scenarioChange')
-          return
-        }
-
-        changeScenario(scenarioId)
-      },
-      [changeScenario, hasGeneratedParameters, scenarioOptions, selectedScenarioId],
-    )
-
-    const handleScenarioChangeConfirm = useCallback(() => {
-      if (pendingScenarioId === null) return
-      changeScenario(pendingScenarioId)
-      setPendingScenarioId(null)
-      setConfirmType(null)
-    }, [changeScenario, pendingScenarioId])
-
-    const handleScenarioRerunConfirm = useCallback(() => {
-      if (pendingScenarioId === null) return
-      changeScenario(pendingScenarioId)
-      setPendingScenarioId(null)
-      setConfirmType(null)
-    }, [changeScenario, pendingScenarioId])
-
-    const handleGenerateParameters = useCallback(() => {
-      if (selectedScenarioId === null || isBusy || !canGenerate) return
-      if (executingScenarioIds.has(selectedScenarioId)) return
-
-      initialModelParamProposalRef.current = null
-      setParameterProposal(null)
-      setCurrentProposalState('GENERATING')
-      setIsProposalGenerationPending(true)
-      createModelParamProposal(selectedScenarioId)
-    }, [canGenerate, createModelParamProposal, executingScenarioIds, isBusy, selectedScenarioId])
-
-    const handleResetParameters = useCallback(
-      (source: ModelParamProposalResetSource) => {
-        if (selectedScenarioId === null || !parameterProposal || !canUseCurrentParameters || isBusy) return
-        if (executingScenarioIds.has(selectedScenarioId)) return
-
-        const selectedScenarioExecuted = scenarioOptions.some((option) => option.scenarioId === selectedScenarioId && option.executed)
-        if (source === 'confirmed' && !selectedScenarioExecuted) return
-
-        const initialProposal = initialModelParamProposalRef.current
-        if (
-          source === 'proposed' &&
-          initialProposal !== null &&
-          initialProposal.modelParamProposalId !== undefined &&
-          initialProposal.modelParamProposalId === parameterProposal.modelParamProposalId &&
-          (initialProposal.scenarioId === undefined || initialProposal.scenarioId === selectedScenarioId)
-        ) {
-          setParameterProposal(structuredClone(initialProposal))
-          showSnackbar('최초 생성 데이터로 초기화되었습니다.', { variant: 'success' })
-          return
-        }
-
-        if (source === 'proposed' && !selectedScenarioExecuted) {
-          showSnackbar('파라미터 초기화에 실패했습니다.', {
-            variant: 'error',
-            body: '초기화할 최초 생성 데이터를 확인할 수 없습니다.',
-          })
-          return
-        }
-
-        resettingModelParamProposalRef.current = true
-        proposalSessionIdRef.current += 1
-        currentProposalRequestIdRef.current += 1
-        queuedRefreshScenarioIdsRef.current.delete(selectedScenarioId)
-        queuedFailureNotificationScenarioIdsRef.current.delete(selectedScenarioId)
-
-        resetModelParamProposal({
-          scenarioId: selectedScenarioId,
-          source,
-          proposal: parameterProposal,
-          sessionId: proposalSessionIdRef.current,
-        })
-      },
-      [
-        canUseCurrentParameters,
-        executingScenarioIds,
-        isBusy,
-        parameterProposal,
-        resetModelParamProposal,
-        scenarioOptions,
-        selectedScenarioId,
-        showSnackbar,
-      ],
-    )
-
-    const handleChangeParameterValue = useCallback(
-      (
-        modelFileIndex: number,
-        modelSheetIndex: number,
-        modelTableIndex: number,
-        parameterIndex: number,
-        rowIndex: number,
-        value: number,
-      ) => {
-        setParameterProposal((currentProposal) => {
-          if (!currentProposal) return currentProposal
-
-          return {
-            ...currentProposal,
-            modelFiles: currentProposal.modelFiles.map((modelFile, currentModelFileIndex) => ({
-              ...modelFile,
-              modelSheets: modelFile.modelSheets.map((modelSheet, currentModelSheetIndex) => ({
-                ...modelSheet,
-                modelTables: modelSheet.modelTables.map((modelTable, currentModelTableIndex) => ({
-                  ...modelTable,
-                  parameters: modelTable.parameters.map((modelParameter, currentParameterIndex) => {
-                    if (
-                      currentModelFileIndex !== modelFileIndex ||
-                      currentModelSheetIndex !== modelSheetIndex ||
-                      currentModelTableIndex !== modelTableIndex ||
-                      currentParameterIndex !== parameterIndex
-                    )
-                      return modelParameter
-
-                    return {
-                      ...modelParameter,
-                      parameter: {
-                        ...modelParameter.parameter,
-                        values: modelParameter.parameter.values.map((row, index) =>
-                          index === rowIndex ? { ...row, proposedValue: value } : row,
-                        ),
-                      },
-                    }
-                  }),
-                })),
-              })),
-            })),
-          }
-        })
-      },
-      [],
-    )
-
-    const handleDownloadInputFiles = useCallback(() => {
-      if (selectedScenarioId === null || downloadableExecutionInputFiles.length === 0 || isDownloadingInputFiles) return
-
-      downloadExecutionInputFiles({
-        prefix: `scenario-${selectedScenarioId}-model-input-files`,
-        files: downloadableExecutionInputFiles,
-      })
-    }, [downloadExecutionInputFiles, downloadableExecutionInputFiles, isDownloadingInputFiles, selectedScenarioId])
-
-    const handleModelParamProposalSubmitRequest = useCallback(() => {
-      if (
-        isSubmitting ||
-        selectedScenarioId === null ||
-        parameterProposal?.modelParamProposalId === undefined ||
-        !canUseCurrentParameters ||
-        executingScenarioIds.has(selectedScenarioId)
-      )
-        return
-
-      setConfirmType('submit')
-    }, [canUseCurrentParameters, executingScenarioIds, isSubmitting, parameterProposal, selectedScenarioId])
-
-    const handleModelParamProposalSubmitConfirm = useCallback(() => {
-      if (selectedScenarioId === null || parameterProposal?.modelParamProposalId === undefined || isSubmitting) return
-      setConfirmType(null)
-      submitModelParamProposalExecution({
-        scenarioId: selectedScenarioId,
-        modelParamProposalId: parameterProposal.modelParamProposalId,
-        confirmationParameters: parameterProposal.modelFiles.flatMap((modelFile) =>
-          modelFile.modelSheets.flatMap((modelSheet) =>
-            modelSheet.modelTables.flatMap((modelTable) =>
-              modelTable.parameters.map(({ parameter }) => ({
-                parameterName: parameter.parameterName,
-                modelTarget: parameter.modelTarget,
-                rationale: parameter.rationale,
-                values: parameter.values,
-              })),
-            ),
-          ),
-        ),
-      })
-    }, [isSubmitting, parameterProposal, selectedScenarioId, submitModelParamProposalExecution])
-
-    useEffect(() => {
-      // #DELETE: 목 UI일 때 파라미터 조회 스킵
-      if (USE_MOCK_PARAM_PROPOSAL_LIST || !open || selectedScenarioId === null) return
-      void loadCurrentModelParamProposal(selectedScenarioId, false, true)
-    }, [loadCurrentModelParamProposal, open, selectedScenarioId])
-
-    useEffect(() => {
-      if (!isScenarioChanging || isCurrentProposalLoading || selectedScenarioId === null) return undefined
-
-      const animationFrameId = globalThis.requestAnimationFrame(() => setIsScenarioChanging(false))
-      return () => globalThis.cancelAnimationFrame(animationFrameId)
-    }, [isCurrentProposalLoading, isScenarioChanging, selectedScenarioId])
-
-    useEffect(() => {
-      // #DELETE: 목 UI일 때 재조회 폴링 스킵
-      if (
-        USE_MOCK_PARAM_PROPOSAL_LIST ||
-        !open ||
-        selectedScenarioId === null ||
-        (currentProposalState !== undefined && parameterProposal !== null) ||
-        isCurrentProposalLoadFailed ||
-        isCurrentProposalLoading ||
-        isCreatingModelParamProposal
-      )
-        return undefined
-
-      const timeoutId = globalThis.setTimeout(() => {
-        void loadCurrentModelParamProposal(selectedScenarioId, true, true)
-      }, 3000)
-
-      return () => globalThis.clearTimeout(timeoutId)
-    }, [
-      currentProposalState,
-      isCreatingModelParamProposal,
-      isCurrentProposalLoading,
-      isCurrentProposalLoadFailed,
-      loadCurrentModelParamProposal,
-      open,
-      parameterProposal,
-      selectedScenarioId,
-    ])
-
-    useEffect(() => {
-      // #DELETE: 목 UI일 때 SSE 스킵
-      if (USE_MOCK_PARAM_PROPOSAL_LIST || !open || selectedScenarioId === null) return undefined
-
-      let hasConnected = false
-      const controller = new AbortController()
-      void nextGenMIModelExecutionService
-        .streamModelParamProposal(
-          selectedScenarioId,
-          ({ event }) => {
-            if (event === 'connected') {
-              if (hasConnected) void refreshModelParamProposal(selectedScenarioId)
-              hasConnected = true
-              return
-            }
-            if (event !== 'model-parameter-proposal') return
-            void refreshModelParamProposal(selectedScenarioId, true)
-          },
-          controller.signal,
-        )
-        .catch(() => undefined)
-
-      return () => {
-        controller.abort()
-      }
-    }, [open, refreshModelParamProposal, selectedScenarioId])
-
-    useEffect(() => {
-      if (!open || !modelExecution || modelExecution.status !== 'RUNNING') return undefined
-
-      const execution = modelExecution
-      let isActive = true
-      let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
-      const pollModelExecutionStatus = async () => {
-        try {
-          const status = await nextGenMIModelExecutionService.getModelExecutionStatus(execution.scenarioId, execution.runId)
-          if (!isActive) return
-          if (status.status === 'RUNNING') {
-            timeoutId = globalThis.setTimeout(() => {
-              void pollModelExecutionStatus()
-            }, 5000)
-            return
-          }
-
-          setModelExecution(null)
-          if (status.status === 'COMPLETED') {
-            onCompleted(execution.scenarioId)
-            closePopup()
-            return
-          }
-
-          setCurrentProposalState('EXECUTION_FAILED')
-          showSnackbar('MI 수급모델 실행에 실패했습니다.', {
-            variant: 'error',
-            body: status.errorMessage || status.failureReason || '잠시 후 다시 시도해 주세요.',
-          })
-        } catch {
-          // 실행 상태 API의 일시적 실패는 다음 폴링에서 재시도합니다.
-          if (isActive) {
-            timeoutId = globalThis.setTimeout(() => {
-              void pollModelExecutionStatus()
-            }, 5000)
-          }
-        }
-      }
-
-      void pollModelExecutionStatus()
-
-      return () => {
-        isActive = false
-        if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId)
-      }
-    }, [closePopup, modelExecution, onCompleted, open, showSnackbar])
+    const handleCloseRequest = useCallback(() => {
+      setCloseConfirmOpen(true)
+    }, [])
 
     useImperativeHandle(
       ref,
       () => ({
         open: () => {
-          reset()
+          setIsMaximized(false)
+          setCloseConfirmOpen(false)
+          setFillsViewportHeight(false)
           setOpen(true)
         },
-        openFor: (scenarioId: number) => {
-          reset()
-          setSelectedScenarioId(scenarioId)
+        openFor: () => {
+          setIsMaximized(false)
+          setCloseConfirmOpen(false)
+          setFillsViewportHeight(false)
           setOpen(true)
         },
       }),
-      [reset],
+      [],
     )
+
+    const paperHeight = isMaximized || fillsViewportHeight ? (isMaximized ? 'calc(100dvh - 32px)' : 'calc(100dvh - 96px)') : 'auto'
+    const paperMaxHeight = isMaximized ? 'calc(100dvh - 32px)' : 'calc(100dvh - 96px)'
 
     return (
       <>
@@ -749,14 +71,13 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           title={
             <Stack component="span" direction="row" alignItems="center" justifyContent="space-between" width="100%" minWidth={0}>
               <Typography component="span" fontSize="18px" fontWeight={600} lineHeight={1.4} color="contentText.Black">
-                {/* #DELETE: 목 UI 제목 */}
-                {USE_MOCK_PARAM_PROPOSAL_LIST ? 'MI 수급모델 실행' : 'MI 수급모델'}
+                MI 수급모델 실행
               </Typography>
               <MIBaseButton
                 variant="text"
-                title={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
-                aria-label={isMaximizeActive ? '기본 크기로 보기' : '최대화'}
-                aria-pressed={isMaximizeActive}
+                title={isMaximized ? '기본 크기로 보기' : '최대화'}
+                aria-label={isMaximized ? '기본 크기로 보기' : '최대화'}
+                aria-pressed={isMaximized}
                 aria-haspopup={false}
                 onClick={() => setIsMaximized((maximized) => !maximized)}
                 disableRipple
@@ -771,52 +92,32 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
                   color: 'contentIcon.Enabled',
                 }}
               >
-                {isMaximizeActive ? <CollapseIcon width={16} height={16} /> : <ExpandIcon width={24} height={24} />}
+                {isMaximized ? <CollapseIcon width={16} height={16} /> : <ExpandIcon width={24} height={24} />}
               </MIBaseButton>
             </Stack>
           }
-          handleClose={handleClose}
+          handleClose={handleCloseRequest}
           width={1200}
           hideFooter
-          disableClose={isCloseDisabled}
-          disableBackdropClick={isCloseDisabled}
           paperSx={{
             border: '1px solid',
             borderColor: 'contentBorder.Normal',
             borderRadius: '10px',
             boxShadow: '0px 18px 50px -10px rgba(0, 0, 0, 0.1)',
-            width: isMaximizeActive ? 'calc(100dvw - 32px)' : '1200px',
+            width: isMaximized ? 'calc(100dvw - 32px)' : '1200px',
             maxWidth: 'calc(100dvw - 32px)',
-            // #DELETE: 목 UI는 뷰포트 고정 높이 + 푸터 고정 (auto 시 하단 액션 잘림)
-            height: isMaximizeActive
-              ? 'calc(100dvh - 32px)'
-              : USE_MOCK_PARAM_PROPOSAL_LIST
-                ? 'calc(100dvh - 96px)'
-                : hasGeneratedParameters && !isSubmitting && !isExecuting
-                  ? 'auto'
-                  : 'min(604px, calc(100dvh - 32px))',
-            maxHeight: isMaximizeActive
-              ? 'calc(100dvh - 32px)'
-              : USE_MOCK_PARAM_PROPOSAL_LIST || (hasGeneratedParameters && !isSubmitting && !isExecuting)
-                ? 'calc(100dvh - 96px)'
-                : 'calc(100dvh - 32px)',
-            margin: isMaximizeActive
-              ? '16px'
-              : USE_MOCK_PARAM_PROPOSAL_LIST || (hasGeneratedParameters && !isSubmitting && !isExecuting)
-                ? '48px 16px'
-                : '16px',
+            height: paperHeight,
+            maxHeight: paperMaxHeight,
+            margin: isMaximized ? '16px' : '48px 16px',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             interpolateSize: 'allow-keywords',
             transition: (theme: Theme) =>
-              theme.transitions.create(
-                isScenarioChanging ? ['width', 'max-width'] : ['width', 'height', 'max-width', 'max-height', 'margin'],
-                {
-                  duration: 400,
-                  easing: theme.transitions.easing.easeInOut,
-                },
-              ),
+              theme.transitions.create(['width', 'height', 'max-width', 'max-height', 'margin'], {
+                duration: 400,
+                easing: theme.transitions.easing.easeInOut,
+              }),
           }}
           titleSx={{
             height: '60px',
@@ -844,104 +145,43 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            flex: '1 1 auto',
-            minHeight: 0,
+            flex: fillsViewportHeight || isMaximized ? '1 1 auto' : '0 0 auto',
+            minHeight: fillsViewportHeight || isMaximized ? 0 : undefined,
             '& .MuiDialogContentText-root': {
               display: 'flex',
               flexDirection: 'column',
-              flex: '1 1 auto',
-              minHeight: 0,
+              flex: fillsViewportHeight || isMaximized ? '1 1 auto' : '0 0 auto',
+              minHeight: fillsViewportHeight || isMaximized ? 0 : undefined,
             },
           }}
         >
-          {/* #DELETE: 목 추천 파라미터 리스트 UI */}
-          {USE_MOCK_PARAM_PROPOSAL_LIST ? (
-            <ScenarioModelExecutionProposalList onCancel={closePopup} />
-          ) : (
-            <ScenarioModelExecutionPopupContent
+          {open && (
+            <ScenarioModelExecutionProposalList
+              scenarioGroupId={scenarioGroupId}
               scenarioOptions={scenarioOptions}
-              selectedScenarioId={selectedScenarioId}
               executingScenarioIds={executingScenarioIds}
-              parameterProposal={parameterProposal}
-              isMaximized={isMaximizeActive}
-              isLoading={isCurrentProposalLoading}
-              isGenerating={isGenerating}
-              isExecuting={isExecuting}
-              isSubmitting={isSubmitting}
-              isResetting={isResettingModelParamProposal}
-              isDownloadingInputFiles={isDownloadingInputFiles}
-              isCloseDisabled={isCloseDisabled}
-              canGenerate={canGenerate}
-              canReset={canUseCurrentParameters}
-              canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
-              canSubmit={canUseCurrentParameters}
-              onSelectScenario={handleSelectScenario}
-              onGenerateParameters={handleGenerateParameters}
-              onChangeParameterValue={handleChangeParameterValue}
-              onDownloadInputFiles={handleDownloadInputFiles}
-              onReset={handleResetParameters}
-              onSubmit={handleModelParamProposalSubmitRequest}
-              onCancel={handleClose}
+              fillsViewportHeight={fillsViewportHeight || isMaximized}
+              onFillsViewportHeightChange={setFillsViewportHeight}
+              onCancel={closePopup}
+              onAccepted={onAccepted}
+              onCompleted={onCompleted}
             />
           )}
         </MIConfirm>
 
         <MIConfirm
-          open={confirmType === 'close'}
+          open={closeConfirmOpen}
           title="MI 수급모델 진행을 종료하시겠습니까?"
           width={450}
-          handleClose={() => setConfirmType(null)}
+          handleClose={() => setCloseConfirmOpen(false)}
           zIndex={1400}
           actions={[
-            { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setConfirmType(null) },
+            { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setCloseConfirmOpen(false) },
             { label: '종료', color: 'red', onClick: closePopup },
           ]}
         >
           현재 생성된 파라미터 제안을 닫습니다.
         </MIConfirm>
-
-        <MIConfirm
-          open={confirmType === 'scenarioChange'}
-          title="시나리오를 변경하시겠습니까?"
-          width={450}
-          handleClose={() => setConfirmType(null)}
-          zIndex={1400}
-          actions={[
-            { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setConfirmType(null) },
-            { label: '변경', color: 'primary', onClick: handleScenarioChangeConfirm },
-          ]}
-        >
-          시나리오를 변경하면 현재 생성된 파라미터 제안이 초기화됩니다.
-        </MIConfirm>
-
-        <MIConfirm
-          open={confirmType === 'submit'}
-          title="MI 수급모델을 실행하시겠습니까?"
-          width={450}
-          handleClose={() => setConfirmType(null)}
-          zIndex={1400}
-          actions={[
-            { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setConfirmType(null) },
-            {
-              label: '실행',
-              color: 'primary',
-              disabled: isSubmitting || selectedScenarioId === null || executingScenarioIds.has(selectedScenarioId),
-              onClick: handleModelParamProposalSubmitConfirm,
-            },
-          ]}
-        >
-          현재 제안된 파라미터를 기준으로 수급모델을 실행합니다.
-        </MIConfirm>
-
-        <ScenarioModelExecutionRerunConfirmDialog
-          open={confirmType === 'scenarioRerun'}
-          zIndex={1401}
-          onClose={() => {
-            setPendingScenarioId(null)
-            setConfirmType(null)
-          }}
-          onConfirm={handleScenarioRerunConfirm}
-        />
       </>
     )
   },

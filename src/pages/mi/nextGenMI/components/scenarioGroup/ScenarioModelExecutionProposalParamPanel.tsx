@@ -1,21 +1,38 @@
-/** #DELETE: 추천 파라미터 패널 목 UI (API 연동 후 파일 삭제) */
 import { Stack, Tab, Tabs, Typography } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+
+import type { ScenarioGroupModelParamCompare } from '@/service/mi/nextGenMI/modelExecution'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import FileDownloadIcon from '@/components/common/icons/FileDownloadIcon'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
-// #DELETE: 목 파라미터 매트릭스 (API 연동 후 ParamPanel 체인과 함께 삭제)
+import {
+  buildCompareParamMatrixData,
+  getCompareParameterChips,
+  getUniqueModelNames,
+} from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalMapping'
 import ScenarioModelExecutionProposalParamMatrix, {
   type ProposalParamVisibleScenario,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionProposalParamMatrix'
-// #DELETE: 파라미터 네비게이션/표 목
-import { createProposalParamMatrixMock } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalParamMock'
 
 interface ScenarioModelExecutionProposalParamPanelProps {
   visibleScenarios: ProposalParamVisibleScenario[]
+  compare: ScenarioGroupModelParamCompare | null
   resetToken?: number
+  canDownloadInputFiles?: boolean
+  isDownloadingInputFiles?: boolean
+  onDownloadInputFiles?: () => void
   onHasEditsChange?: (hasEdits: boolean) => void
+  onChangeScenarioValue?: (args: {
+    scenarioId: number
+    modelFileName: string | null
+    modelSheetName: string | null
+    modelTableName: string | null
+    parameterIndex: number
+    periodTimeKey: string
+    rowIndex: number
+    nextValue: number
+  }) => void
 }
 
 const ParameterChip = ({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) => (
@@ -46,14 +63,65 @@ const ParameterChip = ({ label, selected, onClick }: { label: string; selected: 
 
 const ScenarioModelExecutionProposalParamPanel = ({
   visibleScenarios,
+  compare,
   resetToken,
+  canDownloadInputFiles = false,
+  isDownloadingInputFiles = false,
+  onDownloadInputFiles,
   onHasEditsChange,
+  onChangeScenarioValue,
 }: ScenarioModelExecutionProposalParamPanelProps) => {
-  // #DELETE: 모델 파일/시트/테이블 칩 네비게이션 목
-  const navigation = useMemo(() => createProposalParamMatrixMock([]), [])
-  const [modelFile, setModelFile] = useState(navigation.modelFiles[0] ?? 'Demand')
-  const [modelSheet, setModelSheet] = useState(navigation.modelSheets[0] ?? 'PowerMix')
-  const [modelTable, setModelTable] = useState(navigation.modelTables[0] ?? 'Table 1')
+  const modelFiles = useMemo(() => getUniqueModelNames(compare?.modelFiles.map((file) => file.modelFile) ?? []), [compare?.modelFiles])
+  const [modelFile, setModelFile] = useState<string | null>(null)
+  const [modelSheet, setModelSheet] = useState<string | null>(null)
+  const [modelTable, setModelTable] = useState<string | null>(null)
+  const [parameterIndex, setParameterIndex] = useState(0)
+
+  const activeModelFile = modelFile && modelFiles.includes(modelFile) ? modelFile : (modelFiles[0] ?? null)
+  const activeModelFileNode = compare?.modelFiles.find((file) => file.modelFile === activeModelFile)
+  const modelSheets = useMemo(
+    () => getUniqueModelNames(activeModelFileNode?.modelSheets?.map((sheet) => sheet.modelSheet) ?? []),
+    [activeModelFileNode?.modelSheets],
+  )
+  const activeModelSheet = modelSheet && modelSheets.includes(modelSheet) ? modelSheet : (modelSheets[0] ?? null)
+  const activeModelSheetNode = activeModelFileNode?.modelSheets?.find((sheet) => sheet.modelSheet === activeModelSheet)
+  const modelTables = useMemo(() => getUniqueModelNames(activeModelSheetNode?.tableNames ?? []), [activeModelSheetNode?.tableNames])
+  const activeModelTable = modelTable && modelTables.includes(modelTable) ? modelTable : (modelTables[0] ?? null)
+
+  const parameterChips = useMemo(
+    () => getCompareParameterChips(compare, activeModelFile, activeModelSheet, activeModelTable),
+    [activeModelFile, activeModelSheet, activeModelTable, compare],
+  )
+  const activeParameterIndex = parameterIndex < parameterChips.length ? parameterIndex : 0
+
+  useEffect(() => {
+    setModelFile(activeModelFile)
+  }, [activeModelFile])
+
+  useEffect(() => {
+    setModelSheet(activeModelSheet)
+  }, [activeModelSheet])
+
+  useEffect(() => {
+    setModelTable(activeModelTable)
+  }, [activeModelTable])
+
+  useEffect(() => {
+    setParameterIndex(0)
+  }, [activeModelTable])
+
+  const matrix = useMemo(
+    () =>
+      buildCompareParamMatrixData({
+        compare,
+        visibleScenarioIds: visibleScenarios.map((scenario) => scenario.scenarioId),
+        modelFileName: activeModelFile,
+        modelSheetName: activeModelSheet,
+        modelTableName: activeModelTable,
+        parameterIndex: activeParameterIndex,
+      }),
+    [activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex, compare, visibleScenarios],
+  )
 
   return (
     <Stack width="100%" minHeight={0} borderTop="1px solid" borderColor="contentBorder.Normal">
@@ -69,7 +137,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
         bgcolor="commonColor.White"
       >
         <Tabs
-          value={modelFile}
+          value={activeModelFile ?? false}
           onChange={(_, value: string) => setModelFile(value)}
           sx={{
             height: '100%',
@@ -90,14 +158,16 @@ const ScenarioModelExecutionProposalParamPanel = ({
             },
           }}
         >
-          {navigation.modelFiles.map((fileName) => (
+          {modelFiles.map((fileName) => (
             <Tab key={fileName} label={fileName} value={fileName} disableRipple />
           ))}
         </Tabs>
         <MIBaseButton
           variant="outlined"
           prefix={<FileDownloadIcon width={20} height={20} />}
-          disabled
+          disabled={!canDownloadInputFiles || isDownloadingInputFiles}
+          isLoading={isDownloadingInputFiles}
+          onClick={onDownloadInputFiles}
           sx={{ flexShrink: 0, height: '36px', borderRadius: '8px', padding: '8px 10px 8px 6px' }}
         >
           인풋 파일 다운로드
@@ -106,18 +176,40 @@ const ScenarioModelExecutionProposalParamPanel = ({
 
       <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
         <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
-          {navigation.modelSheets.map((sheetName) => (
-            <ParameterChip key={sheetName} label={sheetName} selected={sheetName === modelSheet} onClick={() => setModelSheet(sheetName)} />
+          {modelSheets.map((sheetName) => (
+            <ParameterChip
+              key={sheetName}
+              label={sheetName}
+              selected={sheetName === activeModelSheet}
+              onClick={() => setModelSheet(sheetName)}
+            />
           ))}
         </HorizontalScrollContainer>
       </Stack>
 
-      <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5">
+      <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5" gap="8px">
         <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
-          {navigation.modelTables.map((tableName) => (
-            <ParameterChip key={tableName} label={tableName} selected={tableName === modelTable} onClick={() => setModelTable(tableName)} />
+          {modelTables.map((tableName) => (
+            <ParameterChip
+              key={tableName}
+              label={tableName}
+              selected={tableName === activeModelTable}
+              onClick={() => setModelTable(tableName)}
+            />
           ))}
         </HorizontalScrollContainer>
+        {parameterChips.length > 1 && (
+          <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+            {parameterChips.map((chip) => (
+              <ParameterChip
+                key={chip.index}
+                label={chip.label}
+                selected={chip.index === activeParameterIndex}
+                onClick={() => setParameterIndex(chip.index)}
+              />
+            ))}
+          </HorizontalScrollContainer>
+        )}
       </Stack>
 
       <Stack flexShrink={0} padding="12px 24px 16px" bgcolor="commonColor.White">
@@ -137,8 +229,21 @@ const ScenarioModelExecutionProposalParamPanel = ({
         ) : (
           <ScenarioModelExecutionProposalParamMatrix
             visibleScenarios={visibleScenarios}
+            matrix={matrix}
             resetToken={resetToken}
             onHasEditsChange={onHasEditsChange}
+            onChangeScenarioValue={(scenarioId, periodTimeKey, rowIndex, nextValue) =>
+              onChangeScenarioValue?.({
+                scenarioId,
+                modelFileName: activeModelFile,
+                modelSheetName: activeModelSheet,
+                modelTableName: activeModelTable,
+                parameterIndex: activeParameterIndex,
+                periodTimeKey,
+                rowIndex,
+                nextValue,
+              })
+            }
           />
         )}
       </Stack>

@@ -65,6 +65,8 @@ export type ModelParamProposalCurrentState =
   | 'EXECUTING'
   | 'EXECUTED_CONFIRMED'
   | 'PROPOSAL_FAILED'
+  | 'PROPOSAL_NO_CHANGES'
+  | 'PROPOSAL_RETRYABLE'
   | 'EXECUTION_FAILED'
 
 export type ModelParamProposalAcceptStatus = 'PROCESSING' | 'PROPOSED' | 'CONFIRMED' | 'FAILED'
@@ -86,6 +88,14 @@ export interface ModelParamTarget {
   slotAxesFieldNames?: string[]
 }
 
+export interface ModelParamPayloadItem {
+  parameterName?: string
+  modelTarget?: ModelParamTarget
+  rationale?: string
+  values?: Array<Record<string, unknown>>
+}
+
+/** 단건 proposal 트리 (PopupContent 타입 호환용) */
 export interface CurrentModelParameter {
   parameterName?: string
   modelTarget: ModelParamTarget
@@ -139,6 +149,93 @@ export interface CurrentModelParamProposal {
   confirmedAt?: string
 }
 
+/** 그룹 제안 현황 - 시나리오 행 */
+export interface ScenarioGroupModelParamProposalScenario {
+  scenarioId: number
+  scenarioName?: string
+  displayOrder?: number
+  probability?: number
+  adjustedProbability?: number
+  scenarioStatus?: string
+  scenarioStatusLabel?: string
+  currentState?: ModelParamProposalCurrentState
+  modelParamProposalId?: number | null
+  execPrepId?: number | null
+  failureReason?: string | null
+  requestedAt?: string | null
+  completedAt?: string | null
+  confirmedAt?: string | null
+}
+
+/** GET .../scenario-groups/{id}/model-param-proposals */
+export interface ScenarioGroupModelParamProposals {
+  scenarioGroupId: number
+  groupName?: string
+  groupCreatedAt?: string
+  scenarios: ScenarioGroupModelParamProposalScenario[]
+}
+
+export interface ModelParamCompareScenario {
+  scenarioId: number
+  scenarioName?: string
+  displayOrder?: number
+  modelParamProposalId?: number
+  status?: string
+}
+
+export interface ModelParamCompareCell {
+  scenarioId?: number
+  proposedValue?: number
+  rationale?: string
+}
+
+export type ModelParamCompareValue = Record<string, unknown> & {
+  basecaseValue?: number | null
+  cells?: ModelParamCompareCell[]
+}
+
+export interface ModelParamCompareScenarioRationale {
+  scenarioId: number
+  rationale?: string
+  groupedRationales?: Array<Record<string, unknown>>
+}
+
+export interface ModelParamCompareParameter {
+  parameterName?: string
+  modelTarget?: ModelParamTarget
+  scenarioRationales?: ModelParamCompareScenarioRationale[]
+  values?: ModelParamCompareValue[]
+}
+
+export interface ModelParamCompareShape {
+  parameterName?: string
+  modelFile?: string
+  modelSheet?: string
+  modelTable?: string
+  readMode?: 'FIXED_COLUMNS' | 'MATRIX_TIME_COLUMNS'
+  columns?: ModelParamColumn[]
+  semanticAxes?: string
+}
+
+export interface ModelParamCompareModelSheet {
+  modelSheet?: string
+  tableNames?: string[]
+}
+
+export interface ModelParamCompareModelFile {
+  modelFile?: string
+  modelSheets?: ModelParamCompareModelSheet[]
+}
+
+/** GET .../model-param-proposals/compare */
+export interface ScenarioGroupModelParamCompare {
+  scenarioGroupId: number
+  scenarios: ModelParamCompareScenario[]
+  parameters: ModelParamCompareParameter[]
+  parameterShapes: ModelParamCompareShape[]
+  modelFiles: ModelParamCompareModelFile[]
+}
+
 export interface ModelParamProposalAccept {
   modelParamProposalId?: number
   scenarioId?: number
@@ -147,16 +244,32 @@ export interface ModelParamProposalAccept {
   statusEndpoint?: string
 }
 
-export interface ModelParamPayloadItem {
-  parameterName?: string
-  modelTarget?: ModelParamTarget
-  rationale?: string
-  values?: Array<Record<string, unknown>>
-}
-
-export interface ModelParamProposalExecution {
+/** 그룹 일괄 수급모델 실행 항목 */
+export interface ScenarioGroupModelExecutionItem {
+  scenarioId: number
   modelParamProposalId: number
   confirmationParameters: ModelParamPayloadItem[]
+}
+
+export interface ScenarioGroupModelExecutionRequest {
+  executions: ScenarioGroupModelExecutionItem[]
+}
+
+export interface GroupModelExecutionResultItem {
+  scenarioId: number
+  success: boolean
+  execution?: ModelExecutionAccept | null
+  errorCode?: string
+  errorMessage?: string
+}
+
+/** POST .../scenario-groups/{id}/model-executions */
+export interface GroupModelExecutionAccept {
+  scenarioGroupId: number
+  totalCount: number
+  successCount: number
+  failureCount: number
+  results: GroupModelExecutionResultItem[]
 }
 
 export interface LatestModelParamProposalParameters {
@@ -165,7 +278,29 @@ export interface LatestModelParamProposalParameters {
   execPrepId?: number
   modelParamProposalId?: number
   parameterSource?: ModelParamParameterSource
-  modelFiles: CurrentModelParamFile[]
+  modelFiles: Array<{
+    modelFile?: string
+    modelSheets: Array<{
+      modelSheet?: string
+      modelTables: Array<{
+        tableName?: string
+        parameters: Array<{
+          parameter: {
+            parameterName?: string
+            modelTarget: ModelParamTarget
+            rationale?: string
+            groupedRationales: Array<Record<string, unknown>>
+            values: Array<Record<string, unknown>>
+          }
+          rendering: {
+            readMode?: 'FIXED_COLUMNS' | 'MATRIX_TIME_COLUMNS'
+            columns: ModelParamColumn[]
+            semanticAxes?: string
+          }
+        }>
+      }>
+    }>
+  }>
 }
 
 const createModelParamProposalStreamHeaders = () => {
@@ -183,13 +318,32 @@ const createModelParamProposalStreamHeaders = () => {
   return headers
 }
 
-const getModelParamProposalStreamUrl = (scenarioId: number) =>
-  `/api/v1/mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals/stream`
+const getGroupModelParamProposalStreamUrl = (scenarioGroupId: number) =>
+  `/api/v1/mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/model-param-proposals/stream`
 
 const nextGenMIModelExecutionService = {
+  /** 팝업 진입 시 그룹 내 시나리오 전체 제안 현황 */
+  async getGroupModelParamProposals(scenarioGroupId: number): Promise<ScenarioGroupModelParamProposals> {
+    const response: AxiosResponse<ICommonResponse<ScenarioGroupModelParamProposals>> = await api.get(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/model-param-proposals`,
+    )
+
+    return response.data.data
+  },
+
+  /** 비교 그리드 */
+  async getGroupModelParamProposalsCompare(scenarioGroupId: number): Promise<ScenarioGroupModelParamCompare> {
+    const response: AxiosResponse<ICommonResponse<ScenarioGroupModelParamCompare>> = await api.get(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/model-param-proposals/compare`,
+    )
+
+    return response.data.data
+  },
+
+  /** 단건 현재 상태/결과 - 인풋 파일(executionInputFiles) 조회용 */
   async getCurrentModelParamProposal(scenarioId: number): Promise<CurrentModelParamProposal> {
     const response: AxiosResponse<ICommonResponse<CurrentModelParamProposal>> = await api.get(
-      `mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals`,
+      withCustomBaseUrl(`mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals`),
     )
 
     return response.data.data
@@ -229,8 +383,13 @@ const nextGenMIModelExecutionService = {
     return response.data.data
   },
 
-  async streamModelParamProposal(scenarioId: number, onMessage: (event: EventSourceMessage) => void, signal: AbortSignal): Promise<void> {
-    await fetchEventSource(getModelParamProposalStreamUrl(scenarioId), {
+  /** 그룹 SSE - 팝업당 1연결 */
+  async streamGroupModelParamProposals(
+    scenarioGroupId: number,
+    onMessage: (event: EventSourceMessage) => void,
+    signal: AbortSignal,
+  ): Promise<void> {
+    await fetchEventSource(getGroupModelParamProposalStreamUrl(scenarioGroupId), {
       method: 'GET',
       headers: createModelParamProposalStreamHeaders(),
       credentials: 'include',
@@ -250,9 +409,13 @@ const nextGenMIModelExecutionService = {
     })
   },
 
-  async submitModelParamProposalExecution(scenarioId: number, payload: ModelParamProposalExecution): Promise<ModelExecutionAccept> {
-    const response: AxiosResponse<ICommonResponse<ModelExecutionAccept>> = await api.post(
-      withCustomBaseUrl(`mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-executions/from-parameters`),
+  /** 선택된 시나리오 N개 일괄 수급모델 실행 */
+  async submitGroupModelExecutions(
+    scenarioGroupId: number,
+    payload: ScenarioGroupModelExecutionRequest,
+  ): Promise<GroupModelExecutionAccept> {
+    const response: AxiosResponse<ICommonResponse<GroupModelExecutionAccept>> = await api.post(
+      withCustomBaseUrl(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/model-executions`),
       payload,
       {
         suppressGlobalErrorHandler: true,

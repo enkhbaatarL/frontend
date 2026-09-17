@@ -1,17 +1,17 @@
-/** #DELETE: 추천 파라미터 표 목 UI (API 연동 후 파일 삭제) */
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 
+import type {
+  ProposalParamColumnStatus,
+  ProposalParamMatrixData,
+} from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalMapping'
+
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
+import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioGroupStickyTable, {
   type ScenarioGroupStickyTableColumn,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupStickyTable'
-// #DELETE: 파라미터 표 목 데이터 (API 연동 후 ParamMatrix와 함께 삭제)
-import {
-  createProposalParamMatrixMock,
-  type ProposalParamColumnStatus,
-} from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalParamMock'
 
 export interface ProposalParamVisibleScenario {
   scenarioId: number
@@ -21,9 +21,11 @@ export interface ProposalParamVisibleScenario {
 
 interface ScenarioModelExecutionProposalParamMatrixProps {
   visibleScenarios: ProposalParamVisibleScenario[]
+  matrix: ProposalParamMatrixData | null
   /** 증가 시 수정값을 추천값으로 전부 초기화 */
   resetToken?: number
   onHasEditsChange?: (hasEdits: boolean) => void
+  onChangeScenarioValue?: (scenarioId: number, periodTimeKey: string, rowIndex: number, nextValue: number) => void
 }
 
 interface ProposalParamMatrixRow {
@@ -41,16 +43,27 @@ const EDITED_INPUT_BG = 'rgba(245, 159, 0, 0.05)'
 
 const getValueKey = (periodLabel: string, scenarioId: number, rowIndex: number) => `${periodLabel}::${scenarioId}::${rowIndex}`
 
+/** 숫자 문자열 비교용 - 24.40 / 24.4 를 동일로 취급 */
+const normalizeParamValue = (value: string) => {
+  const trimmed = value.trim()
+  if (trimmed === '' || trimmed === '-') return trimmed
+  const numeric = Number(trimmed)
+  if (!Number.isFinite(numeric)) return trimmed
+  return String(numeric)
+}
+
+const isParamValueEdited = (value: string, baselineValue: string) => normalizeParamValue(value) !== normalizeParamValue(baselineValue)
+
 /** Event List / MIDataTableBody와 동일: MUI Skeleton opacity pulse */
 const ParamInputSkeleton = () => <Skeleton variant="rounded" width="100%" height="28px" sx={{ maxWidth: '100%', borderRadius: '10px' }} />
 
 const ProposalParamEditableCell = ({
-  recommendedValue,
+  baselineValue,
   value,
   onChange,
   onReset,
 }: {
-  recommendedValue: string
+  baselineValue: string
   value: string
   onChange: (nextValue: string) => void
   onReset: () => void
@@ -58,7 +71,8 @@ const ProposalParamEditableCell = ({
   const inputRef = useRef<HTMLInputElement>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [draftValue, setDraftValue] = useState(value)
-  const isEdited = value !== recommendedValue
+  // 추천(초기)값 대비 변경 여부 - compare 반영 후에도 baseline 기준으로 주황 테두리/되돌리기 유지
+  const isEdited = isParamValueEdited(value, baselineValue)
 
   useEffect(() => {
     if (globalThis.document?.activeElement === inputRef.current) return
@@ -206,43 +220,122 @@ const ProposalParamEditableCell = ({
 
 const ScenarioModelExecutionProposalParamMatrix = ({
   visibleScenarios,
+  matrix,
   resetToken = 0,
   onHasEditsChange,
+  onChangeScenarioValue,
 }: ScenarioModelExecutionProposalParamMatrixProps) => {
-  // #DELETE: 시나리오별 추천 파라미터 표 목
-  const matrix = useMemo(() => createProposalParamMatrixMock(visibleScenarios.map((scenario) => scenario.scenarioId)), [visibleScenarios])
   const [editedValues, setEditedValues] = useState<Record<string, string>>({})
+  const [baselineValues, setBaselineValues] = useState<Record<string, string>>({})
+
+  // 표 구조(기간/시나리오/슬롯) 또는 초기화 토큰이 바뀔 때만 baseline 재스냅샷.
+  // compare 편집으로 matrix 값만 바뀌는 경우에는 baseline을 유지해야 주황 수정 표시가 유지됨.
+  const matrixStructureKey = useMemo(() => {
+    if (!matrix) return `empty:${resetToken}`
+    return JSON.stringify({
+      resetToken,
+      headers: matrix.fixedHeaders,
+      rowCount: matrix.fixedRows.length,
+      periods: matrix.periods.map((period) => period.periodLabel),
+      scenarioIds: visibleScenarios.map((scenario) => scenario.scenarioId),
+    })
+  }, [matrix, resetToken, visibleScenarios])
 
   useEffect(() => {
+    if (!matrix) {
+      setBaselineValues({})
+      setEditedValues({})
+      return
+    }
+
+    const nextBaseline: Record<string, string> = {}
+    matrix.periods.forEach((period) => {
+      visibleScenarios.forEach((scenario) => {
+        matrix.fixedRows.forEach((_, rowIndex) => {
+          const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, rowIndex)
+          nextBaseline[valueKey] = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+        })
+      })
+    })
+    setBaselineValues(nextBaseline)
     setEditedValues({})
-  }, [resetToken, visibleScenarios])
+  }, [matrixStructureKey]) // eslint-disable-line react-hooks/exhaustive-deps -- matrix 값 변경이 아닌 구조 키만 의존
 
+  // 생성 중 -> 완료로 값이 처음 채워질 때는 baseline을 갱신해 오탐 수정 표시를 막음
   useEffect(() => {
-    onHasEditsChange?.(Object.keys(editedValues).length > 0)
-  }, [editedValues, onHasEditsChange])
+    if (!matrix) return
 
-  const rows = useMemo<ProposalParamMatrixRow[]>(
-    () =>
-      matrix.fixedRows.map((fixedValues, rowIndex) => {
-        const recommendedValues: Record<string, string> = {}
-        matrix.periods.forEach((period) => {
-          recommendedValues[`${period.periodLabel}::base`] = period.miBaseValues[rowIndex] ?? '-'
-          visibleScenarios.forEach((scenario) => {
-            recommendedValues[`${period.periodLabel}::${scenario.scenarioId}`] =
-              period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+    setBaselineValues((current) => {
+      let changed = false
+      const next = { ...current }
+
+      matrix.periods.forEach((period) => {
+        visibleScenarios.forEach((scenario) => {
+          if (scenario.status !== 'completed') return
+          matrix.fixedRows.forEach((_, rowIndex) => {
+            const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, rowIndex)
+            if (editedValues[valueKey] !== undefined) return
+            const matrixValue = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+            const baselineValue = next[valueKey]
+            if (baselineValue === undefined) {
+              next[valueKey] = matrixValue
+              changed = true
+              return
+            }
+            if (normalizeParamValue(baselineValue) === '' && normalizeParamValue(matrixValue) !== '') {
+              next[valueKey] = matrixValue
+              changed = true
+            }
           })
         })
-        return {
-          rowKey: `row-${rowIndex}`,
-          rowIndex,
-          fixedValues,
-          recommendedValues,
-        }
-      }),
-    [matrix.fixedRows, matrix.periods, visibleScenarios],
-  )
+      })
+
+      return changed ? next : current
+    })
+  }, [editedValues, matrix, visibleScenarios])
+
+  useEffect(() => {
+    if (!matrix) {
+      onHasEditsChange?.(false)
+      return
+    }
+
+    const hasEdits = matrix.periods.some((period) =>
+      visibleScenarios.some((scenario) =>
+        matrix.fixedRows.some((_, rowIndex) => {
+          const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, rowIndex)
+          const baselineValue = baselineValues[valueKey] ?? ''
+          const currentValue = editedValues[valueKey] ?? period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+          return isParamValueEdited(currentValue, baselineValue)
+        }),
+      ),
+    )
+    onHasEditsChange?.(hasEdits)
+  }, [baselineValues, editedValues, matrix, onHasEditsChange, visibleScenarios])
+
+  const rows = useMemo<ProposalParamMatrixRow[]>(() => {
+    if (!matrix) return []
+    return matrix.fixedRows.map((fixedValues, rowIndex) => {
+      const recommendedValues: Record<string, string> = {}
+      matrix.periods.forEach((period) => {
+        recommendedValues[`${period.periodLabel}::base`] = period.miBaseValues[rowIndex] ?? '-'
+        visibleScenarios.forEach((scenario) => {
+          recommendedValues[`${period.periodLabel}::${scenario.scenarioId}`] =
+            period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+        })
+      })
+      return {
+        rowKey: `row-${rowIndex}`,
+        rowIndex,
+        fixedValues,
+        recommendedValues,
+      }
+    })
+  }, [matrix, visibleScenarios])
 
   const columns = useMemo<ScenarioGroupStickyTableColumn<ProposalParamMatrixRow>[]>(() => {
+    if (!matrix) return []
+
     const fixedColumns: ScenarioGroupStickyTableColumn<ProposalParamMatrixRow>[] = matrix.fixedHeaders.map((header, headerIndex) => ({
       field: `fixed-${headerIndex}`,
       headerName: header,
@@ -250,6 +343,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       minWidth: FIXED_COLUMN_WIDTH,
       align: 'left',
       headerAlign: 'left',
+      tooltipWhenHeaderTruncated: true,
+      headerTooltipTitle: header,
       headerCellSx: {
         bgcolor: 'gray.5',
         color: 'contentText.Subtext',
@@ -259,7 +354,15 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         borderColor: 'contentBorder.Normal',
       },
       cellSx: { bgcolor: 'commonColor.White', color: 'contentText.Normal' },
-      renderCell: ({ row }) => row.fixedValues[headerIndex] ?? '-',
+      // 좌측 고정(독립) 컬럼: StickyTable이 ellipsis만 하고 툴팁을 안 주므로 본문에서 말줄임 hover 처리
+      renderCell: ({ row }) => (
+        <NextGenMITableBodyText
+          value={row.fixedValues[headerIndex] ?? '-'}
+          variant="body3M12"
+          color="contentText.Normal"
+          tooltipWhenTruncated
+        />
+      ),
     }))
 
     const valueColumns = matrix.periods.flatMap((period, periodIndex) => {
@@ -346,27 +449,32 @@ const ScenarioModelExecutionProposalParamMatrix = ({
 
             const fieldKey = `${period.periodLabel}::${scenario.scenarioId}`
             const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, row.rowIndex)
-            const recommendedValue = row.recommendedValues[fieldKey] ?? ''
-            const value = editedValues[valueKey] ?? recommendedValue
+            const matrixValue = row.recommendedValues[fieldKey] ?? ''
+            const baselineValue = baselineValues[valueKey] ?? matrixValue
+            const value = editedValues[valueKey] ?? matrixValue
 
             return (
               <ProposalParamEditableCell
-                recommendedValue={recommendedValue}
+                baselineValue={baselineValue}
                 value={value}
                 onChange={(nextValue) => {
                   setEditedValues((current) => {
-                    if (nextValue === recommendedValue) {
+                    if (!isParamValueEdited(nextValue, baselineValue)) {
                       const { [valueKey]: _removed, ...rest } = current
                       return rest
                     }
                     return { ...current, [valueKey]: nextValue }
                   })
+                  const numeric = Number(nextValue)
+                  if (Number.isFinite(numeric)) onChangeScenarioValue?.(scenario.scenarioId, period.timeKey, row.rowIndex, numeric)
                 }}
                 onReset={() => {
                   setEditedValues((current) => {
                     const { [valueKey]: _removed, ...rest } = current
                     return rest
                   })
+                  const numeric = Number(baselineValue)
+                  if (Number.isFinite(numeric)) onChangeScenarioValue?.(scenario.scenarioId, period.timeKey, row.rowIndex, numeric)
                 }}
               />
             )
@@ -378,9 +486,26 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     })
 
     return [...fixedColumns, ...valueColumns]
-  }, [editedValues, matrix.fixedHeaders, matrix.periods, visibleScenarios])
+  }, [baselineValues, editedValues, matrix, onChangeScenarioValue, visibleScenarios])
 
-  const fixedLeftColumnIndexes = useMemo(() => matrix.fixedHeaders.map((_, index) => index), [matrix.fixedHeaders])
+  const fixedLeftColumnIndexes = useMemo(() => matrix?.fixedHeaders.map((_, index) => index) ?? [], [matrix?.fixedHeaders])
+
+  if (!matrix) {
+    return (
+      <Stack
+        height="240px"
+        alignItems="center"
+        justifyContent="center"
+        border="1px solid"
+        borderColor="contentBorder.Normal"
+        borderRadius="8px"
+      >
+        <Typography variant="body3SB12" color="gray.60">
+          파라미터 데이터가 없습니다.
+        </Typography>
+      </Stack>
+    )
+  }
 
   return (
     <Box width="100%" minWidth={0} overflow="hidden" bgcolor="commonColor.White">
