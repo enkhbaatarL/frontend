@@ -1,7 +1,7 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
-import { Box, Checkbox, CircularProgress, Collapse, Fade, Stack, Typography, useMediaQuery } from '@mui/material'
+import { Box, CircularProgress, Collapse, Fade, Stack, Typography, useMediaQuery } from '@mui/material'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
@@ -15,6 +15,7 @@ import type {
 } from '@/service/mi/nextGenMI/modelExecution'
 import type { ScenarioRole } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -28,6 +29,7 @@ import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/Cl
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText, { NEXT_GEN_MI_TABLE_CELL_PX } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import ScenarioModelExecutionGeneratingState from '@/pages/mi/nextGenMI/components/common/ScenarioModelExecutionGeneratingState'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import {
@@ -244,6 +246,7 @@ const ScenarioModelExecutionProposalList = ({
   const [emptySelectionConfirmOpen, setEmptySelectionConfirmOpen] = useState(false)
   const [executionConfirmOpen, setExecutionConfirmOpen] = useState(false)
   const [isSubmittingExecution, setIsSubmittingExecution] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
   const failureKeyRef = useRef<Map<number, string>>(new Map())
   const groupStreamControllerRef = useRef<AbortController | null>(null)
@@ -385,6 +388,14 @@ const ScenarioModelExecutionProposalList = ({
   const selectedCompletedCount = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId)).length
   const allSelectableChecked = selectableScenarioIds.length > 0 && selectableScenarioIds.every((id) => selectedScenarioIds.includes(id))
   const someSelectableChecked = selectableScenarioIds.some((id) => selectedScenarioIds.includes(id))
+  // PopupContent 대응: isSubmitting / isExecuting / isResetting
+  const isExecuting = runningExecutions.length > 0
+  const isExecutionBusy = isSubmittingExecution || isExecuting
+  // 시나리오 선택/생성/초기화/실행 등 액션 잠금 (PopupContent 넓은 가드)
+  const isActionLocked = isExecutionBusy || isResetting
+  // Value 입력 잠금 - PopupContent NumericParameterValueInput: isSubmitting || isResetting
+  // (실행 중에는 파라미터 영역을 GeneratingState 로 대체해 인풋 자체가 안 보임)
+  const isValueInputLocked = isSubmittingExecution || isResetting
 
   const applyGroupProposals = useCallback(
     (nextProposals: ScenarioGroupModelParamProposals, notifyFailure = false) => {
@@ -614,41 +625,47 @@ const ScenarioModelExecutionProposalList = ({
 
   const startGeneration = useCallback(
     (scenarioId: number) => {
-      if (executingScenarioIds.has(scenarioId) || pendingGenerateIds.has(scenarioId)) return
+      if (isActionLocked || executingScenarioIds.has(scenarioId) || pendingGenerateIds.has(scenarioId)) return
       setGenerationFailureReason(null)
       setPendingGenerateIds((current) => new Set(current).add(scenarioId))
       setVisibleScenarioIds((prev) => (prev.includes(scenarioId) ? prev : [...prev, scenarioId]))
       createModelParamProposal(scenarioId)
     },
-    [createModelParamProposal, executingScenarioIds, pendingGenerateIds],
+    [createModelParamProposal, executingScenarioIds, isActionLocked, pendingGenerateIds],
   )
 
-  const handleToggleVisibility = useCallback((scenarioId: number) => {
-    setVisibleScenarioIds((prev) => {
-      if (prev.includes(scenarioId)) return prev.filter((id) => id !== scenarioId)
-      return [...prev, scenarioId]
-    })
-  }, [])
+  const handleToggleVisibility = useCallback(
+    (scenarioId: number) => {
+      if (isActionLocked) return
+      setVisibleScenarioIds((prev) => {
+        if (prev.includes(scenarioId)) return prev.filter((id) => id !== scenarioId)
+        return [...prev, scenarioId]
+      })
+    },
+    [isActionLocked],
+  )
 
   const handleToggleScenario = useCallback(
     (scenarioId: number, checked: boolean) => {
-      if (!selectableScenarioIds.includes(scenarioId)) return
+      if (isActionLocked || !selectableScenarioIds.includes(scenarioId)) return
       setSelectedScenarioIds((prev) => {
         if (checked) return prev.includes(scenarioId) ? prev : [...prev, scenarioId]
         return prev.filter((id) => id !== scenarioId)
       })
     },
-    [selectableScenarioIds],
+    [isActionLocked, selectableScenarioIds],
   )
 
   const handleToggleAll = useCallback(
     (checked: boolean) => {
+      if (isActionLocked) return
       setSelectedScenarioIds(checked ? [...selectableScenarioIds] : [])
     },
-    [selectableScenarioIds],
+    [isActionLocked, selectableScenarioIds],
   )
 
   const handleExecuteClick = () => {
+    if (isActionLocked) return
     if (selectedCompletedCount === 0) {
       setEmptySelectionConfirmOpen(true)
       return
@@ -729,9 +746,11 @@ const ScenarioModelExecutionProposalList = ({
   }
 
   const handleResetParameters = () => {
+    if (isActionLocked) return
+    setIsResetting(true)
     setParamResetToken((token) => token + 1)
     // 편집값을 서버 제안값으로 되돌리기 위해 비교 그리드를 재조회
-    void loadCompareProposals()
+    void loadCompareProposals().finally(() => setIsResetting(false))
   }
 
   const handleChangeScenarioValue = useCallback(
@@ -754,6 +773,8 @@ const ScenarioModelExecutionProposalList = ({
       rowIndex: number
       nextValue: number
     }) => {
+      // PopupContent: Value 변경은 isSubmitting || isResetting 동안 차단
+      if (isValueInputLocked) return
       setCompare((current) => {
         if (!current) return current
 
@@ -781,7 +802,7 @@ const ScenarioModelExecutionProposalList = ({
         )
       })
     },
-    [],
+    [isValueInputLocked],
   )
 
   const scenarioList = useMemo(
@@ -837,15 +858,14 @@ const ScenarioModelExecutionProposalList = ({
                 borderColor="contentBorder.Active"
               >
                 <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
-                  {selectableScenarioIds.length > 0 ? (
-                    <Checkbox
-                      size="small"
-                      checked={allSelectableChecked}
-                      indeterminate={!allSelectableChecked && someSelectableChecked}
-                      onChange={(_, checked) => handleToggleAll(checked)}
-                      sx={{ padding: '4px' }}
-                    />
-                  ) : null}
+                  <AdminCheckbox
+                    size="small"
+                    checked={allSelectableChecked}
+                    indeterminate={!allSelectableChecked && someSelectableChecked}
+                    disabled={selectableScenarioIds.length === 0 || isActionLocked}
+                    onChange={(_, checked) => handleToggleAll(checked)}
+                    sx={{ padding: '4px' }}
+                  />
                 </Stack>
                 <Typography variant="body2SB14" color="contentText.Black" width="300px" flexShrink={0} padding="0 6px">
                   시나리오
@@ -880,8 +900,10 @@ const ScenarioModelExecutionProposalList = ({
                 const showEye = hasCompleted && canShowVisibilityToggle(scenario.status)
                 const textColor = dimmed ? 'contentText.Disabled' : 'contentText.Black'
                 const bodyColor = dimmed ? 'contentText.Disabled' : 'contentText.Normal'
-                const generateDisabled = executingScenarioIds.has(scenario.scenarioId) || isSubmittingExecution
+                const generateDisabled = executingScenarioIds.has(scenario.scenarioId) || isActionLocked
                 const hasRoleBadge = Boolean(scenario.scenarioRole || scenario.scenarioType || scenario.scenarioRoleLabel)
+                const selectionDisabled = !selectable || isActionLocked
+                const eyeInteractive = !isActionLocked && (scenario.status === 'completed' || scenario.status === 'generating')
 
                 return (
                   <Stack
@@ -893,15 +915,15 @@ const ScenarioModelExecutionProposalList = ({
                     borderColor="contentBorder.Normal"
                     sx={{ '&:last-of-type': { borderBottom: 'none' } }}
                   >
-                    <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
-                      {selectable ? (
-                        <Checkbox
-                          size="small"
-                          checked={checked}
-                          onChange={(_, nextChecked) => handleToggleScenario(scenario.scenarioId, nextChecked)}
-                          sx={{ padding: '4px' }}
-                        />
-                      ) : null}
+                    <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
+                      {/* 생성 전/생성중/실패/재시도도 체크박스 표시 - 완료만 선택 가능, 그 외 disabled (Gray/20 fill + Gray/40 border) */}
+                      <AdminCheckbox
+                        size="small"
+                        checked={checked}
+                        disabled={selectionDisabled}
+                        onChange={(_, nextChecked) => handleToggleScenario(scenario.scenarioId, nextChecked)}
+                        sx={{ padding: '4px' }}
+                      />
                     </Stack>
                     <Stack
                       direction="row"
@@ -936,13 +958,13 @@ const ScenarioModelExecutionProposalList = ({
                           bgcolor="transparent"
                           color={visibleScenarioIds.includes(scenario.scenarioId) ? 'contentIcon.Enabled' : 'contentIcon.Disabled'}
                           sx={{
-                            cursor: scenario.status === 'completed' || scenario.status === 'generating' ? 'pointer' : 'default',
-                            opacity: scenario.status === 'completed' || scenario.status === 'generating' ? 1 : 0.5,
+                            cursor: eyeInteractive ? 'pointer' : 'default',
+                            opacity: eyeInteractive ? 1 : 0.5,
                           }}
                           aria-label={visibleScenarioIds.includes(scenario.scenarioId) ? '파라미터 컬럼 숨기기' : '파라미터 컬럼 표시'}
                           onClick={(event) => {
                             event.stopPropagation()
-                            if (scenario.status !== 'completed' && scenario.status !== 'generating') return
+                            if (!eyeInteractive) return
                             handleToggleVisibility(scenario.scenarioId)
                           }}
                         >
@@ -1002,7 +1024,7 @@ const ScenarioModelExecutionProposalList = ({
       handleToggleScenario,
       handleToggleVisibility,
       hasCompleted,
-      isSubmittingExecution,
+      isActionLocked,
       scenarios,
       selectableScenarioIds.length,
       selectedScenarioIds,
@@ -1072,18 +1094,22 @@ const ScenarioModelExecutionProposalList = ({
             </SwitchTransition>
           </Stack>
 
-          {(showLoadingPlaceholder || showParamPanel) && (
+          {(showLoadingPlaceholder || showParamPanel || isExecutionBusy) && (
             <SwitchTransition mode="out-in">
               <Fade
-                key={showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
+                key={isExecutionBusy ? 'execution' : showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
                 timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
               >
-                <Stack minHeight="400px" flexGrow={showParamPanel ? 1 : 0} flexShrink={0}>
-                  {showParamPanel && compare ? (
+                <Stack minHeight="400px" flexGrow={showParamPanel || isExecutionBusy ? 1 : 0} flexShrink={0}>
+                  {isExecutionBusy ? (
+                    // PopupContent: isSubmitting || isExecuting 이면 파라미터 UI 대신 실행 중 상태
+                    <ScenarioModelExecutionGeneratingState />
+                  ) : showParamPanel && compare ? (
                     <ScenarioModelExecutionProposalParamPanel
                       visibleScenarios={visibleScenarios}
                       compare={compare}
                       resetToken={paramResetToken}
+                      disabled={isValueInputLocked}
                       canDownloadInputFiles={canDownloadInputFiles}
                       isDownloadingInputFiles={isDownloadingInputFiles}
                       onDownloadInputFiles={handleDownloadInputFiles}
@@ -1133,7 +1159,8 @@ const ScenarioModelExecutionProposalList = ({
       >
         <MIBaseButton
           variant="outlined"
-          disabled={!hasCompleted || !hasParamEdits || isSubmittingExecution}
+          disabled={!hasCompleted || !hasParamEdits || isActionLocked}
+          isLoading={isResetting}
           prefix={<ReplayIcon width={20} height={20} />}
           onClick={handleResetParameters}
           sx={{ height: '36px', borderRadius: '8px', padding: '8px 10px 8px 6px' }}
@@ -1151,7 +1178,8 @@ const ScenarioModelExecutionProposalList = ({
           </MIBaseButton>
           <MIBaseButton
             variant="contained"
-            disabled={!hasCompleted || isSubmittingExecution}
+            disabled={!hasCompleted || isActionLocked}
+            isLoading={isSubmittingExecution}
             onClick={handleExecuteClick}
             labelColor="contentText.White"
             sx={{
@@ -1212,7 +1240,7 @@ const ScenarioModelExecutionProposalList = ({
             label: '실행',
             variant: 'filled',
             color: 'primary',
-            disabled: isSubmittingExecution,
+            disabled: isActionLocked,
             onClick: () => {
               void handleExecutionConfirm()
             },

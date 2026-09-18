@@ -19,6 +19,8 @@ interface ScenarioModelExecutionProposalParamPanelProps {
   visibleScenarios: ProposalParamVisibleScenario[]
   compare: ScenarioGroupModelParamCompare | null
   resetToken?: number
+  /** 수급모델 제출/초기화 중 Value·네비게이션 잠금 (PopupContent isSubmitting || isResetting) */
+  disabled?: boolean
   canDownloadInputFiles?: boolean
   isDownloadingInputFiles?: boolean
   onDownloadInputFiles?: () => void
@@ -35,10 +37,21 @@ interface ScenarioModelExecutionProposalParamPanelProps {
   }) => void
 }
 
-const ParameterChip = ({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) => (
+const ParameterChip = ({
+  label,
+  selected,
+  disabled = false,
+  onClick,
+}: {
+  label: string
+  selected: boolean
+  disabled?: boolean
+  onClick: () => void
+}) => (
   <MIBaseButton
     variant="outlined"
     onClick={onClick}
+    disabled={disabled}
     disableRipple
     sx={{
       maxWidth: '260px',
@@ -65,6 +78,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
   visibleScenarios,
   compare,
   resetToken,
+  disabled = false,
   canDownloadInputFiles = false,
   isDownloadingInputFiles = false,
   onDownloadInputFiles,
@@ -138,7 +152,10 @@ const ScenarioModelExecutionProposalParamPanel = ({
       >
         <Tabs
           value={activeModelFile ?? false}
-          onChange={(_, value: string) => setModelFile(value)}
+          onChange={(_, value: string) => {
+            if (disabled) return
+            setModelFile(value)
+          }}
           sx={{
             height: '100%',
             minHeight: 0,
@@ -155,17 +172,18 @@ const ScenarioModelExecutionProposalParamPanel = ({
               lineHeight: 1.4,
               textTransform: 'none',
               '&.Mui-selected': { color: 'commonColor.Black', fontWeight: 700 },
+              '&.Mui-disabled': { color: 'contentText.Disabled' },
             },
           }}
         >
           {modelFiles.map((fileName) => (
-            <Tab key={fileName} label={fileName} value={fileName} disableRipple />
+            <Tab key={fileName} label={fileName} value={fileName} disableRipple disabled={disabled} />
           ))}
         </Tabs>
         <MIBaseButton
           variant="outlined"
           prefix={<FileDownloadIcon width={20} height={20} />}
-          disabled={!canDownloadInputFiles || isDownloadingInputFiles}
+          disabled={disabled || !canDownloadInputFiles || isDownloadingInputFiles}
           isLoading={isDownloadingInputFiles}
           onClick={onDownloadInputFiles}
           sx={{ flexShrink: 0, height: '36px', borderRadius: '8px', padding: '8px 10px 8px 6px' }}
@@ -181,6 +199,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
               key={sheetName}
               label={sheetName}
               selected={sheetName === activeModelSheet}
+              disabled={disabled}
               onClick={() => setModelSheet(sheetName)}
             />
           ))}
@@ -195,6 +214,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
                 key={tableName}
                 label={tableName}
                 selected={tableName === activeModelTable}
+                disabled={disabled}
                 onClick={() => setModelTable(tableName)}
               />
             ))}
@@ -209,6 +229,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
                 key={chip.index}
                 label={chip.label}
                 selected={chip.index === activeParameterIndex}
+                disabled={disabled}
                 onClick={() => setParameterIndex(chip.index)}
               />
             ))}
@@ -236,6 +257,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
             matrix={matrix}
             scrollResetKey={JSON.stringify([activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex])}
             resetToken={resetToken}
+            disabled={disabled}
             onHasEditsChange={onHasEditsChange}
             onChangeScenarioValue={(scenarioId, periodTimeKey, rowIndex, nextValue) =>
               onChangeScenarioValue?.({

@@ -26,6 +26,8 @@ interface ScenarioModelExecutionProposalParamMatrixProps {
   scrollResetKey: string
   /** 증가 시 수정값을 추천값으로 전부 초기화 */
   resetToken?: number
+  /** 수급모델 제출/초기화 중 Value 입력 잠금 - PopupContent NumericParameterValueInput 과 동일 */
+  disabled?: boolean
   onHasEditsChange?: (hasEdits: boolean) => void
   onChangeScenarioValue?: (scenarioId: number, periodTimeKey: string, rowIndex: number, nextValue: number) => void
 }
@@ -64,12 +66,14 @@ const ProposalParamEditableCell = ({
   baselineValue,
   value,
   rationale,
+  disabled = false,
   onChange,
   onReset,
 }: {
   baselineValue: string
   value: string
   rationale?: string
+  disabled?: boolean
   onChange: (nextValue: string) => void
   onReset: () => void
 }) => {
@@ -90,7 +94,19 @@ const ProposalParamEditableCell = ({
     inputRef.current?.select()
   }, [isEditing])
 
+  // 수급모델 제출/실행 시작 시 편집 중이면 표시 모드로 복귀 (PopupContent NumericParameterValueInput 과 동일)
+  useEffect(() => {
+    if (!disabled) return
+    setIsEditing(false)
+    setDraftValue(value)
+  }, [disabled, value])
+
   const commitDraft = () => {
+    if (disabled) {
+      setDraftValue(value)
+      setIsEditing(false)
+      return
+    }
     const trimmed = draftValue.trim()
     if (trimmed === '' || trimmed === '-' || !/^-?\d*(?:\.\d*)?$/.test(trimmed) || !Number.isFinite(Number(trimmed))) {
       setDraftValue(value)
@@ -113,14 +129,19 @@ const ProposalParamEditableCell = ({
     }
   }
 
+  const inputBorderColor = disabled ? 'contentBorder.Disabled' : isEdited ? EDITED_INPUT_BORDER : 'contentBorder.Normal'
+  const inputBgColor = disabled ? 'contentBG.Disabled' : isEdited ? EDITED_INPUT_BG : 'commonColor.White'
+  const inputTextColor = disabled ? 'contentText.Disabled' : 'contentText.Normal'
+
   return (
     <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" width="100%" minWidth={0}>
-      {isEditing ? (
+      {isEditing && !disabled ? (
         <Box
           component="input"
           ref={inputRef}
           value={draftValue}
           inputMode="decimal"
+          disabled={disabled}
           onChange={(event) => {
             if (!/^-?\d*(?:\.\d*)?$/.test(event.target.value)) return
             setDraftValue(event.target.value)
@@ -134,10 +155,10 @@ const ProposalParamEditableCell = ({
             height: '28px',
             padding: '8px 12px',
             border: '1px solid',
-            borderColor: isEdited ? EDITED_INPUT_BORDER : 'contentBorder.Normal',
+            borderColor: inputBorderColor,
             borderRadius: '10px',
-            bgcolor: isEdited ? EDITED_INPUT_BG : 'commonColor.White',
-            color: 'contentText.Normal',
+            bgcolor: inputBgColor,
+            color: inputTextColor,
             fontFamily: 'inherit',
             fontSize: '12px',
             fontWeight: 500,
@@ -151,7 +172,11 @@ const ProposalParamEditableCell = ({
         <Box
           component="button"
           type="button"
-          onClick={() => setIsEditing(true)}
+          disabled={disabled}
+          onClick={() => {
+            if (disabled) return
+            setIsEditing(true)
+          }}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -161,18 +186,24 @@ const ProposalParamEditableCell = ({
             height: '28px',
             padding: '8px 12px',
             border: '1px solid',
-            borderColor: isEdited ? EDITED_INPUT_BORDER : 'contentBorder.Normal',
+            borderColor: inputBorderColor,
             borderRadius: '10px',
-            bgcolor: isEdited ? EDITED_INPUT_BG : 'commonColor.White',
+            bgcolor: inputBgColor,
             boxSizing: 'border-box',
             overflow: 'hidden',
-            cursor: 'text',
-            '&:hover': {
+            cursor: disabled ? 'default' : 'text',
+            '&:hover:not(:disabled)': {
               bgcolor: isEdited ? EDITED_INPUT_BG : 'contentBG.Active',
+            },
+            '&:disabled': {
+              borderColor: 'contentBorder.Disabled',
+              bgcolor: 'contentBG.Disabled',
+              color: 'contentText.Disabled',
+              cursor: 'default',
             },
           }}
         >
-          <Typography variant="body3M12" color="contentText.Normal" noWrap textAlign="right" width="100%">
+          <Typography variant="body3M12" color={inputTextColor} noWrap textAlign="right" width="100%">
             {value}
           </Typography>
         </Box>
@@ -182,8 +213,10 @@ const ProposalParamEditableCell = ({
           component="button"
           type="button"
           aria-label="추천값으로 되돌리기"
+          disabled={disabled}
           onClick={(event) => {
             event.stopPropagation()
+            if (disabled) return
             onReset()
           }}
           onMouseDown={(event) => event.stopPropagation()}
@@ -196,8 +229,8 @@ const ProposalParamEditableCell = ({
             padding: 0,
             border: 0,
             bgcolor: 'transparent',
-            color: 'contentIcon.Enabled',
-            cursor: 'pointer',
+            color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled',
+            cursor: disabled ? 'default' : 'pointer',
             flexShrink: 0,
             lineHeight: 0,
           }}
@@ -248,6 +281,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   matrix,
   scrollResetKey,
   resetToken = 0,
+  disabled = false,
   onHasEditsChange,
   onChangeScenarioValue,
 }: ScenarioModelExecutionProposalParamMatrixProps) => {
@@ -519,7 +553,9 @@ const ScenarioModelExecutionProposalParamMatrix = ({
                 baselineValue={baselineValue}
                 value={value}
                 rationale={rationale}
+                disabled={disabled}
                 onChange={(nextValue) => {
+                  if (disabled) return
                   setEditedValues((current) => {
                     if (!isParamValueEdited(nextValue, baselineValue)) {
                       const { [valueKey]: _removed, ...rest } = current
@@ -531,6 +567,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
                   if (Number.isFinite(numeric)) onChangeScenarioValue?.(scenario.scenarioId, period.timeKey, row.rowIndex, numeric)
                 }}
                 onReset={() => {
+                  if (disabled) return
                   setEditedValues((current) => {
                     const { [valueKey]: _removed, ...rest } = current
                     return rest
@@ -548,7 +585,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     })
 
     return [...fixedColumns, ...valueColumns]
-  }, [baselineValues, editedValues, matrix, onChangeScenarioValue, visibleScenarios])
+  }, [baselineValues, disabled, editedValues, matrix, onChangeScenarioValue, visibleScenarios])
 
   const fixedLeftColumnIndexes = useMemo(() => matrix?.fixedHeaders.map((_, index) => index) ?? [], [matrix?.fixedHeaders])
 
