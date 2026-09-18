@@ -58,6 +58,7 @@ export type ScenarioGroupStickyTableColumn<T> = {
   sortComparator?: (firstRow: T, secondRow: T, column: ScenarioGroupStickyTableColumn<T>) => number
   tooltipWhenHeaderTruncated?: boolean
   headerTooltipTitle?: ReactNode
+  headerPrefix?: ReactNode
   headerSuffix?: ReactNode
   cellSx?: SxProps<Theme>
   headerCellSx?: SxProps<Theme>
@@ -208,10 +209,12 @@ const ScenarioGroupStickyTableHeaderLabel = ({
   label,
   tooltipTitle,
   tooltipWhenTruncated = false,
+  hasPrefix = false,
 }: {
   label: ReactNode
   tooltipTitle?: ReactNode
   tooltipWhenTruncated?: boolean
+  hasPrefix?: boolean
 }) => {
   const { ref, isEllipsis } = useEllipsisDetection(label)
 
@@ -221,7 +224,7 @@ const ScenarioGroupStickyTableHeaderLabel = ({
       component="span"
       sx={{
         display: 'block',
-        flex: '1 1 0%',
+        flex: hasPrefix ? '0 1 auto' : '1 1 0%',
         minWidth: 0,
         maxWidth: '100%',
         overflow: 'hidden',
@@ -1318,16 +1321,29 @@ const ScenarioGroupStickyTable = <T,>({
         label={column.headerName}
         tooltipTitle={column.headerTooltipTitle}
         tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
+        hasPrefix={Boolean(column.headerPrefix)}
       />
     )
-    const headerLabelWithSuffix = column.headerSuffix ? (
-      <Stack component="span" direction="row" alignItems="center" gap="4px" width="100%" minWidth={0}>
-        {headerLabel}
-        {column.headerSuffix}
-      </Stack>
-    ) : (
-      headerLabel
-    )
+    const headerLabelWithSuffix =
+      column.headerPrefix || column.headerSuffix ? (
+        <Stack
+          component="span"
+          direction="row"
+          alignItems="center"
+          justifyContent={column.headerPrefix ? 'center' : undefined}
+          gap={column.headerPrefix ? '6px' : '4px'}
+          width={column.headerPrefix ? 'fit-content' : '100%'}
+          maxWidth="100%"
+          minWidth={0}
+          margin={column.headerPrefix ? '0 auto' : undefined}
+        >
+          {column.headerPrefix}
+          {headerLabel}
+          {column.headerSuffix}
+        </Stack>
+      ) : (
+        headerLabel
+      )
 
     const renderHeaderContent = () =>
       sortable ? (

@@ -101,15 +101,17 @@ const DimensionCellContent = ({
   tooltipTitle,
   variant,
   color,
+  lineClamp,
 }: {
   value: string
   tooltipTitle?: string
   variant: 'body2SB14' | 'body2M14'
   color: string
+  lineClamp?: number
 }) => (
   <Stack direction="row" alignItems="center" gap="6px" flex="1 1 0" minWidth={0} padding={`0 ${NEXT_GEN_MI_TABLE_CELL_PX}px`}>
     <Box flex="1 1 0" minWidth={0}>
-      <NextGenMITableBodyText value={value} variant={variant} color={color} tooltipWhenTruncated />
+      <NextGenMITableBodyText value={value} variant={variant} color={color} lineClamp={lineClamp} tooltipWhenTruncated />
     </Box>
     {tooltipTitle ? <DimensionInfoIcon title={tooltipTitle} /> : <Box width="18px" height="18px" flexShrink={0} aria-hidden />}
   </Stack>
@@ -380,6 +382,7 @@ const ScenarioModelExecutionProposalList = ({
         )
         .map((scenario) => ({
           scenarioId: scenario.scenarioId,
+          displayOrder: scenario.displayOrder,
           scenarioName: scenario.scenarioName,
           status: scenario.status === 'generating' ? ('generating' as const) : ('completed' as const),
         })),
@@ -880,6 +883,7 @@ const ScenarioModelExecutionProposalList = ({
                         tooltipTitle={headerTooltipTitle || undefined}
                         variant="body2SB14"
                         color="contentText.Black"
+                        lineClamp={2}
                       />
                     )
                   })}
@@ -1100,7 +1104,11 @@ const ScenarioModelExecutionProposalList = ({
                 key={isExecutionBusy ? 'execution' : showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
                 timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
               >
-                <Stack minHeight="400px" flexGrow={showParamPanel || isExecutionBusy ? 1 : 0} flexShrink={0}>
+                <Stack
+                  minHeight={showParamPanel && !isExecutionBusy ? 0 : '400px'}
+                  flexGrow={showParamPanel || isExecutionBusy ? 1 : 0}
+                  flexShrink={0}
+                >
                   {isExecutionBusy ? (
                     // PopupContent: isSubmitting || isExecuting 이면 파라미터 UI 대신 실행 중 상태
                     <ScenarioModelExecutionGeneratingState />

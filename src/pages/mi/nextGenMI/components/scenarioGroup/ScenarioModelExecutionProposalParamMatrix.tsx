@@ -8,6 +8,7 @@ import type {
 
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
+import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioGroupStickyTable, {
@@ -16,6 +17,7 @@ import ScenarioGroupStickyTable, {
 
 export interface ProposalParamVisibleScenario {
   scenarioId: number
+  displayOrder: number
   scenarioName: string
   status: ProposalParamColumnStatus
 }
@@ -238,7 +240,7 @@ const ProposalParamEditableCell = ({
           <ReplayIcon width="14px" height="14px" />
         </Box>
       ) : rationale?.trim() ? (
-        <NextGenMIFollowCursorTooltip title={rationale.trim()}>
+        <NextGenMIFollowCursorTooltip title={rationale.trim()} tooltipSx={{ maxWidth: '800px' }}>
           <Box
             component="span"
             role="img"
@@ -258,19 +260,7 @@ const ProposalParamEditableCell = ({
           </Box>
         </NextGenMIFollowCursorTooltip>
       ) : (
-        <Box
-          component="span"
-          display="inline-flex"
-          alignItems="center"
-          justifyContent="center"
-          width="18px"
-          height="18px"
-          color="contentIcon.Enabled"
-          flexShrink={0}
-          aria-hidden
-        >
-          <InfoOutlineIcon width="14px" height="14px" />
-        </Box>
+        <Box width="18px" height="18px" flexShrink={0} aria-hidden />
       )}
     </Stack>
   )
@@ -513,8 +503,9 @@ const ScenarioModelExecutionProposalParamMatrix = ({
           field: `${period.periodLabel}::${scenario.scenarioId}`,
           headerName: scenario.scenarioName,
           headerGroup: periodHeaderGroup,
+          headerPrefix: <NextGenMIDisplayOrderBadge value={scenario.displayOrder} height="16px" borderRadius="6px" compact />,
           tooltipWhenHeaderTruncated: true,
-          headerTooltipTitle: scenario.scenarioName,
+          headerTooltipTitle: `${scenario.displayOrder} ${scenario.scenarioName}`,
           width: `${SCENARIO_COLUMN_WIDTH}px`,
           minWidth: `${SCENARIO_COLUMN_WIDTH}px`,
           align: 'center',

@@ -137,11 +137,11 @@ export const getCompareCellForScenario = (
   compareScenarios: Array<{ scenarioId: number }>,
 ): ModelParamCompareCell | undefined => {
   const cells = value.cells ?? []
-  const byId = cells.find((cell) => cell.scenarioId === scenarioId)
+  const byId = cells.find((cell) => cell?.scenarioId === scenarioId)
   if (byId) return byId
   const index = compareScenarios.findIndex((scenario) => scenario.scenarioId === scenarioId)
-  if (index >= 0 && cells[index] && cells[index].scenarioId === undefined) return cells[index]
-  if (cells.length === 1 && compareScenarios.length === 1 && compareScenarios[0]?.scenarioId === scenarioId) return cells[0]
+  if (index >= 0 && cells[index]?.scenarioId === undefined) return cells[index] ?? undefined
+  if (cells.length === 1 && compareScenarios.length === 1 && compareScenarios[0]?.scenarioId === scenarioId) return cells[0] ?? undefined
   return undefined
 }
 
@@ -254,6 +254,7 @@ export const buildCompareParamMatrixData = ({
     const sourceRowIndexesByScenarioId: Record<number, number[]> = {}
 
     visibleScenarioIds.forEach((scenarioId) => {
+      const scenarioRationale = parameter.scenarioRationales?.find((item) => item.scenarioId === scenarioId)
       scenarioValuesById[scenarioId] = []
       scenarioRationalesById[scenarioId] = []
       sourceRowIndexesByScenarioId[scenarioId] = []
@@ -279,6 +280,16 @@ export const buildCompareParamMatrixData = ({
         // 셀 rationale 우선, 없으면 values 행의 rationale (API가 행 단위로 내려주는 경우)
         const rowRationale = typeof matchRow.rationale === 'string' ? matchRow.rationale.trim() : ''
         scenarioRationalesById[scenarioId].push(cell?.rationale?.trim() || rowRationale)
+      })
+      scenarioRationalesById[scenarioId] = slotKeys.map((slotKey, rowIndex) => {
+        const groupedRationale = scenarioRationale?.groupedRationales?.find(
+          (group) => JSON.stringify(slotColumns.map((column) => getAxisValue(group, column))) === slotKey,
+        )?.rationale
+        return (
+          [scenarioRationalesById[scenarioId][rowIndex], groupedRationale, scenarioRationale?.rationale]
+            .find((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+            ?.trim() ?? ''
+        )
       })
     })
 
@@ -326,16 +337,16 @@ export const updateCompareProposedValue = (
           if (index !== rowIndex || !isRecord(row)) return row
           const cells = [...(row.cells ?? [])]
           const compareScenarios = compare.scenarios
-          let cellIndex = cells.findIndex((cell) => cell.scenarioId === scenarioId)
+          let cellIndex = cells.findIndex((cell) => cell?.scenarioId === scenarioId)
           if (cellIndex < 0) {
             const orderIndex = compareScenarios.findIndex((scenario) => scenario.scenarioId === scenarioId)
-            if (orderIndex >= 0 && cells[orderIndex] && cells[orderIndex].scenarioId === undefined) cellIndex = orderIndex
+            if (orderIndex >= 0 && cells[orderIndex]?.scenarioId === undefined) cellIndex = orderIndex
             else if (cells.length === 1 && compareScenarios.length === 1) cellIndex = 0
           }
           if (cellIndex < 0) {
             cells.push({ scenarioId, proposedValue: value })
           } else {
-            cells[cellIndex] = { ...cells[cellIndex], scenarioId: cells[cellIndex].scenarioId ?? scenarioId, proposedValue: value }
+            cells[cellIndex] = { ...cells[cellIndex], scenarioId: cells[cellIndex]?.scenarioId ?? scenarioId, proposedValue: value }
           }
           return { ...row, cells }
         }),
