@@ -340,13 +340,19 @@ const nextGenMIModelExecutionService = {
     return response.data.data
   },
 
-  /** 단건 현재 상태/결과 - 인풋 파일(executionInputFiles) 조회용 */
-  async getCurrentModelParamProposal(scenarioId: number): Promise<CurrentModelParamProposal> {
-    const response: AxiosResponse<ICommonResponse<CurrentModelParamProposal>> = await api.get(
-      withCustomBaseUrl(`mi/next-gen/scenarios/${encodeURIComponent(String(scenarioId))}/model-param-proposals`),
+  /**
+   * 그룹 INPUT 파일 일괄 다운로드
+   * - 실행 완료(EXECUTED_CONFIRMED) 시나리오들의 실행 입력 엑셀을 zip으로 반환
+   * - 실행 완료 시나리오가 없으면 404
+   */
+  async downloadGroupInputFiles(scenarioGroupId: number): Promise<AxiosResponse<Blob>> {
+    return api.get(
+      withCustomBaseUrl(`mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/model-executions/input-files/download`),
+      {
+        responseType: 'blob',
+        suppressGlobalErrorHandler: true,
+      } as Parameters<typeof api.get>[1] & { responseType: 'blob'; suppressGlobalErrorHandler: boolean },
     )
-
-    return response.data.data
   },
 
   async getLatestConfirmedParameters(scenarioId: number): Promise<LatestModelParamProposalParameters> {
