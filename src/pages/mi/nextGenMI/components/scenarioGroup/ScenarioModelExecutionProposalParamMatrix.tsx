@@ -8,6 +8,7 @@ import type {
 
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioGroupStickyTable, {
   type ScenarioGroupStickyTableColumn,
@@ -34,6 +35,7 @@ interface ProposalParamMatrixRow {
   rowIndex: number
   fixedValues: string[]
   recommendedValues: Record<string, string>
+  recommendedRationales: Record<string, string>
 }
 
 const FIXED_COLUMN_WIDTH = '140px'
@@ -61,11 +63,13 @@ const ParamInputSkeleton = () => <Skeleton variant="rounded" width="100%" height
 const ProposalParamEditableCell = ({
   baselineValue,
   value,
+  rationale,
   onChange,
   onReset,
 }: {
   baselineValue: string
   value: string
+  rationale?: string
   onChange: (nextValue: string) => void
   onReset: () => void
 }) => {
@@ -138,7 +142,7 @@ const ProposalParamEditableCell = ({
             fontSize: '12px',
             fontWeight: 500,
             lineHeight: 1.4,
-            textAlign: 'center',
+            textAlign: 'right',
             outline: 'none',
             boxSizing: 'border-box',
           }}
@@ -151,7 +155,7 @@ const ProposalParamEditableCell = ({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-end',
             flex: '1 1 0',
             minWidth: '54px',
             height: '28px',
@@ -168,7 +172,7 @@ const ProposalParamEditableCell = ({
             },
           }}
         >
-          <Typography variant="body3M12" color="contentText.Normal" noWrap textAlign="center" width="100%">
+          <Typography variant="body3M12" color="contentText.Normal" noWrap textAlign="right" width="100%">
             {value}
           </Typography>
         </Box>
@@ -200,6 +204,26 @@ const ProposalParamEditableCell = ({
         >
           <ReplayIcon width="14px" height="14px" />
         </Box>
+      ) : rationale?.trim() ? (
+        <NextGenMIFollowCursorTooltip title={rationale.trim()}>
+          <Box
+            component="span"
+            role="img"
+            aria-label={`추천 근거: ${rationale.trim()}`}
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            width="18px"
+            height="18px"
+            color="contentIcon.Enabled"
+            flexShrink={0}
+            lineHeight={0}
+            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <InfoOutlineIcon width="14px" height="14px" aria-hidden focusable="false" />
+          </Box>
+        </NextGenMIFollowCursorTooltip>
       ) : (
         <Box
           component="span"
@@ -343,11 +367,13 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     if (!matrix) return []
     return matrix.fixedRows.map((fixedValues, rowIndex) => {
       const recommendedValues: Record<string, string> = {}
+      const recommendedRationales: Record<string, string> = {}
       matrix.periods.forEach((period) => {
         recommendedValues[`${period.periodLabel}::base`] = period.miBaseValues[rowIndex] ?? '-'
         visibleScenarios.forEach((scenario) => {
-          recommendedValues[`${period.periodLabel}::${scenario.scenarioId}`] =
-            period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+          const fieldKey = `${period.periodLabel}::${scenario.scenarioId}`
+          recommendedValues[fieldKey] = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+          recommendedRationales[fieldKey] = period.scenarioRationalesById[scenario.scenarioId]?.[rowIndex] ?? ''
         })
       })
       return {
@@ -355,6 +381,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         rowIndex,
         fixedValues,
         recommendedValues,
+        recommendedRationales,
       }
     })
   }, [matrix, visibleScenarios])
@@ -485,11 +512,13 @@ const ScenarioModelExecutionProposalParamMatrix = ({
             const matrixValue = row.recommendedValues[fieldKey] ?? ''
             const baselineValue = baselineValues[valueKey] ?? matrixValue
             const value = editedValues[valueKey] ?? matrixValue
+            const rationale = row.recommendedRationales[fieldKey] ?? ''
 
             return (
               <ProposalParamEditableCell
                 baselineValue={baselineValue}
                 value={value}
+                rationale={rationale}
                 onChange={(nextValue) => {
                   setEditedValues((current) => {
                     if (!isParamValueEdited(nextValue, baselineValue)) {

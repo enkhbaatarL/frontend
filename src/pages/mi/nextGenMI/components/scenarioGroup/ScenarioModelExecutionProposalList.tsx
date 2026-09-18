@@ -1153,7 +1153,24 @@ const ScenarioModelExecutionProposalList = ({
             variant="contained"
             disabled={!hasCompleted || isSubmittingExecution}
             onClick={handleExecuteClick}
-            sx={{ height: '36px', bgcolor: 'mari.Primary', borderRadius: '8px' }}
+            labelColor="contentText.White"
+            sx={{
+              height: '36px',
+              borderRadius: '8px',
+              padding: '8px 10px',
+              backgroundColor: 'mari.Primary',
+              '&:hover:not(:disabled)': {
+                backgroundColor: 'mari.Primary',
+              },
+              // 완료 시나리오 0건이면 비활성 - 스펙 disabled 색
+              '&.Mui-disabled': {
+                backgroundColor: '#C3CAEE',
+                color: 'contentText.White',
+              },
+              '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
+                color: 'contentText.White',
+              },
+            }}
           >
             {selectedCompletedCount > 0 ? `MI 수급모델 실행 (${selectedCompletedCount})` : 'MI 수급모델 실행'}
           </MIBaseButton>
