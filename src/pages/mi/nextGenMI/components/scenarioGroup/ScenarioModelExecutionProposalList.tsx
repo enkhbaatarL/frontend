@@ -9,7 +9,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { SwitchTransition } from 'react-transition-group'
 
 import type {
-  CurrentModelParamProposal,
   ModelExecutionAccept,
   ScenarioGroupModelParamCompare,
   ScenarioGroupModelParamProposals,
@@ -28,7 +27,7 @@ import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
-import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import NextGenMITableBodyText, { NEXT_GEN_MI_TABLE_CELL_PX } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
 import {
@@ -41,38 +40,12 @@ import {
   updateCompareProposedValue,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalMapping'
 import ScenarioModelExecutionProposalParamPanel from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionProposalParamPanel'
-import fileService, { type IFileDownloadRequest } from '@/service/admin/file'
 import nextGenMIModelExecutionService from '@/service/mi/nextGenMI/modelExecution'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 import { downloadFile } from '@/utils/file'
 
 const BANNER_MESSAGE = '각 시나리오의 [생성] 버튼을 눌러 추천 파라미터를 생성해 주세요.'
 const GENERATING_MESSAGE = '파라미터를 생성하고 있습니다'
-
-/** 8c8e9629 기준 - executionInputFiles 가 완전할 때만 다운로드 가능 */
-const getDownloadableExecutionInputFiles = (proposal: CurrentModelParamProposal | null): IFileDownloadRequest[] => {
-  const executionInputFiles = proposal?.executionInputFiles
-  if (executionInputFiles?.complete !== true || !executionInputFiles.files?.length) return []
-
-  const downloadableFiles = executionInputFiles.files.flatMap((file) => {
-    if (
-      typeof file.fileNo !== 'number' ||
-      !Number.isInteger(file.fileNo) ||
-      file.fileNo <= 0 ||
-      typeof file.fileNm !== 'string' ||
-      file.fileNm.trim().length === 0 ||
-      typeof file.fileSize !== 'number' ||
-      !Number.isFinite(file.fileSize) ||
-      file.fileSize < 0
-    ) {
-      return []
-    }
-
-    return [{ fileNo: file.fileNo, fileNm: file.fileNm, fileSize: file.fileSize }]
-  })
-
-  return downloadableFiles.length === executionInputFiles.files.length ? downloadableFiles : []
-}
 
 interface ScenarioModelExecutionProposalListProps {
   scenarioGroupId: number
@@ -110,14 +83,34 @@ const DimensionInfoIcon = ({ title }: { title: string }) => (
       component="span"
       alignItems="center"
       justifyContent="center"
-      width="16px"
-      height="16px"
+      width="18px"
+      height="18px"
       flexShrink={0}
       color="contentIcon.Enabled"
     >
-      <InfoOutlinedIcon aria-hidden sx={{ fontSize: '16px', color: 'inherit' }} />
+      <InfoOutlinedIcon aria-hidden sx={{ fontSize: '18px', color: 'inherit' }} />
     </Stack>
   </NextGenMIFollowCursorTooltip>
+)
+
+/** 헤더/로우 dimension 셀 공통 레이아웃 - (i) 아이콘을 셀 오른쪽에 동일 정렬 */
+const DimensionCellContent = ({
+  value,
+  tooltipTitle,
+  variant,
+  color,
+}: {
+  value: string
+  tooltipTitle?: string
+  variant: 'body2SB14' | 'body2M14'
+  color: string
+}) => (
+  <Stack direction="row" alignItems="center" gap="6px" flex="1 1 0" minWidth={0} padding={`0 ${NEXT_GEN_MI_TABLE_CELL_PX}px`}>
+    <Box flex="1 1 0" minWidth={0}>
+      <NextGenMITableBodyText value={value} variant={variant} color={color} tooltipWhenTruncated />
+    </Box>
+    {tooltipTitle ? <DimensionInfoIcon title={tooltipTitle} /> : <Box width="18px" height="18px" flexShrink={0} aria-hidden />}
+  </Stack>
 )
 
 const isClientRequestError = (error: unknown) => {
@@ -252,10 +245,8 @@ const ScenarioModelExecutionProposalList = ({
   const [executionConfirmOpen, setExecutionConfirmOpen] = useState(false)
   const [isSubmittingExecution, setIsSubmittingExecution] = useState(false)
   const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
-  const [downloadableExecutionInputFiles, setDownloadableExecutionInputFiles] = useState<IFileDownloadRequest[]>([])
   const failureKeyRef = useRef<Map<number, string>>(new Map())
   const groupStreamControllerRef = useRef<AbortController | null>(null)
-  const inputFilesRequestIdRef = useRef(0)
   const proposalsRequestIdRef = useRef(0)
   const compareRequestIdRef = useRef(0)
   const previousColumnScenarioIdsRef = useRef<number[]>([])
@@ -354,40 +345,18 @@ const ScenarioModelExecutionProposalList = ({
     onFillsViewportHeightChange?.(hasCompleted)
   }, [hasCompleted, onFillsViewportHeightChange])
 
-  const downloadTargetScenarioIds = useMemo(() => {
-    const selectedCompleted = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId))
-    return selectedCompleted.length > 0 ? selectedCompleted : completedScenarioIds
-  }, [completedScenarioIds, selectedScenarioIds])
+  // 그룹 내 EXECUTED_CONFIRMED 시나리오가 있으면 인풋 zip 다운로드 가능 (없으면 API 404)
+  const canDownloadInputFiles = useMemo(
+    () => (groupProposals?.scenarios ?? []).some((scenario) => scenario.currentState === 'EXECUTED_CONFIRMED'),
+    [groupProposals?.scenarios],
+  )
 
-  const refreshDownloadableExecutionInputFiles = useCallback(async () => {
-    const requestId = ++inputFilesRequestIdRef.current
-    if (!showParamPanel || downloadTargetScenarioIds.length === 0) {
-      if (requestId === inputFilesRequestIdRef.current) setDownloadableExecutionInputFiles([])
-      return
-    }
-
-    const proposals = await Promise.all(
-      downloadTargetScenarioIds.map((scenarioId) =>
-        nextGenMIModelExecutionService.getCurrentModelParamProposal(scenarioId).catch(() => null),
-      ),
-    )
-    if (requestId !== inputFilesRequestIdRef.current) return
-
-    const files = proposals.flatMap((proposal) => getDownloadableExecutionInputFiles(proposal))
-    // 시나리오별 fileNo 중복 제거
-    const uniqueFiles = Array.from(new Map(files.map((file) => [file.fileNo, file])).values())
-    setDownloadableExecutionInputFiles(uniqueFiles)
-  }, [downloadTargetScenarioIds, showParamPanel])
-
-  useEffect(() => {
-    void refreshDownloadableExecutionInputFiles()
-  }, [refreshDownloadableExecutionInputFiles, groupProposals, compare])
-
-  const { mutate: downloadExecutionInputFiles, isPending: isDownloadingInputFiles } = useMutation({
-    mutationFn: ({ prefix, files: inputFiles }: { prefix: string; files: IFileDownloadRequest[] }) =>
-      fileService.downloadFiles(prefix, inputFiles),
-    onSuccess: (fileBlob, { prefix }) => {
-      downloadFile(fileBlob, `${prefix}.zip`)
+  const { mutate: downloadGroupInputFiles, isPending: isDownloadingInputFiles } = useMutation({
+    mutationFn: () => nextGenMIModelExecutionService.downloadGroupInputFiles(scenarioGroupId),
+    onSuccess: (response) => {
+      const contentDisposition = response.headers?.['content-disposition'] ?? ''
+      const fileNameFromHeader = contentDisposition.split('\'\'').pop()?.trim()
+      downloadFile(response.data, fileNameFromHeader || `scenario-group-${scenarioGroupId}-model-input-files.zip`)
     },
     onError: () => {
       showSnackbar('인풋 파일 다운로드에 실패했습니다.', { variant: 'error' })
@@ -395,12 +364,9 @@ const ScenarioModelExecutionProposalList = ({
   })
 
   const handleDownloadInputFiles = useCallback(() => {
-    if (downloadableExecutionInputFiles.length === 0 || isDownloadingInputFiles) return
-    downloadExecutionInputFiles({
-      prefix: `scenario-group-${scenarioGroupId}-model-input-files`,
-      files: downloadableExecutionInputFiles,
-    })
-  }, [downloadExecutionInputFiles, downloadableExecutionInputFiles, isDownloadingInputFiles, scenarioGroupId])
+    if (!canDownloadInputFiles || isDownloadingInputFiles) return
+    downloadGroupInputFiles()
+  }, [canDownloadInputFiles, downloadGroupInputFiles, isDownloadingInputFiles])
 
   const visibleScenarios = useMemo(
     () =>
@@ -866,9 +832,9 @@ const ScenarioModelExecutionProposalList = ({
                 direction="row"
                 alignItems="center"
                 height="48px"
-                bgcolor="gray.5"
-                borderBottom="1px solid"
-                borderColor="contentBorder.Normal"
+                bgcolor="commonColor.White"
+                borderBottom="0.5px solid"
+                borderColor="contentBorder.Active"
               >
                 <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
                   {selectableScenarioIds.length > 0 ? (
@@ -888,12 +854,13 @@ const ScenarioModelExecutionProposalList = ({
                   {dimensionColumns.map((column) => {
                     const headerTooltipTitle = column.description?.trim() || column.rationale?.trim()
                     return (
-                      <Stack key={column.key} direction="row" alignItems="center" gap="4px" flex="1 1 0" minWidth={0} padding="0 8px">
-                        <Box flex="1 1 0" minWidth={0}>
-                          <NextGenMITableBodyText value={column.label} variant="body2SB14" color="contentText.Black" tooltipWhenTruncated />
-                        </Box>
-                        {headerTooltipTitle ? <DimensionInfoIcon title={headerTooltipTitle} /> : null}
-                      </Stack>
+                      <DimensionCellContent
+                        key={column.key}
+                        value={column.label}
+                        tooltipTitle={headerTooltipTitle || undefined}
+                        variant="body2SB14"
+                        color="contentText.Black"
+                      />
                     )
                   })}
                 </Stack>
@@ -989,30 +956,25 @@ const ScenarioModelExecutionProposalList = ({
                     </Stack>
                     <Stack direction="row" flex="1 1 0" minWidth={0} sx={{ opacity: dimmed ? 0.5 : 1 }}>
                       {scenario.dimensionCells.map((cell, index) => (
-                        <Stack
+                        <DimensionCellContent
                           key={`${scenario.scenarioId}-${dimensionColumns[index]?.key ?? index}`}
-                          direction="row"
-                          alignItems="center"
-                          gap="4px"
-                          flex="1 1 0"
-                          minWidth={0}
-                          padding="0 8px"
-                        >
-                          <NextGenMITableBodyText
-                            value={cell.value}
-                            variant="body2M14"
-                            color={bodyColor}
-                            tooltipWhenTruncated
-                            sx={{ flex: '1 1 0%', minWidth: 0 }}
-                          />
-                          {cell.rationale ? <DimensionInfoIcon title={cell.rationale} /> : null}
-                        </Stack>
+                          value={cell.value}
+                          tooltipTitle={cell.rationale || undefined}
+                          variant="body2M14"
+                          color={bodyColor}
+                        />
                       ))}
                     </Stack>
                     <Stack width="100px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
                       <ScenarioPossibilityGauge probability={scenario.possibility} disabled={dimmed} hideHoverBackground />
                     </Stack>
-                    <Stack width="92px" flexShrink={0} alignItems="center" justifyContent="center" padding="0 6px">
+                    <Stack
+                      width="92px"
+                      flexShrink={0}
+                      alignItems="center"
+                      justifyContent="center"
+                      sx={{ padding: '0 6px', boxSizing: 'border-box' }}
+                    >
                       <StatusCell
                         status={scenario.status}
                         failureReason={scenario.failureReason}
@@ -1122,7 +1084,7 @@ const ScenarioModelExecutionProposalList = ({
                       visibleScenarios={visibleScenarios}
                       compare={compare}
                       resetToken={paramResetToken}
-                      canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
+                      canDownloadInputFiles={canDownloadInputFiles}
                       isDownloadingInputFiles={isDownloadingInputFiles}
                       onDownloadInputFiles={handleDownloadInputFiles}
                       onHasEditsChange={setHasParamEdits}
