@@ -8,6 +8,7 @@ import type {
 
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioGroupStickyTable, {
   type ScenarioGroupStickyTableColumn,
@@ -25,6 +26,8 @@ interface ScenarioModelExecutionProposalParamMatrixProps {
   scrollResetKey: string
   /** 증가 시 수정값을 추천값으로 전부 초기화 */
   resetToken?: number
+  /** 수급모델 제출/초기화 중 Value 입력 잠금 - PopupContent NumericParameterValueInput 과 동일 */
+  disabled?: boolean
   onHasEditsChange?: (hasEdits: boolean) => void
   onChangeScenarioValue?: (scenarioId: number, periodTimeKey: string, rowIndex: number, nextValue: number) => void
 }
@@ -34,6 +37,7 @@ interface ProposalParamMatrixRow {
   rowIndex: number
   fixedValues: string[]
   recommendedValues: Record<string, string>
+  recommendedRationales: Record<string, string>
 }
 
 const FIXED_COLUMN_WIDTH = '140px'
@@ -61,11 +65,15 @@ const ParamInputSkeleton = () => <Skeleton variant="rounded" width="100%" height
 const ProposalParamEditableCell = ({
   baselineValue,
   value,
+  rationale,
+  disabled = false,
   onChange,
   onReset,
 }: {
   baselineValue: string
   value: string
+  rationale?: string
+  disabled?: boolean
   onChange: (nextValue: string) => void
   onReset: () => void
 }) => {
@@ -86,7 +94,19 @@ const ProposalParamEditableCell = ({
     inputRef.current?.select()
   }, [isEditing])
 
+  // 수급모델 제출/실행 시작 시 편집 중이면 표시 모드로 복귀 (PopupContent NumericParameterValueInput 과 동일)
+  useEffect(() => {
+    if (!disabled) return
+    setIsEditing(false)
+    setDraftValue(value)
+  }, [disabled, value])
+
   const commitDraft = () => {
+    if (disabled) {
+      setDraftValue(value)
+      setIsEditing(false)
+      return
+    }
     const trimmed = draftValue.trim()
     if (trimmed === '' || trimmed === '-' || !/^-?\d*(?:\.\d*)?$/.test(trimmed) || !Number.isFinite(Number(trimmed))) {
       setDraftValue(value)
@@ -109,14 +129,19 @@ const ProposalParamEditableCell = ({
     }
   }
 
+  const inputBorderColor = disabled ? 'contentBorder.Disabled' : isEdited ? EDITED_INPUT_BORDER : 'contentBorder.Normal'
+  const inputBgColor = disabled ? 'contentBG.Disabled' : isEdited ? EDITED_INPUT_BG : 'commonColor.White'
+  const inputTextColor = disabled ? 'contentText.Disabled' : 'contentText.Normal'
+
   return (
     <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" width="100%" minWidth={0}>
-      {isEditing ? (
+      {isEditing && !disabled ? (
         <Box
           component="input"
           ref={inputRef}
           value={draftValue}
           inputMode="decimal"
+          disabled={disabled}
           onChange={(event) => {
             if (!/^-?\d*(?:\.\d*)?$/.test(event.target.value)) return
             setDraftValue(event.target.value)
@@ -130,15 +155,15 @@ const ProposalParamEditableCell = ({
             height: '28px',
             padding: '8px 12px',
             border: '1px solid',
-            borderColor: isEdited ? EDITED_INPUT_BORDER : 'contentBorder.Normal',
+            borderColor: inputBorderColor,
             borderRadius: '10px',
-            bgcolor: isEdited ? EDITED_INPUT_BG : 'commonColor.White',
-            color: 'contentText.Normal',
+            bgcolor: inputBgColor,
+            color: inputTextColor,
             fontFamily: 'inherit',
             fontSize: '12px',
             fontWeight: 500,
             lineHeight: 1.4,
-            textAlign: 'center',
+            textAlign: 'right',
             outline: 'none',
             boxSizing: 'border-box',
           }}
@@ -147,28 +172,38 @@ const ProposalParamEditableCell = ({
         <Box
           component="button"
           type="button"
-          onClick={() => setIsEditing(true)}
+          disabled={disabled}
+          onClick={() => {
+            if (disabled) return
+            setIsEditing(true)
+          }}
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-end',
             flex: '1 1 0',
             minWidth: '54px',
             height: '28px',
             padding: '8px 12px',
             border: '1px solid',
-            borderColor: isEdited ? EDITED_INPUT_BORDER : 'contentBorder.Normal',
+            borderColor: inputBorderColor,
             borderRadius: '10px',
-            bgcolor: isEdited ? EDITED_INPUT_BG : 'commonColor.White',
+            bgcolor: inputBgColor,
             boxSizing: 'border-box',
             overflow: 'hidden',
-            cursor: 'text',
-            '&:hover': {
+            cursor: disabled ? 'default' : 'text',
+            '&:hover:not(:disabled)': {
               bgcolor: isEdited ? EDITED_INPUT_BG : 'contentBG.Active',
+            },
+            '&:disabled': {
+              borderColor: 'contentBorder.Disabled',
+              bgcolor: 'contentBG.Disabled',
+              color: 'contentText.Disabled',
+              cursor: 'default',
             },
           }}
         >
-          <Typography variant="body3M12" color="contentText.Normal" noWrap textAlign="center" width="100%">
+          <Typography variant="body3M12" color={inputTextColor} noWrap textAlign="right" width="100%">
             {value}
           </Typography>
         </Box>
@@ -178,8 +213,10 @@ const ProposalParamEditableCell = ({
           component="button"
           type="button"
           aria-label="추천값으로 되돌리기"
+          disabled={disabled}
           onClick={(event) => {
             event.stopPropagation()
+            if (disabled) return
             onReset()
           }}
           onMouseDown={(event) => event.stopPropagation()}
@@ -192,14 +229,34 @@ const ProposalParamEditableCell = ({
             padding: 0,
             border: 0,
             bgcolor: 'transparent',
-            color: 'contentIcon.Enabled',
-            cursor: 'pointer',
+            color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled',
+            cursor: disabled ? 'default' : 'pointer',
             flexShrink: 0,
             lineHeight: 0,
           }}
         >
           <ReplayIcon width="14px" height="14px" />
         </Box>
+      ) : rationale?.trim() ? (
+        <NextGenMIFollowCursorTooltip title={rationale.trim()}>
+          <Box
+            component="span"
+            role="img"
+            aria-label={`추천 근거: ${rationale.trim()}`}
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            width="18px"
+            height="18px"
+            color="contentIcon.Enabled"
+            flexShrink={0}
+            lineHeight={0}
+            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <InfoOutlineIcon width="14px" height="14px" aria-hidden focusable="false" />
+          </Box>
+        </NextGenMIFollowCursorTooltip>
       ) : (
         <Box
           component="span"
@@ -224,6 +281,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   matrix,
   scrollResetKey,
   resetToken = 0,
+  disabled = false,
   onHasEditsChange,
   onChangeScenarioValue,
 }: ScenarioModelExecutionProposalParamMatrixProps) => {
@@ -343,11 +401,13 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     if (!matrix) return []
     return matrix.fixedRows.map((fixedValues, rowIndex) => {
       const recommendedValues: Record<string, string> = {}
+      const recommendedRationales: Record<string, string> = {}
       matrix.periods.forEach((period) => {
         recommendedValues[`${period.periodLabel}::base`] = period.miBaseValues[rowIndex] ?? '-'
         visibleScenarios.forEach((scenario) => {
-          recommendedValues[`${period.periodLabel}::${scenario.scenarioId}`] =
-            period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+          const fieldKey = `${period.periodLabel}::${scenario.scenarioId}`
+          recommendedValues[fieldKey] = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+          recommendedRationales[fieldKey] = period.scenarioRationalesById[scenario.scenarioId]?.[rowIndex] ?? ''
         })
       })
       return {
@@ -355,6 +415,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         rowIndex,
         fixedValues,
         recommendedValues,
+        recommendedRationales,
       }
     })
   }, [matrix, visibleScenarios])
@@ -485,12 +546,16 @@ const ScenarioModelExecutionProposalParamMatrix = ({
             const matrixValue = row.recommendedValues[fieldKey] ?? ''
             const baselineValue = baselineValues[valueKey] ?? matrixValue
             const value = editedValues[valueKey] ?? matrixValue
+            const rationale = row.recommendedRationales[fieldKey] ?? ''
 
             return (
               <ProposalParamEditableCell
                 baselineValue={baselineValue}
                 value={value}
+                rationale={rationale}
+                disabled={disabled}
                 onChange={(nextValue) => {
+                  if (disabled) return
                   setEditedValues((current) => {
                     if (!isParamValueEdited(nextValue, baselineValue)) {
                       const { [valueKey]: _removed, ...rest } = current
@@ -502,6 +567,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
                   if (Number.isFinite(numeric)) onChangeScenarioValue?.(scenario.scenarioId, period.timeKey, row.rowIndex, numeric)
                 }}
                 onReset={() => {
+                  if (disabled) return
                   setEditedValues((current) => {
                     const { [valueKey]: _removed, ...rest } = current
                     return rest
@@ -519,7 +585,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     })
 
     return [...fixedColumns, ...valueColumns]
-  }, [baselineValues, editedValues, matrix, onChangeScenarioValue, visibleScenarios])
+  }, [baselineValues, disabled, editedValues, matrix, onChangeScenarioValue, visibleScenarios])
 
   const fixedLeftColumnIndexes = useMemo(() => matrix?.fixedHeaders.map((_, index) => index) ?? [], [matrix?.fixedHeaders])
 

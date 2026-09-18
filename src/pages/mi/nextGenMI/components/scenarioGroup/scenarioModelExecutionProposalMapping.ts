@@ -150,6 +150,8 @@ export interface ProposalParamPeriodColumn {
   timeKey: string
   miBaseValues: string[]
   scenarioValuesById: Record<number, string[]>
+  /** 셀 단위 추천 근거 (없으면 빈 문자열) */
+  scenarioRationalesById: Record<number, string[]>
   sourceRowIndexesByScenarioId: Record<number, number[]>
 }
 
@@ -248,10 +250,15 @@ export const buildCompareParamMatrixData = ({
     })
 
     const scenarioValuesById: Record<number, string[]> = {}
+    const scenarioRationalesById: Record<number, string[]> = {}
     const sourceRowIndexesByScenarioId: Record<number, number[]> = {}
 
     visibleScenarioIds.forEach((scenarioId) => {
-      scenarioValuesById[scenarioId] = slotKeys.map((slotKey) => {
+      scenarioValuesById[scenarioId] = []
+      scenarioRationalesById[scenarioId] = []
+      sourceRowIndexesByScenarioId[scenarioId] = []
+
+      slotKeys.forEach((slotKey) => {
         const matchIndex = referenceRows.findIndex((row) => {
           const rowSlotKey = JSON.stringify(slotColumns.map((column) => getAxisValue(row, column)))
           if (rowSlotKey !== slotKey) return false
@@ -259,12 +266,19 @@ export const buildCompareParamMatrixData = ({
           const rowTimeKey = JSON.stringify(timeAxisColumns.map((column) => getAxisValue(row, column)))
           return rowTimeKey === timeKey
         })
-        if (!sourceRowIndexesByScenarioId[scenarioId]) sourceRowIndexesByScenarioId[scenarioId] = []
         sourceRowIndexesByScenarioId[scenarioId].push(matchIndex)
-        if (matchIndex < 0) return ''
-        const cell = getCompareCellForScenario(referenceRows[matchIndex], scenarioId, compareScenarios)
+        if (matchIndex < 0) {
+          scenarioValuesById[scenarioId].push('')
+          scenarioRationalesById[scenarioId].push('')
+          return
+        }
+        const matchRow = referenceRows[matchIndex]
+        const cell = getCompareCellForScenario(matchRow, scenarioId, compareScenarios)
         const value = cell?.proposedValue
-        return typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value)
+        scenarioValuesById[scenarioId].push(typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value))
+        // 셀 rationale 우선, 없으면 values 행의 rationale (API가 행 단위로 내려주는 경우)
+        const rowRationale = typeof matchRow.rationale === 'string' ? matchRow.rationale.trim() : ''
+        scenarioRationalesById[scenarioId].push(cell?.rationale?.trim() || rowRationale)
       })
     })
 
@@ -273,6 +287,7 @@ export const buildCompareParamMatrixData = ({
       timeKey,
       miBaseValues,
       scenarioValuesById,
+      scenarioRationalesById,
       sourceRowIndexesByScenarioId,
     }
   })
