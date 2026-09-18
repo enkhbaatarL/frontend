@@ -13,9 +13,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import NextGenMIDetailHeader, {
-  NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
-} from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
+import NextGenMIDetailHeader from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
@@ -2013,8 +2011,8 @@ const ScenarioDesignPage = () => {
   const confirmContent = useMemo(() => (confirmType ? getScenarioDesignConfirmContent(confirmType) : null), [confirmType])
   const scenarioDesignStickyHeightsPx = useMemo(
     () => ({
-      expanded: NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.expanded + (scenarioDesignReadOnly ? 36 : 0),
-      collapsed: NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.collapsed + (scenarioDesignReadOnly ? 36 : 0),
+      expanded: 174 + (scenarioDesignReadOnly ? 36 : 0),
+      collapsed: 122 + (scenarioDesignReadOnly ? 36 : 0),
     }),
     [scenarioDesignReadOnly],
   )
