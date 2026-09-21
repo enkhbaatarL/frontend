@@ -291,7 +291,6 @@ export const buildCompareParamMatrixData = ({
     const sourceRowIndexesByScenarioId: Record<number, number[]> = {}
 
     visibleScenarioIds.forEach((scenarioId) => {
-      const scenarioRationale = parameter.scenarioRationales?.find((item) => item.scenarioId === scenarioId)
       scenarioValuesById[scenarioId] = []
       scenarioRationalesById[scenarioId] = []
       sourceRowIndexesByScenarioId[scenarioId] = []
@@ -314,19 +313,7 @@ export const buildCompareParamMatrixData = ({
         const cell = getCompareCellForScenario(matchRow, scenarioId, compareScenarios)
         const value = cell?.proposedValue
         scenarioValuesById[scenarioId].push(formatCompareDisplayValue(value))
-        // 셀 rationale 우선, 없으면 values 행의 rationale (API가 행 단위로 내려주는 경우)
-        const rowRationale = typeof matchRow.rationale === 'string' ? matchRow.rationale.trim() : ''
-        scenarioRationalesById[scenarioId].push(cell?.rationale?.trim() || rowRationale)
-      })
-      scenarioRationalesById[scenarioId] = slotKeys.map((slotKey, rowIndex) => {
-        const groupedRationale = scenarioRationale?.groupedRationales?.find(
-          (group) => JSON.stringify(slotColumns.map((column) => getAxisValue(group, column))) === slotKey,
-        )?.rationale
-        return (
-          [scenarioRationalesById[scenarioId][rowIndex], groupedRationale, scenarioRationale?.rationale]
-            .find((value): value is string => typeof value === 'string' && Boolean(value.trim()))
-            ?.trim() ?? ''
-        )
+        scenarioRationalesById[scenarioId].push(value === undefined || value === null ? '' : (cell?.rationale?.trim() ?? ''))
       })
     })
 

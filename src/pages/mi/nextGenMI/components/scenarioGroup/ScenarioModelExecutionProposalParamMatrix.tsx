@@ -103,6 +103,16 @@ const ProposalParamEditableCell = ({
     setDraftValue(value)
   }, [disabled, value])
 
+  if (normalizeParamValue(value) === '-') {
+    return (
+      <Stack width="100%" height="28px" justifyContent="center" padding="0 12px" boxSizing="border-box">
+        <Typography variant="body3M12" color="contentText.Normal" textAlign="right">
+          -
+        </Typography>
+      </Stack>
+    )
+  }
+
   const commitDraft = () => {
     if (disabled) {
       setDraftValue(value)
