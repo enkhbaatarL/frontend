@@ -206,7 +206,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
         </HorizontalScrollContainer>
       </Stack>
 
-      {modelTables.length > 1 && (
+      {modelTables.length > 0 && (
         <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5" gap="8px">
           <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
             {modelTables.map((tableName) => (

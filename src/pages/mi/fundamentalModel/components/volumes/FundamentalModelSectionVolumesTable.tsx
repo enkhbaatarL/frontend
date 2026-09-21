@@ -40,6 +40,7 @@ import {
   fmVolumeTableHeaderCellSx,
   mergeVolumeTableSx,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumesTableLayout'
+import useFixedTableVirtualization from '@/pages/mi/fundamentalModel/components/volumes/useFixedTableVirtualization'
 
 export interface FundamentalModelSectionVolumesTableProps {
   /** 시간축 컬럼(getVolumes columns) */
@@ -196,6 +197,18 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
   const syncingHorizontalRef = useRef(false)
   const [hasScrolledX, setHasScrolledX] = useState(false)
   const [hasScrolledY, setHasScrolledY] = useState(false)
+  const { rowRange, columnRange, rowOffset, columnOffset, totalRowHeight } = useFixedTableVirtualization({
+    rowCount: flatRows.length,
+    rowHeight: FM_VOLUME_TABLE_BODY_H,
+    rowViewportHeight: FM_VOLUME_GLOBAL_TABLE_BODY_MAX_HEIGHT,
+    columnWidths: monthColumnWidths,
+    columnViewportWidth: Math.max(tableFrameWidth - FM_VOLUME_GLOBAL_FROZEN_W, 0),
+    verticalScrollRef: bodyScrollRef,
+    horizontalScrollRef: bodyMonthScrollRef,
+    enabled: !loading,
+  })
+  const visibleRows = useMemo(() => flatRows.slice(rowRange.start, rowRange.end), [flatRows, rowRange.end, rowRange.start])
+  const visibleColumns = useMemo(() => columns.slice(columnRange.start, columnRange.end), [columnRange.end, columnRange.start, columns])
 
   useEffect(() => {
     const frameEl = tableFrameRef.current
@@ -304,29 +317,43 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
   )
 
   const headerMonthColumns = (
-    <Stack direction="row" alignItems="flex-start" sx={{ width: `${monthScrollWidth}px`, minWidth: `${monthScrollWidth}px` }}>
-      {columns.map((column, colIdx) => {
-        const columnWidth = `${monthColumnWidths[colIdx] ?? FM_VOLUME_MONTH_COL_W}px`
-        return (
-          <Stack key={`${column.key}-${colIdx}`} sx={{ width: columnWidth, flex: `0 0 ${columnWidth}` }}>
-            <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
-              <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
-                {column.label}
-              </Typography>
-            </Box>
-          </Stack>
-        )
-      })}
-    </Stack>
+    <Box
+      sx={{
+        width: `${monthScrollWidth}px`,
+        minWidth: `${monthScrollWidth}px`,
+        height: `${FM_VOLUME_TABLE_HEADER_H}px`,
+        position: 'relative',
+      }}
+    >
+      <Stack direction="row" sx={{ position: 'absolute', left: `${columnOffset}px`, top: 0 }}>
+        {visibleColumns.map((column, visibleColIdx) => {
+          const colIdx = columnRange.start + visibleColIdx
+          const columnWidth = `${monthColumnWidths[colIdx] ?? FM_VOLUME_MONTH_COL_W}px`
+          return (
+            <Stack key={`${column.key}-${colIdx}`} sx={{ width: columnWidth, flex: `0 0 ${columnWidth}` }}>
+              <Box sx={[fmVolumeTableHeaderCellSx, { justifyContent: 'flex-end' }]}>
+                <Typography variant="tableHeaderSemibold" color="gray.60" noWrap sx={{ lineHeight: 1.4 }}>
+                  {column.label}
+                </Typography>
+              </Box>
+            </Stack>
+          )
+        })}
+      </Stack>
+    </Box>
   )
 
   const bodyFrozenColumns = (
     <Stack direction="row" alignItems="flex-start" sx={[{ flexShrink: 0 }, rowHeaderShadowSx]}>
-      <Stack sx={{ width: FM_VOLUME_GLOBAL_SECTION_COL_W, flexShrink: 0 }}>
-        {sections.map((section) => {
+      <Box sx={{ width: FM_VOLUME_GLOBAL_SECTION_COL_W, height: `${totalRowHeight}px`, flexShrink: 0, position: 'relative' }}>
+        {sections.map((section, sectionIdx) => {
           const layout = getSectionLabelLayout(section.rows)
+          const sectionStart = sections.slice(0, sectionIdx).reduce((sum, item) => sum + item.rows.length, 0)
+          const sectionEnd = sectionStart + section.rows.length
+          if (sectionEnd <= rowRange.start || sectionStart >= rowRange.end) return null
+
           return (
-            <Box key={section.type}>
+            <Box key={section.type} sx={{ position: 'absolute', top: `${sectionStart * FM_VOLUME_TABLE_BODY_H}px`, width: '100%' }}>
               {layout.labelRows > 0 && (
                 <Box
                   sx={{
@@ -360,10 +387,21 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
             </Box>
           )
         })}
-      </Stack>
+      </Box>
 
-      <Stack sx={{ width: FM_VOLUME_GLOBAL_COUNTRY_COL_W, flexShrink: 0, borderRight: FM_VOLUME_TABLE_BORDER, overflow: 'clip' }}>
-        {flatRows.map(({ sectionType, row }, rowIdx) => {
+      <Stack
+        sx={{
+          width: FM_VOLUME_GLOBAL_COUNTRY_COL_W,
+          height: `${totalRowHeight}px`,
+          flexShrink: 0,
+          borderRight: FM_VOLUME_TABLE_BORDER,
+          overflow: 'clip',
+          paddingTop: `${rowOffset}px`,
+          boxSizing: 'border-box',
+        }}
+      >
+        {visibleRows.map(({ sectionType, row }, visibleRowIdx) => {
+          const rowIdx = rowRange.start + visibleRowIdx
           const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
           const isTotal = row.rowKind === 'TYPE_TOTAL'
           const isRegion = row.rowKind === 'REGION_SUBTOTAL'
@@ -388,30 +426,41 @@ const FundamentalModelSectionVolumesTable = memo(({ columns, rows, loading = fal
   )
 
   const bodyMonthColumns = (
-    <Stack direction="row" alignItems="flex-start" sx={{ width: `${monthScrollWidth}px`, minWidth: `${monthScrollWidth}px` }}>
-      {columns.map((column, colIdx) => {
-        const columnWidth = `${monthColumnWidths[colIdx] ?? FM_VOLUME_MONTH_COL_W}px`
-        return (
-          <Stack key={`${column.key}-${colIdx}`} sx={{ width: columnWidth, flex: `0 0 ${columnWidth}` }}>
-            {flatRows.map(({ sectionType, row }, rowIdx) => {
-              const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
-              const isTotal = row.rowKind === 'TYPE_TOTAL'
-              const isRegion = row.rowKind === 'REGION_SUBTOTAL'
-              return (
-                <Box
-                  key={`${sectionType}-${row.region}-${row.rowKind}-${row.country ?? 'NA'}-${rowIdx}-${colIdx}`}
-                  sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion), { justifyContent: 'flex-end' }]}
-                >
-                  <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%', textAlign: 'right' }}>
-                    {formatVolumeCell(row.values[column.key])}
-                  </Typography>
-                </Box>
-              )
-            })}
-          </Stack>
-        )
-      })}
-    </Stack>
+    <Box
+      sx={{
+        width: `${monthScrollWidth}px`,
+        minWidth: `${monthScrollWidth}px`,
+        height: `${totalRowHeight}px`,
+        position: 'relative',
+      }}
+    >
+      <Stack direction="row" alignItems="flex-start" sx={{ position: 'absolute', left: `${columnOffset}px`, top: `${rowOffset}px` }}>
+        {visibleColumns.map((column, visibleColIdx) => {
+          const colIdx = columnRange.start + visibleColIdx
+          const columnWidth = `${monthColumnWidths[colIdx] ?? FM_VOLUME_MONTH_COL_W}px`
+          return (
+            <Stack key={`${column.key}-${colIdx}`} sx={{ width: columnWidth, flex: `0 0 ${columnWidth}` }}>
+              {visibleRows.map(({ sectionType, row }, visibleRowIdx) => {
+                const rowIdx = rowRange.start + visibleRowIdx
+                const nextIsTotal = flatRows[rowIdx + 1]?.row.rowKind === 'TYPE_TOTAL'
+                const isTotal = row.rowKind === 'TYPE_TOTAL'
+                const isRegion = row.rowKind === 'REGION_SUBTOTAL'
+                return (
+                  <Box
+                    key={`${sectionType}-${row.region}-${row.rowKind}-${row.country ?? 'NA'}-${rowIdx}-${colIdx}`}
+                    sx={[fmVolumeTableBodyCellSx, fmVolumeGlobalBodyCellSx(isTotal, nextIsTotal, isRegion), { justifyContent: 'flex-end' }]}
+                  >
+                    <Typography {...rowTypography(row.rowKind)} color="gray.90" noWrap sx={{ width: '100%', textAlign: 'right' }}>
+                      {formatVolumeCell(row.values[column.key])}
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Stack>
+          )
+        })}
+      </Stack>
+    </Box>
   )
 
   const hiddenMonthScrollBoxProps = {
