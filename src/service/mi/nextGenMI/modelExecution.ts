@@ -352,6 +352,7 @@ const nextGenMIModelExecutionService = {
       {
         responseType: 'blob',
         suppressGlobalErrorHandler: true,
+        timeout: 0,
       } as Parameters<typeof api.get>[1] & { responseType: 'blob'; suppressGlobalErrorHandler: boolean },
     )
   },
