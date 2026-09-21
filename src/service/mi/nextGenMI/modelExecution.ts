@@ -67,6 +67,7 @@ export type ModelParamProposalCurrentState =
   | 'PROPOSAL_FAILED'
   | 'PROPOSAL_NO_CHANGES'
   | 'PROPOSAL_RETRYABLE'
+  | 'ABSTAINED'
   | 'EXECUTION_FAILED'
 
 export type ModelParamProposalAcceptStatus = 'PROCESSING' | 'PROPOSED' | 'CONFIRMED' | 'FAILED'

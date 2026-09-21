@@ -217,12 +217,12 @@ const StatusCell = ({
     )
   }
 
-  if (status === 'failed') {
+  if (status === 'failed' || status === 'abstained') {
     const label = (
       <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" width="100%" minWidth={0}>
         <WarningAmberRoundedIcon sx={{ fontSize: '16px', color: '#ea580c' }} />
         <Typography variant="body2SB14" color="#ea580c" noWrap>
-          실패
+          {status === 'abstained' ? '보류' : '실패'}
         </Typography>
       </Stack>
     )

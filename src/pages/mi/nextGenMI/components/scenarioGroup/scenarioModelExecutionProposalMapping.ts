@@ -9,7 +9,7 @@ import type {
   ScenarioGroupModelParamCompare,
 } from '@/service/mi/nextGenMI/modelExecution'
 
-export type ModelParamProposalRowStatus = 'idle' | 'generating' | 'completed' | 'failed' | 'retryable'
+export type ModelParamProposalRowStatus = 'idle' | 'generating' | 'completed' | 'failed' | 'abstained' | 'retryable'
 
 export type ProposalParamColumnStatus = 'completed' | 'generating'
 
@@ -40,6 +40,7 @@ const getValueColumnHeader = (column: ModelParamColumn) => (column.role || colum
  * - GENERATING -> 생성 중
  * - PROPOSAL_READY / CONFIRMED_PENDING_EXECUTION / EXECUTING / EXECUTED_CONFIRMED / EXECUTION_FAILED -> 완료
  * - PROPOSAL_FAILED / PROPOSAL_NO_CHANGES -> 실패
+ * - ABSTAINED -> 보류
  * - PROPOSAL_RETRYABLE -> 재시도
  */
 export const mapProposalStateToRowStatus = (
@@ -55,6 +56,8 @@ export const mapProposalStateToRowStatus = (
     case 'PROPOSAL_FAILED':
     case 'PROPOSAL_NO_CHANGES':
       return isRetryableFailureReason(failureReason ?? undefined) ? 'retryable' : 'failed'
+    case 'ABSTAINED':
+      return 'abstained'
     case 'PROPOSAL_READY':
     case 'CONFIRMED_PENDING_EXECUTION':
     case 'EXECUTING':
@@ -69,7 +72,8 @@ export const mapProposalStateToRowStatus = (
 
 export const canShowVisibilityToggle = (status: ModelParamProposalRowStatus) => status === 'completed' || status === 'generating'
 
-export const isDimmedStatus = (status: ModelParamProposalRowStatus) => status === 'failed' || status === 'retryable'
+export const isDimmedStatus = (status: ModelParamProposalRowStatus) =>
+  status === 'failed' || status === 'abstained' || status === 'retryable'
 
 export const getUniqueModelNames = (values: Array<string | undefined>) =>
   Array.from(new Set(values.filter((value): value is string => Boolean(value))))
