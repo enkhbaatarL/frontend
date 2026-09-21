@@ -30,6 +30,10 @@ export const getDisplayValue = (value: unknown) => {
 
 export const getNumericDisplayValue = (value: number) => value.toFixed(2)
 
+const formatCompareDisplayValue = (value: unknown) => (typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value))
+
+const getValueColumnHeader = (column: ModelParamColumn) => (column.role || column.column || '').trim() || '-'
+
 /**
  * 그룹/단건 currentState -> 팝업 상태 컬럼 5종
  * - NOT_REQUESTED -> 생성
@@ -75,6 +79,21 @@ const getAxisValue = (row: Record<string, unknown>, column: ModelParamColumn) =>
   if (!key) return undefined
   if (row[key] !== undefined) return row[key]
   if (column.column && row[column.column] !== undefined) return row[column.column]
+  return undefined
+}
+
+/** VALUE 컬럼별 원시값. 행에 role/column/valueFieldNames 키가 없으면 undefined */
+const getValueColumnRawValue = (
+  row: Record<string, unknown> | undefined,
+  valueColumn: ModelParamColumn | undefined,
+  valueFieldNames: string[],
+  valueColumnIndex: number,
+) => {
+  if (!row || !valueColumn) return undefined
+  const fromColumn = getAxisValue(row, valueColumn)
+  if (fromColumn !== undefined) return fromColumn
+  const fieldName = valueFieldNames[valueColumnIndex]
+  if (fieldName && row[fieldName] !== undefined) return row[fieldName]
   return undefined
 }
 
@@ -210,9 +229,11 @@ export const buildCompareParamMatrixData = ({
   const isMatrix = shape.readMode === 'MATRIX_TIME_COLUMNS'
   const compareScenarios = compare?.scenarios ?? []
 
+  const valueFieldNames = parameter.modelTarget?.valueFieldNames ?? []
   const fixedHeaders = slotColumns.map((column) => column.role ?? column.column ?? '-')
   const slots = new Map<string, string[]>()
   const periods = new Map<string, string>()
+  const periodValueMeta = new Map<string, { valueColumn: ModelParamColumn; valueColumnIndex: number }>()
 
   referenceRows.forEach((row) => {
     const slotKey = JSON.stringify(slotColumns.map((column) => getAxisValue(row, column)))
@@ -223,6 +244,7 @@ export const buildCompareParamMatrixData = ({
       )
     }
 
+    // MATRIX_TIME_COLUMNS: rows의 TIME_AXIS(Year/Month 등)로 피벗해 기간 그룹 헤더를 만든다
     if (isMatrix) {
       const timeKey = JSON.stringify(timeAxisColumns.map((column) => getAxisValue(row, column)))
       if (!periods.has(timeKey)) {
@@ -231,12 +253,26 @@ export const buildCompareParamMatrixData = ({
     }
   })
 
-  if (!isMatrix) periods.set('fixed', 'Value')
+  // FIXED_COLUMNS: valueFieldNames가 배열 계약이므로 kind=VALUE 컬럼 수만큼 그룹 헤더를 반복
+  if (!isMatrix) {
+    valueColumns.forEach((valueColumn, valueColumnIndex) => {
+      const timeKey = JSON.stringify({
+        mode: 'fixed',
+        valueColumnIndex,
+        column: valueColumn.column ?? null,
+        role: valueColumn.role ?? null,
+      })
+      periods.set(timeKey, getValueColumnHeader(valueColumn))
+      periodValueMeta.set(timeKey, { valueColumn, valueColumnIndex })
+    })
+  }
 
   const slotKeys = Array.from(slots.keys())
   const periodEntries = Array.from(periods.entries())
 
   const periodColumns: ProposalParamPeriodColumn[] = periodEntries.map(([timeKey, periodLabel]) => {
+    const valueMeta = periodValueMeta.get(timeKey)
+
     const miBaseValues = slotKeys.map((slotKey) => {
       const match = referenceRows.find((row) => {
         const rowSlotKey = JSON.stringify(slotColumns.map((column) => getAxisValue(row, column)))
@@ -245,8 +281,9 @@ export const buildCompareParamMatrixData = ({
         const rowTimeKey = JSON.stringify(timeAxisColumns.map((column) => getAxisValue(row, column)))
         return rowTimeKey === timeKey
       })
-      const base = match?.basecaseValue
-      return typeof base === 'number' ? getNumericDisplayValue(base) : getDisplayValue(base)
+      const fieldValue = getValueColumnRawValue(match, valueMeta?.valueColumn, valueFieldNames, valueMeta?.valueColumnIndex ?? 0)
+      const base = fieldValue !== undefined ? fieldValue : match?.basecaseValue
+      return formatCompareDisplayValue(base)
     })
 
     const scenarioValuesById: Record<number, string[]> = {}
@@ -276,7 +313,7 @@ export const buildCompareParamMatrixData = ({
         const matchRow = referenceRows[matchIndex]
         const cell = getCompareCellForScenario(matchRow, scenarioId, compareScenarios)
         const value = cell?.proposedValue
-        scenarioValuesById[scenarioId].push(typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value))
+        scenarioValuesById[scenarioId].push(formatCompareDisplayValue(value))
         // 셀 rationale 우선, 없으면 values 행의 rationale (API가 행 단위로 내려주는 경우)
         const rowRationale = typeof matchRow.rationale === 'string' ? matchRow.rationale.trim() : ''
         scenarioRationalesById[scenarioId].push(cell?.rationale?.trim() || rowRationale)

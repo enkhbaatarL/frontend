@@ -48,7 +48,7 @@ const SCENARIO_COLUMN_WIDTH = 160
 const EDITED_INPUT_BORDER = '#efa460'
 const EDITED_INPUT_BG = 'rgba(245, 159, 0, 0.05)'
 
-const getValueKey = (periodLabel: string, scenarioId: number, rowIndex: number) => `${periodLabel}::${scenarioId}::${rowIndex}`
+const getValueKey = (periodTimeKey: string, scenarioId: number, rowIndex: number) => `${periodTimeKey}::${scenarioId}::${rowIndex}`
 
 /** 숫자 문자열 비교용 - 24.40 / 24.4 를 동일로 취급 */
 const normalizeParamValue = (value: string) => {
@@ -310,7 +310,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       resetToken,
       headers: matrix.fixedHeaders,
       rowCount: matrix.fixedRows.length,
-      periods: matrix.periods.map((period) => period.periodLabel),
+      periods: matrix.periods.map((period) => period.timeKey),
       scenarioIds: visibleScenarios.map((scenario) => scenario.scenarioId),
     })
   }, [matrix, resetToken, visibleScenarios])
@@ -326,7 +326,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     matrix.periods.forEach((period) => {
       visibleScenarios.forEach((scenario) => {
         matrix.fixedRows.forEach((_, rowIndex) => {
-          const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, rowIndex)
+          const valueKey = getValueKey(period.timeKey, scenario.scenarioId, rowIndex)
           nextBaseline[valueKey] = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
         })
       })
@@ -347,7 +347,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         visibleScenarios.forEach((scenario) => {
           if (scenario.status !== 'completed') return
           matrix.fixedRows.forEach((_, rowIndex) => {
-            const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, rowIndex)
+            const valueKey = getValueKey(period.timeKey, scenario.scenarioId, rowIndex)
             if (editedValues[valueKey] !== undefined) return
             const matrixValue = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
             const baselineValue = next[valueKey]
@@ -377,7 +377,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     const hasEdits = matrix.periods.some((period) =>
       visibleScenarios.some((scenario) =>
         matrix.fixedRows.some((_, rowIndex) => {
-          const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, rowIndex)
+          const valueKey = getValueKey(period.timeKey, scenario.scenarioId, rowIndex)
           const baselineValue = baselineValues[valueKey] ?? ''
           const currentValue = editedValues[valueKey] ?? period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
           return isParamValueEdited(currentValue, baselineValue)
@@ -393,9 +393,9 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       const recommendedValues: Record<string, string> = {}
       const recommendedRationales: Record<string, string> = {}
       matrix.periods.forEach((period) => {
-        recommendedValues[`${period.periodLabel}::base`] = period.miBaseValues[rowIndex] ?? '-'
+        recommendedValues[`${period.timeKey}::base`] = period.miBaseValues[rowIndex] ?? '-'
         visibleScenarios.forEach((scenario) => {
-          const fieldKey = `${period.periodLabel}::${scenario.scenarioId}`
+          const fieldKey = `${period.timeKey}::${scenario.scenarioId}`
           recommendedValues[fieldKey] = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
           recommendedRationales[fieldKey] = period.scenarioRationalesById[scenario.scenarioId]?.[rowIndex] ?? ''
         })
@@ -457,7 +457,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         }
 
       const periodHeaderGroup = {
-        id: period.periodLabel,
+        id: period.timeKey,
         label: period.periodLabel,
         align: 'center' as const,
         headerCellSx: {
@@ -467,7 +467,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       }
 
       const baseColumn: ScenarioGroupStickyTableColumn<ProposalParamMatrixRow> = {
-        field: `${period.periodLabel}::base`,
+        field: `${period.timeKey}::base`,
         headerName: 'MI Base',
         headerGroup: periodHeaderGroup,
         width: `${MI_BASE_COLUMN_WIDTH}px`,
@@ -490,7 +490,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         renderCell: ({ row }) => (
           <Stack width="100%" height="28px" alignItems="center" justifyContent="center" boxSizing="border-box">
             <Typography variant="body3M12" color="contentText.Normal" noWrap textAlign="center" width="100%">
-              {row.recommendedValues[`${period.periodLabel}::base`] ?? '-'}
+              {row.recommendedValues[`${period.timeKey}::base`] ?? '-'}
             </Typography>
           </Stack>
         ),
@@ -500,7 +500,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         const isLastScenarioInPeriod = scenarioIndex === visibleScenarios.length - 1
 
         return {
-          field: `${period.periodLabel}::${scenario.scenarioId}`,
+          field: `${period.timeKey}::${scenario.scenarioId}`,
           headerName: scenario.scenarioName,
           headerGroup: periodHeaderGroup,
           headerPrefix: <NextGenMIDisplayOrderBadge value={scenario.displayOrder} height="16px" borderRadius="6px" compact />,
@@ -532,8 +532,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
               )
             }
 
-            const fieldKey = `${period.periodLabel}::${scenario.scenarioId}`
-            const valueKey = getValueKey(period.periodLabel, scenario.scenarioId, row.rowIndex)
+            const fieldKey = `${period.timeKey}::${scenario.scenarioId}`
+            const valueKey = getValueKey(period.timeKey, scenario.scenarioId, row.rowIndex)
             const matrixValue = row.recommendedValues[fieldKey] ?? ''
             const baselineValue = baselineValues[valueKey] ?? matrixValue
             const value = editedValues[valueKey] ?? matrixValue
