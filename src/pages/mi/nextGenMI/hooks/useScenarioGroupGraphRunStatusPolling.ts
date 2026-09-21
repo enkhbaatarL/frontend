@@ -42,6 +42,7 @@ const isSameRunStatusSnapshot = (prev: RunStatusSnapshot, next: RunStatusSnapsho
  * 시나리오 그룹 그래프 수급모델 실행 상태 폴링.
  * run-status 스냅샷을 기록하고, 상태가 바뀔 때마다 graph API를 재조회한다.
  * modelRunning true -> false 전환 시 완료 스낵바를 표시한다.
+ * 팝업이 실행 중인 시나리오는 완료/실패 콜백이 결과를 알려 줄 때까지 스냅샷에서 완료 토스트를 치지 않는다.
  */
 export const useScenarioGroupGraphRunStatusPolling = ({
   scenarioGroupId,
@@ -51,7 +52,8 @@ export const useScenarioGroupGraphRunStatusPolling = ({
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
   const prevSnapshotRef = useRef<RunStatusSnapshot | null>(null)
-  const handledCompletionKeyRef = useRef<string | null>(null)
+  const handledSettlementKeysRef = useRef<Set<string>>(new Set())
+  const popupOwnedExecutionIdsRef = useRef<Set<number>>(new Set())
   const optimisticExecutingIdsRef = useRef<Set<number>>(new Set())
   const pollAfterExecutionRef = useRef(false)
   const [pollAfterExecution, setPollAfterExecution] = useState(false)
@@ -76,7 +78,8 @@ export const useScenarioGroupGraphRunStatusPolling = ({
 
   useEffect(() => {
     prevSnapshotRef.current = null
-    handledCompletionKeyRef.current = null
+    handledSettlementKeysRef.current = new Set()
+    popupOwnedExecutionIdsRef.current = new Set()
     optimisticExecutingIdsRef.current = new Set()
     pollAfterExecutionRef.current = false
     setPollAfterExecution(false)
@@ -105,10 +108,12 @@ export const useScenarioGroupGraphRunStatusPolling = ({
   }, [pollAfterExecution, refetchGraphQueries])
 
   const settleExecution = useCallback(
-    (completionKey: string) => {
-      if (handledCompletionKeyRef.current === completionKey) return
-      handledCompletionKeyRef.current = completionKey
-      showSnackbar('실행 완료되었습니다.', { variant: 'success' })
+    (completionKey: string, options?: { success?: boolean }) => {
+      if (handledSettlementKeysRef.current.has(completionKey)) return
+      handledSettlementKeysRef.current.add(completionKey)
+      if (options?.success !== false) {
+        showSnackbar('실행 완료되었습니다.', { variant: 'success' })
+      }
       refetchExecutionRelatedQueries()
       refetchPriceInterpretations()
       setPollAfterExecution(false)
@@ -127,9 +132,10 @@ export const useScenarioGroupGraphRunStatusPolling = ({
 
       const nextRunningSet = new Set(nextSnapshot.runningScenarioIds)
       prevSnapshot.runningScenarioIds.forEach((scenarioId) => {
-        if (!nextRunningSet.has(scenarioId)) {
-          settleExecution(`scenario-${scenarioId}`)
-        }
+        if (nextRunningSet.has(scenarioId)) return
+        // 팝업이 실행 결과를 알고 있으면 여기서 완료 토스트를 치지 않는다. 실패 콜백 직후 modelRunning false가 성공으로 보이던 경로.
+        if (popupOwnedExecutionIdsRef.current.has(scenarioId)) return
+        settleExecution(`scenario-${scenarioId}`)
       })
     }
 
@@ -156,8 +162,9 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     (scenarioId?: number) => {
       if (scenarioId !== undefined) {
         optimisticExecutingIdsRef.current.add(scenarioId)
+        popupOwnedExecutionIdsRef.current.add(scenarioId)
+        handledSettlementKeysRef.current.delete(`scenario-${scenarioId}`)
       }
-      handledCompletionKeyRef.current = null
       setPollAfterExecution(true)
       void queryClient.invalidateQueries({ queryKey: scenarioGroupGraphRunStatusQueryKey(scenarioGroupId) })
       void queryClient.refetchQueries({ queryKey: scenarioGroupDetailQueryKey(scenarioGroupId), type: 'active' })
@@ -168,7 +175,17 @@ export const useScenarioGroupGraphRunStatusPolling = ({
   const notifyExecutionCompleted = useCallback(
     (scenarioId: number) => {
       optimisticExecutingIdsRef.current.delete(scenarioId)
+      popupOwnedExecutionIdsRef.current.delete(scenarioId)
       settleExecution(`scenario-${scenarioId}`)
+    },
+    [settleExecution],
+  )
+
+  const notifyExecutionFailed = useCallback(
+    (scenarioId: number) => {
+      optimisticExecutingIdsRef.current.delete(scenarioId)
+      popupOwnedExecutionIdsRef.current.delete(scenarioId)
+      settleExecution(`scenario-${scenarioId}`, { success: false })
     },
     [settleExecution],
   )
@@ -177,5 +194,6 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     executingScenarioIds,
     notifyExecutionAccepted,
     notifyExecutionCompleted,
+    notifyExecutionFailed,
   }
 }

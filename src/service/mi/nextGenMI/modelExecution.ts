@@ -161,6 +161,7 @@ export interface ScenarioGroupModelParamProposalScenario {
   currentState?: ModelParamProposalCurrentState
   modelParamProposalId?: number | null
   execPrepId?: number | null
+  executionInputFiles?: ModelExecutionInputFiles | null
   failureReason?: string | null
   requestedAt?: string | null
   completedAt?: string | null

@@ -16,12 +16,14 @@ export interface ScenarioModelExecutionPopupRef {
 interface ScenarioModelExecutionPopupProps {
   scenarioGroupId: number
   executingScenarioIds: Set<number>
+  executedScenarioIds: Set<number>
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
+  onFailed: (scenarioId: number) => void
 }
 
 const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, ScenarioModelExecutionPopupProps>(
-  ({ scenarioGroupId, executingScenarioIds, onAccepted, onCompleted }, ref) => {
+  ({ scenarioGroupId, executingScenarioIds, executedScenarioIds, onAccepted, onCompleted, onFailed }, ref) => {
     const [open, setOpen] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
@@ -203,12 +205,14 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           <ScenarioModelExecutionProposalList
             scenarioGroupId={scenarioGroupId}
             executingScenarioIds={executingScenarioIds}
+            executedScenarioIds={executedScenarioIds}
             isResizing={isResizing}
             onContentHeightChange={setContentHeight}
             onFillsViewportHeightChange={setFillsViewportHeight}
             onCancel={closePopup}
             onAccepted={onAccepted}
             onCompleted={onCompleted}
+            onFailed={onFailed}
           />
         </MIConfirm>
 
