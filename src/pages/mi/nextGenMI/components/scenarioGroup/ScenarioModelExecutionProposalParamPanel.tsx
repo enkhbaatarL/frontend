@@ -108,6 +108,14 @@ const ScenarioModelExecutionProposalParamPanel = ({
   )
   const activeParameterIndex = parameterIndex < parameterChips.length ? parameterIndex : 0
 
+  // matrix 데이터는 표시 토글과 무관하게 유지. 눈 아이콘으로 숨겨도 baseline/수정상태가 깨지지 않게 함.
+  const matrixScenarioIds = useMemo(() => {
+    const ids = new Set<number>()
+    ;(compare?.scenarios ?? []).forEach((scenario) => ids.add(scenario.scenarioId))
+    visibleScenarios.forEach((scenario) => ids.add(scenario.scenarioId))
+    return Array.from(ids).sort((left, right) => left - right)
+  }, [compare, visibleScenarios])
+
   useEffect(() => {
     setModelFile(activeModelFile)
   }, [activeModelFile])
@@ -128,13 +136,13 @@ const ScenarioModelExecutionProposalParamPanel = ({
     () =>
       buildCompareParamMatrixData({
         compare,
-        visibleScenarioIds: visibleScenarios.map((scenario) => scenario.scenarioId),
+        visibleScenarioIds: matrixScenarioIds,
         modelFileName: activeModelFile,
         modelSheetName: activeModelSheet,
         modelTableName: activeModelTable,
         parameterIndex: activeParameterIndex,
       }),
-    [activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex, compare, visibleScenarios],
+    [activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex, compare, matrixScenarioIds],
   )
 
   return (
@@ -251,7 +259,15 @@ const ScenarioModelExecutionProposalParamPanel = ({
               표시할 시나리오 파라미터가 없습니다.
             </Typography>
           </Stack>
-        ) : (
+        ) : null}
+        {/* 표시 시나리오가 0이어도 언마운트하지 않음 - 수정 baseline/edited 상태 유지 */}
+        <Stack
+          flex={visibleScenarios.length === 0 ? undefined : '1 1 0'}
+          minHeight={0}
+          minWidth={0}
+          width="100%"
+          display={visibleScenarios.length === 0 ? 'none' : 'flex'}
+        >
           <ScenarioModelExecutionProposalParamMatrix
             visibleScenarios={visibleScenarios}
             matrix={matrix}
@@ -272,7 +288,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
               })
             }
           />
-        )}
+        </Stack>
       </Stack>
     </Stack>
   )

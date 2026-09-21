@@ -314,6 +314,7 @@ const ScenarioModelExecutionProposalList = ({
   const proposalsRequestIdRef = useRef(0)
   const compareRequestIdRef = useRef(0)
   const previousColumnScenarioIdsRef = useRef<number[]>([])
+  const lastLoadedCompareRef = useRef<ScenarioGroupModelParamCompare | null>(null)
 
   locallyExecutedIdsRef.current = locallyExecutedIds
   runningScenarioIdsRef.current = new Set(runningExecutions.map((execution) => execution.scenarioId))
@@ -565,6 +566,7 @@ const ScenarioModelExecutionProposalList = ({
     try {
       const nextCompare = await nextGenMIModelExecutionService.getGroupModelParamProposalsCompare(scenarioGroupId)
       if (requestId !== compareRequestIdRef.current) return
+      lastLoadedCompareRef.current = nextCompare
       setCompare(nextCompare)
       setCompareLoadFailed(false)
     } catch (error) {
@@ -601,13 +603,21 @@ const ScenarioModelExecutionProposalList = ({
     )
   }, [])
 
+  const syncParamEditBaselineAfterExecution = useCallback(() => {
+    // refresh 성공 시 lastLoaded가 최신. 실패해도 직전 조회본으로 복구해 주황 잔상 방지
+    if (lastLoadedCompareRef.current) setCompare(lastLoadedCompareRef.current)
+    setParamResetToken((token) => token + 1)
+  }, [])
+
   const handleExecutionSettled = useCallback(
     (scenarioId: number) => {
       markScenariosExecuted([scenarioId])
       onCompleted(scenarioId)
-      void refreshProposals()
+      // 실행 중 GeneratingState 로 파라미터가 언마운트되었다가 복귀할 때,
+      // 서버 조회값 기준으로 baseline/수정표시를 다시 맞춰 주황 잔상을 막음
+      void refreshProposals().finally(syncParamEditBaselineAfterExecution)
     },
-    [markScenariosExecuted, onCompleted, refreshProposals],
+    [markScenariosExecuted, onCompleted, refreshProposals, syncParamEditBaselineAfterExecution],
   )
 
   const handleExecutionFailed = useCallback(
@@ -624,9 +634,9 @@ const ScenarioModelExecutionProposalList = ({
         })
         return changed ? { ...current, scenarios } : current
       })
-      void refreshProposals()
+      void refreshProposals().finally(syncParamEditBaselineAfterExecution)
     },
-    [onFailed, refreshProposals],
+    [onFailed, refreshProposals, syncParamEditBaselineAfterExecution],
   )
 
   useEffect(() => {
@@ -881,7 +891,7 @@ const ScenarioModelExecutionProposalList = ({
 
       if (completedIds.length > 0) {
         markScenariosExecuted(completedIds)
-        void refreshProposals()
+        void refreshProposals().finally(syncParamEditBaselineAfterExecution)
       }
 
       if (running.length > 0) {
@@ -898,6 +908,9 @@ const ScenarioModelExecutionProposalList = ({
       } else {
         showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
       }
+      // 제출 실패 시에도 GeneratingState 언마운트 복귀 후 수정 표시가 어긋나지 않게 동기화
+      if (lastLoadedCompareRef.current) setCompare(lastLoadedCompareRef.current)
+      setParamResetToken((token) => token + 1)
     } finally {
       setIsSubmittingExecution(false)
     }
@@ -906,6 +919,8 @@ const ScenarioModelExecutionProposalList = ({
   const handleResetParameters = () => {
     if (isActionLocked) return
     setIsResetting(true)
+    // 서버 재조회 전에 마지막 조회본으로 되돌려, baseline 스냅샷이 수정값을 집어가지 않게 함
+    if (lastLoadedCompareRef.current) setCompare(lastLoadedCompareRef.current)
     setParamResetToken((token) => token + 1)
     // 편집값을 서버 제안값으로 되돌리기 위해 비교 그리드를 재조회
     void loadCompareProposals().finally(() => setIsResetting(false))
