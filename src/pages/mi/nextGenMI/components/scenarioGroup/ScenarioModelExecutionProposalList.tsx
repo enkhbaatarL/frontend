@@ -10,6 +10,8 @@ import { SwitchTransition } from 'react-transition-group'
 
 import type {
   ModelExecutionAccept,
+  ModelExecutionInputFiles,
+  ModelParamProposalCurrentState,
   ScenarioGroupModelParamCompare,
   ScenarioGroupModelParamProposals,
 } from '@/service/mi/nextGenMI/modelExecution'
@@ -42,6 +44,7 @@ import {
   updateCompareProposedValue,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalMapping'
 import ScenarioModelExecutionProposalParamPanel from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionProposalParamPanel'
+import fileService, { type IFileDownloadRequest } from '@/service/admin/file'
 import nextGenMIModelExecutionService from '@/service/mi/nextGenMI/modelExecution'
 import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 import { downloadFile } from '@/utils/file'
@@ -52,12 +55,62 @@ const GENERATING_MESSAGE = '파라미터를 생성하고 있습니다'
 interface ScenarioModelExecutionProposalListProps {
   scenarioGroupId: number
   executingScenarioIds: Set<number>
+  executedScenarioIds: Set<number>
   isResizing: boolean
   onContentHeightChange: (height: number) => void
   onFillsViewportHeightChange?: (fillsViewportHeight: boolean) => void
   onCancel: () => void
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
+  onFailed: (scenarioId: number) => void
+}
+
+/** 이전 단건 팝업과 동일: 실행 인풋 엑셀 메타가 완전할 때만 파일 다운로드 가능 */
+const getDownloadableExecutionInputFiles = (executionInputFiles?: ModelExecutionInputFiles | null): IFileDownloadRequest[] => {
+  if (executionInputFiles?.complete !== true || !executionInputFiles.files?.length) return []
+
+  const downloadableFiles = executionInputFiles.files.flatMap((file) => {
+    if (
+      typeof file.fileNo !== 'number' ||
+      !Number.isInteger(file.fileNo) ||
+      file.fileNo <= 0 ||
+      typeof file.fileNm !== 'string' ||
+      file.fileNm.trim().length === 0 ||
+      typeof file.fileSize !== 'number' ||
+      !Number.isFinite(file.fileSize) ||
+      file.fileSize < 0
+    ) {
+      return []
+    }
+
+    return [{ fileNo: file.fileNo, fileNm: file.fileNm, fileSize: file.fileSize }]
+  })
+
+  return downloadableFiles.length === executionInputFiles.files.length ? downloadableFiles : []
+}
+
+/** 생성 중인 행은 실행 상태 패치로 덮지 않음. 서버가 PROPOSAL_READY를 유지해도 이번 세션 실행 이력을 살린다. */
+const overlayProposalExecutionState = (
+  proposals: ScenarioGroupModelParamProposals,
+  executedIds: Set<number>,
+  executingIds: Set<number>,
+): ScenarioGroupModelParamProposals => {
+  if (executedIds.size === 0 && executingIds.size === 0) return proposals
+
+  let changed = false
+  const scenarios = proposals.scenarios.map((scenario) => {
+    if (scenario.currentState === 'GENERATING') return scenario
+
+    let currentState: ModelParamProposalCurrentState | undefined = scenario.currentState
+    if (executedIds.has(scenario.scenarioId)) currentState = 'EXECUTED_CONFIRMED'
+    else if (executingIds.has(scenario.scenarioId) && currentState !== 'EXECUTED_CONFIRMED') currentState = 'EXECUTING'
+
+    if (currentState === scenario.currentState) return scenario
+    changed = true
+    return { ...scenario, currentState }
+  })
+
+  return changed ? { ...proposals, scenarios } : proposals
 }
 
 interface ProposalListDimensionCell {
@@ -223,12 +276,14 @@ const StatusCell = ({
 const ScenarioModelExecutionProposalList = ({
   scenarioGroupId,
   executingScenarioIds,
+  executedScenarioIds,
   isResizing,
   onContentHeightChange,
   onFillsViewportHeightChange,
   onCancel,
   onAccepted,
   onCompleted,
+  onFailed,
 }: ScenarioModelExecutionProposalListProps) => {
   const { showSnackbar } = useSnackbar()
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -250,11 +305,27 @@ const ScenarioModelExecutionProposalList = ({
   const [isSubmittingExecution, setIsSubmittingExecution] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
+  const [locallyExecutedIds, setLocallyExecutedIds] = useState<Set<number>>(() => new Set())
+  const locallyExecutedIdsRef = useRef<Set<number>>(new Set())
+  const runningScenarioIdsRef = useRef<Set<number>>(new Set())
+  const graphExecutedIdsRef = useRef<Set<number>>(executedScenarioIds)
   const failureKeyRef = useRef<Map<number, string>>(new Map())
   const groupStreamControllerRef = useRef<AbortController | null>(null)
   const proposalsRequestIdRef = useRef(0)
   const compareRequestIdRef = useRef(0)
   const previousColumnScenarioIdsRef = useRef<number[]>([])
+
+  locallyExecutedIdsRef.current = locallyExecutedIds
+  runningScenarioIdsRef.current = new Set(runningExecutions.map((execution) => execution.scenarioId))
+  graphExecutedIdsRef.current = executedScenarioIds
+
+  useEffect(() => {
+    setGroupProposals((current) =>
+      current
+        ? overlayProposalExecutionState(current, new Set([...locallyExecutedIds, ...executedScenarioIds]), runningScenarioIdsRef.current)
+        : current,
+    )
+  }, [executedScenarioIds, locallyExecutedIds])
 
   useLayoutEffect(() => {
     const content = contentRef.current
@@ -350,18 +421,44 @@ const ScenarioModelExecutionProposalList = ({
     onFillsViewportHeightChange?.(hasCompleted)
   }, [hasCompleted, onFillsViewportHeightChange])
 
-  // 그룹 내 EXECUTED_CONFIRMED 시나리오가 있으면 인풋 zip 다운로드 가능 (없으면 API 404)
-  const canDownloadInputFiles = useMemo(
-    () => (groupProposals?.scenarios ?? []).some((scenario) => scenario.currentState === 'EXECUTED_CONFIRMED'),
+  // 이전 단건 팝업: executionInputFiles.complete. 그룹 zip은 EXECUTED_CONFIRMED.
+  // graph executed / 이번 세션 실행 완료도 실행 이력으로 본다.
+  const canDownloadInputFiles = useMemo(() => {
+    const proposalScenarios = groupProposals?.scenarios ?? []
+    return proposalScenarios.some((scenario) => {
+      if (scenario.currentState === 'EXECUTED_CONFIRMED') return true
+      if (getDownloadableExecutionInputFiles(scenario.executionInputFiles).length > 0) return true
+      if (executedScenarioIds.has(scenario.scenarioId)) return true
+      if (locallyExecutedIds.has(scenario.scenarioId)) return true
+      return false
+    })
+  }, [executedScenarioIds, groupProposals?.scenarios, locallyExecutedIds])
+
+  const collectDownloadableInputFiles = useCallback(
+    () => (groupProposals?.scenarios ?? []).flatMap((scenario) => getDownloadableExecutionInputFiles(scenario.executionInputFiles)),
     [groupProposals?.scenarios],
   )
 
   const { mutate: downloadGroupInputFiles, isPending: isDownloadingInputFiles } = useMutation({
-    mutationFn: () => nextGenMIModelExecutionService.downloadGroupInputFiles(scenarioGroupId),
-    onSuccess: (response) => {
-      const contentDisposition = response.headers?.['content-disposition'] ?? ''
+    mutationFn: async () => {
+      try {
+        const response = await nextGenMIModelExecutionService.downloadGroupInputFiles(scenarioGroupId)
+        return { kind: 'group' as const, response }
+      } catch (error) {
+        const files = collectDownloadableInputFiles()
+        if (files.length === 0) throw error
+        const data = await fileService.downloadFiles(`scenario-group-${scenarioGroupId}-model-input-files`, files)
+        return { kind: 'files' as const, data }
+      }
+    },
+    onSuccess: (result) => {
+      if (result.kind === 'files') {
+        downloadFile(result.data, `scenario-group-${scenarioGroupId}-model-input-files.zip`)
+        return
+      }
+      const contentDisposition = result.response.headers?.['content-disposition'] ?? ''
       const fileNameFromHeader = contentDisposition.split('\'\'').pop()?.trim()
-      downloadFile(response.data, fileNameFromHeader || `scenario-group-${scenarioGroupId}-model-input-files.zip`)
+      downloadFile(result.response.data, fileNameFromHeader || `scenario-group-${scenarioGroupId}-model-input-files.zip`)
     },
     onError: () => {
       showSnackbar('인풋 파일 다운로드에 실패했습니다.', { variant: 'error' })
@@ -402,7 +499,8 @@ const ScenarioModelExecutionProposalList = ({
 
   const applyGroupProposals = useCallback(
     (nextProposals: ScenarioGroupModelParamProposals, notifyFailure = false) => {
-      setGroupProposals(nextProposals)
+      const executedIds = new Set<number>([...locallyExecutedIdsRef.current, ...graphExecutedIdsRef.current])
+      setGroupProposals(overlayProposalExecutionState(nextProposals, executedIds, runningScenarioIdsRef.current))
 
       setPendingGenerateIds((current) => {
         let changed = false
@@ -483,6 +581,52 @@ const ScenarioModelExecutionProposalList = ({
       await Promise.all([loadGroupProposals(notifyFailure), loadCompareProposals()])
     },
     [loadCompareProposals, loadGroupProposals],
+  )
+
+  const markScenariosExecuted = useCallback((scenarioIds: number[]) => {
+    if (scenarioIds.length === 0) return
+    setLocallyExecutedIds((current) => {
+      const next = new Set(current)
+      scenarioIds.forEach((scenarioId) => next.add(scenarioId))
+      locallyExecutedIdsRef.current = next
+      return next
+    })
+    setGroupProposals((current) => (current ? overlayProposalExecutionState(current, new Set(scenarioIds), new Set()) : current))
+  }, [])
+
+  const markScenariosExecuting = useCallback((scenarioIds: number[]) => {
+    if (scenarioIds.length === 0) return
+    setGroupProposals((current) =>
+      current ? overlayProposalExecutionState(current, locallyExecutedIdsRef.current, new Set(scenarioIds)) : current,
+    )
+  }, [])
+
+  const handleExecutionSettled = useCallback(
+    (scenarioId: number) => {
+      markScenariosExecuted([scenarioId])
+      onCompleted(scenarioId)
+      void refreshProposals()
+    },
+    [markScenariosExecuted, onCompleted, refreshProposals],
+  )
+
+  const handleExecutionFailed = useCallback(
+    (scenarioId: number) => {
+      onFailed(scenarioId)
+      setGroupProposals((current) => {
+        if (!current) return current
+        let changed = false
+        const scenarios = current.scenarios.map((scenario) => {
+          if (scenario.scenarioId !== scenarioId || scenario.currentState === 'GENERATING') return scenario
+          if (scenario.currentState === 'EXECUTION_FAILED') return scenario
+          changed = true
+          return { ...scenario, currentState: 'EXECUTION_FAILED' as const }
+        })
+        return changed ? { ...current, scenarios } : current
+      })
+      void refreshProposals()
+    },
+    [onFailed, refreshProposals],
   )
 
   useEffect(() => {
@@ -566,10 +710,11 @@ const ScenarioModelExecutionProposalList = ({
 
         setRunningExecutions((current) => current.filter((item) => item.runId !== execution.runId))
         if (status.status === 'COMPLETED') {
-          onCompleted(execution.scenarioId)
+          handleExecutionSettled(execution.scenarioId)
           return
         }
 
+        handleExecutionFailed(execution.scenarioId)
         showSnackbar('MI 수급모델 실행에 실패했습니다.', {
           variant: 'error',
           body: status.errorMessage || status.failureReason || '잠시 후 다시 시도해 주세요.',
@@ -593,7 +738,7 @@ const ScenarioModelExecutionProposalList = ({
       isActive = false
       timers.forEach((timerId) => globalThis.clearTimeout(timerId))
     }
-  }, [onCompleted, runningExecutions, showSnackbar])
+  }, [handleExecutionFailed, handleExecutionSettled, runningExecutions, showSnackbar])
 
   const { mutate: createModelParamProposal } = useMutation({
     mutationFn: (scenarioId: number) => nextGenMIModelExecutionService.createModelParamProposal(scenarioId),
@@ -705,9 +850,11 @@ const ScenarioModelExecutionProposalList = ({
     try {
       const accepted = await nextGenMIModelExecutionService.submitGroupModelExecutions(scenarioGroupId, { executions })
       const running: ModelExecutionAccept[] = []
+      const completedIds: number[] = []
 
       accepted.results.forEach((result) => {
         if (!result.success || !result.execution) {
+          handleExecutionFailed(result.scenarioId)
           showSnackbar('MI 수급모델 실행에 실패했습니다.', {
             variant: 'error',
             body: result.errorMessage?.trim() || '잠시 후 다시 시도해 주세요.',
@@ -716,26 +863,34 @@ const ScenarioModelExecutionProposalList = ({
         }
 
         const execution = result.execution
+        if (execution.status === 'FAILED') {
+          handleExecutionFailed(execution.scenarioId)
+          showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
+          return
+        }
+
         onAccepted(execution.scenarioId)
 
         if (execution.status === 'COMPLETED') {
+          completedIds.push(execution.scenarioId)
           onCompleted(execution.scenarioId)
-          return
-        }
-        if (execution.status === 'FAILED') {
-          showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
           return
         }
         running.push(execution)
       })
 
+      if (completedIds.length > 0) {
+        markScenariosExecuted(completedIds)
+        void refreshProposals()
+      }
+
       if (running.length > 0) {
         setRunningExecutions((current) => [...current, ...running])
+        markScenariosExecuting(running.map((execution) => execution.scenarioId))
       }
 
       if (accepted.successCount > 0) {
         showSnackbar(`선택한 시나리오 ${accepted.successCount}개로 MI 수급모델 실행을 요청했습니다.`, { variant: 'success' })
-        if (running.length === 0) onCancel()
       }
     } catch (error) {
       if (isExecutionValidationError(error)) {
