@@ -50,6 +50,21 @@ const EDITED_INPUT_BG = 'rgba(245, 159, 0, 0.05)'
 
 const getValueKey = (periodTimeKey: string, scenarioId: number, rowIndex: number) => `${periodTimeKey}::${scenarioId}::${rowIndex}`
 
+const snapshotBaselineFromMatrix = (source: ProposalParamMatrixData) => {
+  const nextBaseline: Record<string, string> = {}
+  source.periods.forEach((period) => {
+    Object.keys(period.scenarioValuesById).forEach((scenarioIdKey) => {
+      const scenarioId = Number(scenarioIdKey)
+      if (!Number.isFinite(scenarioId)) return
+      source.fixedRows.forEach((_, rowIndex) => {
+        const valueKey = getValueKey(period.timeKey, scenarioId, rowIndex)
+        nextBaseline[valueKey] = period.scenarioValuesById[scenarioId]?.[rowIndex] ?? ''
+      })
+    })
+  })
+  return nextBaseline
+}
+
 /** 숫자 문자열 비교용 - 24.40 / 24.4 를 동일로 취급 */
 const normalizeParamValue = (value: string) => {
   const trimmed = value.trim()
@@ -312,18 +327,16 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     tableScrollRef.current.scrollTop = 0
   }, [scrollResetKey])
 
-  // 표 구조(기간/시나리오/슬롯) 또는 초기화 토큰이 바뀔 때만 baseline 재스냅샷.
-  // compare 편집으로 matrix 값만 바뀌는 경우에는 baseline을 유지해야 주황 수정 표시가 유지됨.
+  // 표 구조(기간/슬롯)가 바뀔 때만 baseline 전체 재스냅샷.
+  // scenarioIds는 키에 넣지 않음 - 표시 토글·시나리오 구성 변동으로 수정 상태(주황/초기화)가 초기화되면 안 됨.
   const matrixStructureKey = useMemo(() => {
-    if (!matrix) return `empty:${resetToken}`
+    if (!matrix) return 'empty'
     return JSON.stringify({
-      resetToken,
       headers: matrix.fixedHeaders,
       rowCount: matrix.fixedRows.length,
       periods: matrix.periods.map((period) => period.timeKey),
-      scenarioIds: visibleScenarios.map((scenario) => scenario.scenarioId),
     })
-  }, [matrix, resetToken, visibleScenarios])
+  }, [matrix])
 
   useEffect(() => {
     if (!matrix) {
@@ -332,18 +345,33 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       return
     }
 
-    const nextBaseline: Record<string, string> = {}
-    matrix.periods.forEach((period) => {
-      visibleScenarios.forEach((scenario) => {
-        matrix.fixedRows.forEach((_, rowIndex) => {
-          const valueKey = getValueKey(period.timeKey, scenario.scenarioId, rowIndex)
-          nextBaseline[valueKey] = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
-        })
-      })
-    })
-    setBaselineValues(nextBaseline)
+    setBaselineValues(snapshotBaselineFromMatrix(matrix))
     setEditedValues({})
   }, [matrixStructureKey]) // eslint-disable-line react-hooks/exhaustive-deps -- matrix 값 변경이 아닌 구조 키만 의존
+
+  // matrix에 새로 등장한 시나리오/셀만 baseline 보강. 기존 키·수정값은 유지.
+  useEffect(() => {
+    if (!matrix) return
+    const fromMatrix = snapshotBaselineFromMatrix(matrix)
+    setBaselineValues((current) => {
+      let changed = false
+      const next = { ...current }
+      Object.entries(fromMatrix).forEach(([key, value]) => {
+        if (next[key] !== undefined) return
+        next[key] = value
+        changed = true
+      })
+      return changed ? next : current
+    })
+  }, [matrix])
+
+  // 초기화: 부모가 compare를 조회본으로 되돌린 뒤 토큰을 올리므로, 그 matrix 기준으로 baseline도 다시 맞춤.
+  useEffect(() => {
+    if (resetToken === 0) return
+    setEditedValues({})
+    if (!matrix) return
+    setBaselineValues(snapshotBaselineFromMatrix(matrix))
+  }, [resetToken]) // eslint-disable-line react-hooks/exhaustive-deps -- 토큰 증가 시에만 동기화
 
   // 생성 중 -> 완료로 값이 처음 채워질 때는 baseline을 갱신해 오탐 수정 표시를 막음
   useEffect(() => {
@@ -354,12 +382,16 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       const next = { ...current }
 
       matrix.periods.forEach((period) => {
-        visibleScenarios.forEach((scenario) => {
-          if (scenario.status !== 'completed') return
+        Object.keys(period.scenarioValuesById).forEach((scenarioIdKey) => {
+          const scenarioId = Number(scenarioIdKey)
+          if (!Number.isFinite(scenarioId)) return
+          const scenarioStatus = visibleScenarios.find((scenario) => scenario.scenarioId === scenarioId)?.status
+          // 표시 중인 generating 컬럼만 스킵. 숨김 시나리오는 status 없으므로 기존 baseline 유지/보강만 수행
+          if (scenarioStatus === 'generating') return
           matrix.fixedRows.forEach((_, rowIndex) => {
-            const valueKey = getValueKey(period.timeKey, scenario.scenarioId, rowIndex)
+            const valueKey = getValueKey(period.timeKey, scenarioId, rowIndex)
             if (editedValues[valueKey] !== undefined) return
-            const matrixValue = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+            const matrixValue = period.scenarioValuesById[scenarioId]?.[rowIndex] ?? ''
             const baselineValue = next[valueKey]
             if (baselineValue === undefined) {
               next[valueKey] = matrixValue
@@ -384,18 +416,21 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       return
     }
 
+    // 숨긴 시나리오의 수정도 초기화 버튼 활성에 반영 (표시 토글과 무관하게 편집 유지)
     const hasEdits = matrix.periods.some((period) =>
-      visibleScenarios.some((scenario) =>
-        matrix.fixedRows.some((_, rowIndex) => {
-          const valueKey = getValueKey(period.timeKey, scenario.scenarioId, rowIndex)
+      Object.keys(period.scenarioValuesById).some((scenarioIdKey) => {
+        const scenarioId = Number(scenarioIdKey)
+        if (!Number.isFinite(scenarioId)) return false
+        return matrix.fixedRows.some((_, rowIndex) => {
+          const valueKey = getValueKey(period.timeKey, scenarioId, rowIndex)
           const baselineValue = baselineValues[valueKey] ?? ''
-          const currentValue = editedValues[valueKey] ?? period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
+          const currentValue = editedValues[valueKey] ?? period.scenarioValuesById[scenarioId]?.[rowIndex] ?? ''
           return isParamValueEdited(currentValue, baselineValue)
-        }),
-      ),
+        })
+      }),
     )
     onHasEditsChange?.(hasEdits)
-  }, [baselineValues, editedValues, matrix, onHasEditsChange, visibleScenarios])
+  }, [baselineValues, editedValues, matrix, onHasEditsChange])
 
   const rows = useMemo<ProposalParamMatrixRow[]>(() => {
     if (!matrix) return []
