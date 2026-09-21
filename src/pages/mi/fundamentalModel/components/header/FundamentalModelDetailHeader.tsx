@@ -361,6 +361,7 @@ const FundamentalModelDetailHeader = ({
                   })),
                 ]}
                 groupLabels={{ output: 'Output File', tradeOutput: 'TradeOutputFile', intermediate: '중간파일' }}
+                groupHeaderReleaseItemCount={1}
                 sx={{
                   height: '36px',
                   minWidth: '36px',
@@ -374,7 +375,29 @@ const FundamentalModelDetailHeader = ({
                     minWidth: '200px',
                     width: 'max-content',
                     maxWidth: 'calc(100vw - 32px)',
-                    '& .MuiListSubheader-root': { textTransform: 'none' },
+                    '& .MuiListSubheader-root': {
+                      top: '12px',
+                      backgroundColor: 'commonColor.White',
+                      textTransform: 'none',
+                      '&::before': {
+                        position: 'absolute',
+                        top: '-12px',
+                        right: 0,
+                        left: 0,
+                        height: '12px',
+                        backgroundColor: 'commonColor.White',
+                        content: '""',
+                      },
+                      '&::after': {
+                        position: 'absolute',
+                        right: 0,
+                        bottom: '-8px',
+                        left: 0,
+                        height: '8px',
+                        backgroundColor: 'commonColor.White',
+                        content: '""',
+                      },
+                    },
                     '& .MuiTypography-root': { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', overflowWrap: 'anywhere' },
                   },
                 }}

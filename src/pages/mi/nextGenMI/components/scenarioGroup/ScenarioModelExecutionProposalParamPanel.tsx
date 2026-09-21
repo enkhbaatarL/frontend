@@ -237,7 +237,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
         </Stack>
       )}
 
-      <Stack flex="1 1 0" minHeight={0} padding="20px 24px" bgcolor="commonColor.White">
+      <Stack flex="1 1 0" minHeight="172px" padding="20px 24px" bgcolor="commonColor.White">
         {visibleScenarios.length === 0 ? (
           <Stack
             height="240px"

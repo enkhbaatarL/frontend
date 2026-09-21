@@ -28,6 +28,8 @@ interface Props extends ButtonProps {
   paperProps?: PaperProps
   groupDisplayType?: GroupDisplayType
   groupLabels?: { [groupKey: string]: ReactNode }
+  /** sticky 그룹 헤더가 사라지기 전에 헤더 경계 밖에 남겨둘 마지막 항목 수 */
+  groupHeaderReleaseItemCount?: number
   disablePortal?: boolean
   closeOnScroll?: boolean
   maxHeight?: number | string
@@ -51,6 +53,7 @@ const MIDropdownMenu = ({
   paperProps,
   groupDisplayType = 'label',
   groupLabels = {},
+  groupHeaderReleaseItemCount = 0,
   disablePortal = false,
   closeOnScroll = false,
   maxHeight = 300,
@@ -166,9 +169,11 @@ const MIDropdownMenu = ({
       <>
         {groupedItems.ungroupedItems.map((item, index) => renderMenuItem(item, index))}
 
-        {Object.entries(groupedItems.groups).map(([groupKey, groupItems]) => (
-          <Box key={groupKey}>
-            {groupDisplayType === 'label' && (
+        {Object.entries(groupedItems.groups).map(([groupKey, groupItems]) => {
+          const releaseItemCount = Math.min(Math.max(0, Math.floor(groupHeaderReleaseItemCount)), groupItems.length)
+          const stickyBoundaryItemCount = groupItems.length - releaseItemCount
+          const groupHeader =
+            groupDisplayType === 'label' ? (
               <ListSubheader
                 sx={{
                   padding: '8px 12px',
@@ -183,11 +188,29 @@ const MIDropdownMenu = ({
               >
                 {groupLabels[groupKey] || groupKey}
               </ListSubheader>
-            )}
+            ) : null
 
-            {groupItems.map((item, index) => renderMenuItem(item, index, groupKey))}
-          </Box>
-        ))}
+          if (releaseItemCount === 0) {
+            return (
+              <Box key={groupKey}>
+                {groupHeader}
+                {groupItems.map((item, index) => renderMenuItem(item, index, groupKey))}
+              </Box>
+            )
+          }
+
+          return (
+            <Box key={groupKey}>
+              <Box>
+                {groupHeader}
+                {groupItems.slice(0, stickyBoundaryItemCount).map((item, index) => renderMenuItem(item, index, groupKey))}
+              </Box>
+              {groupItems
+                .slice(stickyBoundaryItemCount)
+                .map((item, index) => renderMenuItem(item, stickyBoundaryItemCount + index, groupKey))}
+            </Box>
+          )
+        })}
       </>
     )
   }
