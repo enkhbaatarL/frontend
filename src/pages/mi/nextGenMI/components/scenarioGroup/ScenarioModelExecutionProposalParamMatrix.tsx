@@ -40,6 +40,8 @@ interface ProposalParamMatrixRow {
   fixedValues: string[]
   recommendedValues: Record<string, string>
   recommendedRationales: Record<string, string>
+  /** fieldKey(`${timeKey}::${scenarioId}`) -> compare cells null 비활성 */
+  cellDisabledByField: Record<string, boolean>
 }
 
 const FIXED_COLUMN_WIDTH = '140px'
@@ -422,6 +424,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         const scenarioId = Number(scenarioIdKey)
         if (!Number.isFinite(scenarioId)) return false
         return matrix.fixedRows.some((_, rowIndex) => {
+          // cells null 비활성 슬롯은 편집 대상이 아님
+          if (period.scenarioCellDisabledById[scenarioId]?.[rowIndex]) return false
           const valueKey = getValueKey(period.timeKey, scenarioId, rowIndex)
           const baselineValue = baselineValues[valueKey] ?? ''
           const currentValue = editedValues[valueKey] ?? period.scenarioValuesById[scenarioId]?.[rowIndex] ?? ''
@@ -437,12 +441,14 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     return matrix.fixedRows.map((fixedValues, rowIndex) => {
       const recommendedValues: Record<string, string> = {}
       const recommendedRationales: Record<string, string> = {}
+      const cellDisabledByField: Record<string, boolean> = {}
       matrix.periods.forEach((period) => {
         recommendedValues[`${period.timeKey}::base`] = period.miBaseValues[rowIndex] ?? '-'
         visibleScenarios.forEach((scenario) => {
           const fieldKey = `${period.timeKey}::${scenario.scenarioId}`
           recommendedValues[fieldKey] = period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''
           recommendedRationales[fieldKey] = period.scenarioRationalesById[scenario.scenarioId]?.[rowIndex] ?? ''
+          cellDisabledByField[fieldKey] = period.scenarioCellDisabledById[scenario.scenarioId]?.[rowIndex] ?? false
         })
       })
       return {
@@ -451,6 +457,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         fixedValues,
         recommendedValues,
         recommendedRationales,
+        cellDisabledByField,
       }
     })
   }, [matrix, visibleScenarios])
@@ -583,15 +590,18 @@ const ScenarioModelExecutionProposalParamMatrix = ({
             const baselineValue = baselineValues[valueKey] ?? matrixValue
             const value = editedValues[valueKey] ?? matrixValue
             const rationale = row.recommendedRationales[fieldKey] ?? ''
+            // compare cells null 슬롯: `-` 대신 빈 입력 + 비활성
+            const isCellDisabled = row.cellDisabledByField[fieldKey] === true
+            const cellDisabled = disabled || isCellDisabled
 
             return (
               <ProposalParamEditableCell
-                baselineValue={baselineValue}
-                value={value}
-                rationale={rationale}
-                disabled={disabled}
+                baselineValue={isCellDisabled ? '' : baselineValue}
+                value={isCellDisabled ? '' : value}
+                rationale={isCellDisabled ? '' : rationale}
+                disabled={cellDisabled}
                 onChange={(nextValue) => {
-                  if (disabled) return
+                  if (cellDisabled) return
                   setEditedValues((current) => {
                     if (!isParamValueEdited(nextValue, baselineValue)) {
                       const { [valueKey]: _removed, ...rest } = current
@@ -603,7 +613,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
                   if (Number.isFinite(numeric)) onChangeScenarioValue?.(scenario.scenarioId, period.timeKey, row.rowIndex, numeric)
                 }}
                 onReset={() => {
-                  if (disabled) return
+                  if (cellDisabled) return
                   setEditedValues((current) => {
                     const { [valueKey]: _removed, ...rest } = current
                     return rest

@@ -149,18 +149,32 @@ export const formatMatrixPeriodLabel = (
   return entries.map((entry) => getDisplayValue(entry.value)).join(' / ')
 }
 
-/** compare values.cells에서 시나리오 셀 조회 (scenarioId 없으면 scenarios 순서 매칭) */
+/**
+ * compare values.cells에서 시나리오 셀 조회 (scenarioId 없으면 scenarios 순서 매칭)
+ * - ModelParamCompareCell: 사용 가능
+ * - null: API가 해당 슬롯을 명시적으로 null로 내려줌 (입력 비활성 / execute 시 제외)
+ * - undefined: 매칭 셀 없음
+ */
 export const getCompareCellForScenario = (
   value: ModelParamCompareValue,
   scenarioId: number,
   compareScenarios: Array<{ scenarioId: number }>,
-): ModelParamCompareCell | undefined => {
+): ModelParamCompareCell | null | undefined => {
   const cells = value.cells ?? []
-  const byId = cells.find((cell) => cell?.scenarioId === scenarioId)
+  const byId = cells.find((cell) => cell !== null && cell !== undefined && cell.scenarioId === scenarioId)
   if (byId) return byId
+
   const index = compareScenarios.findIndex((scenario) => scenario.scenarioId === scenarioId)
-  if (index >= 0 && cells[index]?.scenarioId === undefined) return cells[index] ?? undefined
-  if (cells.length === 1 && compareScenarios.length === 1 && compareScenarios[0]?.scenarioId === scenarioId) return cells[0] ?? undefined
+  if (index >= 0) {
+    const cellAtIndex = cells[index]
+    // 슬롯이 명시적으로 null이면 scenarioId 유무와 관계없이 비활성으로 취급
+    if (cellAtIndex === null) return null
+    if (cellAtIndex !== undefined && cellAtIndex.scenarioId === undefined) return cellAtIndex
+  }
+
+  if (cells.length === 1 && compareScenarios.length === 1 && compareScenarios[0]?.scenarioId === scenarioId) {
+    return cells[0] === null ? null : cells[0]
+  }
   return undefined
 }
 
@@ -169,6 +183,8 @@ export interface ProposalParamPeriodColumn {
   timeKey: string
   miBaseValues: string[]
   scenarioValuesById: Record<number, string[]>
+  /** compare cells[i] === null 인 셀 - 입력 비활성 */
+  scenarioCellDisabledById: Record<number, boolean[]>
   /** 셀 단위 추천 근거 (없으면 빈 문자열) */
   scenarioRationalesById: Record<number, string[]>
   sourceRowIndexesByScenarioId: Record<number, number[]>
@@ -287,11 +303,13 @@ export const buildCompareParamMatrixData = ({
     })
 
     const scenarioValuesById: Record<number, string[]> = {}
+    const scenarioCellDisabledById: Record<number, boolean[]> = {}
     const scenarioRationalesById: Record<number, string[]> = {}
     const sourceRowIndexesByScenarioId: Record<number, number[]> = {}
 
     visibleScenarioIds.forEach((scenarioId) => {
       scenarioValuesById[scenarioId] = []
+      scenarioCellDisabledById[scenarioId] = []
       scenarioRationalesById[scenarioId] = []
       sourceRowIndexesByScenarioId[scenarioId] = []
 
@@ -306,13 +324,22 @@ export const buildCompareParamMatrixData = ({
         sourceRowIndexesByScenarioId[scenarioId].push(matchIndex)
         if (matchIndex < 0) {
           scenarioValuesById[scenarioId].push('')
+          scenarioCellDisabledById[scenarioId].push(false)
           scenarioRationalesById[scenarioId].push('')
           return
         }
         const matchRow = referenceRows[matchIndex]
         const cell = getCompareCellForScenario(matchRow, scenarioId, compareScenarios)
+        // cells[i] === null: `-` 대신 빈 값 + 입력 비활성
+        if (cell === null) {
+          scenarioValuesById[scenarioId].push('')
+          scenarioCellDisabledById[scenarioId].push(true)
+          scenarioRationalesById[scenarioId].push('')
+          return
+        }
         const value = cell?.proposedValue
         scenarioValuesById[scenarioId].push(formatCompareDisplayValue(value))
+        scenarioCellDisabledById[scenarioId].push(false)
         scenarioRationalesById[scenarioId].push(value === undefined || value === null ? '' : (cell?.rationale?.trim() ?? ''))
       })
     })
@@ -322,6 +349,7 @@ export const buildCompareParamMatrixData = ({
       timeKey,
       miBaseValues,
       scenarioValuesById,
+      scenarioCellDisabledById,
       scenarioRationalesById,
       sourceRowIndexesByScenarioId,
     }
@@ -369,6 +397,9 @@ export const updateCompareProposedValue = (
           }
           if (cellIndex < 0) {
             cells.push({ scenarioId, proposedValue: value })
+          } else if (cells[cellIndex] === null) {
+            // API null 슬롯은 편집하지 않음
+            return row
           } else {
             cells[cellIndex] = { ...cells[cellIndex], scenarioId: cells[cellIndex]?.scenarioId ?? scenarioId, proposedValue: value }
           }
@@ -379,7 +410,7 @@ export const updateCompareProposedValue = (
   }
 }
 
-/** compare 편집값을 시나리오별 confirmationParameters로 변환 */
+/** compare 편집값을 시나리오별 confirmationParameters로 변환 - cells null 슬롯은 values에서 제외 */
 export const buildConfirmationParametersFromCompare = (
   compare: ScenarioGroupModelParamCompare,
   scenarioId: number,
@@ -390,14 +421,18 @@ export const buildConfirmationParametersFromCompare = (
       parameterName: parameter.parameterName,
       modelTarget: parameter.modelTarget,
       rationale,
-      values: (parameter.values ?? []).map((row) => {
-        const { cells, ...rest } = row
+      values: (parameter.values ?? []).flatMap((row) => {
         const cell = getCompareCellForScenario(row, scenarioId, compare.scenarios)
-        return {
-          ...rest,
-          proposedValue: cell?.proposedValue,
-          rationale: cell?.rationale,
-        }
+        // API cells null: execute payload values에서 해당 행 제외 (예: Germany 슬롯)
+        if (cell === null) return []
+        const { cells, ...rest } = row
+        return [
+          {
+            ...rest,
+            proposedValue: cell?.proposedValue,
+            rationale: cell?.rationale,
+          },
+        ]
       }),
     }
   })

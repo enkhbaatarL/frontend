@@ -192,7 +192,8 @@ export interface ModelParamCompareCell {
 
 export type ModelParamCompareValue = Record<string, unknown> & {
   basecaseValue?: number | null
-  cells?: ModelParamCompareCell[]
+  /** 시나리오별 제안 셀. 해당 시나리오에 값이 없으면 null */
+  cells?: Array<ModelParamCompareCell | null>
 }
 
 export interface ModelParamCompareScenarioRationale {
