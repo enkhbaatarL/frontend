@@ -496,18 +496,17 @@ const ScenarioModelExecutionProposalList = ({
     onFillsViewportHeightChange?.(hasCompleted)
   }, [hasCompleted, onFillsViewportHeightChange])
 
-  // 이전 단건 팝업: executionInputFiles.complete. 그룹 zip은 EXECUTED_CONFIRMED.
-  // graph executed / 이번 세션 실행 완료도 실행 이력으로 본다.
+  // 그룹 zip은 서버 proposals의 EXECUTED_CONFIRMED만 대상 (downloadGroupInputFiles).
+  // overlay/graph executed / locallyExecutedIds 로 켜지 않음 — PROPOSAL_READY + graph executed 오판정 방지.
+  // executionInputFiles 메타가 있으면 complete+유효 파일일 때만 (메타 불완전 시나리오는 BE 제외).
   const canDownloadInputFiles = useMemo(() => {
     const proposalScenarios = groupProposals?.scenarios ?? []
     return proposalScenarios.some((scenario) => {
-      if (scenario.currentState === 'EXECUTED_CONFIRMED') return true
-      if (getDownloadableExecutionInputFiles(scenario.executionInputFiles).length > 0) return true
-      if (executedScenarioIds.has(scenario.scenarioId)) return true
-      if (locallyExecutedIds.has(scenario.scenarioId)) return true
-      return false
+      if (!executedConfirmedScenarioIds.has(scenario.scenarioId)) return false
+      if (scenario.executionInputFiles === null || scenario.executionInputFiles === undefined) return true
+      return getDownloadableExecutionInputFiles(scenario.executionInputFiles).length > 0
     })
-  }, [executedScenarioIds, groupProposals?.scenarios, locallyExecutedIds])
+  }, [executedConfirmedScenarioIds, groupProposals?.scenarios])
 
   const collectDownloadableInputFiles = useCallback(
     () => (groupProposals?.scenarios ?? []).flatMap((scenario) => getDownloadableExecutionInputFiles(scenario.executionInputFiles)),
@@ -725,13 +724,13 @@ const ScenarioModelExecutionProposalList = ({
       setGroupProposals((current) => {
         if (!current) return current
         let changed = false
-        const scenarios = current.scenarios.map((scenario) => {
+        const nextScenarios = current.scenarios.map((scenario) => {
           if (scenario.scenarioId !== scenarioId || scenario.currentState === 'GENERATING') return scenario
           if (scenario.currentState === 'EXECUTION_FAILED') return scenario
           changed = true
           return { ...scenario, currentState: 'EXECUTION_FAILED' as const }
         })
-        return changed ? { ...current, scenarios } : current
+        return changed ? { ...current, scenarios: nextScenarios } : current
       })
       void refreshProposals().finally(syncParamEditBaselineAfterExecution)
     },
