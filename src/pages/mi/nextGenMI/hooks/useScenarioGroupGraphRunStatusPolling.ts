@@ -190,10 +190,29 @@ export const useScenarioGroupGraphRunStatusPolling = ({
     [settleExecution],
   )
 
+  /** 수급모델 팝업 오픈 시 run-status 최신화. running 이면 폴링을 이어서 켠다. */
+  const syncRunStatusOnPopupOpen = useCallback(async () => {
+    const queryKey = scenarioGroupGraphRunStatusQueryKey(scenarioGroupId)
+    await queryClient.invalidateQueries({ queryKey })
+    const data = await queryClient.fetchQuery({
+      queryKey,
+      queryFn: () => nextGenMIScenarioGroupService.getScenarioGroupGraphRunStatus(scenarioGroupId),
+    })
+    if (data.anyRunning) setPollAfterExecution(true)
+  }, [queryClient, scenarioGroupId])
+
+  /** 팝업 종료 시 run-status + graph 재조회로 레전드/실행 상태 맞춤 */
+  const syncGraphOnPopupClose = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: scenarioGroupGraphRunStatusQueryKey(scenarioGroupId) })
+    refetchGraphQueries()
+  }, [queryClient, refetchGraphQueries, scenarioGroupId])
+
   return {
     executingScenarioIds,
     notifyExecutionAccepted,
     notifyExecutionCompleted,
     notifyExecutionFailed,
+    syncRunStatusOnPopupOpen,
+    syncGraphOnPopupClose,
   }
 }

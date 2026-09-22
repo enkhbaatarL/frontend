@@ -76,12 +76,18 @@ const ScenarioGroupGraphView = ({
     placeholderData: keepPreviousData,
   })
 
-  const { executingScenarioIds, notifyExecutionAccepted, notifyExecutionCompleted, notifyExecutionFailed } =
-    useScenarioGroupGraphRunStatusPolling({
-      scenarioGroupId,
-      enabled,
-      fallbackScenarioSeries: graphQuery.data?.scenarioSeries,
-    })
+  const {
+    executingScenarioIds,
+    notifyExecutionAccepted,
+    notifyExecutionCompleted,
+    notifyExecutionFailed,
+    syncRunStatusOnPopupOpen,
+    syncGraphOnPopupClose,
+  } = useScenarioGroupGraphRunStatusPolling({
+    scenarioGroupId,
+    enabled,
+    fallbackScenarioSeries: graphQuery.data?.scenarioSeries,
+  })
 
   const cmeBenchmarkQuery = useQuery({
     queryKey: scenarioGroupGraphCmeBenchmarkQueryKey(indexName, periodUnit),
@@ -274,6 +280,8 @@ const ScenarioGroupGraphView = ({
           onAccepted={notifyExecutionAccepted}
           onCompleted={notifyExecutionCompleted}
           onFailed={notifyExecutionFailed}
+          onOpen={syncRunStatusOnPopupOpen}
+          onClose={syncGraphOnPopupClose}
         />
       )}
     </>
