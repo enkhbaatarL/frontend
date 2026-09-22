@@ -76,6 +76,12 @@ const normalizeParamValue = (value: string) => {
   return String(numeric)
 }
 
+/** 생성 중 compare 미도착 등으로 들어간 자리표시값 */
+const isParamValuePlaceholder = (value: string) => {
+  const normalized = normalizeParamValue(value)
+  return normalized === '' || normalized === '-'
+}
+
 const isParamValueEdited = (value: string, baselineValue: string) => normalizeParamValue(value) !== normalizeParamValue(baselineValue)
 
 /** Event List / MIDataTableBody와 동일: MUI Skeleton opacity pulse */
@@ -376,6 +382,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   }, [resetToken]) // eslint-disable-line react-hooks/exhaustive-deps -- 토큰 증가 시에만 동기화
 
   // 생성 중 -> 완료로 값이 처음 채워질 때는 baseline을 갱신해 오탐 수정 표시를 막음
+  // 생성 중 새 컬럼은 compare에 값이 없어 baseline이 '-'로 먼저 들어가므로, placeholder(-/'')도 실제값으로 승격
   useEffect(() => {
     if (!matrix) return
 
@@ -400,7 +407,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
               changed = true
               return
             }
-            if (normalizeParamValue(baselineValue) === '' && normalizeParamValue(matrixValue) !== '') {
+            if (isParamValuePlaceholder(baselineValue) && !isParamValuePlaceholder(matrixValue)) {
               next[valueKey] = matrixValue
               changed = true
             }
