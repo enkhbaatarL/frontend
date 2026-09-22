@@ -34,6 +34,10 @@ const formatCompareDisplayValue = (value: unknown) => (typeof value === 'number'
 
 const getValueColumnHeader = (column: ModelParamColumn) => (column.role || column.column || '').trim() || '-'
 
+/** 수급모델 실행 접수~잡 실행 중. 체크/실행 잠금 + 실행중 UI 대상 */
+export const isModelExecutionInProgressState = (currentState: ModelParamProposalCurrentState | undefined) =>
+  currentState === 'CONFIRMED_PENDING_EXECUTION' || currentState === 'EXECUTING'
+
 /**
  * 그룹/단건 currentState -> 팝업 상태 컬럼 5종
  * - NOT_REQUESTED -> 생성

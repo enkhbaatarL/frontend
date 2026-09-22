@@ -39,6 +39,7 @@ import {
   buildConfirmationParametersFromCompare,
   canShowVisibilityToggle,
   isDimmedStatus,
+  isModelExecutionInProgressState,
   mapProposalStateToRowStatus,
   type ModelParamProposalRowStatus,
   updateCompareProposedValue,
@@ -370,18 +371,27 @@ const ScenarioModelExecutionProposalList = ({
   const compareRequestIdRef = useRef(0)
   const previousColumnScenarioIdsRef = useRef<number[]>([])
   const lastLoadedCompareRef = useRef<ScenarioGroupModelParamCompare | null>(null)
+  // run-status 실행 종료 감지용. null 은 마운트 직후 첫 스냅샷을 건너뛰기 위함
+  const prevGraphExecutingIdsRef = useRef<Set<number> | null>(null)
+
+  // 이번 세션 accept 결과 + graph run-status(재진입/다른 사용자)를 합쳐 실행 중으로 본다.
+  const mergedExecutingScenarioIds = useMemo(() => {
+    const ids = new Set(runningExecutions.map((execution) => execution.scenarioId))
+    executingScenarioIds.forEach((scenarioId) => ids.add(scenarioId))
+    return ids
+  }, [executingScenarioIds, runningExecutions])
 
   locallyExecutedIdsRef.current = locallyExecutedIds
-  runningScenarioIdsRef.current = new Set(runningExecutions.map((execution) => execution.scenarioId))
+  runningScenarioIdsRef.current = mergedExecutingScenarioIds
   graphExecutedIdsRef.current = executedScenarioIds
 
   useEffect(() => {
     setGroupProposals((current) =>
       current
-        ? overlayProposalExecutionState(current, new Set([...locallyExecutedIds, ...executedScenarioIds]), runningScenarioIdsRef.current)
+        ? overlayProposalExecutionState(current, new Set([...locallyExecutedIds, ...executedScenarioIds]), mergedExecutingScenarioIds)
         : current,
     )
-  }, [executedScenarioIds, locallyExecutedIds])
+  }, [executedScenarioIds, locallyExecutedIds, mergedExecutingScenarioIds])
 
   useLayoutEffect(() => {
     const content = contentRef.current
@@ -553,8 +563,20 @@ const ScenarioModelExecutionProposalList = ({
   const selectedCompletedCount = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId)).length
   const allSelectableChecked = selectableScenarioIds.length > 0 && selectableScenarioIds.every((id) => selectedScenarioIds.includes(id))
   const someSelectableChecked = selectableScenarioIds.some((id) => selectedScenarioIds.includes(id))
+  // proposals currentState 기준 실행 준비중/실행중 (재진입 시 run-status 공백 구간 포함)
+  const hasProposalExecutionInProgress = useMemo(
+    () => (groupProposals?.scenarios ?? []).some((scenario) => isModelExecutionInProgressState(scenario.currentState)),
+    [groupProposals?.scenarios],
+  )
+  const isPreparingExecutionOnly = useMemo(() => {
+    if (mergedExecutingScenarioIds.size > 0 || isSubmittingExecution) return false
+    const states = (groupProposals?.scenarios ?? []).map((scenario) => scenario.currentState)
+    if (!states.some((state) => state === 'CONFIRMED_PENDING_EXECUTION')) return false
+    return !states.some((state) => state === 'EXECUTING')
+  }, [groupProposals?.scenarios, isSubmittingExecution, mergedExecutingScenarioIds.size])
   // PopupContent 대응: isSubmitting / isExecuting / isResetting
-  const isExecuting = runningExecutions.length > 0
+  // 이번 세션 runningExecutions + run-status modelRunning + proposals CONFIRMED_PENDING/EXECUTING
+  const isExecuting = mergedExecutingScenarioIds.size > 0 || hasProposalExecutionInProgress
   const isExecutionBusy = isSubmittingExecution || isExecuting
   // 시나리오 선택/생성/초기화/실행 등 액션 잠금 (PopupContent 넓은 가드)
   const isActionLocked = isExecutionBusy || isResetting
@@ -715,6 +737,37 @@ const ScenarioModelExecutionProposalList = ({
     },
     [onFailed, refreshProposals, syncParamEditBaselineAfterExecution],
   )
+
+  // run-status 로만 아는 실행(재진입/다른 사용자)이 끝나면 제안 상태를 맞춘다.
+  // 이번 세션 runningExecutions 폴링이 이미 처리한 시나리오는 건너뛴다.
+  useEffect(() => {
+    const prev = prevGraphExecutingIdsRef.current
+    prevGraphExecutingIdsRef.current = new Set(executingScenarioIds)
+    if (prev === null) return
+
+    const localRunningIds = new Set(runningExecutions.map((execution) => execution.scenarioId))
+    const settledIds: number[] = []
+    prev.forEach((scenarioId) => {
+      if (executingScenarioIds.has(scenarioId)) return
+      if (localRunningIds.has(scenarioId)) return
+      if (locallyExecutedIdsRef.current.has(scenarioId)) return
+      settledIds.push(scenarioId)
+    })
+    if (settledIds.length === 0) return
+
+    markScenariosExecuted(settledIds)
+    settledIds.forEach((scenarioId) => onCompleted(scenarioId))
+    void refreshProposals().finally(syncParamEditBaselineAfterExecution)
+  }, [executingScenarioIds, markScenariosExecuted, onCompleted, refreshProposals, runningExecutions, syncParamEditBaselineAfterExecution])
+
+  // CONFIRMED_PENDING_EXECUTION / EXECUTING 동안 proposals 를 폴링해 머지 구간~완료 전환을 반영한다.
+  useEffect(() => {
+    if (!hasProposalExecutionInProgress) return undefined
+    const timer = globalThis.setInterval(() => {
+      void refreshProposals()
+    }, 3000)
+    return () => globalThis.clearInterval(timer)
+  }, [hasProposalExecutionInProgress, refreshProposals])
 
   useEffect(() => {
     if (!scenarioGroupId) return undefined
@@ -1376,7 +1429,11 @@ const ScenarioModelExecutionProposalList = ({
                 >
                   {isExecutionBusy ? (
                     // PopupContent: isSubmitting || isExecuting 이면 파라미터 UI 대신 실행 중 상태
-                    <ScenarioModelExecutionGeneratingState />
+                    <ScenarioModelExecutionGeneratingState
+                      title={
+                        isPreparingExecutionOnly || isSubmittingExecution ? 'MI 수급모델 실행 준비 중...' : 'MI 수급모델 결과 생성 중...'
+                      }
+                    />
                   ) : showParamPanel && compare ? (
                     <ScenarioModelExecutionProposalParamPanel
                       visibleScenarios={visibleScenarios}
