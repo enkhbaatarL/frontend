@@ -5,6 +5,7 @@ import type {
   ProposalParamColumnStatus,
   ProposalParamMatrixData,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalMapping'
+import type { ModelParamCompareScenario } from '@/service/mi/nextGenMI/modelExecution'
 
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
@@ -24,6 +25,7 @@ export interface ProposalParamVisibleScenario {
 
 interface ScenarioModelExecutionProposalParamMatrixProps {
   visibleScenarios: ProposalParamVisibleScenario[]
+  proposalScenarios: ModelParamCompareScenario[]
   matrix: ProposalParamMatrixData | null
   scrollResetKey: string
   /** 증가 시 수정값을 추천값으로 전부 초기화 */
@@ -301,6 +303,7 @@ const ProposalParamEditableCell = ({
 
 const ScenarioModelExecutionProposalParamMatrix = ({
   visibleScenarios,
+  proposalScenarios,
   matrix,
   scrollResetKey,
   resetToken = 0,
@@ -310,6 +313,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
 }: ScenarioModelExecutionProposalParamMatrixProps) => {
   const [editedValues, setEditedValues] = useState<Record<string, string>>({})
   const [baselineValues, setBaselineValues] = useState<Record<string, string>>({})
+  const proposalIdsRef = useRef(new Map<number, number>())
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const tableScrollRef = useRef<HTMLDivElement>(null)
   const [tableHeight, setTableHeight] = useState<number | null>(null)
@@ -345,6 +349,34 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       periods: matrix.periods.map((period) => period.timeKey),
     })
   }, [matrix])
+
+  // 상태 조회와 compare는 도착 순서가 다를 수 있으므로, 값과 함께 받은 제안 ID로 재생성을 판별한다.
+  // 재생성된 시나리오만 새 추천값으로 교체하고 나머지 시나리오의 직접 수정값은 유지한다.
+  useEffect(() => {
+    if (!matrix) return
+
+    const regeneratedScenarioIds = new Set<number>()
+    proposalScenarios.forEach(({ scenarioId, modelParamProposalId }) => {
+      if (typeof modelParamProposalId !== 'number') return
+      const previousProposalId = proposalIdsRef.current.get(scenarioId)
+      if (previousProposalId !== undefined && previousProposalId !== modelParamProposalId) {
+        regeneratedScenarioIds.add(scenarioId)
+      }
+      proposalIdsRef.current.set(scenarioId, modelParamProposalId)
+    })
+    if (regeneratedScenarioIds.size === 0) return
+
+    const regeneratedValues: Record<string, string> = {}
+    matrix.periods.forEach((period) => {
+      regeneratedScenarioIds.forEach((scenarioId) => {
+        matrix.fixedRows.forEach((_, rowIndex) => {
+          regeneratedValues[getValueKey(period.timeKey, scenarioId, rowIndex)] = period.scenarioValuesById[scenarioId]?.[rowIndex] ?? ''
+        })
+      })
+    })
+    setBaselineValues((current) => ({ ...current, ...regeneratedValues }))
+    setEditedValues((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !(key in regeneratedValues))))
+  }, [matrix, proposalScenarios])
 
   useEffect(() => {
     if (!matrix) {

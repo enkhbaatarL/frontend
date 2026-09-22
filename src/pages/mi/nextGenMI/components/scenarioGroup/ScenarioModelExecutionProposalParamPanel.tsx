@@ -270,6 +270,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
         >
           <ScenarioModelExecutionProposalParamMatrix
             visibleScenarios={visibleScenarios}
+            proposalScenarios={compare?.scenarios ?? []}
             matrix={matrix}
             scrollResetKey={JSON.stringify([activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex])}
             resetToken={resetToken}
