@@ -129,6 +129,7 @@ interface ProposalListScenarioRow {
   dimensionCells: ProposalListDimensionCell[]
   possibility: number
   status: ModelParamProposalRowStatus
+  canRerun: boolean
   failureReason?: string
 }
 
@@ -187,15 +188,19 @@ const isExecutionValidationError = (error: unknown) => {
 
 const StatusCell = ({
   status,
+  canRerun,
   failureReason,
   disabled,
   onGenerate,
+  onRerun,
   onRetry,
 }: {
   status: ModelParamProposalRowStatus
+  canRerun: boolean
   failureReason?: string
   disabled?: boolean
   onGenerate: () => void
+  onRerun: () => void
   onRetry: () => void
 }) => {
   if (status === 'generating') {
@@ -210,10 +215,58 @@ const StatusCell = ({
   }
 
   if (status === 'completed') {
+    if (canRerun) {
+      return (
+        <Box
+          position="relative"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          width="100%"
+          height="32px"
+          sx={{
+            '& .completed-label': { opacity: 1 },
+            '& .rerun-button': { opacity: 0, pointerEvents: 'none' },
+            '&:hover .completed-label, &:focus-within .completed-label': { opacity: 0 },
+            '&:hover .rerun-button, &:focus-within .rerun-button': { opacity: 1, pointerEvents: 'auto' },
+          }}
+        >
+          <Typography
+            className="completed-label"
+            variant="body2SB14"
+            color="contentText.Subtext"
+            textAlign="center"
+            width="100%"
+            sx={{ transition: 'opacity 150ms ease' }}
+          >
+            완료
+          </Typography>
+          <MIBaseButton
+            className="rerun-button"
+            variant="outlined"
+            disabled={disabled}
+            onClick={onRerun}
+            sx={{
+              position: 'absolute',
+              height: '32px',
+              minWidth: '72px',
+              borderRadius: '8px',
+              padding: '0 10px',
+              transition: 'opacity 150ms ease',
+            }}
+          >
+            재실행
+          </MIBaseButton>
+        </Box>
+      )
+    }
+
     return (
-      <Typography variant="body2SB14" color="contentText.Subtext" textAlign="center" width="100%">
-        완료
-      </Typography>
+      <NextGenMIFollowCursorTooltip title="다음 수급모델 실행 시 파라미터를 다시 생성할 수 있습니다">
+        <Typography component="span" variant="body2SB14" color="contentText.Subtext" textAlign="center" width="100%">
+          완료
+        </Typography>
+      </NextGenMIFollowCursorTooltip>
     )
   }
 
@@ -306,6 +359,8 @@ const ScenarioModelExecutionProposalList = ({
   const [isResetting, setIsResetting] = useState(false)
   const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
   const [locallyExecutedIds, setLocallyExecutedIds] = useState<Set<number>>(() => new Set())
+  const [awaitingExecutionScenarioIds, setAwaitingExecutionScenarioIds] = useState<Set<number>>(() => new Set())
+  const [executedConfirmedScenarioIds, setExecutedConfirmedScenarioIds] = useState<Set<number>>(() => new Set())
   const locallyExecutedIdsRef = useRef<Set<number>>(new Set())
   const runningScenarioIdsRef = useRef<Set<number>>(new Set())
   const graphExecutedIdsRef = useRef<Set<number>>(executedScenarioIds)
@@ -390,11 +445,20 @@ const ScenarioModelExecutionProposalList = ({
           }),
           possibility: row.adjustedProbability ?? row.probability,
           status,
+          canRerun:
+            status === 'completed' && !awaitingExecutionScenarioIds.has(row.scenarioId) && executedConfirmedScenarioIds.has(row.scenarioId),
           failureReason: proposal?.failureReason ?? undefined,
         }
       })
       .sort((a, b) => a.displayOrder - b.displayOrder)
-  }, [dimensionColumns, groupQuery.data?.scenarios, pendingGenerateIds, proposalByScenarioId])
+  }, [
+    awaitingExecutionScenarioIds,
+    dimensionColumns,
+    executedConfirmedScenarioIds,
+    groupQuery.data?.scenarios,
+    pendingGenerateIds,
+    proposalByScenarioId,
+  ])
 
   const completedScenarioIds = useMemo(
     () => scenarios.filter((scenario) => scenario.status === 'completed').map((scenario) => scenario.scenarioId),
@@ -500,6 +564,13 @@ const ScenarioModelExecutionProposalList = ({
 
   const applyGroupProposals = useCallback(
     (nextProposals: ScenarioGroupModelParamProposals, notifyFailure = false) => {
+      setExecutedConfirmedScenarioIds(
+        new Set(
+          nextProposals.scenarios
+            .filter((scenario) => scenario.currentState === 'EXECUTED_CONFIRMED')
+            .map((scenario) => scenario.scenarioId),
+        ),
+      )
       const executedIds = new Set<number>([...locallyExecutedIdsRef.current, ...graphExecutedIdsRef.current])
       setGroupProposals(overlayProposalExecutionState(nextProposals, executedIds, runningScenarioIdsRef.current))
 
@@ -611,6 +682,12 @@ const ScenarioModelExecutionProposalList = ({
 
   const handleExecutionSettled = useCallback(
     (scenarioId: number) => {
+      setAwaitingExecutionScenarioIds((current) => {
+        if (!current.has(scenarioId)) return current
+        const next = new Set(current)
+        next.delete(scenarioId)
+        return next
+      })
       markScenariosExecuted([scenarioId])
       onCompleted(scenarioId)
       // 실행 중 GeneratingState 로 파라미터가 언마운트되었다가 복귀할 때,
@@ -754,6 +831,11 @@ const ScenarioModelExecutionProposalList = ({
     mutationFn: (scenarioId: number) => nextGenMIModelExecutionService.createModelParamProposal(scenarioId),
     onSuccess: (accepted, scenarioId) => {
       if (accepted.status === 'FAILED') {
+        setAwaitingExecutionScenarioIds((current) => {
+          const next = new Set(current)
+          next.delete(scenarioId)
+          return next
+        })
         setPendingGenerateIds((current) => {
           const next = new Set(current)
           next.delete(scenarioId)
@@ -765,6 +847,11 @@ const ScenarioModelExecutionProposalList = ({
       void refreshProposals(true)
     },
     onError: (error, scenarioId) => {
+      setAwaitingExecutionScenarioIds((current) => {
+        const next = new Set(current)
+        next.delete(scenarioId)
+        return next
+      })
       setPendingGenerateIds((current) => {
         const next = new Set(current)
         next.delete(scenarioId)
@@ -785,6 +872,7 @@ const ScenarioModelExecutionProposalList = ({
     (scenarioId: number) => {
       if (isActionLocked || executingScenarioIds.has(scenarioId) || pendingGenerateIds.has(scenarioId)) return
       setGenerationFailureReason(null)
+      setAwaitingExecutionScenarioIds((current) => new Set(current).add(scenarioId))
       setPendingGenerateIds((current) => new Set(current).add(scenarioId))
       setVisibleScenarioIds((prev) => (prev.includes(scenarioId) ? prev : [...prev, scenarioId]))
       createModelParamProposal(scenarioId)
@@ -890,6 +978,11 @@ const ScenarioModelExecutionProposalList = ({
       })
 
       if (completedIds.length > 0) {
+        setAwaitingExecutionScenarioIds((current) => {
+          const next = new Set(current)
+          completedIds.forEach((scenarioId) => next.delete(scenarioId))
+          return next.size === current.size ? current : next
+        })
         markScenariosExecuted(completedIds)
         void refreshProposals().finally(syncParamEditBaselineAfterExecution)
       }
@@ -1173,9 +1266,11 @@ const ScenarioModelExecutionProposalList = ({
                     >
                       <StatusCell
                         status={scenario.status}
+                        canRerun={scenario.canRerun}
                         failureReason={scenario.failureReason}
                         disabled={generateDisabled}
                         onGenerate={() => startGeneration(scenario.scenarioId)}
+                        onRerun={() => startGeneration(scenario.scenarioId)}
                         onRetry={() => startGeneration(scenario.scenarioId)}
                       />
                     </Stack>
