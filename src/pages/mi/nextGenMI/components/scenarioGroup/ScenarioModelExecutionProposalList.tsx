@@ -769,6 +769,15 @@ const ScenarioModelExecutionProposalList = ({
     return () => globalThis.clearInterval(timer)
   }, [hasProposalExecutionInProgress, refreshProposals])
 
+  // 생성 완료 SSE가 누락되거나 연결이 끊겨도 화면이 서버의 최종 상태로 수렴하도록 폴링한다.
+  useEffect(() => {
+    if (!isGeneratingAny) return undefined
+    const timer = globalThis.setInterval(() => {
+      void refreshProposals(true)
+    }, 3000)
+    return () => globalThis.clearInterval(timer)
+  }, [isGeneratingAny, refreshProposals])
+
   useEffect(() => {
     if (!scenarioGroupId) return undefined
 
@@ -1376,102 +1385,109 @@ const ScenarioModelExecutionProposalList = ({
               </Typography>
             </Stack>
 
-            <SwitchTransition mode="out-in">
-              <Fade
-                key={groupQuery.data && groupProposals ? 'scenarios' : 'loading'}
-                timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
-              >
-                <Stack>
-                  {!groupQuery.data || !groupProposals ? (
-                    <Stack height="120px" alignItems="center" justifyContent="center" gap="8px">
-                      {groupQuery.isError || proposalsLoadFailed ? (
-                        <>
-                          <Typography variant="body3SB12" color="contentText.Subtext">
-                            시나리오 목록과 파라미터 상태를 불러오지 못했습니다.
-                          </Typography>
-                          <MIBaseButton
-                            variant="outlined"
-                            onClick={() => {
-                              void groupQuery.refetch()
-                              void refreshProposals()
-                            }}
-                          >
-                            다시 시도
-                          </MIBaseButton>
-                        </>
-                      ) : (
-                        <>
-                          <MIAgentSpinner size={24} tone="gray" />
-                          <Typography variant="body3SB12" color="contentText.Subtext">
-                            시나리오 목록과 파라미터 상태를 불러오는 중입니다.
-                          </Typography>
-                        </>
-                      )}
-                    </Stack>
-                  ) : (
-                    scenarioList
-                  )}
-                </Stack>
-              </Fade>
-            </SwitchTransition>
+            <Box display="grid" minWidth={0}>
+              <SwitchTransition mode="in-out">
+                <Fade
+                  key={groupQuery.data && groupProposals ? 'scenarios' : 'loading'}
+                  timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
+                  easing="cubic-bezier(0.16, 1, 0.3, 1)"
+                >
+                  <Stack sx={{ gridArea: '1 / 1' }}>
+                    {!groupQuery.data || !groupProposals ? (
+                      <Stack height="120px" alignItems="center" justifyContent="center" gap="8px">
+                        {groupQuery.isError || proposalsLoadFailed ? (
+                          <>
+                            <Typography variant="body3SB12" color="contentText.Subtext">
+                              시나리오 목록과 파라미터 상태를 불러오지 못했습니다.
+                            </Typography>
+                            <MIBaseButton
+                              variant="outlined"
+                              onClick={() => {
+                                void groupQuery.refetch()
+                                void refreshProposals()
+                              }}
+                            >
+                              다시 시도
+                            </MIBaseButton>
+                          </>
+                        ) : (
+                          <>
+                            <MIAgentSpinner size={24} tone="gray" />
+                            <Typography variant="body3SB12" color="contentText.Subtext">
+                              시나리오 목록과 파라미터 상태를 불러오는 중입니다.
+                            </Typography>
+                          </>
+                        )}
+                      </Stack>
+                    ) : (
+                      scenarioList
+                    )}
+                  </Stack>
+                </Fade>
+              </SwitchTransition>
+            </Box>
           </Stack>
 
           {(showLoadingPlaceholder || showParamPanel || isExecutionBusy) && (
-            <SwitchTransition mode="out-in">
-              <Fade
-                key={isExecutionBusy ? 'execution' : showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
-                timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
-              >
-                <Stack
-                  minHeight={showParamPanel && !isExecutionBusy ? 0 : '400px'}
-                  flexGrow={showParamPanel || isExecutionBusy ? 1 : 0}
-                  flexShrink={0}
+            <Stack
+              display="grid"
+              minHeight={showParamPanel && !isExecutionBusy ? 0 : '400px'}
+              flexGrow={showParamPanel || isExecutionBusy ? 1 : 0}
+              flexShrink={0}
+            >
+              <SwitchTransition mode="in-out">
+                <Fade
+                  key={isExecutionBusy ? 'execution' : showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
+                  timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
+                  easing="cubic-bezier(0.16, 1, 0.3, 1)"
                 >
-                  {isExecutionBusy ? (
-                    // PopupContent: isSubmitting || isExecuting 이면 파라미터 UI 대신 실행 중 상태
-                    <ScenarioModelExecutionGeneratingState
-                      title={
-                        isPreparingExecutionOnly || isSubmittingExecution ? 'MI 수급모델 실행 준비 중...' : 'MI 수급모델 결과 생성 중...'
-                      }
-                    />
-                  ) : showParamPanel && compare ? (
-                    <ScenarioModelExecutionProposalParamPanel
-                      visibleScenarios={visibleScenarios}
-                      compare={compare}
-                      resetToken={paramResetToken}
-                      disabled={isValueInputLocked}
-                      canDownloadInputFiles={canDownloadInputFiles}
-                      isDownloadingInputFiles={isDownloadingInputFiles}
-                      onDownloadInputFiles={handleDownloadInputFiles}
-                      onHasEditsChange={setHasParamEdits}
-                      onChangeScenarioValue={handleChangeScenarioValue}
-                    />
-                  ) : (
-                    <Stack minHeight="400px" flexGrow={1} alignItems="center" justifyContent="center" gap="10px" padding="0 20px">
-                      {showFailurePlaceholder ? (
-                        <>
-                          <ErrorOutlineIcon width={24} height={24} />
+                  <Stack minHeight={0} sx={{ gridArea: '1 / 1' }}>
+                    {isExecutionBusy ? (
+                      // PopupContent: isSubmitting || isExecuting 이면 파라미터 UI 대신 실행 중 상태
+                      <ScenarioModelExecutionGeneratingState
+                        title={
+                          isPreparingExecutionOnly || isSubmittingExecution ? 'MI 수급모델 실행 준비 중...' : 'MI 수급모델 결과 생성 중...'
+                        }
+                      />
+                    ) : showParamPanel && compare ? (
+                      <ScenarioModelExecutionProposalParamPanel
+                        visibleScenarios={visibleScenarios}
+                        compare={compare}
+                        resetToken={paramResetToken}
+                        disabled={isValueInputLocked}
+                        canDownloadInputFiles={canDownloadInputFiles}
+                        isDownloadingInputFiles={isDownloadingInputFiles}
+                        onDownloadInputFiles={handleDownloadInputFiles}
+                        onHasEditsChange={setHasParamEdits}
+                        onChangeScenarioValue={handleChangeScenarioValue}
+                      />
+                    ) : (
+                      <Stack minHeight="400px" flexGrow={1} alignItems="center" justifyContent="center" gap="10px" padding="0 20px">
+                        {showFailurePlaceholder ? (
+                          <>
+                            <ErrorOutlineIcon width={24} height={24} />
+                            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
+                              {generationFailureReason}
+                            </Typography>
+                          </>
+                        ) : showTableLoading && compareLoadFailed ? (
                           <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
-                            {generationFailureReason}
+                            테이블 데이터를 불러오지 못했습니다.
                           </Typography>
-                        </>
-                      ) : showTableLoading && compareLoadFailed ? (
-                        <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
-                          테이블 데이터를 불러오지 못했습니다.
-                        </Typography>
-                      ) : (
-                        <>
-                          <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
-                          <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
-                            {showTableLoading ? '테이블 데이터를 불러오는 중입니다.' : GENERATING_MESSAGE}
-                          </Typography>
-                        </>
-                      )}
-                    </Stack>
-                  )}
-                </Stack>
-              </Fade>
-            </SwitchTransition>
+                        ) : (
+                          <>
+                            <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
+                            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
+                              {showTableLoading ? '테이블 데이터를 불러오는 중입니다.' : GENERATING_MESSAGE}
+                            </Typography>
+                          </>
+                        )}
+                      </Stack>
+                    )}
+                  </Stack>
+                </Fade>
+              </SwitchTransition>
+            </Stack>
           )}
         </Stack>
       </Stack>
