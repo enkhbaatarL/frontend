@@ -72,6 +72,10 @@ export interface EventListItem {
   scenarioSuggestReason?: string | null
   /** 연결된 활성 시나리오 그룹 수. 0이면 설계 아이콘, 1 이상이면 그룹 N */
   scenarioGroupCount?: number
+  /** 사용자가 직접 등록한 이벤트 */
+  userRegistered?: boolean
+  /** 로그인한 사용자가 등록한 이벤트 */
+  registeredByMe?: boolean
   indexImpacts: EventImpactIndex[]
 }
 
@@ -203,6 +207,10 @@ export interface EventDetail {
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
   latestRecordFirstCreated?: string
+  /** 사용자가 직접 등록한 이벤트 */
+  userRegistered?: boolean
+  /** 사용자 등록 이벤트의 등록자 이름 */
+  registrantName?: string
   createdAt: string
   updatedAt: string
   aiInsights?: EventAiInsights | null

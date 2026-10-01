@@ -10,6 +10,7 @@ import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextG
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import ScenarioRationalePopupContent from '@/pages/mi/nextGenMI/components/common/ScenarioRationalePopupContent'
+import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/UserRegisteredEventBadge'
 
 interface ScenarioGroupSummarySectionProps {
   eventBundles?: IScenarioEventBundle[]
@@ -136,14 +137,19 @@ const ScenarioGroupSummarySection = ({
               rows.map((event) => (
                 <Stack key={event.eventId} direction="row" alignItems="center">
                   <Box flex="3 1 0" maxWidth="700px" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
-                    <NextGenMIHoverLinkCell
-                      value={event.eventName ?? '-'}
-                      variant="body1M16"
-                      ariaLabel={`${event.eventName ?? '이벤트'} 상세 보기`}
-                      onClick={() => {
-                        onEventClick?.(event.eventId, event.eventName)
-                      }}
-                    />
+                    <Stack direction="row" alignItems="center" gap="6px" minWidth={0}>
+                      <Box minWidth={0} overflow="hidden" sx={{ flex: '0 1 auto', display: 'flex' }}>
+                        <NextGenMIHoverLinkCell
+                          value={event.eventName ?? '-'}
+                          variant="body1M16"
+                          ariaLabel={`${event.eventName ?? '이벤트'} 상세 보기`}
+                          onClick={() => {
+                            onEventClick?.(event.eventId, event.eventName)
+                          }}
+                        />
+                      </Box>
+                      {event.userRegistered ? <UserRegisteredEventBadge /> : null}
+                    </Stack>
                   </Box>
                   <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>
                     <NextGenMITableBodyText

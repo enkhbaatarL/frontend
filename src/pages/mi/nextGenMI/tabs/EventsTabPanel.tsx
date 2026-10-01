@@ -2,12 +2,13 @@ import { Box, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
+import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import MIPaginationSecondary from '@/components/common/pagination/MIPaginationSecondary'
 import MISlidingSegmented from '@/components/common/segmentedbtn/MISlidingSegmented'
 import MIDataTableBody from '@/components/common/table/MIDataTableBody'
@@ -33,9 +34,11 @@ import EventSelectionActionBar, { type EventSelectionItem } from '@/pages/mi/nex
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
+import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/UserRegisteredEventBadge'
 import { useNextGenMIListState } from '@/pages/mi/nextGenMI/NextGenMIListStateContext'
 import { getNextGenMIScenarioDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
+import { applyUserRegisteredEventListDummy } from '@/pages/mi/nextGenMI/utils/userRegisteredEventDummy'
 import nextGenMIEventService, {
   type EventLinkedScenarioGroup,
   type EventListItem,
@@ -63,6 +66,14 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: '오래된순' },
 ] as const satisfies ReadonlyArray<{ value: EventSort; label: string }>
 
+type EventSourceFilter = 'all' | 'platform' | 'user'
+
+const SOURCE_FILTER_OPTIONS = [
+  { value: 'all', label: '전체' },
+  { value: 'platform', label: '플랫폼 등록 이벤트' },
+  { value: 'user', label: '사용자 등록 이벤트' },
+] as const satisfies ReadonlyArray<{ value: EventSourceFilter; label: string }>
+
 const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> => {
   if (dateRange.startDate !== undefined && dateRange.endDate !== undefined) {
     return { startDate: dateRange.startDate, endDate: dateRange.endDate }
@@ -89,6 +100,9 @@ const EventsTabPanel = () => {
   const [committedKeyword, setCommittedKeyword] = useNextGenMIListState('events.committedKeyword', '')
   const [pagination, setPagination] = useNextGenMIListState('events.pagination', { size: 20, page: 1 })
   const [hideNonRecommended, setHideNonRecommended] = useNextGenMIListState('events.hideNonRecommended', false)
+  const [sourceFilter, setSourceFilter] = useNextGenMIListState<EventSourceFilter>('events.sourceFilter', 'all')
+  const [mineOnly, setMineOnly] = useNextGenMIListState('events.mineOnly', false)
+  const sourceFilterBeforeMineOnlyRef = useRef<EventSourceFilter | null>(null)
   const [selectedEvents, setSelectedEvents] = useNextGenMIListState<EventSelectionItem[]>('events.selectedEvents', [])
 
   useEffect(() => {
@@ -149,8 +163,20 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page, setPagination])
 
-  const rawTableRows = useMemo(() => data?.events?.detail ?? [], [data?.events?.detail])
-  const tableRows = rawTableRows
+  const rawTableRows = useMemo(
+    () => applyUserRegisteredEventListDummy(data?.events?.detail ?? [], pagination.page),
+    [data?.events?.detail, pagination.page],
+  )
+  const tableRows = useMemo(
+    () =>
+      rawTableRows.filter((row) => {
+        if (mineOnly && row.registeredByMe !== true) return false
+        if (sourceFilter === 'user') return row.userRegistered === true
+        if (sourceFilter === 'platform') return row.userRegistered !== true
+        return true
+      }),
+    [mineOnly, rawTableRows, sourceFilter],
+  )
 
   const selectedEventIds = useMemo(() => selectedEvents.map((item) => item.eventId), [selectedEvents])
 
@@ -466,7 +492,30 @@ const EventsTabPanel = () => {
         flex: 1,
         minWidth: 360,
         align: 'left',
-        renderCell: (params) => <NextGenMIHoverLinkCell value={params.row.eventName} onClick={() => handleEventNameClick(params.row)} />,
+        renderCell: (params) => (
+          <Stack direction="row" alignItems="center" gap="6px" minWidth={0} maxWidth="100%" width="100%">
+            <Box
+              minWidth={0}
+              overflow="hidden"
+              sx={{
+                flex: '0 1 auto',
+                display: 'flex',
+                maxWidth: '100%',
+                '& > button': { minWidth: 0, maxWidth: '100%', width: '100%' },
+                '& .MuiTypography-root': {
+                  minWidth: 0,
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                },
+              }}
+            >
+              <NextGenMIHoverLinkCell value={params.row.eventName} onClick={() => handleEventNameClick(params.row)} />
+            </Box>
+            {params.row.userRegistered ? <UserRegisteredEventBadge /> : null}
+          </Stack>
+        ),
       },
       {
         field: 'jkm',
@@ -654,6 +703,29 @@ const EventsTabPanel = () => {
     [setPagination, setTypeFilter],
   )
 
+  const handleSourceFilterChange = useCallback(
+    (value: EventSourceFilter) => {
+      setSourceFilter(value)
+      setPagination((p) => ({ ...p, page: 1 }))
+    },
+    [setPagination, setSourceFilter],
+  )
+
+  const handleMineOnlyChange = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        sourceFilterBeforeMineOnlyRef.current = sourceFilter
+        setSourceFilter('user')
+      } else if (sourceFilterBeforeMineOnlyRef.current) {
+        setSourceFilter(sourceFilterBeforeMineOnlyRef.current)
+        sourceFilterBeforeMineOnlyRef.current = null
+      }
+      setMineOnly(checked)
+      setPagination((p) => ({ ...p, page: 1 }))
+    },
+    [setMineOnly, setPagination, setSourceFilter, sourceFilter],
+  )
+
   const handleSortChange = useCallback(
     (value: EventSort) => {
       setSort(value)
@@ -684,6 +756,9 @@ const EventsTabPanel = () => {
     setKeyword('')
     setCommittedKeyword('')
     setHideNonRecommended(false)
+    setSourceFilter('all')
+    setMineOnly(false)
+    sourceFilterBeforeMineOnlyRef.current = null
     setPagination((p) => ({ ...p, page: 1 }))
   }, [
     setAppliedDateRange,
@@ -691,8 +766,10 @@ const EventsTabPanel = () => {
     setCommittedKeyword,
     setHideNonRecommended,
     setKeyword,
+    setMineOnly,
     setPagination,
     setSort,
+    setSourceFilter,
     setTypeFilter,
   ])
 
@@ -738,11 +815,40 @@ const EventsTabPanel = () => {
               {...dateRangeMenuLayoutProps}
             />
 
+            <MISelectMenu<EventSourceFilter>
+              variant="outlined"
+              selectionIconPosition="left"
+              disabled={mineOnly}
+              selected={mineOnly ? 'user' : sourceFilter}
+              onSelected={handleSourceFilterChange}
+              items={SOURCE_FILTER_OPTIONS.map(({ value, label }) => ({ value, label }))}
+              textLabel={
+                <Typography variant="body2SB14" color={mineOnly ? 'contentText.Disabled' : 'contentText.Black'} noWrap>
+                  {sourceFilter === 'all' && !mineOnly
+                    ? '출처'
+                    : SOURCE_FILTER_OPTIONS.find((item) => item.value === (mineOnly ? 'user' : sourceFilter))?.label}
+                </Typography>
+              }
+              enableHoverBackground
+              closeOnScroll
+              paperProps={{ sx: { minWidth: '196px' } }}
+              sx={{
+                height: '36px',
+                borderRadius: '8px',
+              }}
+            />
+
             <EventSortSelectMenu<EventSort> selected={sort} onSelected={handleSortChange} items={SORT_OPTIONS} closeOnScroll />
           </Stack>
 
           <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
-            <Stack direction="row" alignItems="center" height="36px" padding="0" gap="4px">
+            <Stack direction="row" alignItems="center" height="36px" padding="0" gap="8px">
+              <Switch size="small" checked={mineOnly} onChange={(_, checked) => handleMineOnlyChange(checked)} />
+              <Typography variant="body2M14" color={mineOnly ? 'contentText.Black' : 'contentText.Normal'} noWrap>
+                내가 만든 이벤트
+              </Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" height="36px" padding="0" gap="8px">
               <Switch size="small" checked={hideNonRecommended} onChange={(_, checked) => setHideNonRecommended(checked)} />
               <Typography variant="body2M14" color={hideNonRecommended ? 'contentText.Black' : 'contentText.Normal'}>
                 추천 항목만 보기

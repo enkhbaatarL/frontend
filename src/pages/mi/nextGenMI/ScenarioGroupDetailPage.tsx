@@ -29,6 +29,7 @@ import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenari
 import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
 import { NEXT_GEN_MI_BASE_PATH, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { buildScenarioGroupDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
+import { applyUserRegisteredEventBundleDummy } from '@/pages/mi/nextGenMI/utils/userRegisteredEventDummy'
 import nextGenMIScenarioGroupService, {
   type IScenarioGroupDetailRow,
   type ScenarioJudgementStatus,
@@ -186,17 +187,23 @@ const ScenarioGroupDetailPage = () => {
   }, [groupDetailQueryKey, queryClient, scenarioGroupId])
 
   const eventBundles = useMemo(() => {
-    if ((data?.eventBundles?.length ?? 0) > 0) return data?.eventBundles ?? []
-    if (!data?.baseEvent) return []
-    return [
-      {
-        eventId: data.baseEvent.eventId,
-        eventName: data.baseEvent.eventName,
-        eventTypeLv1: data.baseEvent.eventTypeLv1,
-        eventTypeLv1Label: data.baseEvent.eventTypeLv1Label,
-        latestRecordFirstCreated: data.baseEvent.updatedAt,
-      },
-    ]
+    const bundles =
+      (data?.eventBundles?.length ?? 0) > 0
+        ? (data?.eventBundles ?? [])
+        : data?.baseEvent
+          ? [
+            {
+              eventId: data.baseEvent.eventId,
+              eventName: data.baseEvent.eventName,
+              eventTypeLv1: data.baseEvent.eventTypeLv1,
+              eventTypeLv1Label: data.baseEvent.eventTypeLv1Label,
+              latestRecordFirstCreated: data.baseEvent.updatedAt,
+              userRegistered: data.baseEvent.userRegistered,
+            },
+          ]
+          : []
+
+    return applyUserRegisteredEventBundleDummy(bundles)
   }, [data?.baseEvent, data?.eventBundles])
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
 
