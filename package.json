@@ -24,6 +24,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@fortune-sheet/react": "^1.0.4",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.11",

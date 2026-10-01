@@ -14,11 +14,9 @@ import FundamentalModelRunPlaceholder from '@/pages/mi/fundamentalModel/componen
 import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/header/FundamentalModelDetailHeader'
 import PriceTabPanel from '@/pages/mi/fundamentalModel/components/price/PriceTabPanel'
 import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/VolumesTabPanel'
+import { caseStatusToPlaceholderMode } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
 import { FUNDAMENTAL_MODEL_VIEW_TABS, type FundamentalModelViewTabKey } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
-import {
-  runStatusToPlaceholderMode,
-  useFundamentalModelRunExecution,
-} from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelRunExecution'
+import { useFundamentalModelRunExecution } from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelRunExecution'
 import fileService from '@/service/admin/file'
 import fundamentalModelCaseService, {
   type FundamentalModelCaseStatus,
@@ -380,7 +378,7 @@ const FundamentalModelPage = () => {
   const isRunActionDisabled = isRunPending || !isCaseAssignee || caseDetail?.execType === 'MI_BASE'
   const isCaseEditDeleteDisabled = !isCaseAssignee || caseDetail?.execType === 'MI_BASE'
   const placeholderMode = useMemo(
-    () => (effectiveCaseStatus ? runStatusToPlaceholderMode(effectiveCaseStatus) : null),
+    () => (effectiveCaseStatus ? caseStatusToPlaceholderMode(effectiveCaseStatus) : null),
     [effectiveCaseStatus],
   )
   const showVolumeStickySlot = isCompletedCase && viewTab === 'volumes'

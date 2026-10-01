@@ -1,4 +1,4 @@
-/** Fundamental Model 고정 URL(선택 runId는 페이지 state) */
+/** Fundamental Model 고정 URL(선택 caseId는 페이지 state) */
 export const FUNDAMENTAL_MODEL_BASE_PATH = '/mi/fundamental-model'
 
 /** Volumes|Price 탭 라벨(클라이언트 state — URL과 무관) */

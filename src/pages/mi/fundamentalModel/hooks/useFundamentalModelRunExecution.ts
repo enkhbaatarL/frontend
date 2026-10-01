@@ -4,13 +4,9 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { FundamentalModelCaseStatus } from '@/service/mi/fundamentalModel/case'
 
 import useSnackbar from '@/hooks/useSnackbar'
-import { caseStatusToPlaceholderMode } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
 import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
 
 const STATUS_POLL_INTERVAL_MS = 3000
-
-/** 실행 상태 -> 본문 자리표시자 모드 (COMPLETED 이면 null) */
-export const runStatusToPlaceholderMode = caseStatusToPlaceholderMode
 
 const isTerminalCaseStatus = (status: FundamentalModelCaseStatus) => status === 'COMPLETED' || status === 'FAILED'
 

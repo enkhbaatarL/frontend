@@ -46,6 +46,7 @@ interface ScrollWrapperProps {
   thumbInsetTop?: number
   thumbInsetBottom?: number
   thumbWidth?: number
+  thumbMinHeight?: number
   thumbMaxHeight?: number
   overscrollBehavior?: CSSProperties['overscrollBehavior']
   overflowX?: CSSProperties['overflowX']
@@ -55,6 +56,7 @@ interface ScrollWrapperProps {
   scrollbarOutsideGutter?: number
   scrollbarOutsideRightGutter?: number
   scrollbarOutsideBottomGutter?: number
+  scrollbarOffsetRight?: number
   showScrollbarOnHover?: boolean
   reserveScrollbarGap?: boolean
   showScrollEdgeShadow?: boolean
@@ -83,6 +85,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       thumbInsetTop,
       thumbInsetBottom,
       thumbWidth = DEFAULT_THUMB_WIDTH_PX,
+      thumbMinHeight,
       thumbMaxHeight,
       overscrollBehavior = 'none',
       overflowX = 'hidden',
@@ -92,6 +95,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       scrollbarOutsideGutter = SCROLL_TRACK_WIDTH_PX,
       scrollbarOutsideRightGutter,
       scrollbarOutsideBottomGutter,
+      scrollbarOffsetRight = 0,
       showScrollbarOnHover = false,
       reserveScrollbarGap = false,
       showScrollEdgeShadow = false,
@@ -158,8 +162,11 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       onScrollableChange?.(scrollable)
 
       const maxScrollTop = Math.max(0, scrollHeight - clientHeight)
-      setCanScrollUp(scrollable && scrollTop > SCROLL_EDGE_EPSILON_PX)
-      setCanScrollDown(scrollable && scrollTop + clientHeight < scrollHeight - SCROLL_EDGE_EPSILON_PX)
+      const nextCanScrollUp = scrollable && scrollTop > SCROLL_EDGE_EPSILON_PX
+      const nextCanScrollDown = scrollable && scrollTop + clientHeight < scrollHeight - SCROLL_EDGE_EPSILON_PX
+
+      setCanScrollUp(nextCanScrollUp)
+      setCanScrollDown(nextCanScrollDown)
 
       if (showHorizontalScrollbar) {
         const scrollWidth = container.scrollWidth
@@ -197,7 +204,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
 
       const availableHeight = clientHeight - thumbTopInset - thumbBottomInset
       const rawThumbHeight = (clientHeight / scrollHeight) * availableHeight
-      const nextThumbHeight = Math.min(rawThumbHeight, thumbMaxHeight ?? rawThumbHeight, availableHeight)
+      const nextThumbHeight = Math.min(Math.max(rawThumbHeight, thumbMinHeight ?? 0), thumbMaxHeight ?? availableHeight, availableHeight)
 
       setThumbHeight(nextThumbHeight)
 
@@ -214,6 +221,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       scrollbarOutside,
       thumbTopInset,
       thumbBottomInset,
+      thumbMinHeight,
       thumbMaxHeight,
       thumbRef,
       onScrollableChange,
@@ -432,7 +440,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
           {
             position: 'relative',
             maxHeight: height ?? maxHeight,
-            overflow: 'hidden',
+            overflow: scrollbarOutside || scrollbarOffsetRight > 0 ? 'visible' : 'hidden',
             padding: scrollbarOutside
               ? `${offsetTop}px ${scrollbarOutsideRightGutterPx}px ${offsetBottom + (showHorizontalScrollbar ? scrollbarOutsideBottomGutterPx : 0)}px 0`
               : `${offsetTop}px 0 ${offsetBottom}px 0`,
@@ -465,7 +473,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
           sx={{
             position: 'relative',
             height: '100%',
-            overflow: scrollbarOutside ? 'visible' : 'hidden',
+            overflow: scrollbarOutside || scrollbarOffsetRight > 0 ? 'visible' : 'hidden',
             boxSizing: 'border-box',
             ...(showScrollbarOnHover
               ? {
@@ -525,7 +533,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
               sx={{
                 position: 'absolute',
                 top: `${thumbTopInset}px`,
-                right: scrollbarOutside ? `${-(scrollbarOutsideRightTrackOffset - thumbRightPx)}px` : thumbRightPx,
+                right: scrollbarOutside ? `${-(scrollbarOutsideRightTrackOffset - thumbRightPx)}px` : thumbRightPx - scrollbarOffsetRight,
                 width: thumbWidth,
                 height: `${thumbHeight}px`,
                 backgroundColor: '#CED4DA',
@@ -602,7 +610,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
               style={{
                 position: 'absolute',
                 top: `${thumbTopInset}px`,
-                right: scrollbarOutside ? -scrollbarOutsideRightTrackOffset : 0,
+                right: scrollbarOutside ? -scrollbarOutsideRightTrackOffset : -scrollbarOffsetRight,
                 width: SCROLL_TRACK_WIDTH_PX,
                 bottom: `${thumbBottomInset}px`,
                 cursor: 'pointer',

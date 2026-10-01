@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: Fundamental Model input sources and sheet data
+  version: 0.4.0
+  description: |
+    Proposal for /mi/fundamental-model: open run popup, load sources, select the server default,
+    fetch inputs by source key, and render Demand/Supply/Trade/Output from the response.
+    For EXCEL_UPLOAD, upload each selected file immediately and render the upload response.
+    Paths, source keys, storage, and snapshot lifecycle are backend proposals, not agreed APIs.
+    Both input lookup and upload use InputData; the frontend must not adapt responses to local mocks.
+    This replaces the previous standalone input-sheet-catalog and per-sheet input-sheet-preview proposal.
+    Bodies below are the domain payload; if a common response envelope is used, publish that exact
+    envelope in the final Swagger before frontend interfaces are generated.
+    Draft persistence and case creation/execution are outside this proposal.
+paths:
+  /api/v1/fundamental-model/input-sources:
+    get:
+      summary: 실행 팝업의 입력값 출처 목록과 기본 선택 키 조회
+      operationId: getFundamentalModelInputSources
+      responses:
+        '200':
+          description: |
+            Sources in display order. defaultSourceKey must reference an item key, or be null
+            when no default exists. Do not derive the default or upload behavior from labels.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InputSourceList'
+              example:
+                defaultSourceKey: mi-base
+                sources:
+                  - { key: mi-base, label: MI BASE, type: STORED }
+                  - { key: excel-upload, label: 엑셀 업로드, type: EXCEL_UPLOAD }
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/fundamental-model/inputs:
+    get:
+      summary: 선택된 저장 출처의 네 종류 입력값과 화면 메타데이터 조회
+      operationId: getFundamentalModelInputs
+      parameters:
+        - in: query
+          name: sourceKey
+          required: true
+          description: Exact key from a STORED InputSource. Do not send its display label.
+          schema: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: |
+            A complete snapshot for the requested sourceKey. sections must contain exactly one
+            each of DEMAND, SUPPLY, TRADE, OUTPUT in that order. An empty kind has sheets: [].
+            Include all visible tables and their whole worksheet data in this response;
+            no separate catalog request, file upload, or client-side Excel parsing is needed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InputData'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/SourceNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/fundamental-model/input-uploads:
+    post:
+      summary: 선택한 Excel 파일을 즉시 업로드하고 해당 종류의 화면 데이터 반환
+      operationId: uploadFundamentalModelInput
+      description: |
+        One file per request, sent on file selection, without waiting for all four files or case submission.
+        Multiple selected files use independent requests. Parse and validate on the server before returning 200.
+        The returned section replaces the entire matching kind in the current upload selection.
+        This endpoint does not create or execute a simulation case. Do not return only a file ID or URL.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [sourceKey, kind, file]
+              properties:
+                sourceKey:
+                  type: string
+                  minLength: 1
+                  description: Exact key of an EXCEL_UPLOAD InputSource.
+                kind:
+                  $ref: '#/components/schemas/InputKind'
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    One .xls, .xlsx, or .xlsm workbook, up to 52428800 bytes (50 MiB).
+                    The existing picker requires the filename to contain exactly one kind keyword,
+                    case-insensitively. The server validates the actual workbook and requested kind too.
+      responses:
+        '200':
+          description: |
+            Parsing is complete. sourceKey matches the request and sections contains exactly one
+            section whose kind matches the request, with every visible worksheet/table for that file.
+            Same InputData schema as stored inputs; other kinds are not returned or reset.
+            The example is abbreviated; production responses must include all visible tables and whole worksheets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InputData'
+              example:
+                sourceKey: excel-upload
+                sections:
+                  - kind: DEMAND
+                    inputId: upload-demand-001
+                    sheets:
+                      - sheetName: BCInput
+                        tables:
+                          - id: DEMAND/BCInput/Base Case Hydrogen Demand
+                            kind: DEMAND
+                            sheetName: BCInput
+                            name: Base Case Hydrogen Demand
+                            description: 국가별 수소 관련 가스 수요 기준정보
+                            location: BB2:BE290
+                            rowPolicy: 기존 기준 유지
+                            columnPolicy: 기존 기준 유지
+                            coordinates: { headerRow: 3, bodyStart: 4 }
+                        data:
+                          columns:
+                            - { field: column53, headerName: BB }
+                            - { field: column54, headerName: BC }
+                            - { field: column55, headerName: BD }
+                            - { field: column56, headerName: BE }
+                          rows:
+                            - { id: 2, rowNumber: 3, column53: Country, column54: '2025', column55: '2026', column56: '2027' }
+                            - { id: 3, rowNumber: 4, column53: Korea, column54: '1.00', column55: '1.10' }
+                          inputCells: []
+                          inputGuideRules: []
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/SourceNotFound'
+        '413':
+          description: File exceeds 52428800 bytes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+              example: { code: FILE_TOO_LARGE, message: 파일은 50 MiB까지 업로드할 수 있습니다. }
+        '415':
+          description: Unsupported file format.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+              example: { code: UNSUPPORTED_FILE_TYPE, message: Excel 파일만 업로드할 수 있습니다. }
+        '422':
+          description: Workbook cannot be parsed, required worksheet is missing, or workbook kind/structure is invalid.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+              example:
+                code: WORKBOOK_VALIDATION_FAILED
+                message: 필수 시트를 확인해 주세요.
+                details:
+                  - { kind: DEMAND, sheetName: BCInput, message: 필수 시트가 없습니다. }
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  responses:
+    InvalidRequest:
+      description: Missing/invalid parameter or source type does not match the operation.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+          example: { code: INVALID_REQUEST, message: 입력값 출처와 요청 항목을 확인해 주세요. }
+    SourceNotFound:
+      description: The source key no longer exists or is unavailable to this user.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+          example: { code: SOURCE_NOT_FOUND, message: 선택한 입력값 출처를 사용할 수 없습니다. }
+    InternalError:
+      description: Inputs could not be loaded or parsed due to a server error.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+          example: { code: INPUT_LOAD_FAILED, message: 입력값을 불러오지 못했습니다. }
+  schemas:
+    InputKind:
+      type: string
+      enum: [DEMAND, SUPPLY, TRADE, OUTPUT]
+    InputSourceList:
+      type: object
+      required: [defaultSourceKey, sources]
+      properties:
+        defaultSourceKey:
+          type: string
+          nullable: true
+          minLength: 1
+          description: A sources[].key selected by backend policy (for example MI Base), or null. Never guess from the label.
+        sources:
+          type: array
+          description: Display order; keys are unique. Empty list requires defaultSourceKey null.
+          items: { $ref: '#/components/schemas/InputSource' }
+    InputSource:
+      type: object
+      required: [key, label, type]
+      properties:
+        key:
+          type: string
+          minLength: 1
+          description: Opaque backend-defined source key, passed unchanged in requests. mi-base is only an example.
+        label:
+          type: string
+          minLength: 1
+          description: Display text, for example MI BASE or 엑셀 업로드.
+        type:
+          type: string
+          enum: [STORED, EXCEL_UPLOAD]
+          description: STORED fetches inputs by key; EXCEL_UPLOAD opens the existing upload UI and waits for file selection.
+    InputData:
+      type: object
+      required: [sourceKey, sections]
+      properties:
+        sourceKey:
+          type: string
+          minLength: 1
+          description: Exact source key from the request, for response/selection matching.
+        sections:
+          type: array
+          minItems: 1
+          maxItems: 4
+          description: |
+            Unique kinds. GET returns all four in DEMAND/SUPPLY/TRADE/OUTPUT order;
+            POST upload returns only the one requested kind. Check these operation-specific invariants in backend tests.
+          items: { $ref: '#/components/schemas/InputSection' }
+    InputSection:
+      type: object
+      required: [kind, inputId, sheets]
+      properties:
+        kind: { $ref: '#/components/schemas/InputKind' }
+        inputId:
+          type: string
+          minLength: 1
+          description: |
+            Opaque server identifier for this kind's input snapshot, usable for cache/draft isolation.
+            Changes whenever its worksheet data or metadata changes, including file replacement.
+            Do not use a filename as identity. Reuse by a later execution API and expiry are separate backend decisions.
+        sheets:
+          type: array
+          description: |
+            Worksheets in display order, unique by sheetName within this kind. [] means no visible worksheets.
+            Include every worksheet needed by visible tables or linked specialized editors.
+          items: { $ref: '#/components/schemas/InputSheet' }
+    InputSheet:
+      type: object
+      required: [sheetName, tables, data]
+      properties:
+        sheetName:
+          type: string
+          minLength: 1
+          description: Exact workbook worksheet name. Identify a sheet with kind and sheetName together.
+        tables:
+          type: array
+          description: |
+            All visible tables for this worksheet in display order; no client sorting or local catalog merge.
+            Each table kind and sheetName must match its containing section and sheet.
+            IDs are unique across InputData and stable across sources for the same logical table.
+            Current v3 has 151 tables across all four kinds; this is a migration reference, not a fixed array size.
+          items: { $ref: '#/components/schemas/SheetTable' }
+        data:
+          $ref: '#/components/schemas/SheetData'
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, description: Machine-readable error code. }
+        message: { type: string, description: Display-ready user-facing error message. }
+        details:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              kind: { $ref: '#/components/schemas/InputKind' }
+              sheetName: { type: string }
+              message: { type: string }
+    SheetTable:
+      type: object
+      required: [id, kind, sheetName, name, description, location, rowPolicy, columnPolicy, coordinates]
+      properties:
+        id:
+          type: string
+          description: |
+            Stable logical identifier, currently kind/sheetName/name; not an uploaded filename or frontend file path.
+            The client uses it for selection, drafts, and three specialized component mappings.
+            Changing the identifier scheme requires corresponding client mapping changes.
+          example: DEMAND/BCInput/Base Case Hydrogen Demand
+        kind:
+          $ref: '#/components/schemas/InputKind'
+        sheetName:
+          type: string
+          example: BCInput
+        name:
+          type: string
+          example: Base Case Hydrogen Demand
+        description:
+          type: string
+          example: 국가별 수소 관련 가스 수요 기준정보
+        location:
+          type: string
+          description: Workbook range or legacy range expression used to select table cells.
+          example: BB2:BE290
+        rowPolicy:
+          type: string
+          description: |
+            Preserve the existing policy text. Current values are 가능, 제한, 기존 기준 유지,
+            연결 갱신, 대상 아님, 연결 필요, 자동 연결, and 조건부.
+            The generic table enables row additions/deletions only for 가능; specialized tables have their own rules.
+        columnPolicy:
+          type: string
+          description: |
+            Preserve the existing policy text. Current values are 고정, 가능, 기존 기준 유지,
+            연결 갱신, 대상 아님, and 자동 연결.
+            The generic table enables column addition only for 가능, except LNG Demand Mode.
+        coordinates:
+          $ref: '#/components/schemas/SheetCoordinates'
+    SheetCoordinates:
+      type: object
+      description: |
+        Source worksheet coordinates. Row numbers are one-based except headerRow=0, which denotes a synthetic header.
+        Column references use Excel letters, not columnN field names. Bounds are inclusive.
+        Required on every SheetTable. All 151 current v3 tables provide coordinates.
+      required: [headerRow, bodyStart]
+      properties:
+        headerRow:
+          type: integer
+          minimum: 0
+          description: Default source header row; 0 means no source header row and titles supplied through headerLabels.
+        headerRows:
+          type: array
+          description: |
+            Header rows in top-to-bottom display order. If omitted, the client uses periodYearRow,
+            periodMonthRow, periodCountRow, then headerRow, removing duplicates.
+            0 has the same synthetic-header meaning as headerRow=0; it is not a worksheet row number.
+          items: { type: integer, minimum: 0 }
+          example: [7, 8, 9, 10]
+        bodyStart:
+          type: integer
+          minimum: 1
+          description: First source body row. Earlier header rows must still be included in SheetData.rows.
+        firstColumn: { type: string, example: BB }
+        lastColumn: { type: string, example: BE }
+        firstRow: { type: integer, minimum: 1 }
+        lastRow: { type: integer, minimum: 1 }
+        columns:
+          type: array
+          description: Explicit Excel columns in display order, instead of a contiguous column range.
+          items: { type: string }
+          example: [B, C, D, H]
+        headerLabels:
+          type: object
+          description: Explicit column titles keyed by Excel column letters, for example B or Q.
+          additionalProperties: { type: string }
+        forceEditableColumns:
+          type: array
+          description: Excel columns made editable in addition to the inputCells addresses.
+          items: { type: string }
+        periodYearRow:
+          type: integer
+          minimum: 1
+          description: Source year row, including its left-side row label when present.
+        periodMonthRow:
+          type: integer
+          minimum: 1
+          description: Source month row, including its left-side row label when present.
+        periodCountRow:
+          type: integer
+          minimum: 1
+          description: Source period row, including its left-side row label when present.
+        periodFirstColumn:
+          type: string
+          description: First monthly Excel column. From this column onward, include columns with both year and month values.
+          example: G
+        addColumnAfter:
+          type: string
+          description: Excel column after which new columns are inserted; defaults to the last displayed column.
+      example:
+        headerRow: 10
+        bodyStart: 11
+        periodYearRow: 7
+        periodMonthRow: 8
+        periodCountRow: 9
+        periodFirstColumn: G
+    SheetData:
+      type: object
+      description: |
+        One entire worksheet in InputSheet, shared by all its tables. Preserve source coordinates and blank cells.
+        Cell values are display-ready strings or numbers, not nulls or cell objects.
+        The local parser prefers formatted text (w), then stringified raw values (v), then =formula text.
+        Keep decimal precision, thousands separators, and percent signs in formatted text.
+      required: [columns, rows, inputCells, inputGuideRules]
+      properties:
+        columns:
+          type: array
+          description: |
+            Columns in Excel order. Field indices are zero-based source indices and are not renumbered for table ranges.
+            Include the span needed by table coordinates, headers, and editable cells, even when values are blank.
+          items:
+            type: object
+            required: [field, headerName]
+            properties:
+              field:
+                type: string
+                pattern: '^column[0-9]+$'
+                description: Source column index, for example column0=A and column53=BB.
+                example: column53
+              headerName:
+                type: string
+                description: Excel column letters used as a default identifier, not the actual multi-layer header text.
+                example: BB
+        rows:
+          type: array
+          description: |
+            Sparse source rows sorted by rowNumber, including all header rows.
+            Cell property names must match columnN in columns; id and rowNumber are metadata.
+            Missing or empty cell fields mean blank cells; never fill blank period headers with column letters.
+          items:
+            type: object
+            required: [id, rowNumber]
+            properties:
+              id:
+                type: integer
+                description: Stable unique row identifier within this worksheet. The local parser uses rowNumber - 1.
+              rowNumber:
+                type: integer
+                minimum: 1
+                description: Original one-based Excel row number; do not renumber sparse rows.
+            additionalProperties:
+              oneOf:
+                - type: string
+                - type: number
+        inputCells:
+          type: array
+          description: |
+            Editable-cell addresses encoded as rowNumber * 16384 + zero-based column index, including blank input cells.
+            G11 is 180230. Exclude formula cells.
+            Use the platform input guide when that worksheet exists, even when its matching rules are empty;
+            detect yellow input-cell styles only when the guide worksheet is absent.
+            The generic table checks original cells against this list; forceEditableColumns and specialized rules also apply.
+          items: { type: integer, minimum: 16384 }
+          example: [180230, 180231]
+        inputGuideRules:
+          type: array
+          description: Rules for this worksheet from 플랫폼 입력 안내, with inclusive coordinate bounds. Return [] when absent.
+          items:
+            type: object
+            required: [sheetName, range, role, item, emptyHandling, startRow, endRow, startColumn, endColumn]
+            properties:
+              sheetName: { type: string }
+              range: { type: string }
+              role:
+                type: string
+                enum: [scenario, reference, conditional]
+                description: Guide role mapping for 입력 (including 입력 / 업무 정합성), 기준정보, and 조건부 respectively; inputCells determines cell editability.
+              item: { type: string }
+              emptyHandling: { type: string }
+              startRow: { type: integer, minimum: 1, description: Inclusive one-based start row. }
+              endRow: { type: integer, minimum: 1, description: Inclusive one-based end row. }
+              startColumn: { type: integer, minimum: 0, description: Inclusive zero-based start column. }
+              endColumn: { type: integer, minimum: 0, description: Inclusive zero-based end column. }

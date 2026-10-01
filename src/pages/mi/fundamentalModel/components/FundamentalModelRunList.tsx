@@ -1,28 +1,14 @@
 import FlagOutlinedIcon from '@mui/icons-material/OutlinedFlag'
 import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/material'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import AddIcon from '@/components/common/icons/AddIcon'
 import AsyncAutocomplete from '@/components/common/input/AsyncAutocomplete'
 import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
-import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
-import useSnackbar from '@/hooks/useSnackbar'
-import FundamentalModelFileUploadPopupContent from '@/pages/mi/fundamentalModel/components/FundamentalModelFileUploadPopupContent'
-import {
-  FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_BYTES,
-  FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_MB,
-  FUNDAMENTAL_UPLOAD_MAX_FILES,
-  FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
-  UPLOAD_FILE_REQUIRED_BODY,
-  UPLOAD_FILE_REQUIRED_TITLE,
-  hasRequiredFundamentalModelFiles,
-  isFundamentalUploadExcelFile,
-  isSameFundamentalUploadFile,
-} from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
+import FundamentalModelInputEditorPopup from '@/pages/mi/fundamentalModel/components/FundamentalModelInputEditorPopup'
 import { caseStatusVisual } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
 import { formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import fundamentalModelCaseService, {
@@ -64,17 +50,6 @@ const formatRunCountLabel = (count: number) => {
   return String(count)
 }
 
-const isUploadValidationError = (error: unknown) => {
-  if (!axios.isAxiosError(error)) return false
-
-  const status = error.response?.status
-  const responseData = error.response?.data as { code?: string; message?: string } | undefined
-  const code = responseData?.code?.toUpperCase() ?? ''
-  const message = responseData?.message ?? ''
-
-  return status === 400 || status === 422 || code.includes('VALID') || message.includes('유효성')
-}
-
 interface TruncatedLabelProps {
   text: string
   variant?: React.ComponentProps<typeof Typography>['variant']
@@ -110,108 +85,9 @@ const TruncatedLabel = ({ text, variant = 'body1SB16', color = 'gray.90', sx }: 
 
 /** 좌측 시뮬레이션 목록(검색 기준 선택 - 검색 - 카드 리스트) */
 const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunListProps) => {
-  const uploadPopupRef = useRef<MIMorphingPopupRef>(null)
-  const queryClient = useQueryClient()
-  const { showSnackbar } = useSnackbar()
   const [searchField, setSearchField] = useState<RunListSearchField>('managerName')
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
-  const [uploadTitle, setUploadTitle] = useState('')
-  const [uploadDescription, setUploadDescription] = useState('')
-  const [uploadFiles, setUploadFiles] = useState<File[]>([])
-  const [showUploadTitleValidationError, setShowUploadTitleValidationError] = useState(false)
-
-  const resetUploadPopup = useCallback(() => {
-    setUploadTitle('')
-    setUploadDescription('')
-    setUploadFiles([])
-    setShowUploadTitleValidationError(false)
-  }, [])
-
-  const handleUploadTitleChange = useCallback((value: string) => {
-    setUploadTitle(value)
-    setShowUploadTitleValidationError(false)
-  }, [])
-
-  const handleFilesAdd = useCallback(
-    (selectedFiles: FileList | File[] | null) => {
-      const incomingFiles = Array.from(selectedFiles ?? [])
-      if (incomingFiles.length === 0) return
-
-      let failureBody = ''
-      const nextFiles = [...uploadFiles]
-
-      incomingFiles.forEach((file) => {
-        if (nextFiles.length >= FUNDAMENTAL_UPLOAD_MAX_FILES) {
-          failureBody = `최대 ${FUNDAMENTAL_UPLOAD_MAX_FILES}개의 Excel 파일만 업로드할 수 있습니다.`
-          return
-        }
-        if (!isFundamentalUploadExcelFile(file)) {
-          failureBody = `${file.name}은(는) Excel 파일이 아닙니다.`
-          return
-        }
-        if (file.size > FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_BYTES) {
-          failureBody = `${file.name}은(는) ${FUNDAMENTAL_UPLOAD_MAX_FILE_SIZE_MB}MB를 초과합니다.`
-          return
-        }
-        if (nextFiles.some((uploadedFile) => isSameFundamentalUploadFile(uploadedFile, file))) return
-
-        nextFiles.push(file)
-      })
-
-      setUploadFiles(nextFiles)
-
-      if (failureBody) {
-        showSnackbar('파일 업로드가 실패했습니다.', { variant: 'error', body: failureBody })
-      }
-    },
-    [showSnackbar, uploadFiles],
-  )
-
-  const handleRemoveUploadFile = useCallback((targetFile: File) => {
-    setUploadFiles((prev) => prev.filter((file) => !isSameFundamentalUploadFile(file, targetFile)))
-  }, [])
-
-  const { mutate: createCase, isPending: isCreateCasePending } = useMutation({
-    mutationFn: fundamentalModelCaseService.createCase,
-    onSuccess: (createdCase) => {
-      setKeyword('')
-      setCommittedKeyword('')
-      void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
-      onSelect(String(createdCase.caseId), createdCase.status)
-      showSnackbar('파일 업로드가 완료되었습니다.', { variant: 'success' })
-      uploadPopupRef.current?.close()
-    },
-    onError: (error) => {
-      if (isUploadValidationError(error)) {
-        showSnackbar('유효성 검사에 실패했습니다.', { variant: 'error', body: '파일 내용을 확인해 주세요.' })
-        return
-      }
-
-      showSnackbar('파일 업로드가 실패했습니다.', { variant: 'error' })
-    },
-  })
-
-  const handleUploadSubmit = useCallback(() => {
-    if (isCreateCasePending) return
-
-    if (!uploadTitle.trim()) {
-      setShowUploadTitleValidationError(true)
-      return
-    }
-
-    if (!hasRequiredFundamentalModelFiles(uploadFiles)) {
-      showSnackbar(UPLOAD_FILE_REQUIRED_TITLE, { variant: 'error', body: UPLOAD_FILE_REQUIRED_BODY })
-      return
-    }
-
-    setShowUploadTitleValidationError(false)
-    createCase({
-      title: uploadTitle,
-      description: uploadDescription,
-      files: uploadFiles,
-    })
-  }, [createCase, isCreateCasePending, showSnackbar, uploadDescription, uploadFiles, uploadTitle])
 
   const listRequest = useMemo(() => {
     const trimmedKeyword = committedKeyword.trim()
@@ -332,22 +208,6 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
     )
   }
 
-  const uploadPopupContent = (
-    <FundamentalModelFileUploadPopupContent
-      titleValue={uploadTitle}
-      descriptionValue={uploadDescription}
-      files={uploadFiles}
-      isUploading={isCreateCasePending}
-      showTitleValidationError={showUploadTitleValidationError}
-      onTitleChange={handleUploadTitleChange}
-      onDescriptionChange={setUploadDescription}
-      onFilesAdd={handleFilesAdd}
-      onRemoveFile={handleRemoveUploadFile}
-      onSubmit={handleUploadSubmit}
-      onCancel={() => uploadPopupRef.current?.close()}
-    />
-  )
-
   return (
     <Box
       sx={{
@@ -403,37 +263,17 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
                 </Typography>
               </Box>
             </Stack>
-            <MIMorphingPopup
-              ref={uploadPopupRef}
-              display="inline-flex"
-              popup={{
-                title: (
-                  <Box component="span" sx={{ typography: 'body1B16', color: 'contentText.Normal' }}>
-                    파일 추가
-                  </Box>
-                ),
-                content: uploadPopupContent,
-                measureContent: uploadPopupContent,
-                hideHeaderLine: true,
-                showSkeleton: false,
-                minWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
-                maxWidth: FUNDAMENTAL_UPLOAD_POPUP_WIDTH,
-                borderRadius: '12px',
-                hideCloseButton: isCreateCasePending,
-                onClose: resetUploadPopup,
+            <FundamentalModelInputEditorPopup
+              onCreated={(caseId, status) => {
+                setKeyword('')
+                setCommittedKeyword('')
+                onSelect(caseId, status)
               }}
             >
-              <MIBaseButton
-                variant="contained"
-                prefix={<AddIcon />}
-                onClick={() => uploadPopupRef.current?.open()}
-                sx={{
-                  height: '36px',
-                }}
-              >
-                Add File
+              <MIBaseButton variant="contained" prefix={<AddIcon />} sx={{ height: '36px' }}>
+                수급모델 실행
               </MIBaseButton>
-            </MIMorphingPopup>
+            </FundamentalModelInputEditorPopup>
           </Stack>
 
           <Stack direction="row" alignItems="center" gap="8px" pr="12px" py="8px" flexShrink={0} width="100%" boxSizing="border-box">

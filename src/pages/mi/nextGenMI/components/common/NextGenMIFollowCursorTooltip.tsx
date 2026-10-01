@@ -112,28 +112,24 @@ const NextGenMIFollowCursorTooltip = ({
     enterTimerRef.current = setTimeout(() => setOpen(true), enterDelay)
   }, [clearEnterTimer, enterDelay])
 
+  const updateCursorPosition = useCallback(
+    (e: MouseEvent) => {
+      if (!followCursor) return
+      posRef.current = { x: e.clientX, y: e.clientY }
+      if (open) popperJsRef.current?.update?.()
+    },
+    [followCursor, open],
+  )
+
   const handleMouseOver = useCallback(
     (e: MouseEvent) => {
-      if (followCursor) {
-        posRef.current = { x: e.clientX, y: e.clientY }
-      } else {
+      if (followCursor) updateCursorPosition(e)
+      else {
         setAnchorEl(e.currentTarget as HTMLElement)
       }
       scheduleOpen()
     },
-    [followCursor, scheduleOpen],
-  )
-
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!followCursor) return
-
-      posRef.current = { x: e.clientX, y: e.clientY }
-      if (open) {
-        popperJsRef.current?.update?.()
-      }
-    },
-    [followCursor, open],
+    [followCursor, scheduleOpen, updateCursorPosition],
   )
 
   const handleMouseLeave = useCallback(() => {
@@ -154,7 +150,8 @@ const NextGenMIFollowCursorTooltip = ({
   const mergedChild = cloneElement(child, {
     ...childProps,
     onMouseOver: chainEventHandlers(childProps.onMouseOver as ((e: MouseEvent) => void) | undefined, handleMouseOver),
-    onMouseMove: chainEventHandlers(childProps.onMouseMove as ((e: MouseEvent) => void) | undefined, handleMouseMove),
+    onMouseMove: chainEventHandlers(childProps.onMouseMove as ((e: MouseEvent) => void) | undefined, updateCursorPosition),
+    onMouseDown: chainEventHandlers(childProps.onMouseDown as ((e: MouseEvent) => void) | undefined, updateCursorPosition),
     onMouseLeave: chainEventHandlers(childProps.onMouseLeave as ((e: MouseEvent) => void) | undefined, handleMouseLeave),
   })
 

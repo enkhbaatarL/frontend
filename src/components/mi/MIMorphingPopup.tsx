@@ -96,6 +96,7 @@ interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   minWidth?: number
   maxWidth?: number
   useInternalScroll?: boolean
+  closeOnBackdropClick?: boolean
   onOpen?: () => void
   onClose?: () => void
 }
@@ -123,6 +124,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         minWidth = 1200,
         maxWidth = 1380,
         useInternalScroll = false,
+        closeOnBackdropClick = true,
         onOpen,
         onClose,
         ...popupProps
@@ -569,7 +571,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                 zIndex={1300}
                 sx={scrollWrapperSx}
                 onClick={(e) => {
-                  if (e.target === e.currentTarget) handleClose()
+                  if (closeOnBackdropClick && e.target === e.currentTarget) handleClose()
                 }}
               >
                 <Box
