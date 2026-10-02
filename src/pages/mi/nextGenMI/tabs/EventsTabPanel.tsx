@@ -1,11 +1,13 @@
-import { Box, Stack, Switch, Typography } from '@mui/material'
+import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
+import { Box, Divider, Stack, Switch, Typography } from '@mui/material'
 import { GridColDef } from '@mui/x-data-grid'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
+import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
@@ -34,6 +36,7 @@ import EventSelectionActionBar, { type EventSelectionItem } from '@/pages/mi/nex
 import EventSortSelectMenu from '@/pages/mi/nextGenMI/components/event/EventSortSelectMenu'
 import EventsTableEmptyOverlay from '@/pages/mi/nextGenMI/components/event/EventsTableEmptyOverlay'
 import EventStatusBadge from '@/pages/mi/nextGenMI/components/event/EventStatusBadge'
+import KeywordAlertSettingDialog from '@/pages/mi/nextGenMI/components/event/KeywordAlertSettingDialog'
 import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/UserRegisteredEventBadge'
 import { useNextGenMIListState } from '@/pages/mi/nextGenMI/NextGenMIListStateContext'
 import { getNextGenMIScenarioDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
@@ -90,6 +93,7 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
 
 const EventsTabPanel = () => {
   const navigate = useNavigate()
+  const [isKeywordAlertOpen, setIsKeywordAlertOpen] = useState(false)
   const { onHide, onShow } = useDialog()
 
   const [typeFilter, setTypeFilter] = useNextGenMIListState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('events.typeFilter', 'all')
@@ -839,6 +843,26 @@ const EventsTabPanel = () => {
             />
 
             <EventSortSelectMenu<EventSort> selected={sort} onSelected={handleSortChange} items={SORT_OPTIONS} closeOnScroll />
+
+            <Divider orientation="vertical" flexItem sx={{ height: '34px', alignSelf: 'center', borderColor: 'contentBorder.Normal' }} />
+            <MIBaseButton
+              variant="outlined"
+              aria-label="키워드 알림 설정"
+              open={isKeywordAlertOpen}
+              enableHoverBackground
+              onClick={() => setIsKeywordAlertOpen(true)}
+              sx={{
+                width: '36px',
+                minWidth: '36px',
+                height: '36px',
+                padding: '7px',
+                borderRadius: '8px',
+                flexShrink: 0,
+                color: 'contentIcon.Enabled',
+              }}
+            >
+              <NotificationsNoneOutlinedIcon sx={{ fontSize: '20px' }} />
+            </MIBaseButton>
           </Stack>
 
           <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
@@ -903,6 +927,8 @@ const EventsTabPanel = () => {
         onSizeChange={handlePageSizeChange}
         onPageChange={handlePageChange}
       />
+
+      <KeywordAlertSettingDialog open={isKeywordAlertOpen} onClose={() => setIsKeywordAlertOpen(false)} />
 
       <EventSelectionActionBar
         selectedEvents={selectedEvents}

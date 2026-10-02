@@ -11,6 +11,12 @@ import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIButton from '@/components/common/button/MIButton'
 import NoticeIcon from '@/components/common/icons/NoticeIcon'
 import MITabs from '@/components/common/tabs/MITabs'
+import {
+  HEADER_KEYWORD_ALERT_HISTORY,
+  HEADER_PRICE_ALERT_MOCK,
+  USE_HEADER_ALERT_MOCK,
+  type KeywordAlertHistoryItem,
+} from '@/pages/mi/nextGenMI/utils/keywordAlertStore'
 import { UserRole } from '@/service/admin/members'
 import boardService, { INoticeInfo } from '@/service/mi/board'
 import notificationService, { INotificationHistory } from '@/service/mi/notification'
@@ -124,6 +130,79 @@ const AlertItem = ({ id, trend, title, subtitle, date, isRead, onClick }: Notice
   </ListItem>
 )
 
+const highlightKeywordInAlert = (text: string, keyword: string, isRead: boolean) => {
+  const index = text.toLowerCase().indexOf(keyword.toLowerCase())
+  if (index < 0) return text
+  const matched = text.slice(index, index + keyword.length)
+
+  return (
+    <>
+      {text.slice(0, index)}
+      <Typography component="span" variant="body2R14" color={isRead ? 'gray.60' : 'mari.Primary'}>
+        {matched}
+      </Typography>
+      {text.slice(index + keyword.length)}
+    </>
+  )
+}
+
+const KeywordAlertItem = ({ item, onClick }: { item: KeywordAlertHistoryItem; onClick: (eventId: string) => void }) => (
+  <ListItem
+    onClick={() => onClick(item.eventId)}
+    sx={{
+      padding: 5,
+      position: 'relative',
+      borderBottom: '1px solid #E9ECEF',
+      width: 'auto',
+      cursor: 'pointer',
+      transition: 'all 0.15s linear',
+      backgroundColor: item.isRead ? '#F8F9FA' : '#fff',
+      '.MuiTypography-root': {
+        transition: 'all 0.15s linear',
+      },
+    }}
+  >
+    <Box sx={{ width: 6, marginRight: '18px' }}>
+      {!item.isRead && <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main' }} />}
+    </Box>
+    <ListItemAvatar
+      sx={{
+        marginRight: '12px',
+        width: '34px',
+        minWidth: 'unset',
+        height: '34px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'contentIcon.ActivePrimary',
+        backgroundColor: 'commonColor.Primarylight1',
+        fontWeight: 700,
+      }}
+    >
+      #
+    </ListItemAvatar>
+    <ListItemText
+      sx={{ margin: 0 }}
+      primary={
+        <Typography color={item.isRead ? 'gray.60' : 'gray.90'} variant="body2SB14" noWrap>
+          {`키워드 알림 · ${item.keyword}`}
+        </Typography>
+      }
+      secondary={
+        <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '8px' }}>
+          <Typography variant="body2R14" color={item.isRead ? 'gray.60' : 'gray.70'} component="span" noWrap>
+            {highlightKeywordInAlert(item.eventName, item.keyword, item.isRead)}
+          </Typography>
+          <Typography variant="body3R12" color="gray.60" component="span" sx={{ flexShrink: 0 }}>
+            {item.date}
+          </Typography>
+        </span>
+      }
+    />
+  </ListItem>
+)
+
 const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemProps) => (
   <ListItem
     onClick={() => onClick?.(id)}
@@ -226,6 +305,8 @@ const MIHeaderNotice = () => {
   const [isLoadingNotices, setIsLoadingNotices] = useState(false)
   const [alerts, setAlerts] = useState<INotificationHistory[]>([])
   const [alertsIsLoading, setAlertsIsLoading] = useState(false)
+  const [readKeywordIds, setReadKeywordIds] = useState<string[]>([])
+  const [readPriceAlertIds, setReadPriceAlertIds] = useState<number[]>([])
   const { user, accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
@@ -239,9 +320,13 @@ const MIHeaderNotice = () => {
   // 읽지 않은 알림이나 공지사항이 있는지 확인
   const hasUnreadItems = useMemo(() => {
     const hasUnreadNotices = notices.some((notice) => !notice.isRead)
-    const hasUnreadAlerts = alerts.some((alert) => !alert.isEmailInquiry)
-    return hasUnreadNotices || hasUnreadAlerts
-  }, [notices, alerts])
+    const hasUnreadAlerts = !USE_HEADER_ALERT_MOCK && alerts.some((alert) => !alert.isEmailInquiry)
+    const hasUnreadKeywordAlerts =
+      USE_HEADER_ALERT_MOCK && HEADER_KEYWORD_ALERT_HISTORY.some((item) => !(item.isRead || readKeywordIds.includes(item.id)))
+    const hasUnreadPriceAlerts =
+      USE_HEADER_ALERT_MOCK && HEADER_PRICE_ALERT_MOCK.some((item) => !(item.isRead || readPriceAlertIds.includes(item.id)))
+    return hasUnreadNotices || hasUnreadAlerts || hasUnreadKeywordAlerts || hasUnreadPriceAlerts
+  }, [alerts, notices, readKeywordIds, readPriceAlertIds])
 
   const handleToggleNoticeMenu = () => {
     if (isNoticeMenuOpen) {
@@ -322,7 +407,36 @@ const MIHeaderNotice = () => {
       content: (
         <>
           <ScrollWrapper sx={{ margin: '0 -20px' }} maxHeight={556}>
-            {alertsIsLoading ? (
+            {/* #DELETE */}
+            {USE_HEADER_ALERT_MOCK ? (
+              <>
+                {HEADER_KEYWORD_ALERT_HISTORY.map((item) => (
+                  <KeywordAlertItem
+                    key={item.id}
+                    item={{ ...item, isRead: item.isRead || readKeywordIds.includes(item.id) }}
+                    onClick={(eventId) => {
+                      setReadKeywordIds((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]))
+                      navigate(`/mi/next-gen-mi/events/${eventId}`)
+                      handleCloseNoticeMenu()
+                    }}
+                  />
+                ))}
+                {HEADER_PRICE_ALERT_MOCK.map((alert) => (
+                  <AlertItem
+                    id={alert.id}
+                    key={alert.id}
+                    trend={alert.trend}
+                    title={alert.title}
+                    subtitle={alert.valueLabel}
+                    date={alert.date}
+                    isRead={alert.isRead || readPriceAlertIds.includes(alert.id)}
+                    onClick={(id) => {
+                      setReadPriceAlertIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
+                    }}
+                  />
+                ))}
+              </>
+            ) : alertsIsLoading ? (
               <Box display="flex" justifyContent="center" alignItems="center" p={5} height={400}>
                 <Typography variant="body2R14" color="gray.60">
                   Loading...
