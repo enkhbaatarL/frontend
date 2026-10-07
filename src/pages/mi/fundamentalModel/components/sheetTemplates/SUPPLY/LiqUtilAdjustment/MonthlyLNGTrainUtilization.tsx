@@ -49,14 +49,14 @@ const hasInputValue = (row: FundamentalModelSheetDataRow, fields: string[]) =>
   fields.some((field) => String(row[field] ?? '').trim().length > 0)
 
 const getUtilizationRows = (rows: FundamentalModelSheetDataRow[], fields: string[]) =>
-  rows.filter((row) => row.rowNumber >= 11 && hasInputValue(row, fields))
+  rows.filter((row) => row.rowNumber >= 11 && row.rowNumber <= 407 && hasInputValue(row, fields))
 
 const getNextMonthlyColumn = (lastColumn: MonthlyColumn | undefined, nextField: string): MonthlyColumn | undefined => {
   if (!lastColumn) return undefined
 
   const year = Number(lastColumn.year)
   const month = Number(lastColumn.month)
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return undefined
+  if (!Number.isInteger(year) || year <= 0 || !Number.isInteger(month) || month < 1 || month > 12) return undefined
   const period = lastColumn.period.trim() ? Number(lastColumn.period) : Number.NaN
 
   return {
@@ -70,7 +70,7 @@ const getNextMonthlyColumn = (lastColumn: MonthlyColumn | undefined, nextField: 
 const getPreviousMonthlyColumn = (firstColumn: MonthlyColumn, nextField: string): MonthlyColumn | undefined => {
   const year = Number(firstColumn.year)
   const month = Number(firstColumn.month)
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return undefined
+  if (!Number.isInteger(year) || year <= 0 || !Number.isInteger(month) || month < 1 || month > 12) return undefined
   const period = firstColumn.period.trim() ? Number(firstColumn.period) : Number.NaN
 
   return {
@@ -91,7 +91,7 @@ const getMonthlyColumns = (
   periodRow?: FundamentalModelSheetDataRow,
 ) =>
   columns
-    .filter(({ field }) => getColumnIndex(field) >= 6)
+    .filter(({ field }) => getColumnIndex(field) >= 6 && getColumnIndex(field) <= 89)
     .flatMap(({ field }) => {
       const year = String(yearRow?.[field] ?? '').trim()
       const month = String(monthRow?.[field] ?? '').trim()
@@ -735,7 +735,7 @@ const MonthlyLNGTrainUtilization = ({ data, restrictColumnChangesToEnd = true, d
                   bgcolor: 'commonColor.White',
                 },
                 '& [role="columnheader"][data-column-active="true"]': { bgcolor: 'gray.10' },
-                '& [role="columnheader"][data-new="true"]': { bgcolor: 'commonColor.Primarylight1' },
+                '& [role="columnheader"][data-new="true"]': { bgcolor: 'rgba(245, 159, 0, 0.1)' },
                 '& [data-row-action="true"]': {
                   textAlign: 'center',
                   borderBottom: '1px solid',
@@ -806,7 +806,7 @@ const MonthlyLNGTrainUtilization = ({ data, restrictColumnChangesToEnd = true, d
                 '& [role="cell"][data-column-active="true"]': { bgcolor: 'gray.10' },
                 '& [role="row"][data-menu-open="true"] [role="cell"]': { bgcolor: 'gray.10' },
                 '& [role="cell"][data-new="true"], & [role="row"]:hover [role="cell"][data-new="true"], & [role="cell"][data-column-active="true"][data-new="true"], & [role="row"][data-menu-open="true"] [role="cell"][data-new="true"]':
-                  { bgcolor: 'commonColor.Primarylight1' },
+                  { bgcolor: 'rgba(245, 159, 0, 0.1)' },
                 '& [data-row-action="true"]': {
                   width: `${UTILIZATION_ACTION_WIDTH}px`,
                   minWidth: `${UTILIZATION_ACTION_WIDTH}px`,

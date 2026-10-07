@@ -39,6 +39,7 @@ import {
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import FundamentalModelSheetDataTable from '@/pages/mi/fundamentalModel/components/FundamentalModelSheetDataTable'
 import { getFundamentalModelSheetCatalog } from '@/pages/mi/fundamentalModel/components/sheetTemplates/fundamentalModelSheetCatalogMock'
+import { sheetTableOrder } from '@/pages/mi/fundamentalModel/components/sheetTemplates/sheetTableOrder'
 import {
   getSheetTableTemplates,
   getTemplateSheetNames,
@@ -48,6 +49,8 @@ import {
   type SheetTemplateDraft,
   type SheetTemplateProps,
 } from '@/pages/mi/fundamentalModel/components/sheetTemplates/sheetTemplateRegistry'
+import { summaryTemplateCoordinates } from '@/pages/mi/fundamentalModel/components/sheetTemplates/summaryTemplateCoordinates'
+import { summaryTemplateDefinitions } from '@/pages/mi/fundamentalModel/components/sheetTemplates/summaryTemplateDefinitions'
 import fundamentalModelCaseService, { type FundamentalModelCaseStatus } from '@/service/mi/fundamentalModel/case'
 import { downloadFile } from '@/utils/file'
 
@@ -87,7 +90,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
   ({ children, onCreated, restrictColumnChangesToEnd = true }, ref) => {
     const queryClient = useQueryClient()
     const { data: sheetCatalog } = useQuery({
-      queryKey: ['fundamentalModel', 'sheetCatalog'],
+      queryKey: ['fundamentalModel', 'sheetCatalog', sheetTableOrder, summaryTemplateDefinitions, summaryTemplateCoordinates],
       queryFn: getFundamentalModelSheetCatalog,
       staleTime: Infinity,
     })
@@ -213,7 +216,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
     const selectKind = useCallback(
       (kind: FundamentalModelInputKind) => {
         setSelectedKind(kind)
-        const previousTemplate = selectedTemplateByKindRef.current[kind]
+        const previousTemplate = sheetCatalog?.tables.find((template) => template.id === selectedTemplateByKindRef.current[kind]?.id)
         if (previousTemplate) {
           setSelectedSheetName(previousTemplate.sheetName)
           openTemplate(previousTemplate)
@@ -226,8 +229,15 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
     )
 
     useEffect(() => {
-      if (sheetCatalog && selectedFile && !selectedTemplate) selectKind(selectedKind)
-    }, [selectedFile, selectedKind, selectedTemplate, selectKind, sheetCatalog])
+      if (!sheetCatalog || !selectedFile) return
+      const currentTemplate = sheetCatalog.tables.find((template) => template.id === selectedTemplate?.id && template.kind === selectedKind)
+      if (!currentTemplate) {
+        selectKind(selectedKind)
+      } else if (currentTemplate !== selectedTemplate) {
+        setSelectedSheetName(currentTemplate.sheetName)
+        openTemplate(currentTemplate)
+      }
+    }, [openTemplate, selectedFile, selectedKind, selectedTemplate, selectKind, sheetCatalog])
 
     const addFiles = useCallback(
       (files: FileList | File[] | null, targetKind?: FundamentalModelInputKind) => {
@@ -658,9 +668,10 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
                           <FundamentalModelSheetDataTable
                             file={selectedFile}
                             sheetName={selectedTemplate.sheetName}
+                            linkedSourceSheetName={regasSourceTemplate?.sheetName}
                             onLoadingChange={handleSheetDataLoadingChange}
                           >
-                            {(data) =>
+                            {(data, linkedSourceData) =>
                               SelectedTemplateComponent ? (
                                 <SelectedTemplateComponent
                                   key={`${selectedTemplate.id}:${draftResetVersion}`}
@@ -668,6 +679,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
                                   restrictColumnChangesToEnd={restrictColumnChangesToEnd}
                                   draft={selectedDraft}
                                   linkedSourceDraft={linkedSourceDraft}
+                                  linkedSourceData={linkedSourceData}
                                   onDraftChange={saveDraft}
                                 />
                               ) : (

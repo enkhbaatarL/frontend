@@ -11,30 +11,52 @@ import {
 interface FundamentalModelSheetDataTableProps {
   file: File
   sheetName: string
-  children?: (data: FundamentalModelSheetData) => ReactNode
+  linkedSourceSheetName?: string
+  children?: (data: FundamentalModelSheetData, linkedSourceData?: FundamentalModelSheetData) => ReactNode
   onLoadingChange?: (isLoading: boolean) => void
 }
 
-const FundamentalModelSheetDataTable = ({ file, sheetName, children, onLoadingChange }: FundamentalModelSheetDataTableProps) => {
-  const [sheetData, setSheetData] = useState<FundamentalModelSheetData | undefined>(() =>
-    getCachedFundamentalModelSheetData(file, sheetName),
-  )
+const FundamentalModelSheetDataTable = ({
+  file,
+  sheetName,
+  linkedSourceSheetName,
+  children,
+  onLoadingChange,
+}: FundamentalModelSheetDataTableProps) => {
+  const [loadedData, setLoadedData] = useState<{
+    file: File
+    sheetName: string
+    linkedSourceSheetName?: string
+    data: FundamentalModelSheetData
+    linkedSourceData?: FundamentalModelSheetData
+  }>()
+  const isCurrentData =
+    loadedData?.file === file && loadedData.sheetName === sheetName && loadedData.linkedSourceSheetName === linkedSourceSheetName
+  const sheetData = isCurrentData ? loadedData.data : getCachedFundamentalModelSheetData(file, sheetName)
+  const linkedSourceData = isCurrentData
+    ? loadedData.linkedSourceData
+    : linkedSourceSheetName
+      ? getCachedFundamentalModelSheetData(file, linkedSourceSheetName)
+      : undefined
   const [error, setError] = useState<string>()
 
   useEffect(() => {
     let isCurrentRequest = true
 
     const cachedData = getCachedFundamentalModelSheetData(file, sheetName)
-    setSheetData(cachedData)
+    const cachedSourceData = linkedSourceSheetName ? getCachedFundamentalModelSheetData(file, linkedSourceSheetName) : undefined
     setError(undefined)
-    if (cachedData) {
+    if (cachedData && (!linkedSourceSheetName || cachedSourceData)) {
       onLoadingChange?.(false)
     } else {
       onLoadingChange?.(true)
-      void getFundamentalModelSheetDataPreview(file, sheetName)
-        .then((data) => {
+      void Promise.all([
+        getFundamentalModelSheetDataPreview(file, sheetName),
+        linkedSourceSheetName ? getFundamentalModelSheetDataPreview(file, linkedSourceSheetName) : Promise.resolve(undefined),
+      ])
+        .then(([data, sourceData]) => {
           if (isCurrentRequest) {
-            setSheetData(data)
+            setLoadedData({ file, sheetName, linkedSourceSheetName, data, linkedSourceData: sourceData })
             onLoadingChange?.(false)
           }
         })
@@ -49,7 +71,7 @@ const FundamentalModelSheetDataTable = ({ file, sheetName, children, onLoadingCh
     return () => {
       isCurrentRequest = false
     }
-  }, [file, sheetName, onLoadingChange])
+  }, [file, sheetName, linkedSourceSheetName, onLoadingChange])
 
   if (error) {
     return (
@@ -61,7 +83,7 @@ const FundamentalModelSheetDataTable = ({ file, sheetName, children, onLoadingCh
     )
   }
 
-  if (!sheetData) {
+  if (!sheetData || (linkedSourceSheetName && !linkedSourceData)) {
     return (
       <Stack flex={1} alignItems="center" justifyContent="center" role="status" aria-label="시트 데이터 로딩 중">
         <CircularProgress size={24} thickness={4} sx={{ color: 'contentIcon.ActiveSecondary' }} />
@@ -79,7 +101,7 @@ const FundamentalModelSheetDataTable = ({ file, sheetName, children, onLoadingCh
     )
   }
 
-  if (children) return children(sheetData)
+  if (children) return children(sheetData, linkedSourceData)
 
   return (
     <Box

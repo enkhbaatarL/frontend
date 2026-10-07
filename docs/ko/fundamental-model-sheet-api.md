@@ -23,11 +23,11 @@
 
 ## API와 공통 응답 규격
 
-| API 제안 | 요청 | 성공 응답 | 화면 반영 범위 |
-| --- | --- | --- | --- |
-| `GET /input-sources` | 없음 | `InputSourceList` | 출처 목록과 기본 선택 |
-| `GET /inputs` | query `sourceKey` | `InputData` | 네 종류 전체 |
-| `POST /input-uploads` | multipart `sourceKey`, `kind`, `file` | `InputData` | 업로드한 한 종류 전체 |
+| API 제안              | 요청                                  | 성공 응답         | 화면 반영 범위        |
+| --------------------- | ------------------------------------- | ----------------- | --------------------- |
+| `GET /input-sources`  | 없음                                  | `InputSourceList` | 출처 목록과 기본 선택 |
+| `GET /inputs`         | query `sourceKey`                     | `InputData`       | 네 종류 전체          |
+| `POST /input-uploads` | multipart `sourceKey`, `kind`, `file` | `InputData`       | 업로드한 한 종류 전체 |
 
 ### 출처 목록: InputSourceList
 
@@ -48,16 +48,16 @@
 
 ### 조회·업로드 공통: InputData
 
-| 필드 | 필수 | 의미 |
-| --- | --- | --- |
-| `sourceKey` | O | 요청한 출처 키. 현재 선택과 응답을 대조합니다. |
-| `sections` | O | 종류별 입력 데이터 배열. GET은 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 순서로 정확히 하나씩, 업로드는 요청한 종류 하나만 반환합니다. |
-| `sections[].kind` | O | 위 네 종류 중 하나. 한 응답 안에서 중복하지 않습니다. |
-| `sections[].inputId` | O | 해당 종류의 입력 스냅샷 식별자. 데이터·메타데이터 또는 업로드 파일이 바뀌면 변경합니다. 파일명으로 대체하지 않습니다. |
-| `sections[].sheets` | O | 표시 순서의 시트 배열. 종류 안에서 `sheetName`은 중복하지 않습니다. 표시 대상이 없으면 `[]`입니다. |
-| `sheets[].sheetName` | O | 원본 Excel 시트명. 다른 종류에 같은 이름이 있을 수 있으므로 `kind`와 함께 식별합니다. |
-| `sheets[].tables` | O | 해당 시트의 표 메타데이터를 표시 순서로 반환합니다. `SheetTable` 스키마를 따릅니다. |
-| `sheets[].data` | O | 헤더를 포함한 시트 전체 `SheetData`. 같은 시트의 여러 표가 공유합니다. |
+| 필드                 | 필수 | 의미                                                                                                                               |
+| -------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `sourceKey`          | O    | 요청한 출처 키. 현재 선택과 응답을 대조합니다.                                                                                     |
+| `sections`           | O    | 종류별 입력 데이터 배열. GET은 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 순서로 정확히 하나씩, 업로드는 요청한 종류 하나만 반환합니다. |
+| `sections[].kind`    | O    | 위 네 종류 중 하나. 한 응답 안에서 중복하지 않습니다.                                                                              |
+| `sections[].inputId` | O    | 해당 종류의 입력 스냅샷 식별자. 데이터·메타데이터 또는 업로드 파일이 바뀌면 변경합니다. 파일명으로 대체하지 않습니다.              |
+| `sections[].sheets`  | O    | 표시 순서의 시트 배열. 종류 안에서 `sheetName`은 중복하지 않습니다. 표시 대상이 없으면 `[]`입니다.                                 |
+| `sheets[].sheetName` | O    | 원본 Excel 시트명. 다른 종류에 같은 이름이 있을 수 있으므로 `kind`와 함께 식별합니다.                                              |
+| `sheets[].tables`    | O    | 해당 시트의 표 메타데이터를 표시 순서로 반환합니다. `SheetTable` 스키마를 따릅니다.                                                |
+| `sheets[].data`      | O    | 헤더를 포함한 시트 전체 `SheetData`. 같은 시트의 여러 표가 공유합니다.                                                             |
 
 `SheetTable`은 `id`, `kind`, `sheetName`, `name`, `description`, `location`, `rowPolicy`, `columnPolicy`, **`coordinates`**를 필수로 포함합니다. 표의 `kind`와 `sheetName`은 상위 값과 일치해야 하고, 표 `id`는 응답 전체에서 유일해야 합니다. 동일한 논리 표는 출처가 달라도 같은 `id`를 유지합니다.
 
@@ -82,10 +82,10 @@
               "sheetName": "BCInput",
               "name": "Base Case Hydrogen Demand",
               "description": "국가별 수소 관련 가스 수요 기준정보",
-              "location": "BB2:BE290",
-              "rowPolicy": "기존 기준 유지",
-              "columnPolicy": "기존 기준 유지",
-              "coordinates": { "headerRow": 3, "bodyStart": 4 }
+              "location": "BB2:BD290",
+              "rowPolicy": "아래 행 추가",
+              "columnPolicy": "고정",
+              "coordinates": { "headerRow": 3, "headerRows": [2, 3], "bodyStart": 4, "inputRanges": ["BB4:BD290"] }
             }
           ],
           "data": {
@@ -127,14 +127,14 @@
 
 오류 본문은 공통 `ApiError`인 `{ "code": "...", "message": "...", "details": [...] }`입니다. `code`, 사용자에게 표시할 `message`는 필수이며 `details`는 선택입니다. 상세 항목은 `message`와 필요한 경우 `kind`, `sheetName`을 포함합니다.
 
-| HTTP | 용도 / 코드 예시 |
-| --- | --- |
-| `400` | 잘못된 요청 또는 출처 타입과 API 불일치 / `INVALID_REQUEST` |
-| `404` | 선택한 출처를 더 이상 사용할 수 없음 / `SOURCE_NOT_FOUND` |
-| `413` | 파일 크기 초과 / `FILE_TOO_LARGE` |
-| `415` | 지원하지 않는 파일 형식 / `UNSUPPORTED_FILE_TYPE` |
+| HTTP  | 용도 / 코드 예시                                                                     |
+| ----- | ------------------------------------------------------------------------------------ |
+| `400` | 잘못된 요청 또는 출처 타입과 API 불일치 / `INVALID_REQUEST`                          |
+| `404` | 선택한 출처를 더 이상 사용할 수 없음 / `SOURCE_NOT_FOUND`                            |
+| `413` | 파일 크기 초과 / `FILE_TOO_LARGE`                                                    |
+| `415` | 지원하지 않는 파일 형식 / `UNSUPPORTED_FILE_TYPE`                                    |
 | `422` | 읽을 수 없는 워크북, 필수 시트 누락, 종류·구조 불일치 / `WORKBOOK_VALIDATION_FAILED` |
-| `500` | 입력값 조회 또는 처리 실패 / `INPUT_LOAD_FAILED` |
+| `500` | 입력값 조회 또는 처리 실패 / `INPUT_LOAD_FAILED`                                     |
 
 출처 조회 실패 시 재시도할 수 있어야 하며, 입력값 조회에서 출처가 사라졌다면 목록을 다시 조회해 재선택합니다. 실패한 요청을 다른 출처나 mock으로 자동 대체하지 않습니다.
 
@@ -160,38 +160,48 @@
 ## 백엔드 구현 요청
 
 1. 출처 목록·기본 키와 저장/업로드 구분을 명시적으로 제공합니다. 기본 출처, 최신 MI Base 해석 및 권한에 따른 목록은 백엔드 책임입니다.
-2. 조회 또는 업로드 응답에 표 메타데이터와 셀 데이터를 함께 제공합니다. 각 배열은 화면 표시 순서이며 프론트는 별도로 정렬하지 않습니다. 현재 v3 기준 151개 표의 값과 순서는 이관 참고자료이고, 표 개수를 고정하지 않습니다. 현재 논리 식별자는 `kind/sheetName/name`입니다. 전용 컴포넌트도 이 값에 의존하므로 식별자 변경 시 프론트 매핑 변경이 필요합니다.
+2. 조회 또는 업로드 응답에 표 메타데이터와 셀 데이터를 함께 제공합니다. 각 배열은 화면 표시 순서이며 프론트는 별도로 정렬하지 않습니다. 2026-10-06 전달본의 Demand/Trade/Output V8, Supply V6 SUMMARY 기준 표시 대상은 99개(Demand 43, Supply 17, Trade 33, Output 6)입니다. 표 개수를 계약에 고정하지 않습니다. 현재 논리 식별자는 `kind/sheetName/name`입니다. 전용 컴포넌트도 이 값에 의존하므로 식별자 변경 시 프론트 매핑 변경이 필요합니다.
 3. `SheetData`는 **시트 전체**를 담습니다. 선택 표의 본문만 잘라 보내지 않으며 `bodyStart` 이전 헤더도 포함합니다. `columns`는 원본 열 인덱스의 `columnN`과 Excel 열 이름을 사용하고, `rows`는 원본 `rowNumber` 오름차순입니다. `id`는 시트 내에서 유일하고 안정적이어야 합니다. 빈 행·셀 필드는 생략 가능하지만 원본 번호를 재번호화하지 않습니다. 표 좌표·헤더·빈 편집 셀에 필요한 열은 값이 없어도 `columns`에 포함합니다.
 4. 셀 값은 표시할 문자열 또는 숫자로 반환합니다. 현재 Excel 파서는 표시 문자열(`w`), 원시 값(`v`)의 문자열, 수식(`=...`) 순으로 사용합니다. 백엔드도 퍼센트·소수 자릿수·쉼표 등의 표시를 보존하고 날짜·불리언 등은 표시 문자열로 전달합니다. `null`, 셀 객체, 헤더 빈칸을 채우는 임의 문구는 사용하지 않습니다.
-5. 편집 가능한 셀은 `inputCells`에 `rowNumber * 16384 + zeroBasedColumnIndex`로 담습니다. 빈 입력 셀도 포함하며 `G11`은 `180230`입니다. `플랫폼 입력 안내` 시트가 있으면 해당 범위 규칙을 사용하고, 안내 시트 자체가 없을 때만 노란색 셀 스타일을 감지합니다. 안내 시트에 해당 시트의 규칙이 없는 경우 노란색 감지로 돌아가지 않습니다. 두 경로 모두 수식 셀은 제외합니다. `inputGuideRules`의 행은 1 기반, 열은 0 기반이고 시작·끝 좌표를 포함합니다. 일반 표의 원본 셀 판정은 `inputCells`, 추가 열 허용은 `forceEditableColumns`를 사용하며 전용 컴포넌트의 추가 편집 규칙은 유지합니다.
+5. `inputCells`는 `rowNumber * 16384 + zeroBasedColumnIndex` 형식을 유지합니다. 빈 입력 셀도 포함하며 `G11`은 `180230`입니다. 새 SUMMARY의 `coordinates.inputRanges`가 있으면 공통 테이블은 해당 직접 입력 범위를 우선하며, `[]`는 조회 전용입니다. 이전 안내 시트나 셀 색상 때문에 편집 범위를 넓히지 않습니다. `readOnlyColumns`와 `protectedRowPattern`은 입력 범위보다 우선합니다. 이전 파일의 범위 설정이 없을 때만 `inputCells`와 `forceEditableColumns`를 사용합니다. Regas 전용 테이블은 월별 원본 수식 조회와 기준정보 연결을 유지합니다.
 6. 백엔드가 확정한 Swagger에서 인터페이스를 생성합니다. 프론트의 기존 mock 형태로 실제 응답을 변환하는 어댑터는 만들지 않고, 컴포넌트가 최종 응답을 직접 사용하도록 연동합니다.
 
-## v3 파일 반영 사항
+## 2026-10-06 SUMMARY 반영 사항
 
-- `입력 / 업무 정합성`도 `입력`과 같은 `scenario` 역할로 처리합니다. 수식 셀은 계속 편집 대상에서 제외하며, `사용 안 함`, `파생값`, `참고/연계`, `필수 연결` 등을 입력 역할로 변환하지 않습니다.
-- Demand `General`의 국가·부문·세부부문·연도·월 목록은 `DEMAND/General/Demand Dropdown` 하나로 반환합니다. 범위는 `K2:O93`, 헤더는 2행, 본문은 3행부터입니다. Power Mix 국가·에너지원 목록은 `DEMAND/General/Power Mix Dropdown` 하나로 반환하며 범위는 `R1:S93`, 헤더는 2행, 본문은 3행부터입니다. 각 열의 원본 값과 빈칸을 그대로 보존합니다.
-- Supply `ProductionAdjustment`에서 미사용 `Annual Province Production Adjustment (Legacy)`는 목록에서 제외합니다. 원본 시트와 보조 수식은 보존하며 `PNG Production Adjustment`는 유지합니다.
-- Trade `4.5 PriceModelInput`의 `Henry Hub - User-Adjusted`는 `Shipping Cost - User-Adjusted` 다음에 표시합니다. 범위는 `K14:P23`, 헤더는 15행, 본문은 16행부터이며 직접 입력 표가 아닙니다.
-- Output `PremiumCalc`는 TTF·East Asia Spot 입력표만, `AnnualPriceCalc`는 Spread 설정만 목록에 포함합니다. v3에서 숨김/대상 아님으로 지정한 계산·참고표 11개는 목록에서 제외하며 원본 데이터와 계산 연결은 보존합니다.
+- 표시 시트와 표 순서는 SUMMARY를 따릅니다. `미표시`로 지정된 Demand General/Selected/Helper, Trade 보정·계산표 등은 목록에서 제외하며 원본 시트·수식·매크로는 유지합니다.
+- 모든 기존 헤더와 새 열의 헤더는 조회 전용입니다. SUMMARY에 헤더 직접 입력이 기재돼 있어도 사용자 지시를 우선하며, 행·기간 추가 시 헤더 값은 자동 생성합니다. Demand 조정표는 6행 헤더, 12행부터 직접 입력합니다. Monthly PMI는 13행부터이며 Base/Helper 열은 표시하지 않습니다. LNG Demand는 본문 C1 Fixed/Dynamic 선택을 유지하고 연도 헤더는 편집하지 않습니다. Sub-Total/TOTAL 행은 새 기간 열에서도 편집하지 않습니다.
+- Demand Overwrite의 I(부문별), Q(월별) 백만톤을 변경하면 같은 행의 숨김 H/P BCM 값을 초안에서 비웁니다. 입력을 원래 값으로 복원하면 원래 BCM도 복원합니다. 실제 저장·모델 전달에서도 이 처리를 적용해야 합니다.
+- Supply PNG는 I/J/K/M만 표시합니다. 모델 전달 시 N은 M에서 생성하거나 M fallback을 사용합니다. Pipeline은 B/C/D/H만 표시하고 모델 수신용 G는 기준정보에서 구성합니다. 이 CSV 구성은 백엔드 저장·실행 단계의 책임입니다.
+- Supply BCLiquefaction은 B:L/N을 표시하되 D Period와 N 기준 가동률은 조회 전용입니다. RegasAdjustment의 B:G도 연결 조회입니다. H:AE(2023~2024년)는 이전 안내·색상 메타데이터가 없어도 직접 입력하며, AF:DK(2025~2031년) 및 새로 연결된 미래 월 열은 연결 계산값을 보호합니다. 월별 값의 원본 계산값을 0으로 치환하지 않습니다. Regas 집계 2개와 LNG Production Reconciliation은 조회 전용입니다.
+- RegasAdjustment의 설비 행은 BCRegasification과 순서·개수를 1:1로 유지합니다. 행 추가·삭제와 연도 추가는 BCRegasification에서만 수행하고, RegasAdjustment에서는 직접 행 추가·삭제 및 열 추가를 허용하지 않습니다. 추가한 연도는 해당 연도의 12개 월 열로 연결하며, 설비 식별값·최대 용량·미래 월 용량은 원본 변경에 따라 갱신합니다. 기존·신규 설비 모두 2023~2024년 직접 입력값은 연결 갱신 후에도 유지합니다. BCRegasification 초기화 시 연결된 행·열도 원본 구조로 돌아갑니다.
+- 월별 LNG 가동률·생산량 표의 새 Year/Month/Period는 마지막 기간에서 자동 생성하며 편집하지 않습니다. 왼쪽의 Year/Month/Period 항목명은 기간 열로 처리하지 않습니다. BCRegasification 입력 표는 빈 원본 또는 마지막 행 삭제 후 입력 가능한 한 행을 유지하며, RegasAdjustment는 원본에 있는 행만 연결합니다.
+- Trade는 SUMMARY의 원천 입력 열만 표시합니다. PNG Infrastructure는 11행부터 B/D/G/J:Q를 표시하고, ShippingCostInput의 Pacific C3 입력은 별도로 표시합니다. 4.5 PriceModelInput은 JKM/TTF Base Case 2개 표만 표시합니다.
+- Output PremiumCalc는 B 연도 조회와 C 기준 미계약량 입력만 표시합니다. PriceSeasonality는 B 지역 조회와 C:O 계수 입력을 표시하고 월 헤더는 고정합니다.
+- 선택표 동시 확장, 관련 표의 기간 맞춤, 필수 키 검증, 숨김 연결·계산열 구성은 실제 초안 저장/실행 API에서 함께 처리해야 합니다. 현재 메모리 초안을 원본 파일에 반영하는 API 연결은 이 조회·업로드 제안의 범위 밖입니다.
 
 ## 좌표 설정
 
 이번 계약에서 `coordinates`는 모든 표의 필수 필드입니다. 현재 공통 테이블에 범위 추정 fallback이 있더라도 백엔드가 좌표를 생략하는 근거로 삼지 않습니다. `location`과 좌표는 같은 원본 범위를 설명해야 합니다.
 
-| 필드 | 의미 |
-| --- | --- |
-| `headerRow` | 기본 헤더의 원본 행 번호. `0`은 원본 헤더 행 없이 `headerLabels`로 제목을 지정하는 예외입니다. 본문의 실제 행 번호는 계속 1 기반입니다. |
-| `headerRows` | 표시할 헤더 행을 위에서 아래 순서대로 지정합니다. 생략하면 `periodYearRow`, `periodMonthRow`, `periodCountRow`, `headerRow` 순서에서 중복을 제거해 구성합니다. |
-| `bodyStart` | 본문이 시작되는 원본 행 번호입니다. |
-| `firstColumn`, `lastColumn`, `firstRow`, `lastRow` | 표 범위의 시작·끝 좌표입니다. 열은 `B`, `BB` 같은 Excel 문자, 행은 1 기반 번호이며 양 끝을 포함합니다. |
-| `columns` | 연속 범위 대신 표시할 Excel 열을 배열 순서대로 지정합니다. |
-| `headerLabels` | Excel 열 문자를 키로 사용하는 명시적 제목 설정입니다. 원본 제목이 없는 표 등에 사용합니다. |
-| `forceEditableColumns` | 셀 주소 목록과 별도로 편집을 허용할 Excel 열입니다. |
-| `periodYearRow`, `periodMonthRow`, `periodCountRow` | 연도·월·기간 값이 있는 원본 행 번호입니다. 왼쪽 행 라벨도 같은 행에서 반환합니다. |
-| `periodFirstColumn` | 월별 열의 시작 Excel 열입니다. 이 열부터 연도·월 값이 모두 있는 열을 선택합니다. |
-| `addColumnAfter` | 새 열을 추가할 기준 Excel 열입니다. 생략 시 마지막 표시 열 뒤에 추가합니다. |
+| 필드                                                | 의미                                                                                                                                                           |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `headerRow`                                         | 기본 헤더의 원본 행 번호. `0`은 원본 헤더 행 없이 `headerLabels`로 제목을 지정하는 예외입니다. 본문의 실제 행 번호는 계속 1 기반입니다.                        |
+| `headerRows`                                        | 표시할 헤더 행을 위에서 아래 순서대로 지정합니다. 생략하면 `periodYearRow`, `periodMonthRow`, `periodCountRow`, `headerRow` 순서에서 중복을 제거해 구성합니다. |
+| `bodyStart`                                         | 본문이 시작되는 원본 행 번호입니다.                                                                                                                            |
+| `firstColumn`, `lastColumn`, `firstRow`, `lastRow`  | 표 범위의 시작·끝 좌표입니다. 열은 `B`, `BB` 같은 Excel 문자, 행은 1 기반 번호이며 양 끝을 포함합니다.                                                         |
+| `columns`                                           | 연속 범위 대신 표시할 Excel 열을 배열 순서대로 지정합니다.                                                                                                     |
+| `headerLabels`                                      | Excel 열 문자를 키로 사용하는 명시적 제목 설정입니다. 원본 제목이 없는 표 등에 사용합니다.                                                                     |
+| `forceEditableColumns`                              | 셀 주소 목록과 별도로 편집을 허용할 Excel 열입니다.                                                                                                            |
+| `inputRanges`                                       | SUMMARY의 직접 입력 A1 범위입니다. 기존 셀 색상/안내보다 우선하며 빈 배열은 조회 전용입니다. 신규 행은 본문 입력 열을 상속합니다.                              |
+| `readOnlyColumns`                                   | 직접 입력 범위와 겹치더라도 조회로 유지할 열입니다.                                                                                                            |
+| `protectedRowPattern`, `protectedRowColumns`        | 원본 지정 열의 표식과 패턴이 일치하면 해당 행 전체를 보호합니다.                                                                                               |
+| `clearColumnsOnEdit`                                | 입력 열 변경 시 함께 비울 숨김 열 목록입니다. 원래 입력으로 복원하면 숨김 값도 복원합니다.                                                                     |
+| `supplementalInputCells`                            | 본문 위 별도 입력 셀입니다. 현재 ShippingCostInput C3을 인접 항목명과 표시합니다.                                                                              |
+| `periodYearRow`, `periodMonthRow`, `periodCountRow` | 연도·월·기간 값이 있는 원본 행 번호입니다. 왼쪽 행 라벨도 같은 행에서 반환합니다.                                                                              |
+| `periodFirstColumn`                                 | 월별 열의 시작 Excel 열입니다. 이 열부터 연도·월 값이 모두 있는 열을 선택합니다.                                                                               |
+| `addColumnAfter`                                    | 새 열을 추가할 기준 Excel 열입니다. 생략 시 마지막 표시 열 뒤에 추가합니다.                                                                                    |
 
-`rowPolicy`, `columnPolicy`는 기존 표시 문구를 유지합니다. 공통 테이블은 `가능`일 때 행·열 추가 동작을 활성화하며, 나머지 문구를 임의로 `가능`으로 변환하지 않습니다. `LNG Demand Mode`의 열 추가와 전용 테이블의 편집 동작에는 별도 예외가 있습니다.
+`rowPolicy`, `columnPolicy`는 SUMMARY 문구를 그대로 유지합니다. `아래 행 추가`, `아래로 행 추가`, `표 안에 추가`, `선택표 동시 확장`은 행 편집을 허용하고, 고정 범위·국가 제한·조회 표는 행 편집을 막습니다. `연도 추가`, `연월 추가`, `오른쪽 월 추가`는 기간 열 추가를 허용합니다. 세로 연도 행은 행 추가로 처리하고 고정 월/현재 코드 고정 표의 열 추가는 막습니다.
 
 ## 표 메타데이터와 다중 헤더 예시
 
@@ -204,10 +214,10 @@
       "sheetName": "BCInput",
       "name": "Base Case Hydrogen Demand",
       "description": "국가별 수소 관련 가스 수요 기준정보",
-      "location": "BB2:BE290",
-      "rowPolicy": "기존 기준 유지",
-      "columnPolicy": "기존 기준 유지",
-      "coordinates": { "headerRow": 3, "bodyStart": 4 }
+      "location": "BB2:BD290",
+      "rowPolicy": "아래 행 추가",
+      "columnPolicy": "고정",
+      "coordinates": { "headerRow": 3, "headerRows": [2, 3], "bodyStart": 4, "inputRanges": ["BB4:BD290"] }
     }
   ]
 }

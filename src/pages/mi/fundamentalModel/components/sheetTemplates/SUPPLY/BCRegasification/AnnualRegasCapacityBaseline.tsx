@@ -6,14 +6,15 @@ import RegasEditableTable from '@/pages/mi/fundamentalModel/components/sheetTemp
 import { getRegasAnnualYearFields, getRegasInputRows } from '@/pages/mi/fundamentalModel/components/sheetTemplates/SUPPLY/regasRowLink'
 
 const AnnualRegasCapacityBaseline = ({ data, draft, onDraftChange }: SheetTemplateProps) => {
-  const originals = useMemo(() => getRegasInputRows(data, 8), [data])
-  const originalRowNumbers = useMemo(() => new Map(originals.map(({ id, rowNumber }) => [id, rowNumber])), [originals])
-  const inputCells = useMemo(() => new Set(data.inputCells ?? []), [data.inputCells])
+  const originals = useMemo(() => getRegasInputRows(data, 8, 379), [data])
   const annualYearFields = useMemo(() => getRegasAnnualYearFields(data), [data])
   const header = useMemo(() => data.rows.find(({ rowNumber }) => rowNumber === 7), [data])
-  const [state, setState] = useState(() => ({ rows: draft?.rows ?? originals, addedRowIds: draft?.addedRowIds ?? [] }))
-  const [addedColumns, setAddedColumns] = useState(() => draft?.addedColumns ?? [])
   const firstNewRowId = useMemo(() => Math.max(0, ...data.rows.map(({ id }) => id)) + 1, [data])
+  const [state, setState] = useState(() => ({
+    rows: draft?.rows ?? (originals.length ? originals : [{ id: firstNewRowId, rowNumber: 8 }]),
+    addedRowIds: draft?.addedRowIds ?? (originals.length ? [] : [firstNewRowId]),
+  }))
+  const [addedColumns, setAddedColumns] = useState(() => draft?.addedColumns ?? [])
   const nextId = useRef(Math.max(firstNewRowId, ...state.rows.map(({ id }) => id + 1)))
   const nextColumnIndex = useRef(
     Math.max(
@@ -51,9 +52,6 @@ const AnnualRegasCapacityBaseline = ({ data, draft, onDraftChange }: SheetTempla
       rows={state.rows}
       originalRows={originals}
       firstNewRowId={firstNewRowId}
-      isReadOnly={(row, field) =>
-        originalRowNumbers.has(row.id) && !inputCells.has(originalRowNumbers.get(row.id)! * 16384 + Number(field.replace('column', '')))
-      }
       onInsert={(anchorId, position) => {
         setState((current) => {
           const id = nextId.current++
@@ -80,10 +78,16 @@ const AnnualRegasCapacityBaseline = ({ data, draft, onDraftChange }: SheetTempla
         ])
       }}
       onDelete={(id) =>
-        setState((current) => ({
-          rows: current.rows.filter((row) => row.id !== id).map((row, rowIndex) => ({ ...row, rowNumber: rowIndex + 8 })),
-          addedRowIds: current.addedRowIds.filter((addedId) => addedId !== id),
-        }))
+        setState((current) => {
+          const rows = current.rows.filter((row) => row.id !== id)
+          const addedRowIds = current.addedRowIds.filter((addedId) => addedId !== id)
+          if (!rows.length) {
+            const emptyId = nextId.current++
+            rows.push({ id: emptyId, rowNumber: 8 })
+            addedRowIds.push(emptyId)
+          }
+          return { rows: rows.map((row, rowIndex) => ({ ...row, rowNumber: rowIndex + 8 })), addedRowIds }
+        })
       }
       onUpdate={(id, field, value) =>
         setState((current) => ({ ...current, rows: current.rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)) }))

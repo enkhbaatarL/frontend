@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Fundamental Model input sources and sheet data
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Proposal for /mi/fundamental-model: open run popup, load sources, select the server default,
     fetch inputs by source key, and render Demand/Supply/Trade/Output from the response.
@@ -114,10 +114,10 @@ paths:
                             sheetName: BCInput
                             name: Base Case Hydrogen Demand
                             description: 국가별 수소 관련 가스 수요 기준정보
-                            location: BB2:BE290
-                            rowPolicy: 기존 기준 유지
-                            columnPolicy: 기존 기준 유지
-                            coordinates: { headerRow: 3, bodyStart: 4 }
+                            location: BB2:BD290
+                            rowPolicy: 아래 행 추가
+                            columnPolicy: 고정
+                            coordinates: { headerRow: 3, headerRows: [2, 3], bodyStart: 4, inputRanges: [BB4:BD290] }
                         data:
                           columns:
                             - { field: column53, headerName: BB }
@@ -306,15 +306,13 @@ components:
         rowPolicy:
           type: string
           description: |
-            Preserve the existing policy text. Current values are 가능, 제한, 기존 기준 유지,
-            연결 갱신, 대상 아님, 연결 필요, 자동 연결, and 조건부.
-            The generic table enables row additions/deletions only for 가능; specialized tables have their own rules.
+            Preserve the SUMMARY policy text. 아래 행 추가, 아래로 행 추가, 표 안에 추가,
+            and 선택표 동시 확장 allow row changes. Fixed-range, lookup and country-limited tables do not.
         columnPolicy:
           type: string
           description: |
-            Preserve the existing policy text. Current values are 고정, 가능, 기존 기준 유지,
-            연결 갱신, 대상 아님, and 자동 연결.
-            The generic table enables column addition only for 가능, except LNG Demand Mode.
+            Preserve the SUMMARY policy text. 연도 추가 and monthly 연월/월 추가 policies allow
+            period columns. 고정, 현재 코드 고정, 세로 연도 행 and 월 1~12 고정 do not.
         coordinates:
           $ref: '#/components/schemas/SheetCoordinates'
     SheetCoordinates:
@@ -322,7 +320,7 @@ components:
       description: |
         Source worksheet coordinates. Row numbers are one-based except headerRow=0, which denotes a synthetic header.
         Column references use Excel letters, not columnN field names. Bounds are inclusive.
-        Required on every SheetTable. All 151 current v3 tables provide coordinates.
+        Required on every SheetTable. The 2026-10-06 Demand/Trade/Output V8 and Supply V6 SUMMARY defines 99 visible tables.
       required: [headerRow, bodyStart]
       properties:
         headerRow:
@@ -335,6 +333,7 @@ components:
             Header rows in top-to-bottom display order. If omitted, the client uses periodYearRow,
             periodMonthRow, periodCountRow, then headerRow, removing duplicates.
             0 has the same synthetic-header meaning as headerRow=0; it is not a worksheet row number.
+            All displayed headers, including automatically added period headers, are read-only by user instruction.
           items: { type: integer, minimum: 0 }
           example: [7, 8, 9, 10]
         bodyStart:
@@ -357,6 +356,38 @@ components:
         forceEditableColumns:
           type: array
           description: Excel columns made editable in addition to the inputCells addresses.
+          items: { type: string }
+        inputRanges:
+          type: array
+          description: |
+            Authoritative direct-input A1 ranges from SUMMARY, including blank inputs.
+            When provided, replace legacy inputCells/forceEditableColumns for this table; [] means lookup only.
+            New rows inherit editable columns from body ranges. New period columns remain subject to protected rows.
+            Displayed header cells are always read-only, even if legacy SUMMARY metadata includes them in an input range.
+          items: { type: string, example: B12:C2000 }
+        readOnlyColumns:
+          type: array
+          description: Excel columns that remain lookup values even when included in an input range (for example BCLiquefaction D/N).
+          items: { type: string }
+        protectedRowPattern:
+          type: string
+          description: Case-insensitive pattern protecting the entire row, including added periods, such as LNG Demand Sub-Total/TOTAL.
+        protectedRowColumns:
+          type: array
+          description: Excel label columns searched by protectedRowPattern. Evaluate original labels so editing cannot unlock totals.
+          items: { type: string }
+        clearColumnsOnEdit:
+          type: object
+          description: |
+            Input column to hidden columns cleared on an edit, preserving other source fields.
+            Demand Overwrite I clears H and Q clears P to prevent legacy BCM from overriding Mt.
+            Restoring the original input restores the associated original hidden values.
+          additionalProperties:
+            type: array
+            items: { type: string }
+        supplementalInputCells:
+          type: array
+          description: Direct inputs above the table body, displayed separately with the adjacent label (ShippingCostInput C3).
           items: { type: string }
         periodYearRow:
           type: integer

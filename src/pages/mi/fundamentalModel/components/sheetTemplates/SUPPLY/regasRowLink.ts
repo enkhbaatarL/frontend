@@ -27,7 +27,8 @@ const getCapacity = (value: string | number | undefined) => {
 export const getRegasAnnualYearFields = (data: FundamentalModelSheetData): RegasYearField[] => {
   const header = data.rows.find(({ rowNumber }) => rowNumber === 7)
   return data.columns.flatMap(({ field }) => {
-    if (Number(field.replace('column', '')) < 6) return []
+    const column = Number(field.replace('column', ''))
+    if (column < 6 || column > 16) return []
     const year = getYear(header?.[field])
     return year === undefined ? [] : [{ field, year }]
   })
@@ -37,15 +38,19 @@ export const getRegasMonthFields = (data: FundamentalModelSheetData): RegasMonth
   const years = data.rows.find(({ rowNumber }) => rowNumber === 9)
   const months = data.rows.find(({ rowNumber }) => rowNumber === 10)
   return data.columns.flatMap(({ field }) => {
-    if (Number(field.replace('column', '')) < 7) return []
+    const column = Number(field.replace('column', ''))
+    if (column < 7 || column > 114) return []
     const year = getYear(years?.[field])
     const month = Number(months?.[field])
     return year === undefined || !Number.isInteger(month) || month < 1 || month > 12 ? [] : [{ field, year, month }]
   })
 }
 
-export const getRegasInputRows = (data: FundamentalModelSheetData, firstRow: number) =>
-  data.rows.filter((row) => row.rowNumber >= firstRow && [1, 2, 3, 4, 5].some((index) => String(row[`column${index}`] ?? '').trim()))
+export const getRegasInputRows = (data: FundamentalModelSheetData, firstRow: number, lastRow: number) =>
+  data.rows.filter(
+    (row) =>
+      row.rowNumber >= firstRow && row.rowNumber <= lastRow && [1, 2, 3, 4, 5].some((index) => String(row[`column${index}`] ?? '').trim()),
+  )
 
 export const createLinkedRegasRow = (
   source: FundamentalModelSheetDataRow,
@@ -67,35 +72,71 @@ export const createLinkedRegasRow = (
   return row
 }
 
+export const getLinkedRegasColumns = (data: FundamentalModelSheetData, sourceDraft: SheetTemplateDraft | undefined) => {
+  const months = getRegasMonthFields(data)
+  let nextColumnIndex = Math.max(0, ...data.columns.map(({ field }) => Number(field.replace('column', '')))) + 1
+  return (sourceDraft?.addedColumns ?? []).flatMap(({ year }) => {
+    const annualYear = getYear(year)
+    if (annualYear === undefined) return []
+    return Array.from({ length: 12 }, (_, index) => index + 1)
+      .filter((month) => !months.some((column) => column.year === annualYear && column.month === month))
+      .map((month) => ({
+        field: `column${nextColumnIndex++}`,
+        label: `${month}월`,
+        year: String(annualYear),
+        month: String(month),
+      }))
+  })
+}
+
 export const reconcileRegasRows = (
   originals: FundamentalModelSheetDataRow[],
   targetDraft: SheetTemplateDraft | undefined,
   sourceDraft: SheetTemplateDraft | undefined,
   months: RegasMonthField[],
+  sourceData?: FundamentalModelSheetData,
 ) => {
-  const rows = [...(targetDraft?.rows ?? originals)]
-  const deleted = targetDraft?.deletedLinkedSourceRowIds ?? []
-  const snapshots = { ...targetDraft?.linkedSourceSnapshots }
-  const annualYears = sourceDraft?.annualYearFields ?? []
-
-  for (const source of sourceDraft?.rows.filter((row) => sourceDraft.addedRowIds?.includes(row.id)) ?? []) {
-    if (deleted.includes(source.id)) continue
-    const derived = createLinkedRegasRow(source, annualYears, months)
-    const index = rows.findIndex((row) => row.id === derived.id)
-    const previousSnapshot = snapshots[source.id]
-
-    if (index < 0) {
-      rows.push({ ...derived, rowNumber: Math.max(source.rowNumber + 3, ...rows.map(({ rowNumber }) => rowNumber + 1), 11) })
-    } else if (previousSnapshot) {
-      const updated = { ...rows[index] }
-      for (const [field, value] of Object.entries(derived)) {
-        if (field === 'id' || field === 'rowNumber') continue
-        if (String(updated[field] ?? '') === String(previousSnapshot[field] ?? '')) updated[field] = value
-      }
-      rows[index] = updated
+  const savedRows = new Map(targetDraft?.rows.map((row) => [row.id, row]))
+  const directInputFields = months.filter(({ year }) => year === 2023 || year === 2024).map(({ field }) => field)
+  const restoreInputs = (row: FundamentalModelSheetDataRow) => {
+    const saved = savedRows.get(row.id)
+    const restored = { ...row }
+    for (const field of directInputFields) {
+      if (saved?.[field] !== undefined) restored[field] = saved[field]
     }
-    snapshots[source.id] = derived
+    return restored
   }
+  if (!sourceData) return { rows: originals.map(restoreInputs) }
 
-  return { rows, deletedLinkedSourceRowIds: deleted, linkedSourceSnapshots: snapshots }
+  const sourceOriginals = getRegasInputRows(sourceData, 8, 379)
+  const sourceOriginalsById = new Map(sourceOriginals.map((row) => [row.id, row]))
+  const targetOriginalsByRowNumber = new Map(originals.map((row) => [row.rowNumber, row]))
+  const originalYears = getRegasAnnualYearFields(sourceData)
+  const annualYears = sourceDraft?.annualYearFields ?? originalYears
+  const rows = (sourceDraft?.rows ?? sourceOriginals).map((source, index) => {
+    const originalSource = sourceOriginalsById.get(source.id)
+    const originalTarget = originalSource ? targetOriginalsByRowNumber.get(originalSource.rowNumber + 3) : undefined
+    const derived = createLinkedRegasRow(source, annualYears, months)
+    const row = restoreInputs({ ...derived, ...originalTarget, id: originalTarget?.id ?? derived.id, rowNumber: index + 11 })
+
+    for (let column = 1; column <= 5; column += 1) row[`column${column}`] = derived[`column${column}`]
+    if (!originalTarget || annualYears.some(({ field }) => getCapacity(source[field]) !== getCapacity(originalSource?.[field])))
+      row.column6 = derived.column6
+
+    for (const { field, year } of months) {
+      if (year === 2023 || year === 2024) continue
+      const annualField = annualYears.find((column) => column.year === year)?.field
+      const originalAnnualField = originalYears.find((column) => column.year === year)?.field
+      if (
+        !originalTarget ||
+        originalTarget[field] === undefined ||
+        getCapacity(annualField ? source[annualField] : undefined) !==
+          getCapacity(originalAnnualField ? originalSource?.[originalAnnualField] : undefined)
+      )
+        row[field] = derived[field]
+    }
+    return row
+  })
+
+  return { rows }
 }

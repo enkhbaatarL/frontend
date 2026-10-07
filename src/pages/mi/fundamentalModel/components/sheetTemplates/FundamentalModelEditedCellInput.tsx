@@ -1,6 +1,7 @@
 import { Box, Stack, Tooltip } from '@mui/material'
 
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
+import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 
 interface FundamentalModelEditedCellInputProps {
   value: string | number
@@ -8,6 +9,8 @@ interface FundamentalModelEditedCellInputProps {
   isNew?: boolean
   unit?: string
   textAlign: 'left' | 'right'
+  options?: SelectMenuItem<string>[]
+  ariaLabel?: string
   onChange: (value: string) => void
   onBlur: () => void
   onRestore: () => void
@@ -19,6 +22,8 @@ const FundamentalModelEditedCellInput = ({
   isNew = false,
   unit = '',
   textAlign,
+  options,
+  ariaLabel,
   onChange,
   onBlur,
   onRestore,
@@ -30,28 +35,52 @@ const FundamentalModelEditedCellInput = ({
   }
   const content = (
     <Stack direction="row" alignItems="center" gap="2px" width="100%" minWidth={0}>
-      <Box
-        component="input"
-        value={value}
-        placeholder={isNew ? '-' : undefined}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-        fontFamily="inherit"
-        fontSize="12px"
-        fontWeight={500}
-        color="contentText.Normal"
-        textAlign={textAlign}
-        width="100%"
-        minWidth="54px"
-        height="28px"
-        padding="8px 12px"
-        border="1px solid"
-        borderColor={isModified ? '#EFA460' : 'contentBorder.Normal'}
-        borderRadius="10px"
-        bgcolor={isModified ? 'rgba(245, 159, 0, 0.05)' : 'commonColor.White'}
-        boxSizing="border-box"
-        sx={{ '&:focus, &:focus-visible': { outline: 'none', boxShadow: 'none' } }}
-      />
+      {options ? (
+        <MISelectMenu<string>
+          variant="outlined"
+          selected={String(value)}
+          onSelected={onChange}
+          items={options}
+          aria-label={ariaLabel}
+          closeOnScroll
+          zIndex={1500}
+          paperProps={{ sx: { minWidth: '160px' } }}
+          sx={{
+            width: '100%',
+            height: '28px',
+            ...(isModified && {
+              '&, &:hover:not(:disabled)': {
+                borderColor: '#EFA460',
+                bgcolor: 'rgba(245, 159, 0, 0.05)',
+              },
+            }),
+          }}
+        />
+      ) : (
+        <Box
+          component="input"
+          aria-label={ariaLabel}
+          value={value}
+          placeholder={isNew ? '-' : undefined}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
+          fontFamily="inherit"
+          fontSize="12px"
+          fontWeight={500}
+          color="contentText.Normal"
+          textAlign={textAlign}
+          width="100%"
+          minWidth="54px"
+          height="28px"
+          padding="8px 12px"
+          border="1px solid"
+          borderColor={isModified ? '#EFA460' : 'contentBorder.Normal'}
+          borderRadius="10px"
+          bgcolor={isModified ? 'rgba(245, 159, 0, 0.05)' : 'commonColor.White'}
+          boxSizing="border-box"
+          sx={{ '&:focus, &:focus-visible': { outline: 'none', boxShadow: 'none' } }}
+        />
+      )}
       {isModified && (
         <Box
           component="button"
@@ -81,6 +110,7 @@ const FundamentalModelEditedCellInput = ({
     <Tooltip
       title={tooltipTitle}
       placement="top-start"
+      followCursor
       disableHoverListener={!isModified}
       slotProps={{
         tooltip: {

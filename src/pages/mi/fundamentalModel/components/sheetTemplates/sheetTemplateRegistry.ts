@@ -13,11 +13,10 @@ export type FundamentalModelInputKind = 'DEMAND' | 'SUPPLY' | 'TRADE' | 'OUTPUT'
 export interface SheetTemplateDraft {
   monthlyColumns?: MonthlyColumn[]
   rows: FundamentalModelSheetDataRow[]
+  headerRows?: FundamentalModelSheetDataRow[]
   addedColumns?: Array<{ field: string; label: string; year?: string; month?: string; period?: string }>
   addedRowIds?: number[]
   annualYearFields?: RegasYearField[]
-  deletedLinkedSourceRowIds?: number[]
-  linkedSourceSnapshots?: Record<number, FundamentalModelSheetDataRow>
 }
 
 export interface SheetTemplateProps {
@@ -25,6 +24,7 @@ export interface SheetTemplateProps {
   restrictColumnChangesToEnd?: boolean
   draft?: SheetTemplateDraft
   linkedSourceDraft?: SheetTemplateDraft
+  linkedSourceData?: FundamentalModelSheetData
   onDraftChange?: (draft: SheetTemplateDraft) => void
 }
 

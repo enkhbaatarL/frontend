@@ -272,7 +272,7 @@ const PNGProductionAdjustment = ({ data, draft, onDraftChange }: SheetTemplatePr
             '& [role="row"]:nth-of-type(even) [role="cell"]': { bgcolor: 'gray.5' },
             '& [role="row"]:hover [role="cell"]': { bgcolor: 'gray.10' },
             '& [role="row"][data-menu-open="true"] [role="cell"]': { bgcolor: 'gray.10' },
-            '& [role="row"][data-new="true"] [role="cell"]': { bgcolor: 'commonColor.Primarylight1' },
+            '& [role="row"][data-new="true"] [role="cell"]': { bgcolor: 'rgba(245, 159, 0, 0.1)' },
             '& [data-row-action="true"]': {
               width: '36px',
               minWidth: '36px',

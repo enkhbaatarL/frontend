@@ -18,9 +18,64 @@ export interface SummaryTemplateLayout {
   periodMonthRow?: number
   periodCountRow?: number
   addColumnAfter?: string
+  inputRanges?: Array<{ firstColumn: number; lastColumn: number; firstRow: number; lastRow: number }>
+  readOnlyFields: string[]
+  protectedRowPattern?: string
+  protectedRowFields: string[]
+  clearFieldsOnEdit: Record<string, string[]>
 }
 
 const decodeColumn = (letters: string) => [...letters].reduce((value, letter) => value * 26 + letter.charCodeAt(0) - 64, 0) - 1
+
+export const isSummaryTemplateRowProtected = (layout: SummaryTemplateLayout, row: FundamentalModelSheetData['rows'][number]) =>
+  Boolean(
+    layout.protectedRowPattern &&
+      layout.protectedRowFields.some((field) => new RegExp(layout.protectedRowPattern!, 'i').test(String(row[field] ?? ''))),
+  )
+
+export const isSummaryTemplateCellEditable = (
+  layout: SummaryTemplateLayout,
+  row: FundamentalModelSheetData['rows'][number],
+  field: string,
+  inputCells: Set<number>,
+  isNewRow = false,
+  isNewColumn = false,
+) => {
+  if (layout.headerRows.includes(row.rowNumber) && (layout.fields.includes(field) || isNewColumn)) return false
+  if (layout.readOnlyFields.includes(field) || isSummaryTemplateRowProtected(layout, row)) return false
+  if (layout.inputRanges?.length === 0) return false
+  if (isNewColumn) return true
+  if (layout.inputRanges) {
+    const column = Number(field.replace('column', ''))
+    return layout.inputRanges.some(
+      (range) =>
+        column >= range.firstColumn &&
+        column <= range.lastColumn &&
+        (isNewRow ? range.lastRow >= layout.bodyStart : row.rowNumber >= range.firstRow && row.rowNumber <= range.lastRow),
+    )
+  }
+  return (
+    layout.forceEditableFields.includes(field) ||
+    (isNewRow ? layout.editableFields.includes(field) : inputCells.has(row.rowNumber * 16384 + Number(field.replace('column', ''))))
+  )
+}
+
+export const updateSummaryTemplateCell = (
+  layout: SummaryTemplateLayout,
+  row: FundamentalModelSheetData['rows'][number],
+  field: string,
+  value: string | number,
+  originalRow?: FundamentalModelSheetData['rows'][number],
+) => ({
+  ...row,
+  [field]: value,
+  ...Object.fromEntries(
+    (layout.clearFieldsOnEdit[field] ?? []).map((hiddenField) => [
+      hiddenField,
+      originalRow && String(value) === String(originalRow[field] ?? '') ? (originalRow[hiddenField] ?? '') : '',
+    ]),
+  ),
+})
 
 export const getSummaryTemplateLayout = (
   summary: SummaryTemplateDefinition,
@@ -142,5 +197,24 @@ export const getSummaryTemplateLayout = (
     periodMonthRow: coordinates?.periodMonthRow,
     periodCountRow: coordinates?.periodCountRow,
     addColumnAfter: coordinates?.addColumnAfter && `column${decodeColumn(coordinates.addColumnAfter)}`,
+    inputRanges: coordinates?.inputRanges?.map((range) => {
+      const match = range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)
+      if (!match) throw new Error(`입력 범위가 올바르지 않습니다: ${range}`)
+      return {
+        firstColumn: decodeColumn(match[1]),
+        lastColumn: decodeColumn(match[3]),
+        firstRow: Number(match[2]),
+        lastRow: Number(match[4]),
+      }
+    }),
+    readOnlyFields: coordinates?.readOnlyColumns?.map((column) => `column${decodeColumn(column)}`) ?? [],
+    protectedRowPattern: coordinates?.protectedRowPattern,
+    protectedRowFields: coordinates?.protectedRowColumns?.map((column) => `column${decodeColumn(column)}`) ?? [],
+    clearFieldsOnEdit: Object.fromEntries(
+      Object.entries(coordinates?.clearColumnsOnEdit ?? {}).map(([column, hiddenColumns]) => [
+        `column${decodeColumn(column)}`,
+        hiddenColumns.map((hiddenColumn) => `column${decodeColumn(hiddenColumn)}`),
+      ]),
+    ),
   }
 }
