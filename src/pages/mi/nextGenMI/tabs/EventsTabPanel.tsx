@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom'
 
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import ArrowDown from '@/components/common/icons/ArrowDown'
+import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
 import MISearchInput from '@/components/common/input/MISearchInput'
 import MIDateRangePickerMenu, { type DateRange } from '@/components/common/menu/MIDateRangePickerMenu'
 import MISelectMenu from '@/components/common/menu/MISelectMenu'
@@ -22,14 +24,12 @@ import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextG
 import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
 import {
-  EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
   getEventDesignOccupiedMessage,
-  isScenarioDesignStatusOccupiedByOther,
   normalizeEventDesignStep,
-  normalizeScenarioDesignStatusCode,
   resolveSelectionDesignStateFromStatus,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventIndexSignalCell from '@/pages/mi/nextGenMI/components/event/EventIndexSignalCell'
+import EventLinkedScenarioGroupsExpandPanel from '@/pages/mi/nextGenMI/components/event/EventLinkedScenarioGroupsExpandPanel'
 import EventRecommendedStarCell from '@/pages/mi/nextGenMI/components/event/EventRecommendedStarCell'
 import EventScenarioGenerateButton from '@/pages/mi/nextGenMI/components/event/EventScenarioGenerateButton'
 import EventSelectionActionBar, { type EventSelectionItem } from '@/pages/mi/nextGenMI/components/event/EventSelectionActionBar'
@@ -50,7 +50,6 @@ import nextGenMIEventService, {
   type GetEventsParams,
 } from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
-import nextGenMIScenarioGroupService from '@/service/mi/nextGenMI/scenarioGroup'
 import useDialog from '@/store/useDialog'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
@@ -94,6 +93,7 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
 const EventsTabPanel = () => {
   const navigate = useNavigate()
   const [isKeywordAlertOpen, setIsKeywordAlertOpen] = useState(false)
+  const [expandedLinkedGroupsEventId, setExpandedLinkedGroupsEventId] = useState<number | null>(null)
   const { onHide, onShow } = useDialog()
 
   const [typeFilter, setTypeFilter] = useNextGenMIListState<(typeof TYPE_FILTER_OPTIONS)[number]['value']>('events.typeFilter', 'all')
@@ -108,6 +108,7 @@ const EventsTabPanel = () => {
   const [mineOnly, setMineOnly] = useNextGenMIListState('events.mineOnly', false)
   const sourceFilterBeforeMineOnlyRef = useRef<EventSourceFilter | null>(null)
   const [selectedEvents, setSelectedEvents] = useNextGenMIListState<EventSelectionItem[]>('events.selectedEvents', [])
+  const didAutoExpandLinkedGroupsRef = useRef(false)
 
   useEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
@@ -167,10 +168,7 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page, setPagination])
 
-  const rawTableRows = useMemo(
-    () => applyUserRegisteredEventListDummy(data?.events?.detail ?? [], pagination.page),
-    [data?.events?.detail, pagination.page],
-  )
+  const rawTableRows = useMemo(() => applyUserRegisteredEventListDummy(data?.events?.detail ?? [], pagination.page), [data?.events?.detail, pagination.page])
   const tableRows = useMemo(
     () =>
       rawTableRows.filter((row) => {
@@ -182,13 +180,22 @@ const EventsTabPanel = () => {
     [mineOnly, rawTableRows, sourceFilter],
   )
 
+  // 첫 로드 시 연결 그룹이 있는 첫 행을 펼쳐 ∨/∧ 상태를 한 화면에 보이게 한다
+  useEffect(() => {
+    if (didAutoExpandLinkedGroupsRef.current) return
+    const firstLinked = tableRows.find((row) => (row.scenarioGroupCount ?? 0) > 0)
+    if (!firstLinked) return
+    didAutoExpandLinkedGroupsRef.current = true
+    setExpandedLinkedGroupsEventId(firstLinked.eventId)
+  }, [tableRows])
+
   const selectedEventIds = useMemo(() => selectedEvents.map((item) => item.eventId), [selectedEvents])
 
+  // 2개 이상 선택 시 동일 조합 목록 조회 (1개면 API가 빈 목록 반환)
   const { data: selectionDesignStatus, isLoading: selectionDesignStatusLoading } = useQuery({
     queryKey: ['nextGenMIScenarioDesignStatus', selectedEventIds],
     queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: selectedEventIds }),
-    enabled: selectedEventIds.length > 0,
-    refetchInterval: (query) => (normalizeScenarioDesignStatusCode(query.state.data?.designStatus) === 'creating' ? 5000 : false),
+    enabled: selectedEventIds.length >= 2,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -221,81 +228,18 @@ const EventsTabPanel = () => {
     [selectedEvents, selectionDesignStatus],
   )
 
-  const handleSelectedEventsDesignClick = useCallback(async () => {
+  const handleSelectedEventsDesignClick = useCallback(() => {
     if (selectedEvents.length === 0) return
 
-    const currentStatus =
-      selectionDesignStatus ??
-      (await nextGenMIScenarioDesignService
-        .getScenarioDesignStatus({ miEventIds: selectedEvents.map((item) => item.eventId) })
-        .catch(() => undefined))
-    const currentState = resolveSelectionDesignStateFromStatus(currentStatus, selectedEvents)
-    if (!currentState) return
-
-    // Case 2. 동일 조합을 다른 사용자가 진행 중 - 읽기 전용으로 확인
-    if (currentState.mode === 'creating' && currentState.locked) {
-      onShow({
-        title: '시나리오 설계 확인',
-        width: 450,
-        children: getEventDesignOccupiedMessage(currentState.occupantUserName),
-        actions: [
-          {
-            label: '닫기',
-            variant: 'outlined',
-            color: 'gray',
-            onClick: onHide,
-          },
-          {
-            label: '확인',
-            onClick: () => {
-              onHide()
-              navigate(
-                getNextGenMIScenarioDesignPath({
-                  eventIds: selectedEvents.map((item) => item.eventId),
-                  scenarioGroupId: currentState.scenarioGroupId,
-                }),
-                {
-                  state: {
-                    eventName: currentState.primaryEventName,
-                    eventIds: selectedEvents.map((item) => item.eventId),
-                    scenarioGroupId: currentState.scenarioGroupId ?? undefined,
-                    designStep: currentState.designStep ?? null,
-                    readOnly: true,
-                    occupantUserName: currentState.occupantUserName,
-                  },
-                },
-              )
-            },
-          },
-        ],
-      })
-      return
-    }
-
-    // Case 3. 동일 조합의 시나리오 그룹이 완료된 경우 - 상세로 이동 (신규 생성 없음)
-    if (currentState.mode === 'created' && currentState.scenarioGroupId !== undefined && currentState.scenarioGroupId !== null) {
-      navigate(getNextGenMIScenarioGroupDetailPath(currentState.scenarioGroupId), {
-        state: { eventName: currentState.primaryEventName },
-      })
-      return
-    }
-
-    // Case 1. 신규 생성 / Case 3. 내가 진행 중 - 현재 단계 설계 화면으로 이동
-    navigate(
-      getNextGenMIScenarioDesignPath({
+    const primary = selectedEvents[0]
+    // 동일 조합이 있어도 항상 새 그룹 생성 (scenarioGroupId 없이 진입)
+    navigate(getNextGenMIScenarioDesignPath({ eventIds: selectedEvents.map((item) => item.eventId) }), {
+      state: {
+        eventName: primary.eventName,
         eventIds: selectedEvents.map((item) => item.eventId),
-        scenarioGroupId: currentState.scenarioGroupId,
-      }),
-      {
-        state: {
-          eventName: currentState.primaryEventName,
-          eventIds: selectedEvents.map((item) => item.eventId),
-          scenarioGroupId: currentState.scenarioGroupId ?? undefined,
-          designStep: currentState.designStep ?? null,
-        },
       },
-    )
-  }, [navigate, onHide, onShow, selectedEvents, selectionDesignStatus])
+    })
+  }, [navigate, selectedEvents])
 
   const handleEventNameClick = useCallback(
     (row: EventListItem) =>
@@ -305,55 +249,28 @@ const EventsTabPanel = () => {
     [navigate],
   )
 
+  const handleToggleLinkedGroupsExpand = useCallback((eventId: number) => {
+    setExpandedLinkedGroupsEventId((prev) => (prev === eventId ? null : eventId))
+  }, [])
+
   const handleScenarioClick = useCallback(
-    async (row: EventListItem) => {
-      const currentStatus = await nextGenMIScenarioDesignService
-        .getScenarioDesignStatus({ miEventIds: [row.eventId] })
-        .catch(() => undefined)
-      const designStatus = normalizeScenarioDesignStatusCode(currentStatus?.designStatus)
-
-      if (designStatus === 'unavailable') {
-        onShow({
-          title: '시나리오 설계를 시작할 수 없습니다',
-          width: 450,
-          children: EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
-        })
-        return
-      }
-
-      if (isScenarioDesignStatusOccupiedByOther(currentStatus)) {
-        onShow({
-          title: '시나리오 설계를 시작할 수 없습니다',
-          width: 450,
-          children: getEventDesignOccupiedMessage(currentStatus?.occupantUserName),
-        })
-        return
-      }
-
-      if (designStatus === 'created' && currentStatus?.scenarioGroupId !== undefined && currentStatus.scenarioGroupId !== null) {
-        navigate(getNextGenMIScenarioGroupDetailPath(currentStatus.scenarioGroupId), {
-          state: { eventName: row.eventName },
-        })
-        return
-      }
-
-      navigate(getNextGenMIScenarioDesignPath({ eventIds: [row.eventId], scenarioGroupId: currentStatus?.scenarioGroupId }), {
+    (row: EventListItem) => {
+      // 행 시나리오 버튼: 항상 신규 설계 진입. 기존 연결 그룹은 펼침 패널 [보기]로 진입
+      navigate(getNextGenMIScenarioDesignPath({ eventIds: [row.eventId] }), {
         state: {
           eventName: row.eventName,
           eventIds: [row.eventId],
-          scenarioGroupId: currentStatus?.scenarioGroupId ?? undefined,
-          designStep: normalizeEventDesignStep(currentStatus?.designStep) ?? null,
         },
       })
     },
-    [navigate, onShow],
+    [navigate],
   )
 
   const handleConnectedGroupContinue = useCallback(
-    async (row: EventListItem, group: EventLinkedScenarioGroup) => {
+    (row: EventListItem, group: EventLinkedScenarioGroup) => {
       const groupStatus = (group.status ?? group.stage ?? '').toLowerCase()
 
-      // 완료된 그룹만 상세로 이동. 1/2단계는 시나리오 설계 화면으로 이동
+      // 완료 그룹: 상세. 진행 중: 설계 화면 재연결(GET creation/stream)
       if (groupStatus === 'created' || groupStatus === 'realized') {
         navigate(getNextGenMIScenarioGroupDetailPath(group.scenarioGroupId), {
           state: { eventName: row.eventName },
@@ -362,12 +279,7 @@ const EventsTabPanel = () => {
       }
 
       if (group.mine === false) {
-        const groupDetail = await nextGenMIScenarioGroupService.getScenarioGroupDetail(group.scenarioGroupId).catch(() => undefined)
-        const miEventIds = groupDetail?.eventBundles?.map((event) => event.eventId)
-        const designStatus = await nextGenMIScenarioDesignService
-          .getScenarioDesignStatus({ miEventIds: miEventIds?.length ? miEventIds : [row.eventId] })
-          .catch(() => undefined)
-        const occupantUserName = designStatus?.scenarioGroupId === group.scenarioGroupId ? designStatus.occupantUserName?.trim() : undefined
+        const occupantUserName = group.createdByName?.trim()
         onShow({
           title: '시나리오 설계 확인',
           width: 450,
@@ -587,25 +499,71 @@ const EventsTabPanel = () => {
       {
         field: 'scenario',
         headerName: '시나리오',
-        width: 120,
+        width: 80,
         align: 'center',
         sortable: false,
         renderCell: (params) => (
-          <EventScenarioGenerateButton
-            recommended={params.row.isScenarioSuggested}
-            scenarioGroupCount={params.row.scenarioGroupCount ?? 0}
-            eventId={params.row.eventId}
-            onClick={() => handleScenarioClick(params.row)}
-            onConnectedGroupContinue={(group) => handleConnectedGroupContinue(params.row, group)}
-          />
+          <EventScenarioGenerateButton recommended={params.row.isScenarioSuggested} onClick={() => handleScenarioClick(params.row)} />
         ),
+      },
+      {
+        // 시나리오 설계 버튼 우측 행 끝 펼침(∨/∧)
+        field: '__linkedGroupsExpand',
+        headerName: '',
+        width: 28,
+        align: 'center',
+        headerAlign: 'center',
+        sortable: false,
+        renderCell: (params) => {
+          const hasLinkedGroups = (params.row.scenarioGroupCount ?? 0) > 0
+          if (!hasLinkedGroups) return null
+
+          const isExpanded = expandedLinkedGroupsEventId === params.row.eventId
+
+          return (
+            <Box
+              component="button"
+              type="button"
+              aria-label={isExpanded ? '연결 시나리오 그룹 접기' : '연결 시나리오 그룹 펼치기'}
+              aria-expanded={isExpanded}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleToggleLinkedGroupsExpand(params.row.eventId)
+              }}
+              sx={{
+                appearance: 'none',
+                border: 'none',
+                background: 'transparent',
+                padding: 0,
+                margin: 0,
+                width: '24px',
+                height: '24px',
+                minWidth: '24px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                cursor: 'pointer',
+                color: 'contentIcon.Enabled',
+                '& svg path': { fill: 'currentColor' },
+              }}
+            >
+              {isExpanded ? (
+                <KeyboardArrowUpIcon width="20px" height="20px" aria-hidden focusable="false" />
+              ) : (
+                <ArrowDown width="20px" height="20px" aria-hidden focusable="false" />
+              )}
+            </Box>
+          )
+        },
       },
     ],
     [
-      handleConnectedGroupContinue,
+      expandedLinkedGroupsEventId,
       handleEventNameClick,
       handleScenarioClick,
       handleToggleEventSelection,
+      handleToggleLinkedGroupsExpand,
       isSelectionLimitReached,
       selectedEventIdSet,
     ],
@@ -647,6 +605,7 @@ const EventsTabPanel = () => {
     if (field === '__statusBadge') return { px: '8px' }
     if (field === 'createdAt') return { px: '6px' }
     if (field === 'scenario') return { px: '6px', overflow: 'visible' }
+    if (field === '__linkedGroupsExpand') return { px: '2px' }
     if (field === 'jkm' || field === 'ttf' || field === 'hh') return { px: '24px' }
     return {}
   }, [])
@@ -672,6 +631,22 @@ const EventsTabPanel = () => {
     }
     return undefined
   }, [])
+
+  const getEventsTableRowDetailContent = useCallback(
+    ({ row }: { row: EventListItem }) => {
+      if (expandedLinkedGroupsEventId !== row.eventId) return null
+
+      return (
+        <EventLinkedScenarioGroupsExpandPanel
+          eventId={row.eventId}
+          onView={(group) => {
+            void handleConnectedGroupContinue(row, group)
+          }}
+        />
+      )
+    },
+    [expandedLinkedGroupsEventId, handleConnectedGroupContinue],
+  )
 
   const getEventsTableRowClassName = useCallback(
     ({ row }: { row: EventListItem }) => (selectedEventIdSet.has(row.eventId) ? 'event-row--selected' : ''),
@@ -906,6 +881,7 @@ const EventsTabPanel = () => {
         noRowsOverlay={emptyOverlay}
         getCellSx={getEventsTableCellSx}
         getRowClassName={getEventsTableRowClassName}
+        getRowDetailContent={getEventsTableRowDetailContent}
         sx={{
           '& > .MuiBox-root': {
             minHeight: '400px',
