@@ -25,6 +25,9 @@ import { findIndexImpact, formatNextGenMIDateTime } from '@/pages/mi/nextGenMI/c
 import EventCategoryFilterMenu from '@/pages/mi/nextGenMI/components/event/EventCategoryFilterMenu'
 import {
   getEventDesignOccupiedMessage,
+  getSameCombinationGroupCount,
+  getSameCombinationGroups,
+  isSameCombinationGroupCompleted,
   normalizeEventDesignStep,
   resolveSelectionDesignStateFromStatus,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
@@ -49,7 +52,7 @@ import nextGenMIEventService, {
   type EventStatus,
   type GetEventsParams,
 } from '@/service/mi/nextGenMI/event'
-import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
+import nextGenMIScenarioDesignService, { type SameCombinationScenarioGroup } from '@/service/mi/nextGenMI/scenarioDesign'
 import useDialog from '@/store/useDialog'
 
 /** 카테고리 필터 값: Lv1 다중 선택 */
@@ -108,7 +111,6 @@ const EventsTabPanel = () => {
   const [mineOnly, setMineOnly] = useNextGenMIListState('events.mineOnly', false)
   const sourceFilterBeforeMineOnlyRef = useRef<EventSourceFilter | null>(null)
   const [selectedEvents, setSelectedEvents] = useNextGenMIListState<EventSelectionItem[]>('events.selectedEvents', [])
-  const didAutoExpandLinkedGroupsRef = useRef(false)
 
   useEffect(() => {
     const scrollEl = document.getElementById('main-scroll-wrapper')
@@ -168,7 +170,10 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page, setPagination])
 
-  const rawTableRows = useMemo(() => applyUserRegisteredEventListDummy(data?.events?.detail ?? [], pagination.page), [data?.events?.detail, pagination.page])
+  const rawTableRows = useMemo(
+    () => applyUserRegisteredEventListDummy(data?.events?.detail ?? [], pagination.page),
+    [data?.events?.detail, pagination.page],
+  )
   const tableRows = useMemo(
     () =>
       rawTableRows.filter((row) => {
@@ -179,15 +184,6 @@ const EventsTabPanel = () => {
       }),
     [mineOnly, rawTableRows, sourceFilter],
   )
-
-  // 첫 로드 시 연결 그룹이 있는 첫 행을 펼쳐 ∨/∧ 상태를 한 화면에 보이게 한다
-  useEffect(() => {
-    if (didAutoExpandLinkedGroupsRef.current) return
-    const firstLinked = tableRows.find((row) => (row.scenarioGroupCount ?? 0) > 0)
-    if (!firstLinked) return
-    didAutoExpandLinkedGroupsRef.current = true
-    setExpandedLinkedGroupsEventId(firstLinked.eventId)
-  }, [tableRows])
 
   const selectedEventIds = useMemo(() => selectedEvents.map((item) => item.eventId), [selectedEvents])
 
@@ -228,6 +224,9 @@ const EventsTabPanel = () => {
     [selectedEvents, selectionDesignStatus],
   )
 
+  const sameCombinationGroups = useMemo(() => getSameCombinationGroups(selectionDesignStatus), [selectionDesignStatus])
+  const sameCombinationGroupCount = useMemo(() => getSameCombinationGroupCount(selectionDesignStatus), [selectionDesignStatus])
+
   const handleSelectedEventsDesignClick = useCallback(() => {
     if (selectedEvents.length === 0) return
 
@@ -240,6 +239,67 @@ const EventsTabPanel = () => {
       },
     })
   }, [navigate, selectedEvents])
+
+  // 동일 조합 [보기]: 상태별 상세/재연결. 선택 목록은 list state로 유지
+  const handleSameCombinationGroupView = useCallback(
+    (group: SameCombinationScenarioGroup) => {
+      if (selectedEvents.length === 0) return
+
+      const primary = selectedEvents[0]
+      const eventIds = selectedEvents.map((item) => item.eventId)
+
+      if (isSameCombinationGroupCompleted(group)) {
+        navigate(getNextGenMIScenarioGroupDetailPath(group.scenarioGroupId), {
+          state: { eventName: primary.eventName },
+        })
+        return
+      }
+
+      if (group.mine === false) {
+        const occupantUserName = group.creatorName?.trim() || group.createdByName?.trim()
+        onShow({
+          title: '시나리오 설계 확인',
+          width: 450,
+          children: getEventDesignOccupiedMessage(occupantUserName),
+          actions: [
+            {
+              label: '닫기',
+              variant: 'outlined',
+              color: 'gray',
+              onClick: onHide,
+            },
+            {
+              label: '확인',
+              onClick: () => {
+                onHide()
+                navigate(getNextGenMIScenarioDesignPath({ eventIds, scenarioGroupId: group.scenarioGroupId }), {
+                  state: {
+                    eventName: primary.eventName,
+                    eventIds,
+                    scenarioGroupId: group.scenarioGroupId,
+                    designStep: normalizeEventDesignStep(group.designStep) ?? null,
+                    readOnly: true,
+                    occupantUserName,
+                  },
+                })
+              },
+            },
+          ],
+        })
+        return
+      }
+
+      navigate(getNextGenMIScenarioDesignPath({ eventIds, scenarioGroupId: group.scenarioGroupId }), {
+        state: {
+          eventName: primary.eventName,
+          eventIds,
+          scenarioGroupId: group.scenarioGroupId,
+          designStep: normalizeEventDesignStep(group.designStep) ?? null,
+        },
+      })
+    },
+    [navigate, onHide, onShow, selectedEvents],
+  )
 
   const handleEventNameClick = useCallback(
     (row: EventListItem) =>
@@ -913,8 +973,11 @@ const EventsTabPanel = () => {
         designLocked={selectionDesignState?.locked}
         designStep={selectionDesignState?.designStep}
         designStatusLoading={selectionDesignStatusLoading}
+        sameCombinationGroups={sameCombinationGroups}
+        sameCombinationGroupCount={sameCombinationGroupCount}
         onRemove={handleRemoveSelectedEvent}
         onDesignClick={handleSelectedEventsDesignClick}
+        onSameCombinationGroupView={handleSameCombinationGroupView}
       />
     </Box>
   )

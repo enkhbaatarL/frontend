@@ -93,7 +93,7 @@ export const isScenarioDesignStatusOccupiedByOther = (status: ScenarioDesignStat
 /**
  * 멀티 선택 액션바 상태.
  * 신규 API는 동일 조합이 있어도 항상 새 그룹 생성이 가능하므로 create CTA는 designable 기준.
- * (동일 조합 안내 UI는 후속 퍼블에서 sameCombinationGroups 사용)
+ * 동일 조합 안내/목록 UI는 sameCombinationGroups를 액션바에서 별도 렌더.
  */
 export const resolveSelectionDesignStateFromStatus = (
   status: ScenarioDesignStatus | undefined,

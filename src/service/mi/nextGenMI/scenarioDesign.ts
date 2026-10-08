@@ -45,6 +45,9 @@ export interface GetScenarioDesignStatusParams {
 export interface SameCombinationScenarioGroup {
   scenarioGroupId: number
   title: string
+  /** design-status 응답 필드명 */
+  creatorName?: string | null
+  /** @deprecated creatorName 사용. 이행 기간 하위호환 */
   createdByName?: string | null
   createdAt?: string | null
   status?: ScenarioDesignGroupStatus | string | null
