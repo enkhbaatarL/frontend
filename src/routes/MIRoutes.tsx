@@ -38,7 +38,7 @@ import SalesAnalysisPage from '@/pages/mi/salesAnalysis/SalesAnalysisPage'
 import SignalMapPage from '@/pages/mi/signalMap/SignalMapPage'
 import TopicTrackerPage from '@/pages/mi/topicTracker/TopicTrackerPage'
 import MIProvider from '@/providers/MIProvider'
-import useAuthStore from '@/store/useAuthStore'
+import useAuthStore, { usesOwnCompanyInMi } from '@/store/useAuthStore'
 
 const MIMainRedirect = () => {
   const { miHome } = useCompanyCondition()
@@ -52,7 +52,8 @@ const MIMainRedirect = () => {
   const homeUrl = miHome()
 
   // USER 로그인 시 accessCompanyInfo가 아직 로드되지 않았는지 확인
-  const isUserLoginWithoutAccessInfo = user?.userRoleCd === 'USER' && !accessCompanyInfo
+  // [운영자 서비스 접속] USER → USER·타사접속 운영자 (자기 회사)
+  const isUserLoginWithoutAccessInfo = usesOwnCompanyInMi(user) && !accessCompanyInfo
 
   useEffect(() => {
     if (needsCompanySwitch && targetCompanyNo) {

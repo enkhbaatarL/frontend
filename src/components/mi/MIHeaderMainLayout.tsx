@@ -22,7 +22,7 @@ import useEnvironment from '@/hooks/useEnvironment.ts'
 import { buildMiGnbFromCompanyMenus, type MiGnbTopMenu } from '@/lib/miGnbMenuNav'
 import { FUNDAMENTAL_MODEL_BASE_PATH } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import { UserRole } from '@/service/admin/members'
-import useAuthStore from '@/store/useAuthStore'
+import useAuthStore, { usesOwnCompanyInMi } from '@/store/useAuthStore'
 import { languageList } from '@/utils/font'
 
 const boards = [
@@ -73,10 +73,11 @@ const MIHeaderMainLayout = ({ onMoveTab }: MIHeaderMainLayoutProps) => {
 
   const hasDropdownItems = useCallback((menu: MiGnbTopMenu) => menu.rows.some((r) => r.kind === 'item'), [])
 
-  const isLoading = user?.userRoleCd === UserRole.USER && !accessCompanyInfo
+  // [운영자 서비스 접속] USER → USER·타사접속 운영자 (자기 회사 정보 로드)
+  const isLoading = usesOwnCompanyInMi(user) && !accessCompanyInfo
 
   useEffect(() => {
-    if (user?.userRoleCd === UserRole.USER && !accessCompanyInfo && user?.companyNo && user?.companyNm) {
+    if (usesOwnCompanyInMi(user) && !accessCompanyInfo && user?.companyNo && user?.companyNm) {
       loadAccessCompanyInfo(user.companyNo)
     }
   }, [user, accessCompanyInfo, loadAccessCompanyInfo])
