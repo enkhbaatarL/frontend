@@ -143,3 +143,5 @@ dist
 *.sw?
 
 *storybook.log
+
+src/api/schema.d.ts
