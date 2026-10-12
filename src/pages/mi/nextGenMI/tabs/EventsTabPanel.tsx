@@ -94,6 +94,7 @@ const resolveEventListDateRange = (dateRange: DateRange): Required<DateRange> =>
 
 const EventsTabPanel = () => {
   const navigate = useNavigate()
+  const keywordAlertButtonRef = useRef<HTMLButtonElement>(null)
   const [isKeywordAlertOpen, setIsKeywordAlertOpen] = useState(false)
   const [expandedLinkedGroupsEventId, setExpandedLinkedGroupsEventId] = useState<number | null>(null)
   const { onHide, onShow } = useDialog()
@@ -880,11 +881,12 @@ const EventsTabPanel = () => {
 
             <Divider orientation="vertical" flexItem sx={{ height: '34px', alignSelf: 'center', borderColor: 'contentBorder.Normal' }} />
             <MIBaseButton
+              ref={keywordAlertButtonRef}
               variant="outlined"
               aria-label="키워드 알림 설정"
               open={isKeywordAlertOpen}
               enableHoverBackground
-              onClick={() => setIsKeywordAlertOpen(true)}
+              onClick={() => setIsKeywordAlertOpen((current) => !current)}
               sx={{
                 width: '36px',
                 minWidth: '36px',
@@ -963,7 +965,11 @@ const EventsTabPanel = () => {
         onPageChange={handlePageChange}
       />
 
-      <KeywordAlertSettingDialog open={isKeywordAlertOpen} onClose={() => setIsKeywordAlertOpen(false)} />
+      <KeywordAlertSettingDialog
+        open={isKeywordAlertOpen}
+        anchorEl={keywordAlertButtonRef.current}
+        onClose={() => setIsKeywordAlertOpen(false)}
+      />
 
       <EventSelectionActionBar
         selectedEvents={selectedEvents}
