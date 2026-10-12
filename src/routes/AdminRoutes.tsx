@@ -32,6 +32,7 @@ import AdminMemberManagementUsersPage from '@/pages/admin/memberManagement/Admin
 import AdminNotificationListPage from '@/pages/admin/notification/AdminNotificationListPage'
 import AdminApiPage from '@/pages/admin/system/AdminApiPage'
 import AdminCompanyInfoPage from '@/pages/admin/system/AdminCompanyInfoPage'
+import AdminMcpAuthPage from '@/pages/admin/system/AdminMcpAuthPage'
 import AdminTokenManagementPage from '@/pages/admin/tokens/AdminTokenManagementPage'
 import AdminProvider from '@/providers/AdminProvider'
 import { UserRole } from '@/service/admin/members'
@@ -48,6 +49,13 @@ const AdminOnlyApiPage = () => {
   const userRoleCd = useAuthStore((state) => state.user?.userRoleCd)
 
   return userRoleCd === UserRole.ADMIN ? <AdminApiPage /> : <Navigate to="/admin/system/company" replace />
+}
+
+// [MCP 인증] API 관리와 같이 ADMIN 전용, 운영자는 화이트라벨 설정으로 이동
+const AdminOnlyMcpAuthPage = () => {
+  const userRoleCd = useAuthStore((state) => state.user?.userRoleCd)
+
+  return userRoleCd === UserRole.ADMIN ? <AdminMcpAuthPage /> : <Navigate to="/admin/system/company" replace />
 }
 
 const OperatorCompanyInfoPage = () => <AdminCompanyInfoPage useCurrentCompanyLogoApi />
@@ -465,6 +473,12 @@ const AdminRoutes: ICustomRouteObject = {
           path: 'api',
           label: 'API 관리',
           element: <AdminOnlyApiPage />,
+        },
+        {
+          // [MCP 인증] 시스템 관리 > MCP API 인증관리 (API 관리와 같은 레벨)
+          path: 'mcp-auth',
+          label: 'MCP API 인증관리',
+          element: <AdminOnlyMcpAuthPage />,
         },
         {
           path: 'company',
