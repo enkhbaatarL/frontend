@@ -5,7 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { setNavigate } from '@/lib/axios'
 import CustomErrorBoundary from '@/pages/error/CustomErrorBoundary'
 import { UserRole } from '@/service/admin/members'
-import useAuthStore from '@/store/useAuthStore'
+import useAuthStore, { usesOwnCompanyInMi } from '@/store/useAuthStore'
 import useDialog from '@/store/useDialog'
 
 interface ProtectedRouteProps {
@@ -20,7 +20,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const navigate = useNavigate()
   const isIndividualInfoAgreed = user?.isIndividualInfoAgreement === true
   // USER 로그인 직후 accessCompanyInfo 로딩 전에는 MI 진입·후속 처리 판단 불가 → 리다이렉트 보류
-  const isCompanyInfoLoading = isIndividualInfoAgreed && user?.userRoleCd === UserRole.USER && !accessCompanyInfo
+  // [운영자 서비스 접속] USER → USER·타사접속 운영자 (자기 회사)
+  const isCompanyInfoLoading = isIndividualInfoAgreed && usesOwnCompanyInMi(user) && !accessCompanyInfo
   const needsCompanyInfoForMi = location.pathname === '/mi' || location.pathname.startsWith('/mi/')
 
   // 공유 링크 등에서 전달된 rdcn(redirect company number) 파라미터로 관리자 자동 회사 전환
@@ -41,11 +42,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   useEffect(() => {
     if (!isIndividualInfoAgreed) return
     if (!needsCompanyInfoForMi) return
-    if (user?.userRoleCd !== UserRole.USER) return
+    // [운영자 서비스 접속] USER → USER·타사접속 운영자 (자기 회사)
+    if (!usesOwnCompanyInMi(user)) return
     if (accessCompanyInfo) return
     if (!user?.companyNo) return
     loadAccessCompanyInfo(user.companyNo)
-  }, [isIndividualInfoAgreed, needsCompanyInfoForMi, user?.userRoleCd, user?.companyNo, accessCompanyInfo, loadAccessCompanyInfo])
+  }, [isIndividualInfoAgreed, needsCompanyInfoForMi, user, accessCompanyInfo, loadAccessCompanyInfo])
 
   useEffect(() => {
     if (isAdminRdcnSwitch && rdcnParam) {

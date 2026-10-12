@@ -11,10 +11,9 @@ import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIButton from '@/components/common/button/MIButton'
 import NoticeIcon from '@/components/common/icons/NoticeIcon'
 import MITabs from '@/components/common/tabs/MITabs'
-import { UserRole } from '@/service/admin/members'
 import boardService, { INoticeInfo } from '@/service/mi/board'
 import notificationService, { INotificationHistory } from '@/service/mi/notification'
-import useAuthStore from '@/store/useAuthStore'
+import useAuthStore, { usesOwnCompanyInMi } from '@/store/useAuthStore'
 
 interface NoticeItemProps {
   id: number
@@ -258,7 +257,8 @@ const MIHeaderNotice = () => {
   const anchorEl = useRef<HTMLElement>(null)
 
   const fetchAlerts = useCallback(async () => {
-    if (user?.userRoleCd === UserRole.USER) {
+    // [운영자 서비스 접속] 알림 이력 조회 USER → USER·타사접속 운영자
+    if (usesOwnCompanyInMi(user)) {
       try {
         setAlertsIsLoading(true)
         const response = await notificationService.getNotificationHistory({ page: 1, size: 10 })
@@ -271,7 +271,7 @@ const MIHeaderNotice = () => {
         setAlertsIsLoading(false)
       }
     }
-  }, [user?.userRoleCd])
+  }, [user])
 
   useEffect(() => {
     const fetchNotices = async () => {
@@ -350,8 +350,9 @@ const MIHeaderNotice = () => {
             )}
           </ScrollWrapper>
           <Box sx={{ margin: '0 -20px' }} borderTop={'1px solid #E9ECEF'} p={5}>
+            {/* [운영자 서비스 접속] 내 알림 관리 USER → USER·타사접속 운영자 */}
             <MIButton
-              disabled={user?.userRoleCd !== UserRole.USER}
+              disabled={!usesOwnCompanyInMi(user)}
               width={'100%'}
               color={'gray'}
               type={'outlined'}

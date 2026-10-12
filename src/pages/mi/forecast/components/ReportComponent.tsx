@@ -16,8 +16,9 @@ import { getWeekOfMonth } from '@/lib/chart/utils/chartUtils'
 import CompanyChartRenderer from '@/pages/mi/forecast/components/CompanyChartRenderer'
 import DrillDownPopup from '@/pages/mi/forecast/components/DrillDownPopup.tsx'
 import MonthSelector from '@/pages/mi/forecast/components/MonthSelector'
+import { UserRole } from '@/service/admin/members'
 import forecastDataService from '@/service/mi/forecast'
-import useAuthStore from '@/store/useAuthStore'
+import useAuthStore, { usesOwnCompanyInMi } from '@/store/useAuthStore'
 import { downloadFile } from '@/utils/file'
 
 export type MonthItem = {
@@ -598,7 +599,8 @@ const ReportComponent = ({ companyNo, hideForecast = false }: ReportComponentPro
             months={chartMonths}
             selectedContent={selectedContent}
             onSelectedContent={setSelectedContent}
-            userRoleCd={user?.userRoleCd ?? ''}
+            // [운영자 서비스 접속] 차트 알람 버튼은 USER 일 때만 활성 → 타사접속 운영자도 USER 와 동일하게 활성화
+            userRoleCd={usesOwnCompanyInMi(user) ? UserRole.USER : (user?.userRoleCd ?? '')}
             hideForecast={hideForecast}
           />
         )}
