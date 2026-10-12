@@ -46,7 +46,6 @@ import {
 } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { buildEventDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
 import { findKeywordAlertHistory } from '@/pages/mi/nextGenMI/utils/keywordAlertStore'
-import { applyUserRegisteredEventDetailDummy, findUserRegisteredEventDummy } from '@/pages/mi/nextGenMI/utils/userRegisteredEventDummy'
 import nextGenMIEventService, { type EventDetail } from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
 import useDialog from '@/store/useDialog'
@@ -262,7 +261,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   }, [detailError, keywordHistory, showSnackbar])
 
   const displayDetail = useMemo((): EventDetail | undefined => {
-    if (detail) return applyUserRegisteredEventDetailDummy(detail)
+    if (detail) return detail
     if (!keywordHistory) return undefined
     return {
       eventId: 0,
@@ -282,11 +281,10 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     if (eventNameFromState) return eventNameFromState
     return eventId ? `이벤트 ${eventId}` : '이벤트'
   }, [displayDetail?.eventName, eventId, eventNameFromState])
-  const dummyRegistered = useMemo(() => (eventIdNumber !== null ? findUserRegisteredEventDummy(eventIdNumber) : undefined), [eventIdNumber])
   const generatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.createdAt)
   const updatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.updatedAt)
-  const isUserRegisteredEvent = displayDetail?.userRegistered === true || dummyRegistered !== undefined
-  const registrantName = displayDetail?.registrantName?.trim() || dummyRegistered?.registrantName || ''
+  const isUserRegisteredEvent = displayDetail?.sourceType === 'user'
+  const registrantName = displayDetail?.registrantName?.trim() || ''
 
   const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
     const ia = displayDetail?.impactAnalysis

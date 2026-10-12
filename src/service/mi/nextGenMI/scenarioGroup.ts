@@ -3,7 +3,7 @@ import { AxiosResponse } from 'axios'
 
 import api from '@/lib/axios'
 import i18n from '@/lib/i18n'
-import { ListSort, NextGenMIIndexName } from '@/service/mi/nextGenMI/common'
+import { type EventSourceType, ListSort, NextGenMIIndexName } from '@/service/mi/nextGenMI/common'
 import useAuthStore, { withCustomBaseUrl } from '@/store/useAuthStore'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
@@ -130,8 +130,9 @@ export interface IScenarioBaseEvent {
   eventTypeLv1: string
   eventTypeLv1Label: string
   updatedAt: string
-  /** 사용자가 직접 등록한 이벤트 */
-  userRegistered?: boolean
+  /** 출처. user면 사용자 등록 배지 */
+  sourceType?: EventSourceType | null
+  sourceTypeLabel?: string | null
 }
 
 /** 그룹 상세 - 구성 이벤트 (v4 멀티 이벤트) */
@@ -142,8 +143,9 @@ export interface IScenarioEventBundle {
   eventTypeLv1Label?: string
   isScenarioSuggested?: boolean
   latestRecordFirstCreated?: string
-  /** 사용자가 직접 등록한 이벤트 */
-  userRegistered?: boolean
+  /** 출처. user면 사용자 등록 배지 */
+  sourceType?: EventSourceType | null
+  sourceTypeLabel?: string | null
 }
 
 /** 그룹 생성 근거 마크다운 ('근거 보기') */

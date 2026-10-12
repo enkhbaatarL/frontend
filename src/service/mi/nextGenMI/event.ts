@@ -8,7 +8,7 @@ import type {
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import api from '@/lib/axios'
-import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
+import { type EventSourceType, MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 export type EventSort = 'latest' | 'oldest'
@@ -111,10 +111,9 @@ export interface EventListItem {
   scenarioSuggestReason?: string | null
   /** 연결된 활성 시나리오 그룹 수. 1 이상이면 이벤트명 옆 펼침 버튼 표시 */
   scenarioGroupCount?: number
-  /** 사용자가 직접 등록한 이벤트 */
-  userRegistered?: boolean
-  /** 로그인한 사용자가 등록한 이벤트 */
-  registeredByMe?: boolean
+  /** 출처. user면 이벤트명 옆 사용자 등록 배지 */
+  sourceType?: EventSourceType | null
+  sourceTypeLabel?: string | null
   indexImpacts: EventImpactIndex[]
 }
 
@@ -126,6 +125,10 @@ export interface EventAppliedFilter {
   sort?: EventSort
   keyword?: string
   suggestedOnly?: boolean
+  /** 출처. null이면 전체 */
+  sourceType?: EventSourceType | null
+  /** 내가 만든 이벤트만 보기 */
+  mine?: boolean | null
 }
 
 export interface EventList {
@@ -143,6 +146,10 @@ export interface GetEventsParams {
   endDate?: string
   keyword?: string
   suggestedOnly?: boolean
+  /** 출처 필터. 생략 시 전체 */
+  sourceType?: EventSourceType
+  /** 내가 만든 이벤트만 보기. true면 출처는 user로 고정 */
+  mine?: boolean
 }
 
 export interface EventImpactIndexTerm {
@@ -246,10 +253,11 @@ export interface EventDetail {
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
   latestRecordFirstCreated?: string
-  /** 사용자가 직접 등록한 이벤트 */
-  userRegistered?: boolean
-  /** 사용자 등록 이벤트의 등록자 이름 */
-  registrantName?: string
+  /** 출처. user면 사용자 등록 배지 */
+  sourceType?: EventSourceType | null
+  sourceTypeLabel?: string | null
+  /** 등록자명. 사용자 등록 이벤트만 값이 있고, 그 외에는 null */
+  registrantName?: string | null
   createdAt: string
   updatedAt: string
   aiInsights?: EventAiInsights | null
@@ -333,6 +341,8 @@ const nextGenMIEventService = {
         eventStatus: params.eventStatus,
         eventTypeL1Id: params.eventTypeL1Id,
         suggestedOnly: params.suggestedOnly,
+        sourceType: params.sourceType,
+        mine: params.mine,
       },
       paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
     })

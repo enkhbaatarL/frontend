@@ -148,7 +148,7 @@ const ScenarioGroupSummarySection = ({
                           }}
                         />
                       </Box>
-                      {event.userRegistered ? <UserRegisteredEventBadge /> : null}
+                      {event.sourceType === 'user' ? <UserRegisteredEventBadge /> : null}
                     </Stack>
                   </Box>
                   <Box flex="1 1 0" minWidth={0} boxSizing="border-box" sx={{ padding: '10px 6px' }}>

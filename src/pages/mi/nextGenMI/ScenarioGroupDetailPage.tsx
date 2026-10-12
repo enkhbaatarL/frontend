@@ -29,7 +29,6 @@ import ScenarioGroupSummarySection from '@/pages/mi/nextGenMI/components/scenari
 import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
 import { NEXT_GEN_MI_BASE_PATH, getNextGenMITabPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { buildScenarioGroupDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
-import { applyUserRegisteredEventBundleDummy } from '@/pages/mi/nextGenMI/utils/userRegisteredEventDummy'
 import nextGenMIScenarioGroupService, {
   type IScenarioGroupDetailRow,
   type ScenarioJudgementStatus,
@@ -198,12 +197,13 @@ const ScenarioGroupDetailPage = () => {
               eventTypeLv1: data.baseEvent.eventTypeLv1,
               eventTypeLv1Label: data.baseEvent.eventTypeLv1Label,
               latestRecordFirstCreated: data.baseEvent.updatedAt,
-              userRegistered: data.baseEvent.userRegistered,
+              sourceType: data.baseEvent.sourceType,
+              sourceTypeLabel: data.baseEvent.sourceTypeLabel,
             },
           ]
           : []
 
-    return applyUserRegisteredEventBundleDummy(bundles)
+    return bundles
   }, [data?.baseEvent, data?.eventBundles])
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
 

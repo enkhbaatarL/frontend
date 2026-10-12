@@ -696,6 +696,7 @@ const ScenarioDesignPage = () => {
         detail: eventDetail,
         title,
         isSuggested: eventDetail?.isScenarioSuggested === true || bundle?.isScenarioSuggested === true,
+        sourceType: bundle?.sourceType ?? eventDetail?.sourceType,
         createdAtLabel: formatNextGenMIDateTimeYmdHm(eventDetail?.createdAt ?? bundle?.latestRecordFirstCreated),
         typeLabel:
           eventDetail?.impactAnalysis?.eventTypeLv1Label ??

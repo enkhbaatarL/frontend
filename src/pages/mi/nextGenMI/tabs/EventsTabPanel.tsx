@@ -44,7 +44,6 @@ import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/User
 import { useNextGenMIListState } from '@/pages/mi/nextGenMI/NextGenMIListStateContext'
 import { getNextGenMIScenarioDesignPath, getNextGenMIScenarioGroupDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { NextGenMIStickySlot } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
-import { applyUserRegisteredEventListDummy } from '@/pages/mi/nextGenMI/utils/userRegisteredEventDummy'
 import nextGenMIEventService, {
   type EventLinkedScenarioGroup,
   type EventListItem,
@@ -152,8 +151,21 @@ const EventsTabPanel = () => {
       eventStatus: typeFilter,
       eventTypeL1Id: categoryFilter.length > 0 ? categoryFilter : undefined,
       suggestedOnly: hideNonRecommended || undefined,
+      sourceType: mineOnly || sourceFilter === 'all' ? undefined : sourceFilter,
+      mine: mineOnly || undefined,
     }
-  }, [appliedDateRange, categoryFilter, committedKeyword, hideNonRecommended, pagination.page, pagination.size, sort, typeFilter])
+  }, [
+    appliedDateRange,
+    categoryFilter,
+    committedKeyword,
+    hideNonRecommended,
+    mineOnly,
+    pagination.page,
+    pagination.size,
+    sort,
+    sourceFilter,
+    typeFilter,
+  ])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['nextGenMIEvents', listRequest],
@@ -170,20 +182,7 @@ const EventsTabPanel = () => {
     }
   }, [data?.events, pagination.page, setPagination])
 
-  const rawTableRows = useMemo(
-    () => applyUserRegisteredEventListDummy(data?.events?.detail ?? [], pagination.page),
-    [data?.events?.detail, pagination.page],
-  )
-  const tableRows = useMemo(
-    () =>
-      rawTableRows.filter((row) => {
-        if (mineOnly && row.registeredByMe !== true) return false
-        if (sourceFilter === 'user') return row.userRegistered === true
-        if (sourceFilter === 'platform') return row.userRegistered !== true
-        return true
-      }),
-    [mineOnly, rawTableRows, sourceFilter],
-  )
+  const tableRows = data?.events?.detail ?? []
 
   const selectedEventIds = useMemo(() => selectedEvents.map((item) => item.eventId), [selectedEvents])
 
@@ -489,7 +488,7 @@ const EventsTabPanel = () => {
             >
               <NextGenMIHoverLinkCell value={params.row.eventName} onClick={() => handleEventNameClick(params.row)} />
             </Box>
-            {params.row.userRegistered ? <UserRegisteredEventBadge /> : null}
+            {params.row.sourceType === 'user' ? <UserRegisteredEventBadge /> : null}
           </Stack>
         ),
       },
