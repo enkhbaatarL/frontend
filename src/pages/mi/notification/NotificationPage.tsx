@@ -9,15 +9,12 @@ import MITableCell from '@/components/common/table/MITableCell'
 import MITableUser from '@/components/common/table/MITableUser'
 import useSearchFilter from '@/hooks/useSearchFilter'
 import SettingModalComponent from '@/pages/mi/dataDetail/components/SettingModalComponent'
-import { KEYWORD_ALERT_HISTORY } from '@/pages/mi/nextGenMI/utils/keywordAlertStore'
-import notificationService, { INotificationInfo, INotificationRequest } from '@/service/mi/notification'
+import { getNextGenMIEventDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
+import notificationService, { IMyNotification, INotificationRequest } from '@/service/mi/notification'
 import { IPaginationResponse } from '@/types/api'
 
-type NotificationListRow = INotificationInfo & {
-  goodsNo?: number
-  notificationType?: string
-  eventId?: string
-  keyword?: string
+type NotificationListRow = IMyNotification & {
+  rowKey: string
 }
 
 const highlightKeyword = (text: string, keyword: string) => {
@@ -44,9 +41,9 @@ const NotificationPage = () => {
 
   const { filter, data, updateFilter, pagination, updatePage, updateSize, updateFilterWithSearch, isLoading } = useSearchFilter<
     INotificationRequest,
-    IPaginationResponse<INotificationInfo>
+    IPaginationResponse<IMyNotification>
   >(
-    notificationService.getNotificationSettingDataList,
+    notificationService.getMyNotifications,
     {
       search: '',
     },
@@ -68,25 +65,17 @@ const NotificationPage = () => {
     setNotificationType('')
   }
 
-  const rows = useMemo<NotificationListRow[]>(() => {
-    // #DELETE
-    const keywordRows: NotificationListRow[] =
-      (pagination?.page ?? 1) === 1
-        ? KEYWORD_ALERT_HISTORY.map((item, index) => ({
-          goodsDataNo: 0,
-          goodsNo: 0,
-          goodsDataNm: item.keyword,
-          goodsDataSourceNo: -(index + 1),
-          goodsDataSourceNm: item.eventName,
-          settingNotificationCount: 0,
-          notificationType: 'KEYWORD',
-          eventId: item.eventId,
-          keyword: item.keyword,
-        }))
-        : []
-
-    return [...keywordRows, ...(data?.detail ?? [])]
-  }, [data?.detail, pagination?.page])
+  const rows = useMemo<NotificationListRow[]>(
+    () =>
+      (data?.detail ?? []).map((row, index) => ({
+        ...row,
+        rowKey:
+          row.notificationType === 'EVENT_KEYWORD'
+            ? `EVENT_KEYWORD-${row.eventKeyword?.keywordSettingId}-${row.eventKeyword?.eventId}-${index}`
+            : `GOODS_THRESHOLD-${row.goodsThreshold?.goodsDataSourceNo}-${index}`,
+      })),
+    [data?.detail],
+  )
 
   return (
     <>
@@ -108,49 +97,63 @@ const NotificationPage = () => {
           />
         </Box>
         <Box paddingTop={5} paddingBottom={5}>
-          <MITableUser
+          <MITableUser<NotificationListRow>
             hidePagination={data?.totalElements === 0 || !data?.totalElements}
             tableProps={{
               loading: isLoading,
               noRowMessage: '설정된 알람이 없습니다.',
-              rowId: 'goodsDataSourceNo',
+              rowId: 'rowKey',
               rows,
               onRowClick: ({ row }) => {
-                // #DELETE
-                if (row.notificationType === 'KEYWORD' && row.eventId) {
-                  navigate(`/mi/next-gen-mi/events/${row.eventId}`)
+                if (row.notificationType === 'EVENT_KEYWORD' && row.eventKeyword && Number.isFinite(row.eventKeyword.eventId)) {
+                  navigate(getNextGenMIEventDetailPath(String(row.eventKeyword.eventId)))
                   return
                 }
-                navigate(`/mi/data-detail/${row.goodsNo}/${row.goodsDataNo}`, { state: { goodsDataSrcNo: row.goodsDataSourceNo } })
+                const goods = row.goodsThreshold
+                if (!goods) return
+                navigate(`/mi/data-detail/${goods.goodsNo}/${goods.goodsDataNo}`, { state: { goodsDataSrcNo: goods.goodsDataSourceNo } })
               },
               columns: [
                 {
                   field: 'notificationType',
                   headerName: '구분',
                   width: 120,
+                  sortable: false,
                   renderCell: (params) => (
-                    <MITableCell value={params.value === 'ACTUAL' ? 'Data' : params.value === 'KEYWORD' ? 'Keyword' : 'MI'} />
+                    <MITableCell
+                      value={
+                        params.row.notificationType === 'EVENT_KEYWORD'
+                          ? 'Keyword'
+                          : params.row.goodsThreshold?.notificationType === 'ACTUAL'
+                            ? 'Data'
+                            : 'MI'
+                      }
+                    />
                   ),
                 },
                 {
-                  field: 'goodsDataNm',
+                  field: 'dataTitle',
                   headerName: 'Data Title',
                   flex: 3,
+                  sortable: false,
+                  valueGetter: (_, row) =>
+                    row.notificationType === 'EVENT_KEYWORD' ? row.eventKeyword?.keywordName : row.goodsThreshold?.goodsDataNm,
                   renderCell: (params) => <MITableCell value={params.value} />,
                 },
                 {
-                  field: 'goodsDataSourceNm',
+                  field: 'structuredData',
                   headerName: 'Structured Data',
                   flex: 2,
+                  sortable: false,
                   renderCell: (params) =>
-                    params.row.notificationType === 'KEYWORD' && params.row.keyword ? (
+                    params.row.notificationType === 'EVENT_KEYWORD' && params.row.eventKeyword ? (
                       <MITableCell>
                         <Typography variant="tableBody2" color="gray.90" noWrap>
-                          {highlightKeyword(String(params.value ?? ''), params.row.keyword)}
+                          {highlightKeyword(params.row.eventKeyword.eventName, params.row.eventKeyword.keywordName)}
                         </Typography>
                       </MITableCell>
                     ) : (
-                      <MITableCell value={params.value} />
+                      <MITableCell value={params.row.goodsThreshold?.goodsDataSourceNm} />
                     ),
                 },
                 {
@@ -158,15 +161,19 @@ const NotificationPage = () => {
                   headerName: 'Notifications',
                   width: 120,
                   align: 'center',
+                  sortable: false,
                   renderCell: (params) =>
-                    params.row.notificationType === 'KEYWORD' ? null : (
+                    params.row.notificationType === 'EVENT_KEYWORD' || !params.row.goodsThreshold ? null : (
                       <MIChip
-                        label={params.value}
+                        label={params.row.goodsThreshold.settingNotificationCount}
                         size="h22"
                         color="blue"
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleOpenSettingModal(params.row.goodsDataSourceNo, params.row.notificationType ?? '')
+                          handleOpenSettingModal(
+                            params.row.goodsThreshold?.goodsDataSourceNo ?? 0,
+                            params.row.goodsThreshold?.notificationType ?? '',
+                          )
                         }}
                         sx={{
                           cursor: 'pointer',
@@ -186,7 +193,7 @@ const NotificationPage = () => {
               ],
             }}
             paginationProps={{
-              data,
+              data: data as unknown as IPaginationResponse<NotificationListRow>,
               size: pagination?.size,
               onPageChange: updatePage,
               onSizeChange: updateSize,

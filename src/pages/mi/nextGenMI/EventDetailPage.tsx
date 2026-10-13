@@ -7,7 +7,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import type { KpiCardProps } from '@/pages/mi/nextGenMI/components/common/KpiCard'
 
-import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIMenu from '@/components/common/menu/MIMenu'
 import { useMIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
@@ -34,7 +33,6 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/ev
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
-import KeywordAlertEmailPreviewDialog from '@/pages/mi/nextGenMI/components/event/KeywordAlertEmailPreviewDialog'
 import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/UserRegisteredEventBadge'
 import NextGenMIMarkdownDownloadButton from '@/pages/mi/nextGenMI/components/NextGenMIMarkdownDownloadButton'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
@@ -45,8 +43,7 @@ import {
   getNextGenMITabPath,
 } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import { buildEventDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
-import { findKeywordAlertHistory } from '@/pages/mi/nextGenMI/utils/keywordAlertStore'
-import nextGenMIEventService, { type EventDetail } from '@/service/mi/nextGenMI/event'
+import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
 import useDialog from '@/store/useDialog'
 
@@ -200,7 +197,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const eventIdNumber = eventId !== undefined && Number.isFinite(Number(eventId)) ? Number(eventId) : null
 
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 5 })
-  const [isKeywordEmailOpen, setIsKeywordEmailOpen] = useState(false)
   const [outlooksPagination, setOutlooksPagination] = useState({ page: 1, size: 10 })
   const { setStickyHeader } = useStickyHeader()
   const popupContext = useMIMorphingPopupContext()
@@ -215,8 +211,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   }, [embedded])
 
   const eventNameFromState = state?.eventName?.trim()
-  // #DELETE
-  const keywordHistory = typeof eventId === 'string' ? findKeywordAlertHistory(eventId) : undefined
 
   const {
     data: detail,
@@ -225,7 +219,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   } = useQuery({
     queryKey: ['nextGenMIEventDetail', eventId],
     queryFn: () => nextGenMIEventService.getEventDetail(eventId!),
-    enabled: !!eventId && !keywordHistory,
+    enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -242,7 +236,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const { data: recordsData, isLoading: recordsLoading } = useQuery({
     queryKey: ['nextGenMIEventRecords', eventId, recordsPagination.page, recordsPagination.size],
     queryFn: () => nextGenMIEventService.getEventRecords(eventId!, recordsPagination),
-    enabled: !!eventId && !keywordHistory,
+    enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -250,30 +244,17 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const { data: outlooksData, isLoading: outlooksLoading } = useQuery({
     queryKey: ['nextGenMIEventOutlooks', eventId, outlooksPagination.page, outlooksPagination.size],
     queryFn: () => nextGenMIEventService.getEventOutlooks(eventId!, outlooksPagination),
-    enabled: !!eventId && !keywordHistory,
+    enabled: !!eventId,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
 
   useEffect(() => {
-    if (!detailError || keywordHistory) return
+    if (!detailError) return
     showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
-  }, [detailError, keywordHistory, showSnackbar])
+  }, [detailError, showSnackbar])
 
-  const displayDetail = useMemo((): EventDetail | undefined => {
-    if (detail) return detail
-    if (!keywordHistory) return undefined
-    return {
-      eventId: 0,
-      eventName: keywordHistory.eventName,
-      statusLabel: keywordHistory.statusLabel,
-      createdAt: keywordHistory.occurredAt,
-      updatedAt: keywordHistory.occurredAt,
-      impactAnalysis: {
-        eventTypeLv1Label: keywordHistory.categoryLabel,
-      },
-    }
-  }, [detail, keywordHistory])
+  const displayDetail = detail
 
   const title = useMemo(() => {
     const fromApi = displayDetail?.eventName
@@ -325,7 +306,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const isScenarioDesignCreating = scenarioDesignStatus === 'creating'
   const isScenarioDesignCreated = scenarioDesignStatus === 'created' || (!isScenarioDesignCreating && hasRelatedScenarioGroup)
   const scenarioDesignUnavailable = scenarioDesignStatus === 'unavailable'
-  const scenarioDesignDisabled = detailLoading || Boolean(keywordHistory) || isScenarioDesignCreated || scenarioDesignUnavailable
+  const scenarioDesignDisabled = detailLoading || isScenarioDesignCreated || scenarioDesignUnavailable
   const scenarioDesignDisabledTooltipTitle = isScenarioDesignCreated
     ? '새로 설계하려면 기존 시나리오 그룹을 먼저 삭제해야 합니다. 삭제는 시나리오 그룹 상세에서 가능합니다.'
     : scenarioDesignUnavailable
@@ -430,16 +411,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             <Typography variant="body1B16" color="contentText.Black">
               Event
             </Typography>
-            {/* #DELETE */}
-            {keywordHistory ? (
-              <MIBaseButton
-                variant="text"
-                onClick={() => setIsKeywordEmailOpen(true)}
-                sx={{ height: '28px', minWidth: 0, padding: '4px 8px' }}
-              >
-                발송 메일
-              </MIBaseButton>
-            ) : null}
             {!detailLoading && nextGenMIIsEventNoiseSignal(detail?.signalType) ? (
               <Stack component="span" display="inline-flex" lineHeight={0}>
                 <NextGenMINoiseSignalBadge label={detail?.signalTypeLabel?.trim() ?? ''} />
@@ -504,7 +475,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
       detailLoading,
       generatedAtLabel,
       isUserRegisteredEvent,
-      keywordHistory,
       registrantName,
       title,
       updatedAtLabel,
@@ -632,11 +602,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
           />
         </Stack>
       </Stack>
-      {/* #DELETE */}
-      <KeywordAlertEmailPreviewDialog
-        item={isKeywordEmailOpen ? (keywordHistory ?? null) : null}
-        onClose={() => setIsKeywordEmailOpen(false)}
-      />
     </Stack>
   )
 }
