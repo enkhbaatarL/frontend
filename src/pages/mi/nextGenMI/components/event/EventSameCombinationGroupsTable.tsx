@@ -3,9 +3,11 @@ import { type MouseEvent, useMemo } from 'react'
 
 import type { SameCombinationScenarioGroup } from '@/service/mi/nextGenMI/scenarioDesign'
 
-import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
+import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import ArrowRight from '@/components/common/icons/ArrowRight'
+import LoadingIcon from '@/components/common/icons/LoadingIcon'
+import MISpinner from '@/components/common/spinner/MISpinner'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
@@ -22,7 +24,7 @@ export type EventSameCombinationGroupsTableProps = {
 }
 
 /** 액션바 동일 조합 테이블: 헤더 + 최대 5행, 초과 시 세로만 내부 스크롤 */
-const SAME_COMBINATION_TABLE_COLUMNS = 'minmax(0, 1fr) minmax(0, 80px) minmax(0, 128px) minmax(0, 128px) minmax(0, 78px)'
+const SAME_COMBINATION_TABLE_COLUMNS = 'minmax(0, 1fr) minmax(0, 80px) 160px minmax(0, 128px) minmax(0, 78px)'
 const SAME_COMBINATION_MAX_VISIBLE_ROWS = 5
 const SAME_COMBINATION_ROW_HEIGHT_PX = 48
 
@@ -76,7 +78,18 @@ const SameCombinationStatusCell = ({ group }: { group: SameCombinationScenarioGr
     const stepNumber = getInProgressStepNumber(group)
     return (
       <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
-        <MIAgentSpinner size={20} tone="gray" sx={{ flexShrink: 0, '& svg': { width: '20px', height: '20px' } }} />
+        <MISpinner
+          size={20}
+          speed={0.55}
+          sx={(theme) => ({
+            flexShrink: 0,
+            '& svg path': {
+              fill: `${theme.palette.contentIcon.Disabled} !important`,
+            },
+          })}
+        >
+          <LoadingIcon width="20px" height="20px" />
+        </MISpinner>
         <Typography variant="body2SB14" color="contentText.Disabled" lineHeight={1.4} noWrap>
           {`${stepNumber}단계 진행중`}
         </Typography>
@@ -115,12 +128,12 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
 
   const header = (
     <Stack
-      padding="0 8px"
+      padding="0 20px 0 8px"
       borderBottom="0.5px solid"
       borderColor="contentBorder.Active"
       bgcolor="gray.5"
       flexShrink={0}
-      sx={{ ...sameCombinationRowSx, position: 'sticky', top: 0, zIndex: 1 }}
+      sx={sameCombinationRowSx}
     >
       <Stack minWidth={0} height="48px" justifyContent="center" padding="10px 6px" boxSizing="border-box">
         <Typography variant="body2SB14" color="contentText.Black" noWrap>
@@ -157,21 +170,21 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
       overflow="hidden"
       boxSizing="border-box"
     >
+      {header}
       {loading ? (
-        <>
-          {header}
-          <Stack alignItems="center" justifyContent="center" minHeight="72px">
-            <CircularProgress size={20} />
-          </Stack>
-        </>
+        <Stack alignItems="center" justifyContent="center" minHeight="72px">
+          <CircularProgress size={20} />
+        </Stack>
       ) : (
-        <Stack
-          width="100%"
-          minWidth={0}
-          maxHeight={`${bodyMaxHeight + SAME_COMBINATION_ROW_HEIGHT_PX}px`}
-          sx={{ overflowX: 'hidden', overflowY: 'auto' }}
+        <ScrollWrapper
+          maxHeight={`${bodyMaxHeight}px`}
+          scrollbarGap={12}
+          thumbInsetTop={6}
+          thumbInsetBottom={6}
+          reserveScrollbarGap
+          showScrollbarOnHover
+          overscrollBehavior="none"
         >
-          {header}
           {sortedGroups.map((group, index) => {
             const isLast = index === sortedGroups.length - 1
             const title = group.title?.trim() || '시나리오 그룹'
@@ -193,7 +206,7 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
                   <EllipsisText value={creatorName} variant="body2M14" color="contentText.Black" />
                 </Stack>
                 <Stack minWidth={0} justifyContent="center" padding="10px 6px" boxSizing="border-box" height="48px">
-                  <Typography variant="body2M14" color="contentText.Black" noWrap>
+                  <Typography variant="body2M14" color="contentText.Black" whiteSpace="nowrap">
                     {formatNextGenMIDateTimeYmdHm(group.createdAt)}
                   </Typography>
                 </Stack>
@@ -238,7 +251,7 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
               </Stack>
             )
           })}
-        </Stack>
+        </ScrollWrapper>
       )}
     </Stack>
   )

@@ -1,6 +1,6 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
-import { Box, Collapse, type CollapseProps, Divider, Fade, IconButton, Slide, Stack, Typography } from '@mui/material'
+import { Box, Collapse, type CollapseProps, Divider, Fade, IconButton, Slide, Stack, Typography, useMediaQuery } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { TransitionGroup } from 'react-transition-group'
 
@@ -27,9 +27,9 @@ export type EventSelectionActionBarProps = {
   designMode?: MultiEventSelectionDesignMode
   designLocked?: boolean
   designStep?: EventDesignStep | string | null
-  designStatusLoading?: boolean
   sameCombinationGroups?: SameCombinationScenarioGroup[]
   sameCombinationGroupCount?: number
+  sameCombinationLoading?: boolean
   onRemove: (eventId: number) => void
   onDesignClick: () => void
   onSameCombinationGroupView?: (group: SameCombinationScenarioGroup) => void
@@ -215,23 +215,26 @@ const EventSelectionActionBar = ({
   designMode = 'designable',
   designLocked = false,
   designStep,
-  designStatusLoading = false,
   sameCombinationGroups = [],
   sameCombinationGroupCount,
+  sameCombinationLoading = false,
   onRemove,
   onDesignClick,
   onSameCombinationGroupView,
 }: EventSelectionActionBarProps) => {
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [sameCombinationExpanded, setSameCombinationExpanded] = useState(false)
+  const [sameCombinationRevealed, setSameCombinationRevealed] = useState(false)
   const [lastSelectedEvents, setLastSelectedEvents] = useState(selectedEvents)
   const selectedCount = selectedEvents.length
   const displayedEvents = selectedCount > 0 ? selectedEvents : lastSelectedEvents
-  const showDesignCta = selectedCount > 0 && !designStatusLoading
+  const showDesignCta = selectedCount > 0
   const resolvedSameCombinationCount =
     typeof sameCombinationGroupCount === 'number' && Number.isFinite(sameCombinationGroupCount)
       ? sameCombinationGroupCount
       : sameCombinationGroups.length
-  const showSameCombinationNotice = selectedCount >= 2 && resolvedSameCombinationCount > 0
+  const showSameCombinationNotice = selectedCount >= 2 && !sameCombinationLoading && resolvedSameCombinationCount > 0
+  const showSameCombinationLoading = showSameCombinationNotice && !sameCombinationRevealed
   const resolvedDesignCta =
     designMode === 'creating' ? (
       <SelectionDesignProgressCta locked={designLocked} designStep={designStep} onClick={onDesignClick} />
@@ -285,23 +288,18 @@ const EventSelectionActionBar = ({
             padding="12px 16px 18px"
             boxShadow="2px 4px 20px 0px rgba(39, 106, 207, 0.25)"
             boxSizing="border-box"
-            gap="20px"
           >
             <Stack gap="14px" width="100%">
-              <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px">
+              <Stack direction="row" alignItems="center" justifyContent="space-between" gap="12px" height="36px" flexShrink={0}>
                 <Typography variant="body2SB14" color="contentText.Black" noWrap>
                   {`선택한 이벤트 (${displayedEvents.length}/${maxCount})`}
                 </Typography>
 
                 <Box display="flex" justifyContent="flex-end" minWidth="116px" flexShrink={0}>
-                  {designStatusLoading && selectedCount > 0 ? (
-                    <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
-                  ) : (
-                    showDesignCta && (
-                      <Fade in timeout={160}>
-                        <Box display="flex">{resolvedDesignCta}</Box>
-                      </Fade>
-                    )
+                  {showDesignCta && (
+                    <Fade in timeout={160}>
+                      <Box display="flex">{resolvedDesignCta}</Box>
+                    </Fade>
                   )}
                 </Box>
               </Stack>
@@ -362,72 +360,106 @@ const EventSelectionActionBar = ({
               </Stack>
             </Stack>
 
-            {showSameCombinationNotice && (
-              <Stack gap="20px" width="100%">
-                <Divider sx={{ borderColor: 'contentBorder.Normal' }} />
-                <Stack gap="10px" width="100%">
-                  <Stack
-                    component="button"
-                    type="button"
-                    direction="row"
-                    alignItems="center"
-                    gap="4px"
-                    border="none"
-                    bgcolor="transparent"
-                    padding={0}
-                    width="fit-content"
-                    maxWidth="100%"
-                    aria-expanded={sameCombinationExpanded}
-                    aria-controls="same-combination-groups"
-                    onClick={() => setSameCombinationExpanded((prev) => !prev)}
-                    sx={{
-                      cursor: 'pointer',
-                      font: 'inherit',
-                      appearance: 'none',
-                      color: 'mari.Primary',
-                    }}
-                  >
-                    <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
-                      <InfoOutlineIcon
-                        width="16px"
-                        height="16px"
-                        aria-hidden
-                        focusable="false"
-                        style={{ display: 'block', flexShrink: 0 }}
-                      />
-                      <Typography variant="breadcrumbs" color="mari.Primary" noWrap>
-                        {`선택한 ${selectedCount}개 이벤트와 구성이 같은 그룹이 ${resolvedSameCombinationCount}개 있습니다`}
-                      </Typography>
+            <Collapse
+              in={showSameCombinationNotice}
+              timeout={reduceMotion ? 0 : { enter: 280, exit: 200 }}
+              easing={{ enter: 'cubic-bezier(0.16, 1, 0.3, 1)', exit: 'ease-in' }}
+              appear
+              unmountOnExit
+              onEnter={() => setSameCombinationRevealed(false)}
+              onEntered={() => setSameCombinationRevealed(true)}
+              onExited={() => setSameCombinationRevealed(false)}
+            >
+              <Fade
+                in={showSameCombinationNotice}
+                timeout={reduceMotion ? 0 : { enter: 280, exit: 200 }}
+                easing={{ enter: 'cubic-bezier(0.16, 1, 0.3, 1)', exit: 'ease-in' }}
+              >
+                <Stack gap="20px" paddingTop="20px" width="100%">
+                  <Divider sx={{ borderColor: 'contentBorder.Normal' }} />
+                  <Stack width="100%">
+                    <Stack minHeight="20px" justifyContent="center">
+                      {showSameCombinationLoading ? (
+                        <Stack direction="row" alignItems="center" role="status" aria-label="같은 구성의 그룹 안내 준비 중">
+                          <MIAgentSpinner
+                            size={16}
+                            tone="gray"
+                            sx={{
+                              '& svg': { width: '16px', height: '16px' },
+                              '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+                            }}
+                          />
+                        </Stack>
+                      ) : (
+                        showSameCombinationNotice && (
+                          <Fade in timeout={reduceMotion ? 0 : 160}>
+                            <Stack
+                              component="button"
+                              type="button"
+                              direction="row"
+                              alignItems="center"
+                              gap="4px"
+                              border="none"
+                              bgcolor="transparent"
+                              padding={0}
+                              width="fit-content"
+                              maxWidth="100%"
+                              minHeight="20px"
+                              aria-expanded={sameCombinationExpanded}
+                              aria-controls="same-combination-groups"
+                              onClick={() => setSameCombinationExpanded((prev) => !prev)}
+                              sx={{
+                                cursor: 'pointer',
+                                font: 'inherit',
+                                appearance: 'none',
+                                color: 'mari.Primary',
+                              }}
+                            >
+                              <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
+                                <InfoOutlineIcon
+                                  width="16px"
+                                  height="16px"
+                                  aria-hidden
+                                  focusable="false"
+                                  style={{ display: 'block', flexShrink: 0 }}
+                                />
+                                <Typography variant="breadcrumbs" color="mari.Primary" noWrap>
+                                  {`선택한 ${selectedCount}개 이벤트와 구성이 같은 그룹이 ${resolvedSameCombinationCount}개 있습니다`}
+                                </Typography>
+                              </Stack>
+                              <Box
+                                display="inline-flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                width="16px"
+                                height="16px"
+                                flexShrink={0}
+                                color="mari.Primary"
+                                sx={{
+                                  transform: sameCombinationExpanded ? 'rotate(0deg)' : 'rotate(180deg)',
+                                  transition: 'transform 160ms ease',
+                                }}
+                              >
+                                <KeyboardArrowUpIcon width="16px" height="16px" aria-hidden />
+                              </Box>
+                            </Stack>
+                          </Fade>
+                        )
+                      )}
                     </Stack>
-                    <Box
-                      display="inline-flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      width="16px"
-                      height="16px"
-                      flexShrink={0}
-                      color="mari.Primary"
-                      sx={{
-                        transform: sameCombinationExpanded ? 'rotate(0deg)' : 'rotate(180deg)',
-                        transition: 'transform 160ms ease',
-                      }}
-                    >
-                      <KeyboardArrowUpIcon width="16px" height="16px" aria-hidden />
-                    </Box>
-                  </Stack>
 
-                  <Collapse in={sameCombinationExpanded} timeout={220} unmountOnExit sx={{ width: '100%' }}>
-                    <Box id="same-combination-groups" width="100%">
-                      <EventSameCombinationGroupsTable
-                        groups={sameCombinationGroups}
-                        loading={designStatusLoading}
-                        onView={(group) => onSameCombinationGroupView?.(group)}
-                      />
-                    </Box>
-                  </Collapse>
+                    <Collapse in={sameCombinationExpanded} timeout={reduceMotion ? 0 : 220} unmountOnExit sx={{ width: '100%' }}>
+                      <Box id="same-combination-groups" width="100%" paddingTop="10px">
+                        <EventSameCombinationGroupsTable
+                          groups={sameCombinationGroups}
+                          onView={(group) => onSameCombinationGroupView?.(group)}
+                        />
+                      </Box>
+                    </Collapse>
+                  </Stack>
                 </Stack>
-              </Stack>
-            )}
+              </Fade>
+            </Collapse>
           </Stack>
         </Slide>
       </Box>
