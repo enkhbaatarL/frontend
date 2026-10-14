@@ -32,17 +32,41 @@ export type ScenarioGroupCreationPhase = 'event_analysis' | 'dimension_design' |
 
 export type ScenarioGroupCreationOperationStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted'
 
+/** POST .../creation/stream - miEventIds만 전송 (항상 새 그룹 생성) */
 export interface ScenarioDesignStartV4 {
   miEventIds: number[]
-  operationId?: string
-  lastSequence?: number
 }
 
 export interface GetScenarioDesignStatusParams {
   miEventIds: number[]
 }
 
+/** design-status 동일 이벤트 조합 그룹 항목 */
+export interface SameCombinationScenarioGroup {
+  scenarioGroupId: number
+  title: string
+  /** design-status 응답 필드명 */
+  creatorName?: string | null
+  /** @deprecated creatorName 사용. 이행 기간 하위호환 */
+  createdByName?: string | null
+  createdAt?: string | null
+  status?: ScenarioDesignGroupStatus | string | null
+  statusLabel?: string | null
+  designStep?: ScenarioDesignStep | string | null
+  designStepLabel?: string | null
+  mine?: boolean | null
+}
+
+/**
+ * GET .../design-status
+ * - sameCombinationGroupCount / sameCombinationGroups 기준
+ * - 이벤트 1개 선택 시 동일 조합 목록은 빈 배열
+ * - designStatus 등 기존 버튼 분기 필드는 하위호환으로만 optional 유지
+ */
 export interface ScenarioDesignStatus {
+  sameCombinationGroupCount?: number
+  sameCombinationGroups?: SameCombinationScenarioGroup[]
+  /** @deprecated 동일 조합 목록으로 대체. BE 이행 기간 하위호환 */
   designStatus?: ScenarioDesignStatusCode | string
   designStatusLabel?: string
   scenarioGroupId?: number | null
@@ -424,10 +448,11 @@ const nextGenMIScenarioDesignService = {
     onMessage: (event: EventSourceMessage) => void,
     signal: AbortSignal,
   ): Promise<void> {
+    // 동일 조합이 있어도 항상 새 그룹. 본문은 miEventIds만 전송
     await fetchEventSource('/api/v1/mi/next-gen/scenario-groups/creation/stream', {
       method: 'POST',
       headers: createScenarioDesignStreamHeaders('application/json'),
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ miEventIds: payload.miEventIds }),
       credentials: 'include',
       openWhenHidden: true,
       signal,
@@ -437,7 +462,44 @@ const nextGenMIScenarioDesignService = {
         throw new Error(`시나리오 그룹 생성 스트림 연결 실패: ${response.status} ${response.statusText}`)
       },
       onerror(error) {
-        // 기본 재시도는 같은 body를 다시 써서 lastSequence가 갱신되지 않음. 호출 측에서 커서를 넣어 재연결
+        throw error
+      },
+    })
+  },
+
+  /** GET .../scenario-groups/{id}/creation/stream - 끊김/새로고침/진행 중 [보기] 재연결 */
+  async reconnectScenarioGroupCreationStream(
+    scenarioGroupId: string | number,
+    params: { lastSequence?: number },
+    onMessage: (event: EventSourceMessage) => void,
+    signal: AbortSignal,
+  ): Promise<void> {
+    const search = new URLSearchParams()
+    if (params.lastSequence !== undefined && Number.isFinite(params.lastSequence)) {
+      search.set('lastSequence', String(params.lastSequence))
+    }
+    const query = search.toString()
+    const path = `/api/v1/mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/creation/stream${
+      query ? `?${query}` : ''
+    }`
+
+    await fetchEventSource(path, {
+      method: 'GET',
+      headers: createScenarioDesignStreamHeaders(),
+      credentials: 'include',
+      openWhenHidden: true,
+      signal,
+      onmessage: onMessage,
+      async onopen(response) {
+        if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) return
+        // 400: 생성 종료 -> presentation 조회, 403: 타 사용자 그룹
+        const error = new Error(`시나리오 그룹 생성 재연결 실패: ${response.status} ${response.statusText}`) as Error & {
+          status?: number
+        }
+        error.status = response.status
+        throw error
+      },
+      onerror(error) {
         throw error
       },
     })

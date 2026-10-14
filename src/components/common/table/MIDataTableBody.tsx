@@ -1,7 +1,7 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { Box, Skeleton, Stack, type SxProps, type Theme, Typography, type TypographyProps } from '@mui/material'
 import { type GridColDef, type GridRowModel } from '@mui/x-data-grid'
-import { isValidElement, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, isValidElement, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import { dataTableColumnsToGridTemplate } from '@/components/common/table/dataTableGridColTemplate'
@@ -93,6 +93,8 @@ export interface MIDataTableBodyProps<T extends GridRowModel> {
   shouldShowEllipsisTooltip?: (params: { col: GridColDef<T>; value: unknown }) => boolean
   detailShortcutColumnField?: string
   onDetailShortcutClick?: (params: { row: T }) => void
+  /** 행 아래에 붙는 인라인 상세(펼침) 영역. null/undefined면 미표시 */
+  getRowDetailContent?: (params: { row: T }) => ReactNode
   topPaddingPx?: number
   scroll?: MIDataTableBodyScrollOptions
   rowHeader?: MIDataTableRowHeaderOptions
@@ -736,6 +738,7 @@ const MIDataTableBody = <T extends GridRowModel>({
   shouldShowEllipsisTooltip,
   detailShortcutColumnField,
   onDetailShortcutClick,
+  getRowDetailContent,
   topPaddingPx,
   scroll,
   rowHeader,
@@ -873,75 +876,156 @@ const MIDataTableBody = <T extends GridRowModel>({
           const nextKey = idx < rows.length - 1 ? rowKey(rows[idx + 1], idx + 1) : null
           const isRowHovered = shouldTrackHover && hoveredRowKey === currentKey
           const isBeforeHoveredRow = shouldTrackHover && nextKey !== null && hoveredRowKey === nextKey
+          const rowDetailContent = getRowDetailContent?.({ row })
+          const hasRowDetail = rowDetailContent !== null && rowDetailContent !== undefined && rowDetailContent !== false
 
           return (
-            <Box
-              key={currentKey}
-              onClick={onRowClick ? () => onRowClick({ row }) : undefined}
-              onMouseEnter={() => {
-                if (shouldTrackHover) {
-                  setHoveredRowKey(currentKey)
-                }
-                onRowMouseEnter?.({ row })
-              }}
-              onMouseLeave={() => {
-                if (shouldTrackHover) {
-                  setHoveredRowKey(null)
-                }
-                onRowMouseLeave?.()
-              }}
-              className={getRowClassName?.({ row })}
-              sx={[
-                (theme) => {
-                  const showDivider = hideInnerRowBorder
-                    ? idx === rows.length - 1 && !hideLastRowBorder
-                    : idx < rows.length - 1 || !hideLastRowBorder
-                  const dividerColor = hideInnerRowBorder
-                    ? (theme.palette.contentBorder?.Normal ?? theme.palette.mari[40])
-                    : (theme.palette.contentBorder?.Normal ?? theme.palette.gray[40])
-                  const rowHoverBgColor = theme.palette.gray[10]
-                  const hideDividerForHover = showDivider && (isRowHovered || isBeforeHoveredRow)
-
-                  return {
-                    display: 'grid',
-                    gridTemplateColumns,
-                    alignItems: rowGridAlignItems,
-                    ...(hasFixedRowHeight ? { height: rowHeight } : {}),
-                    ...(enableHorizontalScroll
-                      ? { width: 'max-content', minWidth: '100%' }
-                      : { width: '100%', minWidth: 0, maxWidth: '100%' }),
-                    position: 'relative',
-                    zIndex: isRowHovered ? 1 : 0,
-                    bgcolor: 'transparent',
-                    cursor: onRowClick ? 'pointer' : 'default',
-                    borderBottom: showDivider ? `1px solid ${hideDividerForHover ? 'transparent' : dividerColor}` : 'none',
-                    borderRadius: isRowHovered ? ROW_HOVER_BORDER_RADIUS : 0,
-                    transition: 'background-color 120ms ease, border-color 120ms ease, border-radius 120ms ease',
-                    ...(disableHover
-                      ? {}
-                      : {
-                        '&:hover': {
-                          backgroundColor: rowHoverBgColor,
-                          borderBottomColor: 'transparent',
-                          borderRadius: ROW_HOVER_BORDER_RADIUS,
-                        },
-                        '&:has(+ *:hover)': {
-                          borderBottomColor: 'transparent',
-                        },
-                      }),
+            <Fragment key={currentKey}>
+              <Box
+                onClick={onRowClick ? () => onRowClick({ row }) : undefined}
+                onMouseEnter={() => {
+                  if (shouldTrackHover) {
+                    setHoveredRowKey(currentKey)
                   }
-                },
-                ...rowSxArray,
-              ]}
-            >
-              {columns.map((col, colIdx) => {
-                const value = (row as Record<string, unknown>)[col.field]
-                const isRowHeaderCell = rowHeader !== undefined && colIdx === rowHeader.colIndex
-                const rowHeaderCellSx = getRowHeaderCellSx(colIdx)
-                const showDetailShortcutCell =
-                  detailShortcutColumnField !== undefined && onDetailShortcutClick !== undefined && col.field === detailShortcutColumnField
+                  onRowMouseEnter?.({ row })
+                }}
+                onMouseLeave={() => {
+                  if (shouldTrackHover) {
+                    setHoveredRowKey(null)
+                  }
+                  onRowMouseLeave?.()
+                }}
+                className={getRowClassName?.({ row })}
+                sx={[
+                  (theme) => {
+                    const showDivider = hasRowDetail
+                      ? false
+                      : hideInnerRowBorder
+                        ? idx === rows.length - 1 && !hideLastRowBorder
+                        : idx < rows.length - 1 || !hideLastRowBorder
+                    const dividerColor = hideInnerRowBorder
+                      ? (theme.palette.contentBorder?.Normal ?? theme.palette.mari[40])
+                      : (theme.palette.contentBorder?.Normal ?? theme.palette.gray[40])
+                    const rowHoverBgColor = theme.palette.gray[10]
+                    const hideDividerForHover = showDivider && (isRowHovered || isBeforeHoveredRow)
 
-                if (showDetailShortcutCell) {
+                    return {
+                      display: 'grid',
+                      gridTemplateColumns,
+                      alignItems: rowGridAlignItems,
+                      ...(hasFixedRowHeight ? { height: rowHeight } : {}),
+                      ...(enableHorizontalScroll
+                        ? { width: 'max-content', minWidth: '100%' }
+                        : { width: '100%', minWidth: 0, maxWidth: '100%' }),
+                      position: 'relative',
+                      zIndex: isRowHovered ? 1 : 0,
+                      bgcolor: 'transparent',
+                      cursor: onRowClick ? 'pointer' : 'default',
+                      borderBottom: showDivider ? `1px solid ${hideDividerForHover ? 'transparent' : dividerColor}` : 'none',
+                      borderRadius: isRowHovered ? ROW_HOVER_BORDER_RADIUS : 0,
+                      transition: 'background-color 120ms ease, border-color 120ms ease, border-radius 120ms ease',
+                      ...(disableHover
+                        ? {}
+                        : {
+                          '&:hover': {
+                            backgroundColor: rowHoverBgColor,
+                            borderBottomColor: 'transparent',
+                            borderRadius: ROW_HOVER_BORDER_RADIUS,
+                          },
+                          '&:has(+ *:hover)': {
+                            borderBottomColor: 'transparent',
+                          },
+                        }),
+                    }
+                  },
+                  ...rowSxArray,
+                ]}
+              >
+                {columns.map((col, colIdx) => {
+                  const value = (row as Record<string, unknown>)[col.field]
+                  const isRowHeaderCell = rowHeader !== undefined && colIdx === rowHeader.colIndex
+                  const rowHeaderCellSx = getRowHeaderCellSx(colIdx)
+                  const showDetailShortcutCell =
+                    detailShortcutColumnField !== undefined &&
+                    onDetailShortcutClick !== undefined &&
+                    col.field === detailShortcutColumnField
+
+                  if (showDetailShortcutCell) {
+                    return (
+                      <Box
+                        key={col.field}
+                        data-row-header={isRowHeaderCell ? 'true' : undefined}
+                        sx={[
+                          {
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: cellJustifyContent(col.align),
+                            ...cellBoxSx,
+                          },
+                          ...toSxArray(rowHeaderCellSx),
+                          ...toSxArray(getCellSx?.({ field: col.field, row })),
+                        ]}
+                      >
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            opacity: isRowHovered ? 1 : 0,
+                            transition: `opacity ${DETAIL_SHORTCUT_HOVER_MS}ms ${DETAIL_SHORTCUT_HOVER_EASE}`,
+                            pointerEvents: isRowHovered ? 'auto' : 'none',
+                            '@media (prefers-reduced-motion: reduce)': {
+                              transition: 'none',
+                            },
+                          }}
+                        >
+                          <MIBaseButton
+                            variant="outlined"
+                            enableHoverBackground
+                            aria-label="상세 보기"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDetailShortcutClick({ row })
+                            }}
+                            sx={{
+                              width: '22px',
+                              minWidth: '0px',
+                              height: '22px',
+                              padding: '3px',
+                              borderRadius: '4px',
+                              backgroundColor: 'commonColor.White',
+                            }}
+                          >
+                            <OpenInNewIcon sx={{ fontSize: 14, color: 'contentIcon.Enabled' }} />
+                          </MIBaseButton>
+                        </Box>
+                      </Box>
+                    )
+                  }
+
+                  const content = col.renderCell
+                    ? col.renderCell({
+                      value,
+                      row,
+                      field: col.field,
+                      id: currentKey,
+                      api: undefined,
+                      rowNode: undefined,
+                      colDef: col,
+                      cellMode: 'view',
+                      hasFocus: false,
+                      tabIndex: 0,
+                      formattedValue: value,
+                      isEditable: false,
+                    } as never)
+                    : value
+                  const node = renderCellContentToNode(content)
+
+                  const textAlign = cellTextAlign(col.align)
+
+                  const shouldWrapEllipsisTooltip = resolveShouldShowEllipsisTooltip({ col, value })
+
                   return (
                     <Box
                       key={col.field}
@@ -957,108 +1041,44 @@ const MIDataTableBody = <T extends GridRowModel>({
                         ...toSxArray(getCellSx?.({ field: col.field, row })),
                       ]}
                     >
-                      <Box
-                        sx={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '100%',
-                          opacity: isRowHovered ? 1 : 0,
-                          transition: `opacity ${DETAIL_SHORTCUT_HOVER_MS}ms ${DETAIL_SHORTCUT_HOVER_EASE}`,
-                          pointerEvents: isRowHovered ? 'auto' : 'none',
-                          '@media (prefers-reduced-motion: reduce)': {
-                            transition: 'none',
-                          },
-                        }}
-                      >
-                        <MIBaseButton
-                          variant="outlined"
-                          enableHoverBackground
-                          aria-label="상세 보기"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onDetailShortcutClick({ row })
-                          }}
-                          sx={{
-                            width: '22px',
-                            minWidth: '0px',
-                            height: '22px',
-                            padding: '3px',
-                            borderRadius: '4px',
-                            backgroundColor: 'commonColor.White',
-                          }}
-                        >
-                          <OpenInNewIcon sx={{ fontSize: 14, color: 'contentIcon.Enabled' }} />
-                        </MIBaseButton>
-                      </Box>
+                      {typeof node === 'string' || typeof node === 'number' ? (
+                        <MIDataTableCellText
+                          value={String(node)}
+                          variant={primitiveVariant}
+                          tooltipWhenTruncated
+                          sx={[
+                            {
+                              flex: '1 1 0',
+                              minWidth: 0,
+                              width: '100%',
+                              textAlign,
+                              lineHeight: primitiveCellLineHeight ?? MI_DATA_TABLE_BODY_LINE_HEIGHT_DEFAULT,
+                            },
+                            ...(primitiveBodySx ? [primitiveBodySx] : []),
+                          ]}
+                        />
+                      ) : shouldWrapEllipsisTooltip && typeof value === 'string' ? (
+                        <DefaultEllipsisTooltip value={value} textAlign={textAlign}>
+                          {node}
+                        </DefaultEllipsisTooltip>
+                      ) : (
+                        node
+                      )}
                     </Box>
                   )
-                }
-
-                const content = col.renderCell
-                  ? col.renderCell({
-                    value,
-                    row,
-                    field: col.field,
-                    id: currentKey,
-                    api: undefined,
-                    rowNode: undefined,
-                    colDef: col,
-                    cellMode: 'view',
-                    hasFocus: false,
-                    tabIndex: 0,
-                    formattedValue: value,
-                    isEditable: false,
-                  } as never)
-                  : value
-                const node = renderCellContentToNode(content)
-
-                const textAlign = cellTextAlign(col.align)
-
-                const shouldWrapEllipsisTooltip = resolveShouldShowEllipsisTooltip({ col, value })
-
-                return (
-                  <Box
-                    key={col.field}
-                    data-row-header={isRowHeaderCell ? 'true' : undefined}
-                    sx={[
-                      {
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: cellJustifyContent(col.align),
-                        ...cellBoxSx,
-                      },
-                      ...toSxArray(rowHeaderCellSx),
-                      ...toSxArray(getCellSx?.({ field: col.field, row })),
-                    ]}
-                  >
-                    {typeof node === 'string' || typeof node === 'number' ? (
-                      <MIDataTableCellText
-                        value={String(node)}
-                        variant={primitiveVariant}
-                        tooltipWhenTruncated
-                        sx={[
-                          {
-                            flex: '1 1 0',
-                            minWidth: 0,
-                            width: '100%',
-                            textAlign,
-                            lineHeight: primitiveCellLineHeight ?? MI_DATA_TABLE_BODY_LINE_HEIGHT_DEFAULT,
-                          },
-                          ...(primitiveBodySx ? [primitiveBodySx] : []),
-                        ]}
-                      />
-                    ) : shouldWrapEllipsisTooltip && typeof value === 'string' ? (
-                      <DefaultEllipsisTooltip value={value} textAlign={textAlign}>
-                        {node}
-                      </DefaultEllipsisTooltip>
-                    ) : (
-                      node
-                    )}
-                  </Box>
-                )
-              })}
-            </Box>
+                })}
+              </Box>
+              {hasRowDetail ? (
+                <Box
+                  onClick={(e) => e.stopPropagation()}
+                  sx={
+                    enableHorizontalScroll ? { width: 'max-content', minWidth: '100%' } : { width: '100%', minWidth: 0, maxWidth: '100%' }
+                  }
+                >
+                  {rowDetailContent}
+                </Box>
+              ) : null}
+            </Fragment>
           )
         })}
       </Stack>

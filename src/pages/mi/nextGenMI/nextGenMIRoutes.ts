@@ -59,3 +59,6 @@ export const resolveNextGenMITabFromPathname = (pathname: string): NextGenMITabK
 }
 
 export const getNextGenMITabIndex = (tabKey: NextGenMITabKey) => NEXT_GEN_MI_TAB_INFO.findIndex((tab) => tab.key === tabKey)
+
+export const getNextGenMIEventDetailPath = (eventId: string | number) =>
+  `${NEXT_GEN_MI_BASE_PATH}/events/${encodeURIComponent(String(eventId))}`

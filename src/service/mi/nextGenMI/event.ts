@@ -8,7 +8,7 @@ import type {
 } from '@/service/mi/nextGenMI/scenarioGroup'
 
 import api from '@/lib/axios'
-import { MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
+import { type EventSourceType, MarketDirection, MarketImpactLevel } from '@/service/mi/nextGenMI/common'
 import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 export type EventSort = 'latest' | 'oldest'
@@ -41,7 +41,11 @@ export interface EventImpactIndex {
 
 export type ScenarioGroupLifecycleStatus = 'creating' | 'created' | 'realized'
 
-/** 이벤트 연결 시나리오 그룹 (그룹 N 펼침 패널) */
+/**
+ * GET .../events/{eventId}/scenario-groups
+ * - 그룹ID, 그룹명, 생성자, 생성일시, 상태, 단계(1/2), 본인 여부
+ * - 생성일시 최신순은 화면에서 재정렬
+ */
 export interface EventLinkedScenarioGroup {
   scenarioGroupId: number
   title: string
@@ -51,9 +55,44 @@ export interface EventLinkedScenarioGroup {
   stageLabel?: string
   designStep?: EventDesignStep | string | null
   designStepLabel?: string | null
-  /** 설계중 그룹 진행자가 로그인 사용자인지. false면 잠금 배지. 설계중이 아니면 null */
+  /** 설계중 그룹 진행자가 로그인 사용자인지. false면 잠금. 설계중이 아니면 null */
   mine?: boolean | null
+  /** 생성자 표시명 */
+  createdByName?: string | null
+  /** 생성일시 */
+  createdAt?: string | null
   events?: string[]
+}
+
+/** BE 필드명 흔들림 대비 - 응답을 화면 타입으로 정규화 */
+const normalizeEventLinkedScenarioGroup = (raw: Record<string, unknown>): EventLinkedScenarioGroup => {
+  const scenarioGroupIdRaw = raw.scenarioGroupId ?? raw.id
+  const scenarioGroupId = typeof scenarioGroupIdRaw === 'number' ? scenarioGroupIdRaw : Number(scenarioGroupIdRaw)
+
+  const titleRaw = raw.title ?? raw.groupName ?? raw.scenarioGroupName
+  const title = typeof titleRaw === 'string' ? titleRaw : ''
+
+  const createdByNameRaw = raw.createdByName ?? raw.creatorName ?? raw.ownerName ?? raw.registrantName
+  const createdByName =
+    typeof createdByNameRaw === 'string'
+      ? createdByNameRaw
+      : createdByNameRaw === null || createdByNameRaw === undefined
+        ? null
+        : String(createdByNameRaw)
+
+  const createdAtRaw = raw.createdAt
+  const createdAt =
+    typeof createdAtRaw === 'string' ? createdAtRaw : createdAtRaw === null || createdAtRaw === undefined ? null : String(createdAtRaw)
+
+  const base = raw as unknown as EventLinkedScenarioGroup
+
+  return {
+    ...base,
+    scenarioGroupId: Number.isFinite(scenarioGroupId) ? scenarioGroupId : 0,
+    title,
+    createdByName,
+    createdAt,
+  }
 }
 
 export interface EventListItem {
@@ -70,8 +109,11 @@ export interface EventListItem {
   latestRecordFirstCreated: string
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
-  /** 연결된 활성 시나리오 그룹 수. 0이면 설계 아이콘, 1 이상이면 그룹 N */
+  /** 연결된 활성 시나리오 그룹 수. 1 이상이면 이벤트명 옆 펼침 버튼 표시 */
   scenarioGroupCount?: number
+  /** 출처. user면 이벤트명 옆 사용자 등록 배지 */
+  sourceType?: EventSourceType | null
+  sourceTypeLabel?: string | null
   indexImpacts: EventImpactIndex[]
 }
 
@@ -83,6 +125,10 @@ export interface EventAppliedFilter {
   sort?: EventSort
   keyword?: string
   suggestedOnly?: boolean
+  /** 출처. null이면 전체 */
+  sourceType?: EventSourceType | null
+  /** 내가 만든 이벤트만 보기 */
+  mine?: boolean | null
 }
 
 export interface EventList {
@@ -100,6 +146,10 @@ export interface GetEventsParams {
   endDate?: string
   keyword?: string
   suggestedOnly?: boolean
+  /** 출처 필터. 생략 시 전체 */
+  sourceType?: EventSourceType
+  /** 내가 만든 이벤트만 보기. true면 출처는 user로 고정 */
+  mine?: boolean
 }
 
 export interface EventImpactIndexTerm {
@@ -203,6 +253,11 @@ export interface EventDetail {
   isScenarioSuggested?: boolean
   scenarioSuggestReason?: string | null
   latestRecordFirstCreated?: string
+  /** 출처. user면 사용자 등록 배지 */
+  sourceType?: EventSourceType | null
+  sourceTypeLabel?: string | null
+  /** 등록자명. 사용자 등록 이벤트만 값이 있고, 그 외에는 null */
+  registrantName?: string | null
   createdAt: string
   updatedAt: string
   aiInsights?: EventAiInsights | null
@@ -286,6 +341,8 @@ const nextGenMIEventService = {
         eventStatus: params.eventStatus,
         eventTypeL1Id: params.eventTypeL1Id,
         suggestedOnly: params.suggestedOnly,
+        sourceType: params.sourceType,
+        mine: params.mine,
       },
       paramsSerializer: (p) => serializeNextGenMIEventsParams(p as Record<string, unknown>),
     })
@@ -304,7 +361,8 @@ const nextGenMIEventService = {
       `mi/next-gen/events/${encodeURIComponent(String(eventId))}/scenario-groups`,
     )
 
-    return response.data.data ?? []
+    const groups = response.data.data ?? []
+    return groups.map((group) => normalizeEventLinkedScenarioGroup(group as unknown as Record<string, unknown>))
   },
 
   async getEventRecords(eventId: string, params?: IGetNextGenMIEventRecordsParams): Promise<IPaginationResponse<EventRelatedRecord>> {

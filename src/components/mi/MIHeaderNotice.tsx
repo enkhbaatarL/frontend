@@ -11,8 +11,9 @@ import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIButton from '@/components/common/button/MIButton'
 import NoticeIcon from '@/components/common/icons/NoticeIcon'
 import MITabs from '@/components/common/tabs/MITabs'
+import { getNextGenMIEventDetailPath } from '@/pages/mi/nextGenMI/nextGenMIRoutes'
 import boardService, { INoticeInfo } from '@/service/mi/board'
-import notificationService, { INotificationHistory } from '@/service/mi/notification'
+import notificationService, { IBellNotification } from '@/service/mi/notification'
 import useAuthStore, { usesOwnCompanyInMi } from '@/store/useAuthStore'
 
 interface NoticeItemProps {
@@ -123,6 +124,91 @@ const AlertItem = ({ id, trend, title, subtitle, date, isRead, onClick }: Notice
   </ListItem>
 )
 
+const highlightKeywordInAlert = (text: string, keyword: string, isRead: boolean) => {
+  const index = text.toLowerCase().indexOf(keyword.toLowerCase())
+  if (index < 0) return text
+  const matched = text.slice(index, index + keyword.length)
+
+  return (
+    <>
+      {text.slice(0, index)}
+      <Typography component="span" variant="body2R14" color={isRead ? 'gray.60' : 'mari.Primary'}>
+        {matched}
+      </Typography>
+      {text.slice(index + keyword.length)}
+    </>
+  )
+}
+
+const KeywordAlertItem = ({
+  keywordName,
+  eventName,
+  date,
+  isRead,
+  onClick,
+}: {
+  keywordName: string
+  eventName: string
+  date: string
+  isRead: boolean
+  onClick: () => void
+}) => (
+  <ListItem
+    onClick={onClick}
+    sx={{
+      padding: 5,
+      position: 'relative',
+      borderBottom: '1px solid #E9ECEF',
+      width: 'auto',
+      cursor: 'pointer',
+      transition: 'all 0.15s linear',
+      backgroundColor: isRead ? '#F8F9FA' : '#fff',
+      '.MuiTypography-root': {
+        transition: 'all 0.15s linear',
+      },
+    }}
+  >
+    <Box sx={{ width: 6, marginRight: '18px' }}>
+      {!isRead && <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'error.main' }} />}
+    </Box>
+    <ListItemAvatar
+      sx={{
+        marginRight: '12px',
+        width: '34px',
+        minWidth: 'unset',
+        height: '34px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'contentIcon.ActivePrimary',
+        backgroundColor: 'commonColor.Primarylight1',
+        fontWeight: 700,
+      }}
+    >
+      #
+    </ListItemAvatar>
+    <ListItemText
+      sx={{ margin: 0 }}
+      primary={
+        <Typography color={isRead ? 'gray.60' : 'gray.90'} variant="body2SB14" noWrap>
+          {`키워드 알림 · ${keywordName}`}
+        </Typography>
+      }
+      secondary={
+        <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '8px' }}>
+          <Typography variant="body2R14" color={isRead ? 'gray.60' : 'gray.70'} component="span" noWrap>
+            {highlightKeywordInAlert(eventName, keywordName, isRead)}
+          </Typography>
+          <Typography variant="body3R12" color="gray.60" component="span" sx={{ flexShrink: 0 }}>
+            {date}
+          </Typography>
+        </span>
+      }
+    />
+  </ListItem>
+)
+
 const NoticeItem = ({ id, title, subtitle, date, isRead, onClick }: NoticeItemProps) => (
   <ListItem
     onClick={() => onClick?.(id)}
@@ -223,8 +309,9 @@ const MIHeaderNotice = () => {
   const [isNoticeMenuOpen, setIsNoticeMenuOpen] = useState(false)
   const [notices, setNotices] = useState<INoticeInfo[]>([])
   const [isLoadingNotices, setIsLoadingNotices] = useState(false)
-  const [alerts, setAlerts] = useState<INotificationHistory[]>([])
+  const [alerts, setAlerts] = useState<IBellNotification[]>([])
   const [alertsIsLoading, setAlertsIsLoading] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const { user, accessCompanyInfo } = useAuthStore()
   const customerCompanyNo = accessCompanyInfo?.customerCompanyNo ?? 0
 
@@ -238,9 +325,8 @@ const MIHeaderNotice = () => {
   // 읽지 않은 알림이나 공지사항이 있는지 확인
   const hasUnreadItems = useMemo(() => {
     const hasUnreadNotices = notices.some((notice) => !notice.isRead)
-    const hasUnreadAlerts = alerts.some((alert) => !alert.isEmailInquiry)
-    return hasUnreadNotices || hasUnreadAlerts
-  }, [notices, alerts])
+    return hasUnreadNotices || unreadCount > 0
+  }, [notices, unreadCount])
 
   const handleToggleNoticeMenu = () => {
     if (isNoticeMenuOpen) {
@@ -257,19 +343,31 @@ const MIHeaderNotice = () => {
   const anchorEl = useRef<HTMLElement>(null)
 
   const fetchAlerts = useCallback(async () => {
-    // [운영자 서비스 접속] 알림 이력 조회 USER → USER·타사접속 운영자
-    if (usesOwnCompanyInMi(user)) {
-      try {
-        setAlertsIsLoading(true)
-        const response = await notificationService.getNotificationHistory({ page: 1, size: 10 })
-        if (response.detail) {
-          setAlerts(response.detail)
-        }
-      } catch {
-        return
-      } finally {
-        setAlertsIsLoading(false)
-      }
+    // [운영자 서비스 접속] 알림벨 조회 USER → USER·타사접속 운영자
+    if (!usesOwnCompanyInMi(user)) return
+
+    try {
+      setAlertsIsLoading(true)
+      const response = await notificationService.getBellNotifications({ page: 1, size: 10 })
+      setAlerts(response.detail ?? [])
+    } catch {
+      return
+    } finally {
+      setAlertsIsLoading(false)
+    }
+  }, [user])
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!usesOwnCompanyInMi(user)) {
+      setUnreadCount(0)
+      return
+    }
+
+    try {
+      const response = await notificationService.getBellNotificationUnreadCount()
+      setUnreadCount(response.unreadCount ?? 0)
+    } catch {
+      return
     }
   }, [user])
 
@@ -294,8 +392,14 @@ const MIHeaderNotice = () => {
   }, [customerCompanyNo])
 
   useEffect(() => {
+    fetchUnreadCount()
+  }, [fetchUnreadCount])
+
+  useEffect(() => {
+    if (!isNoticeMenuOpen) return
     fetchAlerts()
-  }, [user?.userRoleCd])
+    fetchUnreadCount()
+  }, [isNoticeMenuOpen, fetchAlerts, fetchUnreadCount])
 
   const handleNoticeClick = (noticeNo: number) => {
     navigate(`/mi/notices/${noticeNo}`)
@@ -307,13 +411,20 @@ const MIHeaderNotice = () => {
     handleCloseNoticeMenu()
   }
 
-  const handleNotificationReadInquiry = async (emailSendSn: number) => {
-    const response = await notificationService.getNotificationInquiry(emailSendSn)
-    navigate(`/mi/data-detail/${response.goodsNo}/${response.goodsDataNo}`, {
-      state: { goodsDataSrcNo: response.goodsDataSourceNo },
-      replace: true,
-    })
-    await fetchAlerts()
+  const handleBellItemClick = async (alert: IBellNotification) => {
+    const response = await notificationService.readBellNotification(alert.notificationType, alert.notificationId)
+
+    if (response.notificationType === 'EVENT_KEYWORD' && response.eventKeyword) {
+      navigate(getNextGenMIEventDetailPath(String(response.eventKeyword.eventId)))
+    } else if (response.goodsThreshold) {
+      navigate(`/mi/data-detail/${response.goodsThreshold.goodsNo}/${response.goodsThreshold.goodsDataNo}`, {
+        state: { goodsDataSrcNo: response.goodsThreshold.goodsDataSourceNo },
+        replace: true,
+      })
+    }
+
+    handleCloseNoticeMenu()
+    await Promise.all([fetchAlerts(), fetchUnreadCount()])
   }
 
   const tabsData = [
@@ -329,18 +440,31 @@ const MIHeaderNotice = () => {
                 </Typography>
               </Box>
             ) : alerts.length > 0 ? (
-              alerts.map((alert) => (
-                <AlertItem
-                  id={alert.emailSendSn}
-                  key={alert.emailSendSn}
-                  trend={['INCRATE', 'UPPER'].includes(alert.notificationCriticalValueSeparateCd) ? 'up' : 'down'}
-                  title={alert.goodsDataSourceNm}
-                  subtitle={alert.criticalValueSettingVol.toString().concat(alert.criticalValueSettingUnitNm || '')}
-                  date={dayjs(alert.emailSendDtm).format('YYYY-MM-DD')}
-                  isRead={alert.isEmailInquiry}
-                  onClick={() => handleNotificationReadInquiry(alert.emailSendSn)}
-                />
-              ))
+              alerts.map((alert) =>
+                alert.notificationType === 'EVENT_KEYWORD' && alert.eventKeyword ? (
+                  <KeywordAlertItem
+                    key={`${alert.notificationType}-${alert.notificationId}`}
+                    keywordName={alert.eventKeyword.keywordName}
+                    eventName={alert.eventKeyword.eventName}
+                    date={dayjs(alert.notifiedAt).format('YYYY-MM-DD')}
+                    isRead={alert.isRead}
+                    onClick={() => handleBellItemClick(alert)}
+                  />
+                ) : alert.goodsThreshold ? (
+                  <AlertItem
+                    id={alert.notificationId}
+                    key={`${alert.notificationType}-${alert.notificationId}`}
+                    trend={['INCRATE', 'UPPER'].includes(alert.goodsThreshold.notificationCriticalValueSeparateCd) ? 'up' : 'down'}
+                    title={alert.goodsThreshold.goodsDataSourceNm}
+                    subtitle={alert.goodsThreshold.criticalValueSettingVol
+                      .toString()
+                      .concat(alert.goodsThreshold.criticalValueSettingUnitNm || '')}
+                    date={dayjs(alert.notifiedAt).format('YYYY-MM-DD')}
+                    isRead={alert.isRead}
+                    onClick={() => handleBellItemClick(alert)}
+                  />
+                ) : null,
+              )
             ) : (
               <Box display="flex" justifyContent="center" alignItems="center" p={5} height={400}>
                 <Typography variant="body2R14" color="gray.60">

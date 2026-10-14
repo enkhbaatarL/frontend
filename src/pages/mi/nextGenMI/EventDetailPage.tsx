@@ -33,6 +33,7 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/ev
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
+import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/UserRegisteredEventBadge'
 import NextGenMIMarkdownDownloadButton from '@/pages/mi/nextGenMI/components/NextGenMIMarkdownDownloadButton'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
@@ -248,23 +249,26 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     gcTime: 0,
   })
 
-  const title = useMemo(() => {
-    const fromApi = detail?.eventName
-    if (fromApi) return fromApi
-    if (eventNameFromState) return eventNameFromState
-    return eventId ? `이벤트 ${eventId}` : '이벤트'
-  }, [detail?.eventName, eventId, eventNameFromState])
-
   useEffect(() => {
     if (!detailError) return
     showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
   }, [detailError, showSnackbar])
 
-  const generatedAtLabel = formatEventDetailTimestampLabel(detail?.createdAt)
-  const updatedAtLabel = formatEventDetailTimestampLabel(detail?.updatedAt)
+  const displayDetail = detail
+
+  const title = useMemo(() => {
+    const fromApi = displayDetail?.eventName
+    if (fromApi) return fromApi
+    if (eventNameFromState) return eventNameFromState
+    return eventId ? `이벤트 ${eventId}` : '이벤트'
+  }, [displayDetail?.eventName, eventId, eventNameFromState])
+  const generatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.createdAt)
+  const updatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.updatedAt)
+  const isUserRegisteredEvent = displayDetail?.sourceType === 'user'
+  const registrantName = displayDetail?.registrantName?.trim() || ''
 
   const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
-    const ia = detail?.impactAnalysis
+    const ia = displayDetail?.impactAnalysis
     return [
       {
         title: '카테고리',
@@ -277,7 +281,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         description: '\u00a0',
       },
     ]
-  }, [detail?.impactAnalysis])
+  }, [displayDetail?.impactAnalysis])
 
   const impactTableRows = detail?.impactAnalysis?.indexImpacts ?? []
   const impactNarrative = detail?.impactAnalysis?.analysisText ?? ''
@@ -420,15 +424,18 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             </>
           ) : (
             <>
-              <Typography
-                variant="titleLarge"
-                fontSize="26px"
-                fontWeight={600}
-                display="block"
-                sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}
-              >
-                {title}
-              </Typography>
+              <Stack direction="row" alignItems="center" gap="10px" minWidth={0} width="100%" overflow="hidden">
+                <Typography
+                  variant="titleLarge"
+                  fontSize="26px"
+                  fontWeight={600}
+                  noWrap
+                  sx={{ lineHeight: 1.4, minWidth: 0, flex: '0 1 auto', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                >
+                  {title}
+                </Typography>
+                {isUserRegisteredEvent ? <UserRegisteredEventBadge size="header" /> : null}
+              </Stack>
               <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
                 <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
                   <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
@@ -446,13 +453,32 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
                     {updatedAtLabel}
                   </Typography>
                 </Stack>
+                {isUserRegisteredEvent && registrantName ? (
+                  <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
+                    <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
+                      등록자
+                    </Typography>
+                    <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
+                      {registrantName}
+                    </Typography>
+                  </Stack>
+                ) : null}
               </Stack>
             </>
           )}
         </Stack>
       </Stack>
     ),
-    [detail?.signalType, detail?.signalTypeLabel, detailLoading, generatedAtLabel, title, updatedAtLabel],
+    [
+      detail?.signalType,
+      detail?.signalTypeLabel,
+      detailLoading,
+      generatedAtLabel,
+      isUserRegisteredEvent,
+      registrantName,
+      title,
+      updatedAtLabel,
+    ],
   )
 
   const headerCollapsedSummarySlot = useMemo(
@@ -463,10 +489,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         metaItems={[
           { label: '생성', value: generatedAtLabel },
           { label: '갱신', value: updatedAtLabel },
+          ...(isUserRegisteredEvent && registrantName ? [{ label: '등록자', value: registrantName }] : []),
         ]}
       />
     ),
-    [generatedAtLabel, title, updatedAtLabel],
+    [generatedAtLabel, isUserRegisteredEvent, registrantName, title, updatedAtLabel],
   )
 
   useLayoutEffect(() => {

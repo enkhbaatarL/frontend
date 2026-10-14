@@ -186,17 +186,24 @@ const ScenarioGroupDetailPage = () => {
   }, [groupDetailQueryKey, queryClient, scenarioGroupId])
 
   const eventBundles = useMemo(() => {
-    if ((data?.eventBundles?.length ?? 0) > 0) return data?.eventBundles ?? []
-    if (!data?.baseEvent) return []
-    return [
-      {
-        eventId: data.baseEvent.eventId,
-        eventName: data.baseEvent.eventName,
-        eventTypeLv1: data.baseEvent.eventTypeLv1,
-        eventTypeLv1Label: data.baseEvent.eventTypeLv1Label,
-        latestRecordFirstCreated: data.baseEvent.updatedAt,
-      },
-    ]
+    const bundles =
+      (data?.eventBundles?.length ?? 0) > 0
+        ? (data?.eventBundles ?? [])
+        : data?.baseEvent
+          ? [
+            {
+              eventId: data.baseEvent.eventId,
+              eventName: data.baseEvent.eventName,
+              eventTypeLv1: data.baseEvent.eventTypeLv1,
+              eventTypeLv1Label: data.baseEvent.eventTypeLv1Label,
+              latestRecordFirstCreated: data.baseEvent.updatedAt,
+              sourceType: data.baseEvent.sourceType,
+              sourceTypeLabel: data.baseEvent.sourceTypeLabel,
+            },
+          ]
+          : []
+
+    return bundles
   }, [data?.baseEvent, data?.eventBundles])
   const scenarios = useMemo(() => data?.scenarios ?? [], [data?.scenarios])
 

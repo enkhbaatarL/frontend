@@ -1,5 +1,8 @@
 export type NextGenMIIndexName = 'JKM' | 'TTF' | 'HH'
 
+/** 이벤트 출처. platform: 플랫폼 등록, user: 사용자 등록 */
+export type EventSourceType = 'platform' | 'user'
+
 export enum NextGenMIStatus {
   ALL = 'all',
   NEW = 'new',
