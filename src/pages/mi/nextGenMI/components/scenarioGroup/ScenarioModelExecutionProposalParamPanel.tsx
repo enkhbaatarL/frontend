@@ -1,6 +1,7 @@
 import { Stack, Tab, Tabs, Typography } from '@mui/material'
 import { memo, useEffect, useMemo, useState } from 'react'
 
+import type { PowerMixValidationError } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionPowerMixValidation'
 import type { ScenarioGroupModelParamCompare } from '@/service/mi/nextGenMI/modelExecution'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
@@ -18,6 +19,8 @@ import ScenarioModelExecutionProposalParamMatrix, {
 interface ScenarioModelExecutionProposalParamPanelProps {
   visibleScenarios: ProposalParamVisibleScenario[]
   compare: ScenarioGroupModelParamCompare | null
+  receivedCompare: ScenarioGroupModelParamCompare | null
+  powerMixErrors: PowerMixValidationError[]
   resetToken?: number
   /** 수급모델 제출/초기화 중 Value·네비게이션 잠금 (PopupContent isSubmitting || isResetting) */
   disabled?: boolean
@@ -77,6 +80,8 @@ const ParameterChip = ({
 const ScenarioModelExecutionProposalParamPanel = ({
   visibleScenarios,
   compare,
+  receivedCompare,
+  powerMixErrors,
   resetToken,
   disabled = false,
   canDownloadInputFiles = false,
@@ -145,8 +150,29 @@ const ScenarioModelExecutionProposalParamPanel = ({
     [activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex, compare, matrixScenarioIds],
   )
 
+  const receivedMatrix = useMemo(
+    () =>
+      buildCompareParamMatrixData({
+        compare: receivedCompare,
+        visibleScenarioIds: matrixScenarioIds,
+        modelFileName: activeModelFile,
+        modelSheetName: activeModelSheet,
+        modelTableName: activeModelTable,
+        parameterIndex: activeParameterIndex,
+      }),
+    [activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex, receivedCompare, matrixScenarioIds],
+  )
+
   return (
-    <Stack width="100%" flex="1 1 auto" minHeight={0} borderTop="1px solid" borderColor="contentBorder.Normal">
+    <Stack
+      width="100%"
+      flex="1 1 auto"
+      minWidth={0}
+      minHeight={0}
+      overflow="hidden"
+      borderTop="1px solid"
+      borderColor="contentBorder.Normal"
+    >
       <Stack
         direction="row"
         alignItems="center"
@@ -160,11 +186,15 @@ const ScenarioModelExecutionProposalParamPanel = ({
       >
         <Tabs
           value={activeModelFile ?? false}
+          variant="scrollable"
+          scrollButtons="auto"
           onChange={(_, value: string) => {
             if (disabled) return
             setModelFile(value)
           }}
           sx={{
+            flex: '1 1 0',
+            minWidth: 0,
             height: '100%',
             minHeight: 0,
             borderBottom: 'none',
@@ -245,10 +275,11 @@ const ScenarioModelExecutionProposalParamPanel = ({
         </Stack>
       )}
 
-      <Stack flex="1 1 0" minHeight="172px" padding="20px 24px" bgcolor="commonColor.White">
+      <Stack flex="1 1 0" minWidth={0} minHeight={0} overflow="hidden" padding="20px 24px" bgcolor="commonColor.White">
         {visibleScenarios.length === 0 ? (
           <Stack
-            height="240px"
+            flex="1 1 0"
+            minHeight={0}
             alignItems="center"
             justifyContent="center"
             border="1px solid"
@@ -272,6 +303,14 @@ const ScenarioModelExecutionProposalParamPanel = ({
             visibleScenarios={visibleScenarios}
             proposalScenarios={compare?.scenarios ?? []}
             matrix={matrix}
+            receivedMatrix={receivedMatrix}
+            powerMixErrors={
+              activeModelFile === 'Demand' && activeModelSheet === 'PowerMixAdjustment'
+                ? powerMixErrors.filter(
+                  (error) => error.modelTableName === activeModelTable && error.parameterIndex === activeParameterIndex,
+                )
+                : []
+            }
             scrollResetKey={JSON.stringify([activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex])}
             resetToken={resetToken}
             disabled={disabled}

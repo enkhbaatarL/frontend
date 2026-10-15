@@ -116,6 +116,10 @@ type ScenarioGroupStickyTableProps<T> = {
   rightScrollEdgeEffect?: ScenarioGroupStickyTableScrollEdgeEffect
   /** 분할 테이블의 세로 스크롤 동기화용 pane처럼 스크롤 동작만 유지하고 세로 thumb/gutter는 숨길 때 사용 */
   hideVerticalScrollbar?: boolean
+  /** 세로 스크롤바 공간을 예약하지 않고 콘텐츠 위에 겹쳐 표시 */
+  overlayVerticalScrollbar?: boolean
+  /** 세로 스크롤바의 오른쪽 위치. 음수이면 테이블 바깥에 표시 */
+  verticalScrollbarRight?: string
   /** 좌우 분할 테이블의 본문 높이를 맞추기 위해 가로 스크롤 유무와 관계없이 하단 gutter를 유지 */
   reserveHorizontalScrollbarGutter?: boolean
   hoverType?: ScenarioGroupStickyTableHoverType
@@ -399,6 +403,8 @@ const ScenarioGroupStickyTable = <T,>({
   leftScrollEdgeEffect = 'gradient',
   rightScrollEdgeEffect = 'gradient',
   hideVerticalScrollbar = false,
+  overlayVerticalScrollbar = false,
+  verticalScrollbarRight = '4px',
   reserveHorizontalScrollbarGutter = false,
   hoverType = 'horizontal',
   oddBackground = false,
@@ -1125,7 +1131,8 @@ const ScenarioGroupStickyTable = <T,>({
   const showScrollbars = isScrollAreaHovered || dragAxis !== null
   const reserveExternalHorizontalScrollbarGutter =
     !showPageStickyHeader && (scrollLayoutState.horizontal || reserveHorizontalScrollbarGutter)
-  const reserveExternalVerticalScrollbarGutter = !hideVerticalScrollbar && (!showPageStickyHeader || scrollLayoutState.vertical)
+  const reserveExternalVerticalScrollbarGutter =
+    !overlayVerticalScrollbar && !hideVerticalScrollbar && (!showPageStickyHeader || scrollLayoutState.vertical)
   const canUseInsetHorizontalScrollbar =
     canInsetHorizontalScrollbar &&
     scrollLayoutState.clientWidth >
@@ -1910,7 +1917,7 @@ const ScenarioGroupStickyTable = <T,>({
           overflowY: 'hidden',
           overscrollBehaviorX: 'none',
           scrollbarWidth: 'none',
-          pr: scrollLayoutState.vertical ? '18px' : 0,
+          pr: !overlayVerticalScrollbar && scrollLayoutState.vertical ? '18px' : 0,
           ...initialScrollVisualStateSx,
           '&::-webkit-scrollbar': { display: 'none' },
         }}
@@ -1941,7 +1948,7 @@ const ScenarioGroupStickyTable = <T,>({
         sx={{
           position: 'absolute',
           bottom: 0,
-          right: scrollLayoutState.vertical ? '18px' : 0,
+          right: !overlayVerticalScrollbar && scrollLayoutState.vertical ? '18px' : 0,
           left: 0,
           height: '1px',
           pointerEvents: 'none',
@@ -2293,7 +2300,7 @@ const ScenarioGroupStickyTable = <T,>({
           sx={{
             position: 'absolute',
             top: 0,
-            right: '4px',
+            right: verticalScrollbarRight,
             bottom: reserveExternalHorizontalScrollbarGutter ? '22px' : 0,
             width: '10px',
             borderRadius: '10px',

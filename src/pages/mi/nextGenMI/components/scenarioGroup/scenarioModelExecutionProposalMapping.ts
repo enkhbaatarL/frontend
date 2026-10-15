@@ -190,9 +190,12 @@ export interface ProposalParamPeriodColumn {
   periodLabel: string
   timeKey: string
   miBaseValues: string[]
+  /** 편집·추천값 복원용 원본값. 표시할 때만 필요에 따라 반올림한다. */
   scenarioValuesById: Record<number, string[]>
   /** compare cells[i] === null 인 셀 - 입력 비활성 */
   scenarioCellDisabledById: Record<number, boolean[]>
+  /** 반올림 전 원본 데이터와 MI Base 값의 일치 여부 */
+  scenarioMiBaseMatchedById: Record<number, boolean[]>
   /** 셀 단위 추천 근거 (없으면 빈 문자열) */
   scenarioRationalesById: Record<number, string[]>
   sourceRowIndexesByScenarioId: Record<number, number[]>
@@ -202,6 +205,7 @@ export interface ProposalParamMatrixData {
   fixedHeaders: string[]
   fixedRows: string[][]
   periods: ProposalParamPeriodColumn[]
+  showRawValues: boolean
   readMode?: ModelParamCompareShape['readMode']
 }
 
@@ -214,7 +218,7 @@ const findCompareParameter = (
 ): { parameter: ModelParamCompareParameter; shape: ModelParamCompareShape } | null => {
   if (!compare) return null
   const shapes = compare.parameterShapes.filter(
-    (shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && shape.modelTable === modelTableName,
+    (shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && (shape.modelTable ?? null) === modelTableName,
   )
   const shape = shapes[parameterIndex]
   if (!shape) return null
@@ -243,6 +247,7 @@ export const buildCompareParamMatrixData = ({
   if (!matched) return null
 
   const { parameter, shape } = matched
+  const showRawValues = shape.modelFile === 'Demand' && shape.modelSheet === 'PowerMixAdjustment' && shape.parameterName === 'PowerMix'
   const columns = shape.columns ?? []
   const slotColumns = columns.filter((column) => column.kind === 'SLOT')
   const timeAxisColumns = columns.filter((column) => column.kind === 'TIME_AXIS')
@@ -307,17 +312,19 @@ export const buildCompareParamMatrixData = ({
       })
       const fieldValue = getValueColumnRawValue(match, valueMeta?.valueColumn, valueFieldNames, valueMeta?.valueColumnIndex ?? 0)
       const base = fieldValue !== undefined ? fieldValue : match?.basecaseValue
-      return formatCompareDisplayValue(base)
+      return showRawValues ? getDisplayValue(base) : formatCompareDisplayValue(base)
     })
 
     const scenarioValuesById: Record<number, string[]> = {}
     const scenarioCellDisabledById: Record<number, boolean[]> = {}
+    const scenarioMiBaseMatchedById: Record<number, boolean[]> = {}
     const scenarioRationalesById: Record<number, string[]> = {}
     const sourceRowIndexesByScenarioId: Record<number, number[]> = {}
 
     visibleScenarioIds.forEach((scenarioId) => {
       scenarioValuesById[scenarioId] = []
       scenarioCellDisabledById[scenarioId] = []
+      scenarioMiBaseMatchedById[scenarioId] = []
       scenarioRationalesById[scenarioId] = []
       sourceRowIndexesByScenarioId[scenarioId] = []
 
@@ -333,6 +340,7 @@ export const buildCompareParamMatrixData = ({
         if (matchIndex < 0) {
           scenarioValuesById[scenarioId].push('')
           scenarioCellDisabledById[scenarioId].push(false)
+          scenarioMiBaseMatchedById[scenarioId].push(false)
           scenarioRationalesById[scenarioId].push('')
           return
         }
@@ -342,11 +350,15 @@ export const buildCompareParamMatrixData = ({
         if (cell === null) {
           scenarioValuesById[scenarioId].push('')
           scenarioCellDisabledById[scenarioId].push(true)
+          scenarioMiBaseMatchedById[scenarioId].push(false)
           scenarioRationalesById[scenarioId].push('')
           return
         }
         const value = cell?.proposedValue
-        scenarioValuesById[scenarioId].push(formatCompareDisplayValue(value))
+        const fieldValue = getValueColumnRawValue(matchRow, valueMeta?.valueColumn, valueFieldNames, valueMeta?.valueColumnIndex ?? 0)
+        const base = fieldValue !== undefined ? fieldValue : matchRow.basecaseValue
+        scenarioMiBaseMatchedById[scenarioId].push(typeof value === 'number' && Number.isFinite(value) && value === base)
+        scenarioValuesById[scenarioId].push(getDisplayValue(value))
         scenarioCellDisabledById[scenarioId].push(false)
         scenarioRationalesById[scenarioId].push(value === undefined || value === null ? '' : (cell?.rationale?.trim() ?? ''))
       })
@@ -358,6 +370,7 @@ export const buildCompareParamMatrixData = ({
       miBaseValues,
       scenarioValuesById,
       scenarioCellDisabledById,
+      scenarioMiBaseMatchedById,
       scenarioRationalesById,
       sourceRowIndexesByScenarioId,
     }
@@ -367,6 +380,7 @@ export const buildCompareParamMatrixData = ({
     fixedHeaders,
     fixedRows: slotKeys.map((slotKey) => slots.get(slotKey) ?? []),
     periods: periodColumns,
+    showRawValues,
     readMode: shape.readMode,
   }
 }
@@ -453,7 +467,9 @@ export const getCompareParameterChips = (
 ) => {
   if (!compare) return []
   return compare.parameterShapes
-    .filter((shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && shape.modelTable === modelTableName)
+    .filter(
+      (shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && (shape.modelTable ?? null) === modelTableName,
+    )
     .map((shape, index) => ({
       index,
       label: shape.parameterName ?? `Parameter ${index + 1}`,

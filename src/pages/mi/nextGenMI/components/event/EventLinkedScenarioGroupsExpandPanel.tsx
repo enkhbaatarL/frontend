@@ -1,14 +1,14 @@
 import { CircularProgress, Stack, Typography, type TypographyProps } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { type MouseEvent, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import type { EventDesignStep, EventLinkedScenarioGroup, ScenarioGroupLifecycleStatus } from '@/service/mi/nextGenMI/event'
 
-import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
-import MIBaseButton from '@/components/common/button/MIBaseButton'
-import ArrowRight from '@/components/common/icons/ArrowRight'
+import LoadingIcon from '@/components/common/icons/LoadingIcon'
+import MISpinner from '@/components/common/spinner/MISpinner'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import { normalizeEventDesignStep } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
@@ -18,7 +18,7 @@ export type EventLinkedScenarioGroupsExpandPanelProps = {
   onView: (group: EventLinkedScenarioGroup) => void
 }
 
-const LINKED_GROUP_TABLE_COLUMNS = 'minmax(0, 660px) 180px minmax(0, 1fr) minmax(0, 1fr) 100px'
+const LINKED_GROUP_TABLE_COLUMNS = 'minmax(0, 660px) 180px minmax(0, 1fr) minmax(0, 1fr)'
 
 const LinkedGroupEllipsisText = ({ value, sx, ...typographyProps }: Omit<TypographyProps, 'children'> & { value: string }) => {
   const { ref, isEllipsis } = useEllipsisDetection(value)
@@ -67,7 +67,18 @@ const LinkedGroupStatusCell = ({ group }: { group: EventLinkedScenarioGroup }) =
 
   return (
     <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
-      <MIAgentSpinner size={20} tone="gray" sx={{ flexShrink: 0, '& svg': { width: '20px', height: '20px' } }} />
+      <MISpinner
+        size={20}
+        speed={0.55}
+        sx={(theme) => ({
+          flexShrink: 0,
+          '& svg path': {
+            fill: `${theme.palette.contentIcon.Disabled} !important`,
+          },
+        })}
+      >
+        <LoadingIcon width="20px" height="20px" />
+      </MISpinner>
       <Typography variant="body2SB14" color="contentText.Disabled" lineHeight={1.4} noWrap>
         {`${stepNumber}단계 진행중`}
       </Typography>
@@ -105,11 +116,6 @@ const EventLinkedScenarioGroupsExpandPanel = ({ eventId, onView }: EventLinkedSc
 
   const groupCount = groups.length
   const showLoading = isLoading && eventId > 0
-
-  const handleView = (e: MouseEvent<HTMLElement>, group: EventLinkedScenarioGroup) => {
-    e.stopPropagation()
-    onView(group)
-  }
 
   return (
     <Stack
@@ -158,7 +164,6 @@ const EventLinkedScenarioGroupsExpandPanel = ({ eventId, onView }: EventLinkedSc
               상태
             </Typography>
           </Stack>
-          <Stack height="48px" />
         </Stack>
 
         {showLoading ? (
@@ -183,7 +188,7 @@ const EventLinkedScenarioGroupsExpandPanel = ({ eventId, onView }: EventLinkedSc
                 sx={{ display: 'grid', gridTemplateColumns: LINKED_GROUP_TABLE_COLUMNS }}
               >
                 <Stack minWidth={0} justifyContent="center" padding="10px 6px" boxSizing="border-box">
-                  <LinkedGroupEllipsisText value={title} variant="body1SB16" color="contentText.Black" lineHeight={1.4} />
+                  <NextGenMIHoverLinkCell value={title} ariaLabel={`${title} 보기`} onClick={() => onView(group)} />
                 </Stack>
                 <Stack minWidth={0} justifyContent="center" padding="10px 6px" boxSizing="border-box">
                   <LinkedGroupEllipsisText value={creatorName} variant="body2M14" color="contentText.Black" />
@@ -195,32 +200,6 @@ const EventLinkedScenarioGroupsExpandPanel = ({ eventId, onView }: EventLinkedSc
                 </Stack>
                 <Stack minWidth={0} justifyContent="center" padding="10px 6px" boxSizing="border-box" height="48px">
                   <LinkedGroupStatusCell group={group} />
-                </Stack>
-                <Stack alignItems="center" justifyContent="center" padding="10px 6px" boxSizing="border-box" height="48px">
-                  <MIBaseButton
-                    variant="outlined"
-                    aria-label={`${title} 보기`}
-                    onClick={(e) => handleView(e, group)}
-                    suffix={<ArrowRight width="20px" height="20px" aria-hidden />}
-                    gap="0px"
-                    sx={{
-                      height: '36px',
-                      minWidth: 'auto',
-                      padding: '6px 6px 6px 10px',
-                      borderRadius: '8px',
-                      borderColor: 'contentBorder.Normal',
-                      backgroundColor: 'commonColor.White',
-                      color: 'contentText.Normal',
-                      flexShrink: 0,
-                      '&:hover:not(:disabled)': {
-                        borderColor: 'contentBorder.Hover',
-                        backgroundColor: 'gray.5',
-                        color: 'contentText.Normal',
-                      },
-                    }}
-                  >
-                    보기
-                  </MIBaseButton>
                 </Stack>
               </Stack>
             )

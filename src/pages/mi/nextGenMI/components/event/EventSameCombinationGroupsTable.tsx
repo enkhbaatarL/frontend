@@ -1,15 +1,14 @@
 import { CircularProgress, Stack, Typography, type TypographyProps } from '@mui/material'
-import { type MouseEvent, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import type { SameCombinationScenarioGroup } from '@/service/mi/nextGenMI/scenarioDesign'
 
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
-import MIBaseButton from '@/components/common/button/MIBaseButton'
-import ArrowRight from '@/components/common/icons/ArrowRight'
 import LoadingIcon from '@/components/common/icons/LoadingIcon'
 import MISpinner from '@/components/common/spinner/MISpinner'
 import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
+import NextGenMIHoverLinkCell from '@/pages/mi/nextGenMI/components/common/NextGenMIHoverLinkCell'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import {
   isSameCombinationGroupCompleted,
@@ -24,7 +23,7 @@ export type EventSameCombinationGroupsTableProps = {
 }
 
 /** 액션바 동일 조합 테이블: 헤더 + 최대 5행, 초과 시 세로만 내부 스크롤 */
-const SAME_COMBINATION_TABLE_COLUMNS = 'minmax(0, 1fr) minmax(0, 80px) 160px minmax(0, 128px) minmax(0, 78px)'
+const SAME_COMBINATION_TABLE_COLUMNS = 'minmax(0, 1fr) minmax(0, 80px) 160px minmax(0, 128px)'
 const SAME_COMBINATION_MAX_VISIBLE_ROWS = 5
 const SAME_COMBINATION_ROW_HEIGHT_PX = 48
 
@@ -121,11 +120,6 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
   const sortedGroups = useMemo(() => sortGroupsByCreatedAtDesc(groups), [groups])
   const bodyMaxHeight = SAME_COMBINATION_MAX_VISIBLE_ROWS * SAME_COMBINATION_ROW_HEIGHT_PX
 
-  const handleView = (e: MouseEvent<HTMLElement>, group: SameCombinationScenarioGroup) => {
-    e.stopPropagation()
-    onView(group)
-  }
-
   const header = (
     <Stack
       padding="0 20px 0 8px"
@@ -155,7 +149,6 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
           상태
         </Typography>
       </Stack>
-      <Stack minWidth={0} height="48px" />
     </Stack>
   )
 
@@ -200,7 +193,7 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
                 sx={sameCombinationRowSx}
               >
                 <Stack minWidth={0} justifyContent="center" padding="10px 6px" boxSizing="border-box" height="48px">
-                  <EllipsisText value={title} variant="body1SB16" color="contentText.Black" lineHeight={1.4} />
+                  <NextGenMIHoverLinkCell value={title} ariaLabel={`${title} 보기`} onClick={() => onView(group)} />
                 </Stack>
                 <Stack minWidth={0} justifyContent="center" padding="10px 6px" boxSizing="border-box" height="48px">
                   <EllipsisText value={creatorName} variant="body2M14" color="contentText.Black" />
@@ -212,41 +205,6 @@ const EventSameCombinationGroupsTable = ({ groups, loading = false, onView }: Ev
                 </Stack>
                 <Stack minWidth={0} overflow="hidden" justifyContent="center" padding="10px 6px" boxSizing="border-box" height="48px">
                   <SameCombinationStatusCell group={group} />
-                </Stack>
-                <Stack
-                  minWidth={0}
-                  overflow="hidden"
-                  alignItems="center"
-                  justifyContent="center"
-                  padding="8px 4px"
-                  boxSizing="border-box"
-                  height="48px"
-                >
-                  <MIBaseButton
-                    variant="outlined"
-                    aria-label={`${title} 보기`}
-                    onClick={(e) => handleView(e, group)}
-                    suffix={<ArrowRight width="20px" height="20px" aria-hidden />}
-                    gap="0px"
-                    sx={{
-                      height: '32px',
-                      minWidth: 'auto',
-                      maxWidth: '100%',
-                      padding: '4px 4px 4px 8px',
-                      borderRadius: '8px',
-                      borderColor: 'contentBorder.Normal',
-                      backgroundColor: 'commonColor.White',
-                      color: 'contentText.Normal',
-                      flexShrink: 1,
-                      '&:hover:not(:disabled)': {
-                        borderColor: 'contentBorder.Hover',
-                        backgroundColor: 'gray.5',
-                        color: 'contentText.Normal',
-                      },
-                    }}
-                  >
-                    보기
-                  </MIBaseButton>
                 </Stack>
               </Stack>
             )

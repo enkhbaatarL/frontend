@@ -1,6 +1,7 @@
 import { Box, Skeleton, Stack, Typography } from '@mui/material'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 
+import type { PowerMixValidationError } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionPowerMixValidation'
 import type {
   ProposalParamColumnStatus,
   ProposalParamMatrixData,
@@ -9,12 +10,15 @@ import type { ModelParamCompareScenario } from '@/service/mi/nextGenMI/modelExec
 
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
 import ReplayIcon from '@/components/common/icons/ReplayIcon'
+import WarningIconRed from '@/components/common/icons/WarningIconRed'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioGroupStickyTable, {
   type ScenarioGroupStickyTableColumn,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupStickyTable'
+import { getPowerMixRecommendedValue } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionPowerMixValidation'
+import { getNumericDisplayValue } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalMapping'
 
 export interface ProposalParamVisibleScenario {
   scenarioId: number
@@ -27,6 +31,8 @@ interface ScenarioModelExecutionProposalParamMatrixProps {
   visibleScenarios: ProposalParamVisibleScenario[]
   proposalScenarios: ModelParamCompareScenario[]
   matrix: ProposalParamMatrixData | null
+  receivedMatrix: ProposalParamMatrixData | null
+  powerMixErrors: PowerMixValidationError[]
   scrollResetKey: string
   /** 증가 시 수정값을 추천값으로 전부 초기화 */
   resetToken?: number
@@ -49,6 +55,7 @@ interface ProposalParamMatrixRow {
 const FIXED_COLUMN_WIDTH = '140px'
 const MI_BASE_COLUMN_WIDTH = 88
 const SCENARIO_COLUMN_WIDTH = 160
+const MI_BASE_BG = '#eef6ff'
 const EDITED_INPUT_BORDER = '#efa460'
 const EDITED_INPUT_BG = 'rgba(245, 159, 0, 0.05)'
 
@@ -91,15 +98,21 @@ const ParamInputSkeleton = () => <Skeleton variant="rounded" width="100%" height
 
 const ProposalParamEditableCell = ({
   baselineValue,
+  isMiBaseValue,
   value,
+  showRawValue,
   rationale,
+  validationError,
   disabled = false,
   onChange,
   onReset,
 }: {
   baselineValue: string
+  isMiBaseValue: boolean
   value: string
+  showRawValue: boolean
   rationale?: string
+  validationError?: string
   disabled?: boolean
   onChange: (nextValue: string) => void
   onReset: () => void
@@ -109,6 +122,7 @@ const ProposalParamEditableCell = ({
   const [draftValue, setDraftValue] = useState(value)
   // 추천(초기)값 대비 변경 여부 - compare 반영 후에도 baseline 기준으로 주황 테두리/되돌리기 유지
   const isEdited = isParamValueEdited(value, baselineValue)
+  const tooltipTitle = isMiBaseValue ? 'MI Base 값 적용' : rationale?.trim()
 
   useEffect(() => {
     if (globalThis.document?.activeElement === inputRef.current) return
@@ -128,7 +142,7 @@ const ProposalParamEditableCell = ({
     setDraftValue(value)
   }, [disabled, value])
 
-  if (normalizeParamValue(value) === '-') {
+  if (normalizeParamValue(value) === '-' && !validationError) {
     return (
       <Stack width="100%" height="28px" justifyContent="center" padding="0 12px" boxSizing="border-box">
         <Typography variant="body3M12" color="contentText.Normal" textAlign="right">
@@ -150,7 +164,7 @@ const ProposalParamEditableCell = ({
       setIsEditing(false)
       return
     }
-    onChange(trimmed)
+    if (isParamValueEdited(trimmed, value)) onChange(trimmed)
     setIsEditing(false)
   }
 
@@ -166,18 +180,34 @@ const ProposalParamEditableCell = ({
     }
   }
 
-  const inputBorderColor = disabled ? 'contentBorder.Disabled' : isEdited ? EDITED_INPUT_BORDER : 'contentBorder.Normal'
-  const inputBgColor = disabled ? 'contentBG.Disabled' : isEdited ? EDITED_INPUT_BG : 'commonColor.White'
+  const inputBorderColor = disabled
+    ? 'contentBorder.Disabled'
+    : validationError
+      ? 'contentBorder.Error'
+      : isEdited
+        ? EDITED_INPUT_BORDER
+        : 'contentBorder.Normal'
+  const inputBgColor = disabled ? 'contentBG.Disabled' : isEdited && !validationError ? EDITED_INPUT_BG : 'commonColor.White'
   const inputTextColor = disabled ? 'contentText.Disabled' : 'contentText.Normal'
 
   return (
-    <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" width="100%" minWidth={0}>
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="center"
+      gap="2px"
+      width="100%"
+      minWidth={0}
+      data-mi-base-matched={isMiBaseValue ? 'true' : undefined}
+    >
       {isEditing && !disabled ? (
         <Box
           component="input"
           ref={inputRef}
           value={draftValue}
           inputMode="decimal"
+          aria-invalid={Boolean(validationError)}
+          aria-label={validationError}
           disabled={disabled}
           onChange={(event) => {
             if (!/^-?\d*(?:\.\d*)?$/.test(event.target.value)) return
@@ -209,9 +239,12 @@ const ProposalParamEditableCell = ({
         <Box
           component="button"
           type="button"
+          aria-invalid={Boolean(validationError)}
+          aria-label={validationError}
           disabled={disabled}
           onClick={() => {
             if (disabled) return
+            setDraftValue(value)
             setIsEditing(true)
           }}
           sx={{
@@ -230,7 +263,7 @@ const ProposalParamEditableCell = ({
             overflow: 'hidden',
             cursor: disabled ? 'default' : 'text',
             '&:hover:not(:disabled)': {
-              bgcolor: isEdited ? EDITED_INPUT_BG : 'contentBG.Active',
+              bgcolor: validationError ? 'commonColor.White' : isEdited ? EDITED_INPUT_BG : 'contentBG.Active',
             },
             '&:disabled': {
               borderColor: 'contentBorder.Disabled',
@@ -241,45 +274,61 @@ const ProposalParamEditableCell = ({
           }}
         >
           <Typography variant="body3M12" color={inputTextColor} noWrap textAlign="right" width="100%">
-            {value}
+            {showRawValue || isParamValuePlaceholder(value) || !Number.isFinite(Number(value))
+              ? value
+              : getNumericDisplayValue(Number(value))}
           </Typography>
         </Box>
       )}
-      {isEdited ? (
-        <Box
-          component="button"
-          type="button"
-          aria-label="추천값으로 되돌리기"
-          disabled={disabled}
-          onClick={(event) => {
-            event.stopPropagation()
-            if (disabled) return
-            onReset()
-          }}
-          onMouseDown={(event) => event.stopPropagation()}
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '18px',
-            height: '18px',
-            padding: 0,
-            border: 0,
-            bgcolor: 'transparent',
-            color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled',
-            cursor: disabled ? 'default' : 'pointer',
-            flexShrink: 0,
-            lineHeight: 0,
-          }}
+      {validationError ? (
+        <NextGenMIFollowCursorTooltip
+          title={validationError}
+          followCursor={false}
+          interactive
+          placement="top"
+          tooltipSx={{ bgcolor: 'contentText.Error', color: 'contentText.White' }}
         >
-          <ReplayIcon width="14px" height="14px" />
-        </Box>
-      ) : rationale?.trim() ? (
-        <NextGenMIFollowCursorTooltip title={rationale.trim()} tooltipSx={{ maxWidth: '800px' }}>
+          <Box component="span" role="img" aria-label={validationError} display="inline-flex" width="18px" height="18px" flexShrink={0}>
+            <WarningIconRed aria-hidden />
+          </Box>
+        </NextGenMIFollowCursorTooltip>
+      ) : isEdited ? (
+        <NextGenMIFollowCursorTooltip title={`기본값: ${baselineValue} → 변경값: ${value}`}>
+          <Box
+            component="button"
+            type="button"
+            aria-label="추천값으로 되돌리기"
+            disabled={disabled}
+            onClick={(event) => {
+              event.stopPropagation()
+              if (disabled) return
+              onReset()
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '18px',
+              height: '18px',
+              padding: 0,
+              border: 0,
+              bgcolor: 'transparent',
+              color: disabled ? 'contentIcon.Disabled' : 'contentIcon.Enabled',
+              cursor: disabled ? 'default' : 'pointer',
+              flexShrink: 0,
+              lineHeight: 0,
+            }}
+          >
+            <ReplayIcon width="14px" height="14px" />
+          </Box>
+        </NextGenMIFollowCursorTooltip>
+      ) : tooltipTitle ? (
+        <NextGenMIFollowCursorTooltip title={tooltipTitle} tooltipSx={{ maxWidth: '800px' }}>
           <Box
             component="span"
             role="img"
-            aria-label={`추천 근거: ${rationale.trim()}`}
+            aria-label={isMiBaseValue ? tooltipTitle : `추천 근거: ${tooltipTitle}`}
             display="inline-flex"
             alignItems="center"
             justifyContent="center"
@@ -305,6 +354,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   visibleScenarios,
   proposalScenarios,
   matrix,
+  receivedMatrix,
+  powerMixErrors,
   scrollResetKey,
   resetToken = 0,
   disabled = false,
@@ -313,22 +364,25 @@ const ScenarioModelExecutionProposalParamMatrix = ({
 }: ScenarioModelExecutionProposalParamMatrixProps) => {
   const [editedValues, setEditedValues] = useState<Record<string, string>>({})
   const [baselineValues, setBaselineValues] = useState<Record<string, string>>({})
+  const [lastEditedRows, setLastEditedRows] = useState<Record<string, { rowIndex: number; proposalId?: number }>>({})
   const proposalIdsRef = useRef(new Map<number, number>())
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const tableScrollRef = useRef<HTMLDivElement>(null)
-  const [tableHeight, setTableHeight] = useState<number | null>(null)
+  const [tableHeight, setTableHeight] = useState(0)
+  const [tableViewportWidth, setTableViewportWidth] = useState(0)
   const hasMatrix = matrix !== null
 
   useLayoutEffect(() => {
     const container = tableContainerRef.current
     if (!container) return undefined
 
-    const updateHeight = () => {
-      const height = Math.floor(container.getBoundingClientRect().height)
-      setTableHeight((current) => (current === height ? current : height))
+    // 부모가 배분한 높이 안에서만 표를 스크롤한다.
+    const updateSize = () => {
+      setTableHeight(container.clientHeight)
+      setTableViewportWidth(tableScrollRef.current?.clientWidth ?? 0)
     }
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
+    updateSize()
+    const observer = new ResizeObserver(updateSize)
     observer.observe(container)
     return () => observer.disconnect()
   }, [hasMatrix])
@@ -409,6 +463,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   useEffect(() => {
     if (resetToken === 0) return
     setEditedValues({})
+    setLastEditedRows({})
     if (!matrix) return
     setBaselineValues(snapshotBaselineFromMatrix(matrix))
   }, [resetToken]) // eslint-disable-line react-hooks/exhaustive-deps -- 토큰 증가 시에만 동기화
@@ -514,8 +569,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
       tooltipWhenHeaderTruncated: true,
       headerTooltipTitle: header,
       headerCellSx: {
-        bgcolor: 'gray.5',
-        color: 'contentText.Subtext',
+        bgcolor: 'commonColor.White',
+        color: 'contentText.Black',
         fontWeight: 600,
         verticalAlign: 'bottom',
         borderBottom: '1px solid',
@@ -539,6 +594,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     }))
 
     const valueColumns = matrix.periods.flatMap((period, periodIndex) => {
+      const receivedPeriod = receivedMatrix?.periods.find((item) => item.timeKey === period.timeKey)
       const isLastPeriod = periodIndex === matrix.periods.length - 1
       const periodGroupDividerSx = isLastPeriod
         ? undefined
@@ -552,7 +608,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         label: period.periodLabel,
         align: 'center' as const,
         headerCellSx: {
-          bgcolor: 'gray.5',
+          bgcolor: 'commonColor.White',
           ...periodGroupDividerSx,
         },
       }
@@ -566,14 +622,15 @@ const ScenarioModelExecutionProposalParamMatrix = ({
         align: 'center',
         headerAlign: 'center',
         headerCellSx: {
-          bgcolor: '#eef6ff',
+          bgcolor: MI_BASE_BG,
+          color: 'contentText.Black',
           verticalAlign: 'middle',
           borderBottom: '1px solid',
           borderBottomColor: 'contentBorder.Normal',
           ...(visibleScenarios.length === 0 ? periodGroupDividerSx : undefined),
         },
         cellSx: {
-          bgcolor: '#eef6ff',
+          bgcolor: MI_BASE_BG,
           borderBottom: '1px solid',
           borderBottomColor: 'contentBorder.Normal',
           ...(visibleScenarios.length === 0 ? periodGroupDividerSx : undefined),
@@ -589,6 +646,14 @@ const ScenarioModelExecutionProposalParamMatrix = ({
 
       const scenarioColumns: ScenarioGroupStickyTableColumn<ProposalParamMatrixRow>[] = visibleScenarios.map((scenario, scenarioIndex) => {
         const isLastScenarioInPeriod = scenarioIndex === visibleScenarios.length - 1
+        const editKey = JSON.stringify([scrollResetKey, period.timeKey, scenario.scenarioId])
+        const proposalId = proposalScenarios.find((item) => item.scenarioId === scenario.scenarioId)?.modelParamProposalId
+        const error = powerMixErrors.find((item) => item.scenarioId === scenario.scenarioId && item.periodTimeKey === period.timeKey)
+        const lastEdit = lastEditedRows[editKey]
+        const errorRowIndex =
+          lastEdit && lastEdit.proposalId === proposalId && error?.rowIndexes.includes(lastEdit.rowIndex)
+            ? lastEdit.rowIndex
+            : error?.rowIndexes[0]
 
         return {
           field: `${period.timeKey}::${scenario.scenarioId}`,
@@ -602,7 +667,8 @@ const ScenarioModelExecutionProposalParamMatrix = ({
           align: 'center',
           headerAlign: 'center',
           headerCellSx: {
-            bgcolor: 'gray.5',
+            bgcolor: 'commonColor.White',
+            color: 'contentText.Black',
             verticalAlign: 'middle',
             borderBottom: '1px solid',
             borderBottomColor: 'contentBorder.Normal',
@@ -610,6 +676,9 @@ const ScenarioModelExecutionProposalParamMatrix = ({
           },
           cellSx: {
             bgcolor: 'commonColor.White',
+            '&:has([data-mi-base-matched="true"])': {
+              bgcolor: MI_BASE_BG,
+            },
             borderBottom: '1px solid',
             borderBottomColor: 'contentBorder.Normal',
             ...(isLastScenarioInPeriod ? periodGroupDividerSx : undefined),
@@ -632,15 +701,37 @@ const ScenarioModelExecutionProposalParamMatrix = ({
             // compare cells null 슬롯: `-` 대신 빈 입력 + 비활성
             const isCellDisabled = row.cellDisabledByField[fieldKey] === true
             const cellDisabled = disabled || isCellDisabled
+            const recommendedValue =
+              error && row.rowIndex === errorRowIndex
+                ? getPowerMixRecommendedValue(
+                  error.rowIndexes
+                    .filter((rowIndex) => rowIndex !== row.rowIndex)
+                    .map((rowIndex) => period.scenarioValuesById[scenario.scenarioId]?.[rowIndex] ?? ''),
+                )
+                : undefined
 
             return (
               <ProposalParamEditableCell
                 baselineValue={isCellDisabled ? '' : baselineValue}
+                isMiBaseValue={!isCellDisabled && (receivedPeriod?.scenarioMiBaseMatchedById[scenario.scenarioId]?.[row.rowIndex] ?? false)}
                 value={isCellDisabled ? '' : value}
+                showRawValue={matrix.showRawValues}
                 rationale={isCellDisabled ? '' : rationale}
+                validationError={
+                  error && row.rowIndex === errorRowIndex
+                    ? `% Power Mix 합계를 100%로 맞춰 주세요\n${
+                      recommendedValue === undefined
+                        ? '다른 셀도 함께 조정해 주세요.'
+                        : `이 셀을 ${recommendedValue}로 변경하면 합계가 1이 됩니다.`
+                    }`
+                    : undefined
+                }
                 disabled={cellDisabled}
                 onChange={(nextValue) => {
                   if (cellDisabled) return
+                  if (isParamValueEdited(nextValue, value)) {
+                    setLastEditedRows((current) => ({ ...current, [editKey]: { rowIndex: row.rowIndex, proposalId } }))
+                  }
                   setEditedValues((current) => {
                     if (!isParamValueEdited(nextValue, baselineValue)) {
                       const { [valueKey]: _removed, ...rest } = current
@@ -653,6 +744,7 @@ const ScenarioModelExecutionProposalParamMatrix = ({
                 }}
                 onReset={() => {
                   if (cellDisabled) return
+                  setLastEditedRows((current) => ({ ...current, [editKey]: { rowIndex: row.rowIndex, proposalId } }))
                   setEditedValues((current) => {
                     const { [valueKey]: _removed, ...rest } = current
                     return rest
@@ -670,14 +762,42 @@ const ScenarioModelExecutionProposalParamMatrix = ({
     })
 
     return [...fixedColumns, ...valueColumns]
-  }, [baselineValues, disabled, editedValues, matrix, onChangeScenarioValue, visibleScenarios])
+  }, [
+    baselineValues,
+    disabled,
+    editedValues,
+    lastEditedRows,
+    matrix,
+    onChangeScenarioValue,
+    powerMixErrors,
+    proposalScenarios,
+    receivedMatrix,
+    scrollResetKey,
+    visibleScenarios,
+  ])
+
+  const fittedColumns = useMemo(() => {
+    const contentWidth = columns.reduce((width, column) => width + Number.parseFloat(column.width), 0)
+    const flexibleColumns = columns.filter((column) => column.headerGroup)
+    if (contentWidth >= tableViewportWidth || flexibleColumns.length === 0) return columns
+
+    const additionalWidth = (tableViewportWidth - contentWidth) / flexibleColumns.length
+
+    return columns.map((column) => {
+      if (!column.headerGroup) return column
+
+      const width = `${Number.parseFloat(column.width) + additionalWidth}px`
+      return { ...column, width, minWidth: width, maxWidth: width }
+    })
+  }, [columns, tableViewportWidth])
 
   const fixedLeftColumnIndexes = useMemo(() => matrix?.fixedHeaders.map((_, index) => index) ?? [], [matrix?.fixedHeaders])
 
   if (!matrix) {
     return (
       <Stack
-        height="240px"
+        flex="1 1 0"
+        minHeight={0}
         alignItems="center"
         justifyContent="center"
         border="1px solid"
@@ -692,16 +812,18 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   }
 
   return (
-    <Box ref={tableContainerRef} width="100%" flex="1 1 0" minWidth={0} minHeight={0} overflow="hidden" bgcolor="commonColor.White">
+    <Box ref={tableContainerRef} width="100%" flex="1 1 0" minWidth={0} minHeight={0} overflow="visible" bgcolor="commonColor.White">
       <ScenarioGroupStickyTable
-        columns={columns}
+        columns={fittedColumns}
         rows={rows}
         getRowKey={(row) => row.rowKey}
         scrollContainerRef={tableScrollRef}
+        overlayVerticalScrollbar
+        verticalScrollbarRight="-10px"
         fixedLeftColumnIndexes={fixedLeftColumnIndexes}
         headerHeight="48px"
         rowHeight="42px"
-        maxHeight={tableHeight === null ? '468px' : `${tableHeight}px`}
+        maxHeight={`${tableHeight}px`}
         cellPaddingX="8px"
         cellPaddingY="6px"
         headerFontSize="12px"

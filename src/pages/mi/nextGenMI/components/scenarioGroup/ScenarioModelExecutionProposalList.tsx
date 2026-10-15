@@ -34,6 +34,7 @@ import NextGenMITableBodyText, { NEXT_GEN_MI_TABLE_CELL_PX } from '@/pages/mi/ne
 import ScenarioModelExecutionGeneratingState from '@/pages/mi/nextGenMI/components/common/ScenarioModelExecutionGeneratingState'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
+import { getPowerMixValidationErrors } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionPowerMixValidation'
 import {
   buildCompareParamMatrixData,
   buildConfirmationParametersFromCompare,
@@ -560,6 +561,10 @@ const ScenarioModelExecutionProposalList = ({
     [scenarios, visibleScenarioIds],
   )
   const selectedCompletedCount = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId)).length
+  const powerMixErrors = useMemo(() => getPowerMixValidationErrors(compare), [compare])
+  const hasPowerMixError = powerMixErrors.some(
+    ({ scenarioId }) => selectedScenarioIds.includes(scenarioId) && completedScenarioIds.includes(scenarioId),
+  )
   const allSelectableChecked = selectableScenarioIds.length > 0 && selectableScenarioIds.every((id) => selectedScenarioIds.includes(id))
   const someSelectableChecked = selectableScenarioIds.some((id) => selectedScenarioIds.includes(id))
   // proposals currentState 기준 실행 준비중/실행중 (재진입 시 run-status 공백 구간 포함)
@@ -577,6 +582,7 @@ const ScenarioModelExecutionProposalList = ({
   // 이번 세션 runningExecutions + run-status modelRunning + proposals CONFIRMED_PENDING/EXECUTING
   const isExecuting = mergedExecutingScenarioIds.size > 0 || hasProposalExecutionInProgress
   const isExecutionBusy = isSubmittingExecution || isExecuting
+  const isParamPanelVisible = showParamPanel && !isExecutionBusy
   // 시나리오 선택/생성/초기화/실행 등 액션 잠금 (PopupContent 넓은 가드)
   const isActionLocked = isExecutionBusy || isResetting
   // Value 입력 잠금 - PopupContent NumericParameterValueInput: isSubmitting || isResetting
@@ -972,7 +978,7 @@ const ScenarioModelExecutionProposalList = ({
   )
 
   const handleExecuteClick = () => {
-    if (isActionLocked) return
+    if (isActionLocked || hasPowerMixError) return
     if (selectedCompletedCount === 0) {
       setEmptySelectionConfirmOpen(true)
       return
@@ -983,7 +989,7 @@ const ScenarioModelExecutionProposalList = ({
   const handleExecutionConfirm = async () => {
     setExecutionConfirmOpen(false)
     const targetIds = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId))
-    if (targetIds.length === 0 || !compare) return
+    if (targetIds.length === 0 || !compare || powerMixErrors.some(({ scenarioId }) => targetIds.includes(scenarioId))) return
 
     const executions = targetIds.flatMap((scenarioId) => {
       if (executingScenarioIds.has(scenarioId)) return []
@@ -1365,9 +1371,21 @@ const ScenarioModelExecutionProposalList = ({
   )
 
   return (
-    <Stack width="100%" flex="1 1 auto" minHeight={0} overflow="hidden">
-      <Stack flex="1 1 auto" minHeight={0} overflow={isResizing ? 'hidden' : 'auto'}>
-        <Stack ref={contentRef} flexGrow={showParamPanel ? 1 : 0} flexShrink={0}>
+    <Stack width="100%" flex="1 1 auto" minWidth={0} minHeight={0} overflow="hidden">
+      <Stack
+        flex="1 1 auto"
+        minWidth={0}
+        minHeight={0}
+        sx={{ overflowX: 'hidden', overflowY: isResizing || isParamPanelVisible ? 'hidden' : 'auto' }}
+      >
+        <Stack
+          ref={contentRef}
+          minWidth={0}
+          minHeight={0}
+          flexGrow={showParamPanel ? 1 : 0}
+          flexShrink={isParamPanelVisible ? 1 : 0}
+          flexBasis={isParamPanelVisible ? 0 : 'auto'}
+        >
           <Stack flexShrink={0} padding="10px 20px 0">
             <Stack
               direction="row"
@@ -1384,14 +1402,14 @@ const ScenarioModelExecutionProposalList = ({
               </Typography>
             </Stack>
 
-            <Box display="grid" minWidth={0}>
+            <Box display="grid" gridTemplateColumns="minmax(0, 1fr)" minWidth={0}>
               <SwitchTransition mode="in-out">
                 <Fade
                   key={groupQuery.data && groupProposals ? 'scenarios' : 'loading'}
                   timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
                   easing="cubic-bezier(0.16, 1, 0.3, 1)"
                 >
-                  <Stack sx={{ gridArea: '1 / 1' }}>
+                  <Stack minWidth={0} sx={{ gridArea: '1 / 1' }}>
                     {!groupQuery.data || !groupProposals ? (
                       <Stack height="120px" alignItems="center" justifyContent="center" gap="8px">
                         {groupQuery.isError || proposalsLoadFailed ? (
@@ -1430,9 +1448,14 @@ const ScenarioModelExecutionProposalList = ({
           {(showLoadingPlaceholder || showParamPanel || isExecutionBusy) && (
             <Stack
               display="grid"
-              minHeight={showParamPanel && !isExecutionBusy ? 0 : '400px'}
+              gridTemplateColumns="minmax(0, 1fr)"
+              gridTemplateRows={isParamPanelVisible ? 'minmax(0, 1fr)' : undefined}
+              minWidth={0}
+              minHeight={isParamPanelVisible ? 0 : '400px'}
               flexGrow={showParamPanel || isExecutionBusy ? 1 : 0}
-              flexShrink={0}
+              flexShrink={isParamPanelVisible ? 1 : 0}
+              flexBasis={isParamPanelVisible ? 0 : 'auto'}
+              overflow={isParamPanelVisible ? 'hidden' : undefined}
             >
               <SwitchTransition mode="in-out">
                 <Fade
@@ -1440,7 +1463,7 @@ const ScenarioModelExecutionProposalList = ({
                   timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
                   easing="cubic-bezier(0.16, 1, 0.3, 1)"
                 >
-                  <Stack minHeight={0} sx={{ gridArea: '1 / 1' }}>
+                  <Stack minWidth={0} minHeight={0} sx={{ gridArea: '1 / 1' }}>
                     {isExecutionBusy ? (
                       // PopupContent: isSubmitting || isExecuting 이면 파라미터 UI 대신 실행 중 상태
                       <ScenarioModelExecutionGeneratingState
@@ -1452,6 +1475,8 @@ const ScenarioModelExecutionProposalList = ({
                       <ScenarioModelExecutionProposalParamPanel
                         visibleScenarios={visibleScenarios}
                         compare={compare}
+                        receivedCompare={lastLoadedCompareRef.current}
+                        powerMixErrors={powerMixErrors}
                         resetToken={paramResetToken}
                         disabled={isValueInputLocked}
                         canDownloadInputFiles={canDownloadInputFiles}
@@ -1523,7 +1548,7 @@ const ScenarioModelExecutionProposalList = ({
           </MIBaseButton>
           <MIBaseButton
             variant="contained"
-            disabled={!hasCompleted || isActionLocked}
+            disabled={!hasCompleted || isActionLocked || hasPowerMixError}
             isLoading={isSubmittingExecution}
             onClick={handleExecuteClick}
             labelColor="contentText.White"
@@ -1585,7 +1610,7 @@ const ScenarioModelExecutionProposalList = ({
             label: '실행',
             variant: 'filled',
             color: 'primary',
-            disabled: isActionLocked,
+            disabled: isActionLocked || hasPowerMixError,
             onClick: () => {
               void handleExecutionConfirm()
             },
