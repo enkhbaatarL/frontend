@@ -1,7 +1,9 @@
 import type { ScenarioGroupModelParamCompare } from '@/service/mi/nextGenMI/modelExecution'
 
+import { formatPowerMixPercent } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionPowerMixValue'
 import {
   buildCompareParamMatrixData,
+  findCompareParameter,
   getCompareCellForScenario,
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionProposalMapping'
 
@@ -9,9 +11,10 @@ export interface PowerMixValidationError {
   scenarioId: number
   modelTableName: string | null
   parameterIndex: number
-  periodTimeKey: string
-  rowIndexes: number[]
-  total: number
+  groupKey: string
+  groupLabel: string
+  cells: Array<{ periodTimeKey: string; rowIndex: number; sourceRowIndex: number; value?: number }>
+  totalPercent: string
 }
 
 /** 원본 소숫값의 합계를 십진수로 계산해 검증과 추천값에 같은 정밀도를 사용한다. */
@@ -44,18 +47,27 @@ export const getPowerMixRecommendedValue = (otherValues: readonly string[]): str
   return fraction ? `${digits.slice(0, -scale)}.${fraction}` : digits.slice(0, -scale)
 }
 
+export const getPowerMixGroupRecommendedValue = (error: PowerMixValidationError, periodTimeKey: string, rowIndex: number) => {
+  const target = error.cells.find((cell) => cell.periodTimeKey === periodTimeKey && cell.rowIndex === rowIndex)
+  if (!target) return undefined
+  const otherValues = new Map(
+    error.cells.filter((cell) => cell.sourceRowIndex !== target.sourceRowIndex).map((cell) => [cell.sourceRowIndex, cell.value]),
+  )
+  return getPowerMixRecommendedValue(Array.from(otherValues.values(), (value) => (value === undefined ? '' : String(value))))
+}
+
 export const getPowerMixValidationErrors = (compare: ScenarioGroupModelParamCompare | null): PowerMixValidationError[] => {
   if (!compare) return []
 
   return compare.parameterShapes.flatMap((shape) => {
     if (shape.modelFile !== 'Demand' || shape.modelSheet !== 'PowerMixAdjustment' || shape.parameterName !== 'PowerMix') return []
 
-    const parameter = compare.parameters.find((item) => item.parameterName === shape.parameterName)
-    if (!parameter) return []
-
     const parameterIndex = compare.parameterShapes
       .filter((item) => item.modelFile === shape.modelFile && item.modelSheet === shape.modelSheet && item.modelTable === shape.modelTable)
       .indexOf(shape)
+    const matched = findCompareParameter(compare, shape.modelFile, shape.modelSheet, shape.modelTable ?? null, parameterIndex)
+    if (!matched) return []
+    const { parameter } = matched
     const matrix = buildCompareParamMatrixData({
       compare,
       visibleScenarioIds: compare.scenarios.map((scenario) => scenario.scenarioId),
@@ -66,31 +78,42 @@ export const getPowerMixValidationErrors = (compare: ScenarioGroupModelParamComp
     })
     if (!matrix) return []
 
-    return matrix.periods.flatMap((period) =>
-      compare.scenarios.flatMap(({ scenarioId }): PowerMixValidationError[] => {
-        const rowIndexes: number[] = []
-        const values: string[] = []
-        let total = 0
-        let hasMissingValue = false
+    return compare.scenarios.flatMap(({ scenarioId }): PowerMixValidationError[] => {
+      const groups = new Map<string, PowerMixValidationError>()
+      matrix.periods.forEach((period) => {
         period.sourceRowIndexesByScenarioId[scenarioId]?.forEach((sourceRowIndex, rowIndex) => {
           const row = parameter.values?.[sourceRowIndex]
           if (!row) return
           const cell = getCompareCellForScenario(row, scenarioId, compare.scenarios)
           if (cell === null || cell === undefined) return
-          rowIndexes.push(rowIndex)
-          if (typeof cell.proposedValue !== 'number' || !Number.isFinite(cell.proposedValue)) {
-            hasMissingValue = true
-          } else {
-            total += cell.proposedValue
-            values.push(String(cell.proposedValue))
+          const groupKey = period.powerMixGroupKeys[rowIndex]
+          let group = groups.get(groupKey)
+          if (!group) {
+            const axes: Array<string | null> = JSON.parse(groupKey)
+            group = {
+              scenarioId,
+              modelTableName: shape.modelTable ?? null,
+              parameterIndex,
+              groupKey,
+              groupLabel: axes.filter((value) => value !== null).join(' · '),
+              cells: [],
+              totalPercent: '확인 불가',
+            }
+            groups.set(groupKey, group)
           }
+          group.cells.push({ periodTimeKey: period.timeKey, rowIndex, sourceRowIndex, value: cell.proposedValue })
         })
-        const sum = sumPowerMixValues(values)
-        // PowerMix는 0~1 비율로 전달되므로 합계 1이 100%다. null 슬롯과 생성 전 시나리오는 제외한다.
-        if (rowIndexes.length === 0 || (!hasMissingValue && sum && sum.total === sum.unit)) return []
+      })
 
-        return [{ scenarioId, modelTableName: shape.modelTable ?? null, parameterIndex, periodTimeKey: period.timeKey, rowIndexes, total }]
-      }),
-    )
+      return Array.from(groups.values()).filter((group) => {
+        // 여러 표시 컬럼이 같은 API 행을 참조하더라도 한 번만 합산한다.
+        const values = Array.from(new Map(group.cells.map((cell) => [cell.sourceRowIndex, cell.value])).values())
+        const sum = sumPowerMixValues(values.map((value) => (typeof value === 'number' ? String(value) : '')))
+        // 검증에 사용한 십진수 합계를 그대로 표시해 긴 소수 오차가 나타나지 않게 한다.
+        group.totalPercent = sum ? formatPowerMixPercent(`${sum.total}e-${sum.scale}`) : '확인 불가'
+        // 시나리오별 Year + Country 합계가 정확히 1인지 검사한다. 월은 구분하지 않는다.
+        return !sum || sum.total !== sum.unit
+      })
+    })
   })
 }

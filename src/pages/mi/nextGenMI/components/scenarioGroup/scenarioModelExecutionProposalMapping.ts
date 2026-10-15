@@ -192,6 +192,8 @@ export interface ProposalParamPeriodColumn {
   miBaseValues: string[]
   /** 편집·추천값 복원용 원본값. 표시할 때만 필요에 따라 반올림한다. */
   scenarioValuesById: Record<number, string[]>
+  /** PowerMix 검증용 Year + Country 키. 월 값은 포함하지 않는다. */
+  powerMixGroupKeys: string[]
   /** compare cells[i] === null 인 셀 - 입력 비활성 */
   scenarioCellDisabledById: Record<number, boolean[]>
   /** 반올림 전 원본 데이터와 MI Base 값의 일치 여부 */
@@ -205,11 +207,11 @@ export interface ProposalParamMatrixData {
   fixedHeaders: string[]
   fixedRows: string[][]
   periods: ProposalParamPeriodColumn[]
-  showRawValues: boolean
+  isPowerMix: boolean
   readMode?: ModelParamCompareShape['readMode']
 }
 
-const findCompareParameter = (
+export const findCompareParameter = (
   compare: ScenarioGroupModelParamCompare | null | undefined,
   modelFileName: string | null,
   modelSheetName: string | null,
@@ -222,7 +224,13 @@ const findCompareParameter = (
   )
   const shape = shapes[parameterIndex]
   if (!shape) return null
-  const parameter = compare.parameters.find((item) => item.parameterName === shape.parameterName)
+  const parameter = compare.parameters.find(
+    (item) =>
+      item.parameterName === shape.parameterName &&
+      (item.modelTarget?.modelFile === undefined || item.modelTarget.modelFile === modelFileName) &&
+      (item.modelTarget?.modelSheet === undefined || item.modelTarget.modelSheet === modelSheetName) &&
+      (modelTableName === null || item.modelTarget?.tableName === undefined || item.modelTarget.tableName === modelTableName),
+  )
   if (!parameter) return null
   return { parameter, shape }
 }
@@ -247,7 +255,7 @@ export const buildCompareParamMatrixData = ({
   if (!matched) return null
 
   const { parameter, shape } = matched
-  const showRawValues = shape.modelFile === 'Demand' && shape.modelSheet === 'PowerMixAdjustment' && shape.parameterName === 'PowerMix'
+  const isPowerMix = shape.modelFile === 'Demand' && shape.modelSheet === 'PowerMixAdjustment' && shape.parameterName === 'PowerMix'
   const columns = shape.columns ?? []
   const slotColumns = columns.filter((column) => column.kind === 'SLOT')
   const timeAxisColumns = columns.filter((column) => column.kind === 'TIME_AXIS')
@@ -301,6 +309,7 @@ export const buildCompareParamMatrixData = ({
 
   const periodColumns: ProposalParamPeriodColumn[] = periodEntries.map(([timeKey, periodLabel]) => {
     const valueMeta = periodValueMeta.get(timeKey)
+    const powerMixGroupKeys: string[] = []
 
     const miBaseValues = slotKeys.map((slotKey) => {
       const match = referenceRows.find((row) => {
@@ -312,7 +321,18 @@ export const buildCompareParamMatrixData = ({
       })
       const fieldValue = getValueColumnRawValue(match, valueMeta?.valueColumn, valueFieldNames, valueMeta?.valueColumnIndex ?? 0)
       const base = fieldValue !== undefined ? fieldValue : match?.basecaseValue
-      return showRawValues ? getDisplayValue(base) : formatCompareDisplayValue(base)
+      if (isPowerMix) {
+        powerMixGroupKeys.push(
+          JSON.stringify(
+            ['year', 'country'].map((axis) => {
+              const column = columns.find((item) => [item.column, item.role].some((key) => key?.trim().toLowerCase() === axis))
+              const value = match && column ? getAxisValue(match, column) : (match?.[axis === 'year' ? 'Year' : 'Country'] ?? match?.[axis])
+              return value === undefined || value === null ? null : String(value).trim()
+            }),
+          ),
+        )
+      }
+      return isPowerMix ? getDisplayValue(base) : formatCompareDisplayValue(base)
     })
 
     const scenarioValuesById: Record<number, string[]> = {}
@@ -369,6 +389,7 @@ export const buildCompareParamMatrixData = ({
       timeKey,
       miBaseValues,
       scenarioValuesById,
+      powerMixGroupKeys,
       scenarioCellDisabledById,
       scenarioMiBaseMatchedById,
       scenarioRationalesById,
@@ -380,7 +401,7 @@ export const buildCompareParamMatrixData = ({
     fixedHeaders,
     fixedRows: slotKeys.map((slotKey) => slots.get(slotKey) ?? []),
     periods: periodColumns,
-    showRawValues,
+    isPowerMix,
     readMode: shape.readMode,
   }
 }
@@ -398,12 +419,10 @@ export const updateCompareProposedValue = (
   const matched = findCompareParameter(compare, modelFileName, modelSheetName, modelTableName, parameterIndex)
   if (!matched) return compare
 
-  const targetName = matched.parameter.parameterName
-
   return {
     ...compare,
     parameters: compare.parameters.map((parameter) => {
-      if (parameter.parameterName !== targetName) return parameter
+      if (parameter !== matched.parameter) return parameter
 
       return {
         ...parameter,

@@ -127,6 +127,7 @@ const MIFileUploadDropzone = ({
         sx={[
           {
             width: '100%',
+            position: 'relative',
             minHeight: 106,
             p: '20px',
             borderWidth: '1px',
@@ -158,25 +159,45 @@ const MIFileUploadDropzone = ({
           ...(sx === undefined ? [] : Array.isArray(sx) ? sx : [sx]),
         ]}
       >
-        {isUploading ? <LoadingSpinner size={24} color="#1F2A44" speed={1.2} /> : <UploadFileRoundedIcon width={24} height={24} />}
-        <Stack gap="4px" alignItems="center" justifyContent="center" sx={{ width: '100%', minWidth: 0 }}>
-          <Typography
-            variant="body3R12"
-            color={visualStyle.mainTextColor}
-            textAlign="center"
-            sx={{ width: '100%', lineHeight: 'normal', wordBreak: 'break-word' }}
-          >
-            {isUploading ? '파일 업로드 중...' : '파일을 드래그하여 업로드하거나 클릭하여 파일을 첨부하세요.'}
-          </Typography>
-          <Typography
-            variant="body3R12"
-            color={visualStyle.helperTextColor}
-            textAlign="center"
-            sx={{ width: '100%', lineHeight: 'normal', opacity: isUploading ? 0 : 1, wordBreak: 'break-word' }}
-          >
-            {guideText ?? `(최대 ${maxFileSizeMb}MB)`}
-          </Typography>
+        <Stack width="100%" alignItems="center" gap="10px" visibility={isUploading ? 'hidden' : 'visible'} aria-hidden={isUploading}>
+          <UploadFileRoundedIcon width={24} height={24} />
+          <Stack gap="4px" alignItems="center" justifyContent="center" sx={{ width: '100%', minWidth: 0 }}>
+            <Typography
+              variant="body3R12"
+              color={visualStyle.mainTextColor}
+              textAlign="center"
+              sx={{ width: '100%', lineHeight: 'normal', wordBreak: 'break-word' }}
+            >
+              파일을 드래그하여 업로드하거나 클릭하여 파일을 첨부하세요.
+            </Typography>
+            <Typography
+              variant="body3R12"
+              color={visualStyle.helperTextColor}
+              textAlign="center"
+              sx={{ width: '100%', lineHeight: 'normal', wordBreak: 'break-word' }}
+            >
+              {guideText ?? `(최대 ${maxFileSizeMb}MB)`}
+            </Typography>
+          </Stack>
         </Stack>
+        {isUploading && (
+          <Stack
+            position="absolute"
+            top="0px"
+            right="0px"
+            bottom="0px"
+            left="0px"
+            alignItems="center"
+            justifyContent="center"
+            gap="10px"
+            role="status"
+          >
+            <LoadingSpinner size={24} color="rgba(31, 42, 68, 0.4)" speed={1.2} />
+            <Typography variant="body3R12" color={visualStyle.mainTextColor} textAlign="center" lineHeight="normal">
+              파일 업로드 중...
+            </Typography>
+          </Stack>
+        )}
       </Box>
     </>
   )
