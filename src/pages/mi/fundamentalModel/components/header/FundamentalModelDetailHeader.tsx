@@ -51,33 +51,41 @@ const ExportFileMenuLabel = ({ fileName }: { fileName: string }) => (
 )
 
 interface AttachmentListProps {
-  /** 첨부 파일명 목록 */
-  fileNames: string[]
+  /** 첨부 파일 목록 */
+  files: FundamentalModelDownloadFile[]
+  onDownload?: (file: FundamentalModelDownloadFile) => void
 }
 
 /** 헤더 파일 목록 - 긴 파일명 줄바꿈 */
-const AttachmentList = ({ fileNames }: AttachmentListProps) => {
-  if (fileNames.length === 0) return null
+const AttachmentList = ({ files, onDownload }: AttachmentListProps) => {
+  if (files.length === 0) return null
 
   return (
-    <Stack direction="row" flexWrap="wrap" gap="4px" py="10px" sx={{ width: '100%' }}>
-      {fileNames.map((name) => (
+    <Stack direction="row" flexWrap="wrap" gap="4px" py="10px" width="100%">
+      {files.map((file) => (
         <Box
-          key={name}
+          key={file.fileNo}
+          component="button"
+          type="button"
+          disabled={!onDownload}
+          onClick={() => onDownload?.(file)}
+          aria-label={`${file.fileNm} 다운로드`}
           sx={{
             alignSelf: 'flex-start',
             maxWidth: '100%',
             border: '1px solid',
             borderColor: 'content.borderEnabled',
             borderRadius: '4px',
-            px: '8px',
-            py: '5px',
-            minHeight: 26,
+            padding: '5px 8px',
+            minHeight: '26px',
             bgcolor: 'commonColor.White',
             boxSizing: 'border-box',
+            cursor: onDownload ? 'pointer' : 'default',
+            textAlign: 'left',
           }}
         >
           <Typography
+            component="span"
             variant="body3SB12"
             color="content.textNormal"
             sx={{
@@ -87,7 +95,7 @@ const AttachmentList = ({ fileNames }: AttachmentListProps) => {
               whiteSpace: 'normal',
             }}
           >
-            {name}
+            {file.fileNm}
           </Typography>
         </Box>
       ))}
@@ -295,7 +303,6 @@ const FundamentalModelDetailHeader = ({
     headerActionsDisabled || (outputFiles.length === 0 && tradeOutputFiles.length === 0 && intermediateFiles.length === 0) || !onExportFile
   const isMiBase = detail.execType === 'MI_BASE'
 
-  const attachmentNames = (detail.files.input ?? []).map((file) => file.fileNm)
   const createdAtLabel = formatNextGenMIDateTime(detail.createdAt)
   const durationLabel = formatCaseLatestRunDuration(detail.latestRun)
 
@@ -444,7 +451,7 @@ const FundamentalModelDetailHeader = ({
           </Typography>
         </Stack>
 
-        <AttachmentList fileNames={attachmentNames} />
+        <AttachmentList files={detail.files.input ?? []} onDownload={onExportFile} />
       </Box>
 
       <MIConfirm
