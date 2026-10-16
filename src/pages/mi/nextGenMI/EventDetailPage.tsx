@@ -260,7 +260,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const generatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.createdAt)
   const updatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.updatedAt)
   const isUserRegisteredEvent = displayDetail?.sourceType === 'user'
-  const registrantName = displayDetail?.registrantName?.trim() || ''
+  const registrantName = displayDetail?.registrantName?.trim() || '-'
 
   const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
     const ia = displayDetail?.impactAnalysis
@@ -407,16 +407,14 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
                     {updatedAtLabel}
                   </Typography>
                 </Stack>
-                {isUserRegisteredEvent && registrantName ? (
-                  <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
-                    <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
-                      등록자
-                    </Typography>
-                    <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
-                      {registrantName}
-                    </Typography>
-                  </Stack>
-                ) : null}
+                <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
+                  <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
+                    등록자
+                  </Typography>
+                  <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
+                    {registrantName}
+                  </Typography>
+                </Stack>
               </Stack>
             </>
           )}
@@ -443,11 +441,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         metaItems={[
           { label: '생성', value: generatedAtLabel },
           { label: '갱신', value: updatedAtLabel },
-          ...(isUserRegisteredEvent && registrantName ? [{ label: '등록자', value: registrantName }] : []),
+          { label: '등록자', value: registrantName },
         ]}
       />
     ),
-    [generatedAtLabel, isUserRegisteredEvent, registrantName, title, updatedAtLabel],
+    [generatedAtLabel, registrantName, title, updatedAtLabel],
   )
 
   useLayoutEffect(() => {
