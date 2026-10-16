@@ -60,7 +60,6 @@ export interface SameCombinationScenarioGroup {
 /**
  * GET .../design-status
  * - sameCombinationGroupCount / sameCombinationGroups 기준
- * - 이벤트 1개 선택 시 동일 조합 목록은 빈 배열
  * - designStatus 등 기존 버튼 분기 필드는 하위호환으로만 optional 유지
  */
 export interface ScenarioDesignStatus {

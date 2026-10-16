@@ -187,11 +187,11 @@ const EventsTabPanel = () => {
 
   const selectedEventIds = useMemo(() => selectedEvents.map((item) => item.eventId), [selectedEvents])
 
-  // 2개 이상 선택 시 동일 조합 목록 조회 (1개면 API가 빈 목록 반환)
+  // 선택한 이벤트 수와 관계없이 동일 조합 목록 조회
   const { data: selectionDesignStatus, isFetching: isSelectionDesignStatusFetching } = useQuery({
     queryKey: ['nextGenMIScenarioDesignStatus', selectedEventIds],
     queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: selectedEventIds }),
-    enabled: selectedEventIds.length >= 2,
+    enabled: selectedEventIds.length > 0,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })

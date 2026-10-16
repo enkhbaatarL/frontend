@@ -89,13 +89,13 @@ export const getPowerMixValidationErrors = (compare: ScenarioGroupModelParamComp
           const groupKey = period.powerMixGroupKeys[rowIndex]
           let group = groups.get(groupKey)
           if (!group) {
-            const axes: Array<string | null> = JSON.parse(groupKey)
+            const [year, month, country]: Array<string | null> = JSON.parse(groupKey)
             group = {
               scenarioId,
               modelTableName: shape.modelTable ?? null,
               parameterIndex,
               groupKey,
-              groupLabel: axes.filter((value) => value !== null).join(' · '),
+              groupLabel: [[year, month].filter((value) => value !== null).join('.'), country].filter(Boolean).join(' · '),
               cells: [],
               totalPercent: '확인 불가',
             }
@@ -111,7 +111,7 @@ export const getPowerMixValidationErrors = (compare: ScenarioGroupModelParamComp
         const sum = sumPowerMixValues(values.map((value) => (typeof value === 'number' ? String(value) : '')))
         // 검증에 사용한 십진수 합계를 그대로 표시해 긴 소수 오차가 나타나지 않게 한다.
         group.totalPercent = sum ? formatPowerMixPercent(`${sum.total}e-${sum.scale}`) : '확인 불가'
-        // 시나리오별 Year + Country 합계가 정확히 1인지 검사한다. 월은 구분하지 않는다.
+        // 시나리오별 Year + Month(있는 경우) + Country 합계가 정확히 1인지 검사한다.
         return !sum || sum.total !== sum.unit
       })
     })

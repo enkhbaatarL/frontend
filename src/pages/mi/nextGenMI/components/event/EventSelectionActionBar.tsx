@@ -233,7 +233,7 @@ const EventSelectionActionBar = ({
     typeof sameCombinationGroupCount === 'number' && Number.isFinite(sameCombinationGroupCount)
       ? sameCombinationGroupCount
       : sameCombinationGroups.length
-  const showSameCombinationNotice = selectedCount >= 2 && !sameCombinationLoading && resolvedSameCombinationCount > 0
+  const showSameCombinationNotice = selectedCount > 0 && !sameCombinationLoading && resolvedSameCombinationCount > 0
   const showSameCombinationLoading = showSameCombinationNotice && !sameCombinationRevealed
   const resolvedDesignCta =
     designMode === 'creating' ? (

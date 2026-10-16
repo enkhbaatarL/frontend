@@ -192,7 +192,7 @@ export interface ProposalParamPeriodColumn {
   miBaseValues: string[]
   /** 편집·추천값 복원용 원본값. 표시할 때만 필요에 따라 반올림한다. */
   scenarioValuesById: Record<number, string[]>
-  /** PowerMix 검증용 Year + Country 키. 월 값은 포함하지 않는다. */
+  /** PowerMix 검증용 Year + Month(있는 경우) + Country 키. */
   powerMixGroupKeys: string[]
   /** compare cells[i] === null 인 셀 - 입력 비활성 */
   scenarioCellDisabledById: Record<number, boolean[]>
@@ -324,10 +324,12 @@ export const buildCompareParamMatrixData = ({
       if (isPowerMix) {
         powerMixGroupKeys.push(
           JSON.stringify(
-            ['year', 'country'].map((axis) => {
+            ['year', 'month', 'country'].map((axis) => {
               const column = columns.find((item) => [item.column, item.role].some((key) => key?.trim().toLowerCase() === axis))
-              const value = match && column ? getAxisValue(match, column) : (match?.[axis === 'year' ? 'Year' : 'Country'] ?? match?.[axis])
-              return value === undefined || value === null ? null : String(value).trim()
+              const value =
+                match && column ? getAxisValue(match, column) : (match?.[`${axis[0].toUpperCase()}${axis.slice(1)}`] ?? match?.[axis])
+              if (value === undefined || value === null || String(value).trim() === '') return null
+              return axis === 'month' && Number.isInteger(Number(value)) ? String(Number(value)).padStart(2, '0') : String(value).trim()
             }),
           ),
         )

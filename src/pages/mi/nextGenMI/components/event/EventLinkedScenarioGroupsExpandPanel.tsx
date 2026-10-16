@@ -18,7 +18,7 @@ export type EventLinkedScenarioGroupsExpandPanelProps = {
   onView: (group: EventLinkedScenarioGroup) => void
 }
 
-const LINKED_GROUP_TABLE_COLUMNS = 'minmax(0, 660px) 180px minmax(0, 1fr) minmax(0, 1fr)'
+const LINKED_GROUP_TABLE_COLUMNS = 'minmax(0, 1fr) 180px 200px 160px'
 
 const LinkedGroupEllipsisText = ({ value, sx, ...typographyProps }: Omit<TypographyProps, 'children'> & { value: string }) => {
   const { ref, isEllipsis } = useEllipsisDetection(value)
