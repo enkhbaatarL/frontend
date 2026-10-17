@@ -44,6 +44,24 @@ const bodySx = {
   ...wrapTextSx,
 } as const
 
+const bulletMarkerSx = { color: 'contentText.Black', fontSize: 'calc(1em * 2 / 3)' } as const
+
+// 전역 스타일(ul li { list-style: none })을 덮어써 핵심요약과 같은 bullet 표기로 맞춘다
+const markdownListSx = {
+  '& ul, & ol': {
+    m: 0,
+    pl: '24px',
+    listStylePosition: 'outside',
+    whiteSpace: 'normal',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  '& li': { display: 'list-item', m: 0, pl: 0, lineHeight: 1.6 },
+  '& ul > li': { listStyleType: 'disc', '&::marker': bulletMarkerSx },
+  '& ol > li': { listStyleType: 'decimal' },
+} as const
+
 const gradientCardBaseSx = {
   borderRadius: '10px',
   p: '24px',
@@ -145,7 +163,7 @@ const EventDetailAiInsightsSection = ({
                   m: 0,
                   pl: 0,
                   ...bulletBodySx,
-                  '&::marker': { color: 'contentText.Black', fontSize: 'calc(1em * 2 / 3)' },
+                  '&::marker': bulletMarkerSx,
                 },
               }}
             >
@@ -163,7 +181,7 @@ const EventDetailAiInsightsSection = ({
               <Typography sx={cardSubsectionTitleSx}>상세분석</Typography>
             </Stack>
             <Stack gap="20px" sx={constrainedStackSx}>
-              <Typography component="div" sx={{ ...bodySx, whiteSpace: 'pre-line' }}>
+              <Typography component="div" sx={{ ...bodySx, whiteSpace: 'pre-line', ...markdownListSx }}>
                 <ReactMarkdown remarkPlugins={markdownRemarkPlugins} rehypePlugins={[rehypeRaw]}>
                   {detailedAnalysis}
                 </ReactMarkdown>
