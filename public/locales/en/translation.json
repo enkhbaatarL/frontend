@@ -276,6 +276,7 @@
     }
   },
   "signalMap": {
+    "noResults": "No results found.",
     "title": "Visual Correlation of Market Signals by Sector",
     "tooltipTitle": "Mapped signals are grouped by sector and macroeconimic factor. Hovering reveals related signals and recent trend data."
   },

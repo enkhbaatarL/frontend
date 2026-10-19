@@ -53,6 +53,44 @@ export interface INotificationHistory {
   goodsNo: number
 }
 
+export type BellNotificationType = 'GOODS_THRESHOLD' | 'EVENT_KEYWORD'
+
+export interface IEventKeywordNotification {
+  keywordSettingId: number
+  keywordName: string
+  eventId: number
+  eventName: string
+}
+
+export interface IBellNotification {
+  notificationType: BellNotificationType
+  notificationId: number
+  notifiedAt: string
+  isRead: boolean
+  goodsThreshold: INotificationHistory | null
+  eventKeyword: IEventKeywordNotification | null
+}
+
+export interface IBellNotificationUnreadCount {
+  unreadCount: number
+}
+
+export interface IMyNotificationGoodsThreshold {
+  goodsNo: number
+  goodsDataNo: number
+  goodsDataNm: string
+  goodsDataSourceNo: number
+  goodsDataSourceNm: string
+  settingNotificationCount: number
+  notificationType: string
+}
+
+export interface IMyNotification {
+  notificationType: BellNotificationType
+  goodsThreshold: IMyNotificationGoodsThreshold | null
+  eventKeyword: IEventKeywordNotification | null
+}
+
 export interface INotificationSetting {
   isUserNotificationSetting: boolean
 }
@@ -178,6 +216,51 @@ const notificationService = {
   async getNotificationInquiry(emailSendSn: number): Promise<INotificationHistory> {
     const response: AxiosResponse<ICommonResponse<INotificationHistory>> = await api.get(
       `mi/notification-management/notifications/${emailSendSn}/inquiry`,
+    )
+
+    return response.data.data
+  },
+  /**
+   * 알림벨 목록을 조회합니다. 최근 7일, 발생 일시 최신순입니다.
+   * 상품 임계치 알림은 모든 사용자, 이벤트 키워드 알림은 SKGAS 사용자에게 함께 조회됩니다.
+   */
+  async getBellNotifications(params: Partial<IPaginationRequest>): Promise<IPaginationResponse<IBellNotification>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IBellNotification>>> = await api.get(
+      'mi/notification-management/bell-notifications',
+      { params },
+    )
+
+    return response.data.data
+  },
+  /**
+   * 알림벨의 최근 7일 미조회 알림 수를 조회합니다.
+   */
+  async getBellNotificationUnreadCount(): Promise<IBellNotificationUnreadCount> {
+    const response: AxiosResponse<ICommonResponse<IBellNotificationUnreadCount>> = await api.get(
+      'mi/notification-management/bell-notifications/unread-count',
+    )
+
+    return response.data.data
+  },
+  /**
+   * 알림벨 항목을 읽음 처리하고 해당 항목을 반환합니다.
+   * GOODS_THRESHOLD 의 notificationId 는 emailSendSn, EVENT_KEYWORD 는 키워드 알림 ID 입니다.
+   */
+  async readBellNotification(notificationType: BellNotificationType, notificationId: number): Promise<IBellNotification> {
+    const response: AxiosResponse<ICommonResponse<IBellNotification>> = await api.patch(
+      `mi/notification-management/bell-notifications/${notificationType}/${notificationId}/read`,
+    )
+
+    return response.data.data
+  },
+  /**
+   * My Notifications 목록을 조회합니다.
+   * 상품 임계치 설정과 이벤트 키워드 알림이 함께 내려오며, 키워드 알림은 SKGAS 사용자만 포함됩니다.
+   */
+  async getMyNotifications(params: Partial<INotificationRequest>): Promise<IPaginationResponse<IMyNotification>> {
+    const response: AxiosResponse<ICommonResponse<IPaginationResponse<IMyNotification>>> = await api.get(
+      'mi/notification-management/my-notifications',
+      { params },
     )
 
     return response.data.data

@@ -22,9 +22,6 @@ import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common
 import useNextGenMIDetailStickyTop from '@/pages/mi/nextGenMI/components/common/useNextGenMIDetailStickyTop'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
-  getEventDesignOccupiedMessage,
-  isScenarioDesignStatusOccupiedByOther,
-  normalizeEventDesignStep,
   normalizeScenarioDesignStatusCode,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventDetailAiInsightsSection from '@/pages/mi/nextGenMI/components/event/EventDetailAiInsightsSection'
@@ -33,6 +30,7 @@ import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/ev
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
 import EventDetailRelatedScenariosSection from '@/pages/mi/nextGenMI/components/event/EventDetailRelatedScenariosSection'
+import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/UserRegisteredEventBadge'
 import NextGenMIMarkdownDownloadButton from '@/pages/mi/nextGenMI/components/NextGenMIMarkdownDownloadButton'
 import NextGenMIUserFeedback from '@/pages/mi/nextGenMI/components/NextGenMIUserFeedback'
 import { useNextGenMIContentLayout } from '@/pages/mi/nextGenMI/hooks/useNextGenMIContentLayout'
@@ -44,7 +42,6 @@ import {
 import { buildEventDetailMarkdown, getMarkdownFileName } from '@/pages/mi/nextGenMI/utils/detailMarkdown'
 import nextGenMIEventService from '@/service/mi/nextGenMI/event'
 import nextGenMIScenarioDesignService from '@/service/mi/nextGenMI/scenarioDesign'
-import useDialog from '@/store/useDialog'
 
 export type EventDetailTabKey = 'impact' | 'ai' | 'records' | 'outlook' | 'driverTree' | 'related'
 
@@ -192,7 +189,6 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const location = useLocation()
   const state = location.state as NextGenMIEventDetailLocationState | null
   const { showSnackbar } = useSnackbar()
-  const { onShow } = useDialog()
   const eventIdNumber = eventId !== undefined && Number.isFinite(Number(eventId)) ? Number(eventId) : null
 
   const [recordsPagination, setRecordsPagination] = useState({ page: 1, size: 5 })
@@ -248,23 +244,26 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
     gcTime: 0,
   })
 
-  const title = useMemo(() => {
-    const fromApi = detail?.eventName
-    if (fromApi) return fromApi
-    if (eventNameFromState) return eventNameFromState
-    return eventId ? `이벤트 ${eventId}` : '이벤트'
-  }, [detail?.eventName, eventId, eventNameFromState])
-
   useEffect(() => {
     if (!detailError) return
     showSnackbar('이벤트 상세를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', { variant: 'error' })
   }, [detailError, showSnackbar])
 
-  const generatedAtLabel = formatEventDetailTimestampLabel(detail?.createdAt)
-  const updatedAtLabel = formatEventDetailTimestampLabel(detail?.updatedAt)
+  const displayDetail = detail
+
+  const title = useMemo(() => {
+    const fromApi = displayDetail?.eventName
+    if (fromApi) return fromApi
+    if (eventNameFromState) return eventNameFromState
+    return eventId ? `이벤트 ${eventId}` : '이벤트'
+  }, [displayDetail?.eventName, eventId, eventNameFromState])
+  const generatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.createdAt)
+  const updatedAtLabel = formatEventDetailTimestampLabel(displayDetail?.updatedAt)
+  const isUserRegisteredEvent = displayDetail?.sourceType === 'user'
+  const registrantName = displayDetail?.registrantName?.trim() || '-'
 
   const impactKpiPair = useMemo((): [KpiCardProps, KpiCardProps] => {
-    const ia = detail?.impactAnalysis
+    const ia = displayDetail?.impactAnalysis
     return [
       {
         title: '카테고리',
@@ -277,7 +276,7 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         description: '\u00a0',
       },
     ]
-  }, [detail?.impactAnalysis])
+  }, [displayDetail?.impactAnalysis])
 
   const impactTableRows = detail?.impactAnalysis?.indexImpacts ?? []
   const impactNarrative = detail?.impactAnalysis?.analysisText ?? ''
@@ -295,22 +294,12 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
   const outlookRows = useMemo(() => outlooksData?.detail ?? [], [outlooksData?.detail])
   const relatedEventScenarios = detail?.relatedEventScenarios ?? []
   const scenarioDesignStatus = normalizeScenarioDesignStatusCode(designStatus?.designStatus)
-  const relatedScenarioGroupId = relatedEventScenarios.find(
-    (group) => group.scenarioGroupId !== null && group.scenarioGroupId !== undefined,
-  )?.scenarioGroupId
-  const hasRelatedScenarioGroup = relatedScenarioGroupId !== undefined && relatedScenarioGroupId !== null
-  const isScenarioDesignCreating = scenarioDesignStatus === 'creating'
-  const isScenarioDesignCreated = scenarioDesignStatus === 'created' || (!isScenarioDesignCreating && hasRelatedScenarioGroup)
   const scenarioDesignUnavailable = scenarioDesignStatus === 'unavailable'
-  const scenarioDesignDisabled = detailLoading || isScenarioDesignCreated || scenarioDesignUnavailable
-  const scenarioDesignDisabledTooltipTitle = isScenarioDesignCreated
-    ? '새로 설계하려면 기존 시나리오 그룹을 먼저 삭제해야 합니다. 삭제는 시나리오 그룹 상세에서 가능합니다.'
-    : scenarioDesignUnavailable
-      ? EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE
-      : undefined
+  const scenarioDesignDisabled = detailLoading || scenarioDesignUnavailable
+  const scenarioDesignDisabledTooltipTitle = scenarioDesignUnavailable ? EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE : undefined
   const handleScenarioDesignClick = useCallback(async () => {
     if (!eventId) return
-    if (isScenarioDesignCreated || scenarioDesignUnavailable) return
+    if (scenarioDesignUnavailable) return
 
     const currentDesignStatus =
       designStatus ??
@@ -319,52 +308,21 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         : undefined)
 
     const currentScenarioDesignStatus = normalizeScenarioDesignStatusCode(currentDesignStatus?.designStatus) ?? scenarioDesignStatus
-    const currentScenarioGroupId = currentDesignStatus?.scenarioGroupId ?? relatedScenarioGroupId
 
     if (currentScenarioDesignStatus === 'unavailable') return
-
-    if (isScenarioDesignStatusOccupiedByOther(currentDesignStatus)) {
-      onShow({
-        title: '시나리오 설계를 시작할 수 없습니다',
-        width: 450,
-        children: getEventDesignOccupiedMessage(currentDesignStatus?.occupantUserName),
-      })
-      return
-    }
-
-    if (currentScenarioDesignStatus === 'created' && currentScenarioGroupId !== undefined && currentScenarioGroupId !== null) {
-      navigate(getNextGenMIScenarioGroupDetailPath(currentScenarioGroupId), {
-        state: { eventName: title },
-      })
-      return
-    }
 
     navigate(
       getNextGenMIScenarioDesignPath({
         eventIds: eventIdNumber !== null ? [eventIdNumber] : [],
-        scenarioGroupId: currentScenarioGroupId,
       }),
       {
         state: {
           eventName: title,
           eventIds: eventIdNumber !== null ? [eventIdNumber] : undefined,
-          scenarioGroupId: currentScenarioGroupId ?? undefined,
-          designStep: normalizeEventDesignStep(currentDesignStatus?.designStep) ?? null,
         },
       },
     )
-  }, [
-    designStatus,
-    eventId,
-    eventIdNumber,
-    isScenarioDesignCreated,
-    navigate,
-    onShow,
-    relatedScenarioGroupId,
-    scenarioDesignStatus,
-    scenarioDesignUnavailable,
-    title,
-  ])
+  }, [designStatus, eventId, eventIdNumber, navigate, scenarioDesignStatus, scenarioDesignUnavailable, title])
 
   const getEventDetailMarkdown = useCallback(() => {
     if (!detail) throw new Error('이벤트 상세 데이터가 없습니다.')
@@ -420,15 +378,18 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
             </>
           ) : (
             <>
-              <Typography
-                variant="titleLarge"
-                fontSize="26px"
-                fontWeight={600}
-                display="block"
-                sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}
-              >
-                {title}
-              </Typography>
+              <Stack direction="row" alignItems="center" gap="10px" minWidth={0} width="100%" overflow="hidden">
+                <Typography
+                  variant="titleLarge"
+                  fontSize="26px"
+                  fontWeight={600}
+                  noWrap
+                  sx={{ lineHeight: 1.4, minWidth: 0, flex: '0 1 auto', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                >
+                  {title}
+                </Typography>
+                {isUserRegisteredEvent ? <UserRegisteredEventBadge size="header" /> : null}
+              </Stack>
               <Stack direction="row" alignItems="center" gap="8px" flexWrap="wrap">
                 <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
                   <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
@@ -446,13 +407,30 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
                     {updatedAtLabel}
                   </Typography>
                 </Stack>
+                <Stack direction="row" alignItems="center" gap="6px" padding="4px 8px" borderRadius="100px">
+                  <Typography variant="body3SB12" color="contentText.Normal" lineHeight={1.4}>
+                    등록자
+                  </Typography>
+                  <Typography variant="body2M14" color="contentText.Black" lineHeight={1.4}>
+                    {registrantName}
+                  </Typography>
+                </Stack>
               </Stack>
             </>
           )}
         </Stack>
       </Stack>
     ),
-    [detail?.signalType, detail?.signalTypeLabel, detailLoading, generatedAtLabel, title, updatedAtLabel],
+    [
+      detail?.signalType,
+      detail?.signalTypeLabel,
+      detailLoading,
+      generatedAtLabel,
+      isUserRegisteredEvent,
+      registrantName,
+      title,
+      updatedAtLabel,
+    ],
   )
 
   const headerCollapsedSummarySlot = useMemo(
@@ -463,10 +441,11 @@ const NextGenMIEventDetailPage = ({ eventId: eventIdProp, embedded = false }: Ne
         metaItems={[
           { label: '생성', value: generatedAtLabel },
           { label: '갱신', value: updatedAtLabel },
+          { label: '등록자', value: registrantName },
         ]}
       />
     ),
-    [generatedAtLabel, title, updatedAtLabel],
+    [generatedAtLabel, registrantName, title, updatedAtLabel],
   )
 
   useLayoutEffect(() => {

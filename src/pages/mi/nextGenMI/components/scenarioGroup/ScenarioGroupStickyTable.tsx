@@ -58,6 +58,7 @@ export type ScenarioGroupStickyTableColumn<T> = {
   sortComparator?: (firstRow: T, secondRow: T, column: ScenarioGroupStickyTableColumn<T>) => number
   tooltipWhenHeaderTruncated?: boolean
   headerTooltipTitle?: ReactNode
+  headerPrefix?: ReactNode
   headerSuffix?: ReactNode
   cellSx?: SxProps<Theme>
   headerCellSx?: SxProps<Theme>
@@ -115,6 +116,10 @@ type ScenarioGroupStickyTableProps<T> = {
   rightScrollEdgeEffect?: ScenarioGroupStickyTableScrollEdgeEffect
   /** 분할 테이블의 세로 스크롤 동기화용 pane처럼 스크롤 동작만 유지하고 세로 thumb/gutter는 숨길 때 사용 */
   hideVerticalScrollbar?: boolean
+  /** 세로 스크롤바 공간을 예약하지 않고 콘텐츠 위에 겹쳐 표시 */
+  overlayVerticalScrollbar?: boolean
+  /** 세로 스크롤바의 오른쪽 위치. 음수이면 테이블 바깥에 표시 */
+  verticalScrollbarRight?: string
   /** 좌우 분할 테이블의 본문 높이를 맞추기 위해 가로 스크롤 유무와 관계없이 하단 gutter를 유지 */
   reserveHorizontalScrollbarGutter?: boolean
   hoverType?: ScenarioGroupStickyTableHoverType
@@ -208,10 +213,12 @@ const ScenarioGroupStickyTableHeaderLabel = ({
   label,
   tooltipTitle,
   tooltipWhenTruncated = false,
+  hasPrefix = false,
 }: {
   label: ReactNode
   tooltipTitle?: ReactNode
   tooltipWhenTruncated?: boolean
+  hasPrefix?: boolean
 }) => {
   const { ref, isEllipsis } = useEllipsisDetection(label)
 
@@ -221,7 +228,7 @@ const ScenarioGroupStickyTableHeaderLabel = ({
       component="span"
       sx={{
         display: 'block',
-        flex: '1 1 0%',
+        flex: hasPrefix ? '0 1 auto' : '1 1 0%',
         minWidth: 0,
         maxWidth: '100%',
         overflow: 'hidden',
@@ -396,6 +403,8 @@ const ScenarioGroupStickyTable = <T,>({
   leftScrollEdgeEffect = 'gradient',
   rightScrollEdgeEffect = 'gradient',
   hideVerticalScrollbar = false,
+  overlayVerticalScrollbar = false,
+  verticalScrollbarRight = '4px',
   reserveHorizontalScrollbarGutter = false,
   hoverType = 'horizontal',
   oddBackground = false,
@@ -1122,7 +1131,8 @@ const ScenarioGroupStickyTable = <T,>({
   const showScrollbars = isScrollAreaHovered || dragAxis !== null
   const reserveExternalHorizontalScrollbarGutter =
     !showPageStickyHeader && (scrollLayoutState.horizontal || reserveHorizontalScrollbarGutter)
-  const reserveExternalVerticalScrollbarGutter = !hideVerticalScrollbar && (!showPageStickyHeader || scrollLayoutState.vertical)
+  const reserveExternalVerticalScrollbarGutter =
+    !overlayVerticalScrollbar && !hideVerticalScrollbar && (!showPageStickyHeader || scrollLayoutState.vertical)
   const canUseInsetHorizontalScrollbar =
     canInsetHorizontalScrollbar &&
     scrollLayoutState.clientWidth >
@@ -1318,16 +1328,29 @@ const ScenarioGroupStickyTable = <T,>({
         label={column.headerName}
         tooltipTitle={column.headerTooltipTitle}
         tooltipWhenTruncated={column.tooltipWhenHeaderTruncated}
+        hasPrefix={Boolean(column.headerPrefix)}
       />
     )
-    const headerLabelWithSuffix = column.headerSuffix ? (
-      <Stack component="span" direction="row" alignItems="center" gap="4px" width="100%" minWidth={0}>
-        {headerLabel}
-        {column.headerSuffix}
-      </Stack>
-    ) : (
-      headerLabel
-    )
+    const headerLabelWithSuffix =
+      column.headerPrefix || column.headerSuffix ? (
+        <Stack
+          component="span"
+          direction="row"
+          alignItems="center"
+          justifyContent={column.headerPrefix ? 'center' : undefined}
+          gap={column.headerPrefix ? '6px' : '4px'}
+          width={column.headerPrefix ? 'fit-content' : '100%'}
+          maxWidth="100%"
+          minWidth={0}
+          margin={column.headerPrefix ? '0 auto' : undefined}
+        >
+          {column.headerPrefix}
+          {headerLabel}
+          {column.headerSuffix}
+        </Stack>
+      ) : (
+        headerLabel
+      )
 
     const renderHeaderContent = () =>
       sortable ? (
@@ -1894,7 +1917,7 @@ const ScenarioGroupStickyTable = <T,>({
           overflowY: 'hidden',
           overscrollBehaviorX: 'none',
           scrollbarWidth: 'none',
-          pr: scrollLayoutState.vertical ? '18px' : 0,
+          pr: !overlayVerticalScrollbar && scrollLayoutState.vertical ? '18px' : 0,
           ...initialScrollVisualStateSx,
           '&::-webkit-scrollbar': { display: 'none' },
         }}
@@ -1925,7 +1948,7 @@ const ScenarioGroupStickyTable = <T,>({
         sx={{
           position: 'absolute',
           bottom: 0,
-          right: scrollLayoutState.vertical ? '18px' : 0,
+          right: !overlayVerticalScrollbar && scrollLayoutState.vertical ? '18px' : 0,
           left: 0,
           height: '1px',
           pointerEvents: 'none',
@@ -2277,7 +2300,7 @@ const ScenarioGroupStickyTable = <T,>({
           sx={{
             position: 'absolute',
             top: 0,
-            right: '4px',
+            right: verticalScrollbarRight,
             bottom: reserveExternalHorizontalScrollbarGutter ? '22px' : 0,
             width: '10px',
             borderRadius: '10px',

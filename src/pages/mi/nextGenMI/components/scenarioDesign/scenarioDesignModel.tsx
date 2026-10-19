@@ -403,13 +403,7 @@ export const createScenarioDesignEditTable = (columns: ScenarioDesignColumn[], r
       const selectedValue = getScenarioDesignDimensionSelectedValue(row, column.key, column)
       const isAgentValue = selectedValue === SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.value
       const isEmptyValue = selectedValue === ''
-      const additionalValueEnums = isScenarioDesignAdditionalColumn(column) ? (column.valueEnums ?? []) : []
-      const shouldResolveAdditionalAgent = isAgentValue && additionalValueEnums.length > 0
-      const resolvedValueId = shouldResolveAdditionalAgent
-        ? additionalValueEnums[index % additionalValueEnums.length]
-        : isAgentValue || isEmptyValue
-          ? null
-          : selectedValue
+      const resolvedValueId = isAgentValue || isEmptyValue ? null : selectedValue
       const resolvedValueLabel = resolvedValueId === null ? null : getScenarioDesignColumnValueLabel(column, resolvedValueId)
 
       return {

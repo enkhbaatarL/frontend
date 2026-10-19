@@ -1,7 +1,7 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
-import { Box, Checkbox, CircularProgress, Collapse, Fade, Stack, Typography, useMediaQuery } from '@mui/material'
+import { Box, CircularProgress, Collapse, Fade, Stack, Typography, useMediaQuery } from '@mui/material'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
@@ -9,13 +9,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { SwitchTransition } from 'react-transition-group'
 
 import type {
-  CurrentModelParamProposal,
   ModelExecutionAccept,
+  ModelExecutionInputFiles,
+  ModelParamProposalCurrentState,
   ScenarioGroupModelParamCompare,
   ScenarioGroupModelParamProposals,
 } from '@/service/mi/nextGenMI/modelExecution'
 import type { ScenarioRole } from '@/service/mi/nextGenMI/scenarioGroup'
 
+import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -28,14 +30,17 @@ import useSnackbar from '@/hooks/useSnackbar'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
-import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import NextGenMITableBodyText, { NEXT_GEN_MI_TABLE_CELL_PX } from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
+import ScenarioModelExecutionGeneratingState from '@/pages/mi/nextGenMI/components/common/ScenarioModelExecutionGeneratingState'
 import ScenarioPossibilityGauge from '@/pages/mi/nextGenMI/components/common/ScenarioPossibilityGauge'
 import ScenarioRoleBadge from '@/pages/mi/nextGenMI/components/common/ScenarioRoleBadge'
+import { getPowerMixValidationErrors } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionPowerMixValidation'
 import {
   buildCompareParamMatrixData,
   buildConfirmationParametersFromCompare,
   canShowVisibilityToggle,
   isDimmedStatus,
+  isModelExecutionInProgressState,
   mapProposalStateToRowStatus,
   type ModelParamProposalRowStatus,
   updateCompareProposedValue,
@@ -49,9 +54,21 @@ import { downloadFile } from '@/utils/file'
 const BANNER_MESSAGE = '각 시나리오의 [생성] 버튼을 눌러 추천 파라미터를 생성해 주세요.'
 const GENERATING_MESSAGE = '파라미터를 생성하고 있습니다'
 
-/** 8c8e9629 기준 - executionInputFiles 가 완전할 때만 다운로드 가능 */
-const getDownloadableExecutionInputFiles = (proposal: CurrentModelParamProposal | null): IFileDownloadRequest[] => {
-  const executionInputFiles = proposal?.executionInputFiles
+interface ScenarioModelExecutionProposalListProps {
+  scenarioGroupId: number
+  executingScenarioIds: Set<number>
+  executedScenarioIds: Set<number>
+  isResizing: boolean
+  onContentHeightChange: (height: number) => void
+  onFillsViewportHeightChange?: (fillsViewportHeight: boolean) => void
+  onCancel: () => void
+  onAccepted: (scenarioId: number) => void
+  onCompleted: (scenarioId: number) => void
+  onFailed: (scenarioId: number) => void
+}
+
+/** 이전 단건 팝업과 동일: 실행 인풋 엑셀 메타가 완전할 때만 파일 다운로드 가능 */
+const getDownloadableExecutionInputFiles = (executionInputFiles?: ModelExecutionInputFiles | null): IFileDownloadRequest[] => {
   if (executionInputFiles?.complete !== true || !executionInputFiles.files?.length) return []
 
   const downloadableFiles = executionInputFiles.files.flatMap((file) => {
@@ -74,15 +91,28 @@ const getDownloadableExecutionInputFiles = (proposal: CurrentModelParamProposal 
   return downloadableFiles.length === executionInputFiles.files.length ? downloadableFiles : []
 }
 
-interface ScenarioModelExecutionProposalListProps {
-  scenarioGroupId: number
-  executingScenarioIds: Set<number>
-  isResizing: boolean
-  onContentHeightChange: (height: number) => void
-  onFillsViewportHeightChange?: (fillsViewportHeight: boolean) => void
-  onCancel: () => void
-  onAccepted: (scenarioId: number) => void
-  onCompleted: (scenarioId: number) => void
+/** 생성 중인 행은 실행 상태 패치로 덮지 않음. 서버가 PROPOSAL_READY를 유지해도 이번 세션 실행 이력을 살린다. */
+const overlayProposalExecutionState = (
+  proposals: ScenarioGroupModelParamProposals,
+  executedIds: Set<number>,
+  executingIds: Set<number>,
+): ScenarioGroupModelParamProposals => {
+  if (executedIds.size === 0 && executingIds.size === 0) return proposals
+
+  let changed = false
+  const scenarios = proposals.scenarios.map((scenario) => {
+    if (scenario.currentState === 'GENERATING') return scenario
+
+    let currentState: ModelParamProposalCurrentState | undefined = scenario.currentState
+    if (executedIds.has(scenario.scenarioId)) currentState = 'EXECUTED_CONFIRMED'
+    else if (executingIds.has(scenario.scenarioId) && currentState !== 'EXECUTED_CONFIRMED') currentState = 'EXECUTING'
+
+    if (currentState === scenario.currentState) return scenario
+    changed = true
+    return { ...scenario, currentState }
+  })
+
+  return changed ? { ...proposals, scenarios } : proposals
 }
 
 interface ProposalListDimensionCell {
@@ -101,6 +131,7 @@ interface ProposalListScenarioRow {
   dimensionCells: ProposalListDimensionCell[]
   possibility: number
   status: ModelParamProposalRowStatus
+  canRerun: boolean
   failureReason?: string
 }
 
@@ -110,14 +141,36 @@ const DimensionInfoIcon = ({ title }: { title: string }) => (
       component="span"
       alignItems="center"
       justifyContent="center"
-      width="16px"
-      height="16px"
+      width="18px"
+      height="18px"
       flexShrink={0}
       color="contentIcon.Enabled"
     >
-      <InfoOutlinedIcon aria-hidden sx={{ fontSize: '16px', color: 'inherit' }} />
+      <InfoOutlinedIcon aria-hidden sx={{ fontSize: '18px', color: 'inherit' }} />
     </Stack>
   </NextGenMIFollowCursorTooltip>
+)
+
+/** 헤더/로우 dimension 셀 공통 레이아웃 - (i) 아이콘을 셀 오른쪽에 동일 정렬 */
+const DimensionCellContent = ({
+  value,
+  tooltipTitle,
+  variant,
+  color,
+  lineClamp,
+}: {
+  value: string
+  tooltipTitle?: string
+  variant: 'body2SB14' | 'body2M14'
+  color: string
+  lineClamp?: number
+}) => (
+  <Stack direction="row" alignItems="center" gap="6px" flex="1 1 0" minWidth={0} padding={`0 ${NEXT_GEN_MI_TABLE_CELL_PX}px`}>
+    <Box flex="1 1 0" minWidth={0}>
+      <NextGenMITableBodyText value={value} variant={variant} color={color} lineClamp={lineClamp} tooltipWhenTruncated />
+    </Box>
+    {tooltipTitle ? <DimensionInfoIcon title={tooltipTitle} /> : <Box width="18px" height="18px" flexShrink={0} aria-hidden />}
+  </Stack>
 )
 
 const isClientRequestError = (error: unknown) => {
@@ -137,15 +190,19 @@ const isExecutionValidationError = (error: unknown) => {
 
 const StatusCell = ({
   status,
+  canRerun,
   failureReason,
   disabled,
   onGenerate,
+  onRerun,
   onRetry,
 }: {
   status: ModelParamProposalRowStatus
+  canRerun: boolean
   failureReason?: string
   disabled?: boolean
   onGenerate: () => void
+  onRerun: () => void
   onRetry: () => void
 }) => {
   if (status === 'generating') {
@@ -160,19 +217,67 @@ const StatusCell = ({
   }
 
   if (status === 'completed') {
+    if (canRerun) {
+      return (
+        <Box
+          position="relative"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          width="100%"
+          height="32px"
+          sx={{
+            '& .completed-label': { opacity: 1 },
+            '& .rerun-button': { opacity: 0, pointerEvents: 'none' },
+            '&:hover .completed-label, &:focus-within .completed-label': { opacity: 0 },
+            '&:hover .rerun-button, &:focus-within .rerun-button': { opacity: 1, pointerEvents: 'auto' },
+          }}
+        >
+          <Typography
+            className="completed-label"
+            variant="body2SB14"
+            color="contentText.Subtext"
+            textAlign="center"
+            width="100%"
+            sx={{ transition: 'opacity 150ms ease' }}
+          >
+            완료
+          </Typography>
+          <MIBaseButton
+            className="rerun-button"
+            variant="outlined"
+            disabled={disabled}
+            onClick={onRerun}
+            sx={{
+              position: 'absolute',
+              height: '32px',
+              minWidth: '72px',
+              borderRadius: '8px',
+              padding: '0 10px',
+              transition: 'opacity 150ms ease',
+            }}
+          >
+            재실행
+          </MIBaseButton>
+        </Box>
+      )
+    }
+
     return (
-      <Typography variant="body2SB14" color="contentText.Subtext" textAlign="center" width="100%">
-        완료
-      </Typography>
+      <NextGenMIFollowCursorTooltip title="다음 수급모델 실행 시 파라미터를 다시 생성할 수 있습니다">
+        <Typography component="span" variant="body2SB14" color="contentText.Subtext" textAlign="center" width="100%">
+          완료
+        </Typography>
+      </NextGenMIFollowCursorTooltip>
     )
   }
 
-  if (status === 'failed') {
+  if (status === 'failed' || status === 'abstained') {
     const label = (
       <Stack direction="row" alignItems="center" justifyContent="center" gap="2px" width="100%" minWidth={0}>
         <WarningAmberRoundedIcon sx={{ fontSize: '16px', color: '#ea580c' }} />
         <Typography variant="body2SB14" color="#ea580c" noWrap>
-          실패
+          {status === 'abstained' ? '보류' : '실패'}
         </Typography>
       </Stack>
     )
@@ -226,12 +331,14 @@ const StatusCell = ({
 const ScenarioModelExecutionProposalList = ({
   scenarioGroupId,
   executingScenarioIds,
+  executedScenarioIds,
   isResizing,
   onContentHeightChange,
   onFillsViewportHeightChange,
   onCancel,
   onAccepted,
   onCompleted,
+  onFailed,
 }: ScenarioModelExecutionProposalListProps) => {
   const { showSnackbar } = useSnackbar()
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -251,14 +358,41 @@ const ScenarioModelExecutionProposalList = ({
   const [emptySelectionConfirmOpen, setEmptySelectionConfirmOpen] = useState(false)
   const [executionConfirmOpen, setExecutionConfirmOpen] = useState(false)
   const [isSubmittingExecution, setIsSubmittingExecution] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
-  const [downloadableExecutionInputFiles, setDownloadableExecutionInputFiles] = useState<IFileDownloadRequest[]>([])
+  const [locallyExecutedIds, setLocallyExecutedIds] = useState<Set<number>>(() => new Set())
+  const [awaitingExecutionScenarioIds, setAwaitingExecutionScenarioIds] = useState<Set<number>>(() => new Set())
+  const [executedConfirmedScenarioIds, setExecutedConfirmedScenarioIds] = useState<Set<number>>(() => new Set())
+  const locallyExecutedIdsRef = useRef<Set<number>>(new Set())
+  const runningScenarioIdsRef = useRef<Set<number>>(new Set())
+  const graphExecutedIdsRef = useRef<Set<number>>(executedScenarioIds)
   const failureKeyRef = useRef<Map<number, string>>(new Map())
   const groupStreamControllerRef = useRef<AbortController | null>(null)
-  const inputFilesRequestIdRef = useRef(0)
   const proposalsRequestIdRef = useRef(0)
   const compareRequestIdRef = useRef(0)
   const previousColumnScenarioIdsRef = useRef<number[]>([])
+  const lastLoadedCompareRef = useRef<ScenarioGroupModelParamCompare | null>(null)
+  // run-status 실행 종료 감지용. null 은 마운트 직후 첫 스냅샷을 건너뛰기 위함
+  const prevGraphExecutingIdsRef = useRef<Set<number> | null>(null)
+
+  // 이번 세션 accept 결과 + graph run-status(재진입/다른 사용자)를 합쳐 실행 중으로 본다.
+  const mergedExecutingScenarioIds = useMemo(() => {
+    const ids = new Set(runningExecutions.map((execution) => execution.scenarioId))
+    executingScenarioIds.forEach((scenarioId) => ids.add(scenarioId))
+    return ids
+  }, [executingScenarioIds, runningExecutions])
+
+  locallyExecutedIdsRef.current = locallyExecutedIds
+  runningScenarioIdsRef.current = mergedExecutingScenarioIds
+  graphExecutedIdsRef.current = executedScenarioIds
+
+  useEffect(() => {
+    setGroupProposals((current) =>
+      current
+        ? overlayProposalExecutionState(current, new Set([...locallyExecutedIds, ...executedScenarioIds]), mergedExecutingScenarioIds)
+        : current,
+    )
+  }, [executedScenarioIds, locallyExecutedIds, mergedExecutingScenarioIds])
 
   useLayoutEffect(() => {
     const content = contentRef.current
@@ -322,11 +456,20 @@ const ScenarioModelExecutionProposalList = ({
           }),
           possibility: row.adjustedProbability ?? row.probability,
           status,
+          canRerun:
+            status === 'completed' && !awaitingExecutionScenarioIds.has(row.scenarioId) && executedConfirmedScenarioIds.has(row.scenarioId),
           failureReason: proposal?.failureReason ?? undefined,
         }
       })
       .sort((a, b) => a.displayOrder - b.displayOrder)
-  }, [dimensionColumns, groupQuery.data?.scenarios, pendingGenerateIds, proposalByScenarioId])
+  }, [
+    awaitingExecutionScenarioIds,
+    dimensionColumns,
+    executedConfirmedScenarioIds,
+    groupQuery.data?.scenarios,
+    pendingGenerateIds,
+    proposalByScenarioId,
+  ])
 
   const completedScenarioIds = useMemo(
     () => scenarios.filter((scenario) => scenario.status === 'completed').map((scenario) => scenario.scenarioId),
@@ -354,40 +497,43 @@ const ScenarioModelExecutionProposalList = ({
     onFillsViewportHeightChange?.(hasCompleted)
   }, [hasCompleted, onFillsViewportHeightChange])
 
-  const downloadTargetScenarioIds = useMemo(() => {
-    const selectedCompleted = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId))
-    return selectedCompleted.length > 0 ? selectedCompleted : completedScenarioIds
-  }, [completedScenarioIds, selectedScenarioIds])
+  // 그룹 zip은 서버 proposals의 EXECUTED_CONFIRMED만 대상 (downloadGroupInputFiles).
+  // overlay/graph executed / locallyExecutedIds 로 켜지 않음 — PROPOSAL_READY + graph executed 오판정 방지.
+  // executionInputFiles 메타가 있으면 complete+유효 파일일 때만 (메타 불완전 시나리오는 BE 제외).
+  const canDownloadInputFiles = useMemo(() => {
+    const proposalScenarios = groupProposals?.scenarios ?? []
+    return proposalScenarios.some((scenario) => {
+      if (!executedConfirmedScenarioIds.has(scenario.scenarioId)) return false
+      if (scenario.executionInputFiles === null || scenario.executionInputFiles === undefined) return true
+      return getDownloadableExecutionInputFiles(scenario.executionInputFiles).length > 0
+    })
+  }, [executedConfirmedScenarioIds, groupProposals?.scenarios])
 
-  const refreshDownloadableExecutionInputFiles = useCallback(async () => {
-    const requestId = ++inputFilesRequestIdRef.current
-    if (!showParamPanel || downloadTargetScenarioIds.length === 0) {
-      if (requestId === inputFilesRequestIdRef.current) setDownloadableExecutionInputFiles([])
-      return
-    }
+  const collectDownloadableInputFiles = useCallback(
+    () => (groupProposals?.scenarios ?? []).flatMap((scenario) => getDownloadableExecutionInputFiles(scenario.executionInputFiles)),
+    [groupProposals?.scenarios],
+  )
 
-    const proposals = await Promise.all(
-      downloadTargetScenarioIds.map((scenarioId) =>
-        nextGenMIModelExecutionService.getCurrentModelParamProposal(scenarioId).catch(() => null),
-      ),
-    )
-    if (requestId !== inputFilesRequestIdRef.current) return
-
-    const files = proposals.flatMap((proposal) => getDownloadableExecutionInputFiles(proposal))
-    // 시나리오별 fileNo 중복 제거
-    const uniqueFiles = Array.from(new Map(files.map((file) => [file.fileNo, file])).values())
-    setDownloadableExecutionInputFiles(uniqueFiles)
-  }, [downloadTargetScenarioIds, showParamPanel])
-
-  useEffect(() => {
-    void refreshDownloadableExecutionInputFiles()
-  }, [refreshDownloadableExecutionInputFiles, groupProposals, compare])
-
-  const { mutate: downloadExecutionInputFiles, isPending: isDownloadingInputFiles } = useMutation({
-    mutationFn: ({ prefix, files: inputFiles }: { prefix: string; files: IFileDownloadRequest[] }) =>
-      fileService.downloadFiles(prefix, inputFiles),
-    onSuccess: (fileBlob, { prefix }) => {
-      downloadFile(fileBlob, `${prefix}.zip`)
+  const { mutate: downloadGroupInputFiles, isPending: isDownloadingInputFiles } = useMutation({
+    mutationFn: async () => {
+      try {
+        const response = await nextGenMIModelExecutionService.downloadGroupInputFiles(scenarioGroupId)
+        return { kind: 'group' as const, response }
+      } catch (error) {
+        const files = collectDownloadableInputFiles()
+        if (files.length === 0) throw error
+        const data = await fileService.downloadFiles(`scenario-group-${scenarioGroupId}-model-input-files`, files)
+        return { kind: 'files' as const, data }
+      }
+    },
+    onSuccess: (result) => {
+      if (result.kind === 'files') {
+        downloadFile(result.data, `scenario-group-${scenarioGroupId}-model-input-files.zip`)
+        return
+      }
+      const contentDisposition = result.response.headers?.['content-disposition'] ?? ''
+      const fileNameFromHeader = contentDisposition.split('\'\'').pop()?.trim()
+      downloadFile(result.response.data, fileNameFromHeader || `scenario-group-${scenarioGroupId}-model-input-files.zip`)
     },
     onError: () => {
       showSnackbar('인풋 파일 다운로드에 실패했습니다.', { variant: 'error' })
@@ -395,12 +541,9 @@ const ScenarioModelExecutionProposalList = ({
   })
 
   const handleDownloadInputFiles = useCallback(() => {
-    if (downloadableExecutionInputFiles.length === 0 || isDownloadingInputFiles) return
-    downloadExecutionInputFiles({
-      prefix: `scenario-group-${scenarioGroupId}-model-input-files`,
-      files: downloadableExecutionInputFiles,
-    })
-  }, [downloadExecutionInputFiles, downloadableExecutionInputFiles, isDownloadingInputFiles, scenarioGroupId])
+    if (!canDownloadInputFiles || isDownloadingInputFiles) return
+    downloadGroupInputFiles()
+  }, [canDownloadInputFiles, downloadGroupInputFiles, isDownloadingInputFiles])
 
   const visibleScenarios = useMemo(
     () =>
@@ -411,18 +554,52 @@ const ScenarioModelExecutionProposalList = ({
         )
         .map((scenario) => ({
           scenarioId: scenario.scenarioId,
+          displayOrder: scenario.displayOrder,
           scenarioName: scenario.scenarioName,
           status: scenario.status === 'generating' ? ('generating' as const) : ('completed' as const),
         })),
     [scenarios, visibleScenarioIds],
   )
   const selectedCompletedCount = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId)).length
+  const powerMixErrors = useMemo(() => getPowerMixValidationErrors(compare), [compare])
+  const hasPowerMixError = powerMixErrors.some(
+    ({ scenarioId }) => selectedScenarioIds.includes(scenarioId) && completedScenarioIds.includes(scenarioId),
+  )
   const allSelectableChecked = selectableScenarioIds.length > 0 && selectableScenarioIds.every((id) => selectedScenarioIds.includes(id))
   const someSelectableChecked = selectableScenarioIds.some((id) => selectedScenarioIds.includes(id))
+  // proposals currentState 기준 실행 준비중/실행중 (재진입 시 run-status 공백 구간 포함)
+  const hasProposalExecutionInProgress = useMemo(
+    () => (groupProposals?.scenarios ?? []).some((scenario) => isModelExecutionInProgressState(scenario.currentState)),
+    [groupProposals?.scenarios],
+  )
+  const isPreparingExecutionOnly = useMemo(() => {
+    if (mergedExecutingScenarioIds.size > 0 || isSubmittingExecution) return false
+    const states = (groupProposals?.scenarios ?? []).map((scenario) => scenario.currentState)
+    if (!states.some((state) => state === 'CONFIRMED_PENDING_EXECUTION')) return false
+    return !states.some((state) => state === 'EXECUTING')
+  }, [groupProposals?.scenarios, isSubmittingExecution, mergedExecutingScenarioIds.size])
+  // PopupContent 대응: isSubmitting / isExecuting / isResetting
+  // 이번 세션 runningExecutions + run-status modelRunning + proposals CONFIRMED_PENDING/EXECUTING
+  const isExecuting = mergedExecutingScenarioIds.size > 0 || hasProposalExecutionInProgress
+  const isExecutionBusy = isSubmittingExecution || isExecuting
+  const isParamPanelVisible = showParamPanel && !isExecutionBusy
+  // 시나리오 선택/생성/초기화/실행 등 액션 잠금 (PopupContent 넓은 가드)
+  const isActionLocked = isExecutionBusy || isResetting
+  // Value 입력 잠금 - PopupContent NumericParameterValueInput: isSubmitting || isResetting
+  // (실행 중에는 파라미터 영역을 GeneratingState 로 대체해 인풋 자체가 안 보임)
+  const isValueInputLocked = isSubmittingExecution || isResetting
 
   const applyGroupProposals = useCallback(
     (nextProposals: ScenarioGroupModelParamProposals, notifyFailure = false) => {
-      setGroupProposals(nextProposals)
+      setExecutedConfirmedScenarioIds(
+        new Set(
+          nextProposals.scenarios
+            .filter((scenario) => scenario.currentState === 'EXECUTED_CONFIRMED')
+            .map((scenario) => scenario.scenarioId),
+        ),
+      )
+      const executedIds = new Set<number>([...locallyExecutedIdsRef.current, ...graphExecutedIdsRef.current])
+      setGroupProposals(overlayProposalExecutionState(nextProposals, executedIds, runningScenarioIdsRef.current))
 
       setPendingGenerateIds((current) => {
         let changed = false
@@ -487,6 +664,7 @@ const ScenarioModelExecutionProposalList = ({
     try {
       const nextCompare = await nextGenMIModelExecutionService.getGroupModelParamProposalsCompare(scenarioGroupId)
       if (requestId !== compareRequestIdRef.current) return
+      lastLoadedCompareRef.current = nextCompare
       setCompare(nextCompare)
       setCompareLoadFailed(false)
     } catch (error) {
@@ -504,6 +682,106 @@ const ScenarioModelExecutionProposalList = ({
     },
     [loadCompareProposals, loadGroupProposals],
   )
+
+  const markScenariosExecuted = useCallback((scenarioIds: number[]) => {
+    if (scenarioIds.length === 0) return
+    setLocallyExecutedIds((current) => {
+      const next = new Set(current)
+      scenarioIds.forEach((scenarioId) => next.add(scenarioId))
+      locallyExecutedIdsRef.current = next
+      return next
+    })
+    setGroupProposals((current) => (current ? overlayProposalExecutionState(current, new Set(scenarioIds), new Set()) : current))
+  }, [])
+
+  const markScenariosExecuting = useCallback((scenarioIds: number[]) => {
+    if (scenarioIds.length === 0) return
+    setGroupProposals((current) =>
+      current ? overlayProposalExecutionState(current, locallyExecutedIdsRef.current, new Set(scenarioIds)) : current,
+    )
+  }, [])
+
+  const syncParamEditBaselineAfterExecution = useCallback(() => {
+    // refresh 성공 시 lastLoaded가 최신. 실패해도 직전 조회본으로 복구해 주황 잔상 방지
+    if (lastLoadedCompareRef.current) setCompare(lastLoadedCompareRef.current)
+    setParamResetToken((token) => token + 1)
+  }, [])
+
+  const handleExecutionSettled = useCallback(
+    (scenarioId: number) => {
+      setAwaitingExecutionScenarioIds((current) => {
+        if (!current.has(scenarioId)) return current
+        const next = new Set(current)
+        next.delete(scenarioId)
+        return next
+      })
+      markScenariosExecuted([scenarioId])
+      onCompleted(scenarioId)
+      // 실행 중 GeneratingState 로 파라미터가 언마운트되었다가 복귀할 때,
+      // 서버 조회값 기준으로 baseline/수정표시를 다시 맞춰 주황 잔상을 막음
+      void refreshProposals().finally(syncParamEditBaselineAfterExecution)
+    },
+    [markScenariosExecuted, onCompleted, refreshProposals, syncParamEditBaselineAfterExecution],
+  )
+
+  const handleExecutionFailed = useCallback(
+    (scenarioId: number) => {
+      onFailed(scenarioId)
+      setGroupProposals((current) => {
+        if (!current) return current
+        let changed = false
+        const nextScenarios = current.scenarios.map((scenario) => {
+          if (scenario.scenarioId !== scenarioId || scenario.currentState === 'GENERATING') return scenario
+          if (scenario.currentState === 'EXECUTION_FAILED') return scenario
+          changed = true
+          return { ...scenario, currentState: 'EXECUTION_FAILED' as const }
+        })
+        return changed ? { ...current, scenarios: nextScenarios } : current
+      })
+      void refreshProposals().finally(syncParamEditBaselineAfterExecution)
+    },
+    [onFailed, refreshProposals, syncParamEditBaselineAfterExecution],
+  )
+
+  // run-status 로만 아는 실행(재진입/다른 사용자)이 끝나면 제안 상태를 맞춘다.
+  // 이번 세션 runningExecutions 폴링이 이미 처리한 시나리오는 건너뛴다.
+  useEffect(() => {
+    const prev = prevGraphExecutingIdsRef.current
+    prevGraphExecutingIdsRef.current = new Set(executingScenarioIds)
+    if (prev === null) return
+
+    const localRunningIds = new Set(runningExecutions.map((execution) => execution.scenarioId))
+    const settledIds: number[] = []
+    prev.forEach((scenarioId) => {
+      if (executingScenarioIds.has(scenarioId)) return
+      if (localRunningIds.has(scenarioId)) return
+      if (locallyExecutedIdsRef.current.has(scenarioId)) return
+      settledIds.push(scenarioId)
+    })
+    if (settledIds.length === 0) return
+
+    markScenariosExecuted(settledIds)
+    settledIds.forEach((scenarioId) => onCompleted(scenarioId))
+    void refreshProposals().finally(syncParamEditBaselineAfterExecution)
+  }, [executingScenarioIds, markScenariosExecuted, onCompleted, refreshProposals, runningExecutions, syncParamEditBaselineAfterExecution])
+
+  // CONFIRMED_PENDING_EXECUTION / EXECUTING 동안 proposals 를 폴링해 머지 구간~완료 전환을 반영한다.
+  useEffect(() => {
+    if (!hasProposalExecutionInProgress) return undefined
+    const timer = globalThis.setInterval(() => {
+      void refreshProposals()
+    }, 3000)
+    return () => globalThis.clearInterval(timer)
+  }, [hasProposalExecutionInProgress, refreshProposals])
+
+  // 생성 완료 SSE가 누락되거나 연결이 끊겨도 화면이 서버의 최종 상태로 수렴하도록 폴링한다.
+  useEffect(() => {
+    if (!isGeneratingAny) return undefined
+    const timer = globalThis.setInterval(() => {
+      void refreshProposals(true)
+    }, 3000)
+    return () => globalThis.clearInterval(timer)
+  }, [isGeneratingAny, refreshProposals])
 
   useEffect(() => {
     if (!scenarioGroupId) return undefined
@@ -586,10 +864,11 @@ const ScenarioModelExecutionProposalList = ({
 
         setRunningExecutions((current) => current.filter((item) => item.runId !== execution.runId))
         if (status.status === 'COMPLETED') {
-          onCompleted(execution.scenarioId)
+          handleExecutionSettled(execution.scenarioId)
           return
         }
 
+        handleExecutionFailed(execution.scenarioId)
         showSnackbar('MI 수급모델 실행에 실패했습니다.', {
           variant: 'error',
           body: status.errorMessage || status.failureReason || '잠시 후 다시 시도해 주세요.',
@@ -613,12 +892,17 @@ const ScenarioModelExecutionProposalList = ({
       isActive = false
       timers.forEach((timerId) => globalThis.clearTimeout(timerId))
     }
-  }, [onCompleted, runningExecutions, showSnackbar])
+  }, [handleExecutionFailed, handleExecutionSettled, runningExecutions, showSnackbar])
 
   const { mutate: createModelParamProposal } = useMutation({
     mutationFn: (scenarioId: number) => nextGenMIModelExecutionService.createModelParamProposal(scenarioId),
     onSuccess: (accepted, scenarioId) => {
       if (accepted.status === 'FAILED') {
+        setAwaitingExecutionScenarioIds((current) => {
+          const next = new Set(current)
+          next.delete(scenarioId)
+          return next
+        })
         setPendingGenerateIds((current) => {
           const next = new Set(current)
           next.delete(scenarioId)
@@ -630,6 +914,11 @@ const ScenarioModelExecutionProposalList = ({
       void refreshProposals(true)
     },
     onError: (error, scenarioId) => {
+      setAwaitingExecutionScenarioIds((current) => {
+        const next = new Set(current)
+        next.delete(scenarioId)
+        return next
+      })
       setPendingGenerateIds((current) => {
         const next = new Set(current)
         next.delete(scenarioId)
@@ -648,41 +937,48 @@ const ScenarioModelExecutionProposalList = ({
 
   const startGeneration = useCallback(
     (scenarioId: number) => {
-      if (executingScenarioIds.has(scenarioId) || pendingGenerateIds.has(scenarioId)) return
+      if (isActionLocked || executingScenarioIds.has(scenarioId) || pendingGenerateIds.has(scenarioId)) return
       setGenerationFailureReason(null)
+      setAwaitingExecutionScenarioIds((current) => new Set(current).add(scenarioId))
       setPendingGenerateIds((current) => new Set(current).add(scenarioId))
       setVisibleScenarioIds((prev) => (prev.includes(scenarioId) ? prev : [...prev, scenarioId]))
       createModelParamProposal(scenarioId)
     },
-    [createModelParamProposal, executingScenarioIds, pendingGenerateIds],
+    [createModelParamProposal, executingScenarioIds, isActionLocked, pendingGenerateIds],
   )
 
-  const handleToggleVisibility = useCallback((scenarioId: number) => {
-    setVisibleScenarioIds((prev) => {
-      if (prev.includes(scenarioId)) return prev.filter((id) => id !== scenarioId)
-      return [...prev, scenarioId]
-    })
-  }, [])
+  const handleToggleVisibility = useCallback(
+    (scenarioId: number) => {
+      if (isActionLocked) return
+      setVisibleScenarioIds((prev) => {
+        if (prev.includes(scenarioId)) return prev.filter((id) => id !== scenarioId)
+        return [...prev, scenarioId]
+      })
+    },
+    [isActionLocked],
+  )
 
   const handleToggleScenario = useCallback(
     (scenarioId: number, checked: boolean) => {
-      if (!selectableScenarioIds.includes(scenarioId)) return
+      if (isActionLocked || !selectableScenarioIds.includes(scenarioId)) return
       setSelectedScenarioIds((prev) => {
         if (checked) return prev.includes(scenarioId) ? prev : [...prev, scenarioId]
         return prev.filter((id) => id !== scenarioId)
       })
     },
-    [selectableScenarioIds],
+    [isActionLocked, selectableScenarioIds],
   )
 
   const handleToggleAll = useCallback(
     (checked: boolean) => {
+      if (isActionLocked) return
       setSelectedScenarioIds(checked ? [...selectableScenarioIds] : [])
     },
-    [selectableScenarioIds],
+    [isActionLocked, selectableScenarioIds],
   )
 
   const handleExecuteClick = () => {
+    if (isActionLocked || hasPowerMixError) return
     if (selectedCompletedCount === 0) {
       setEmptySelectionConfirmOpen(true)
       return
@@ -693,7 +989,7 @@ const ScenarioModelExecutionProposalList = ({
   const handleExecutionConfirm = async () => {
     setExecutionConfirmOpen(false)
     const targetIds = selectedScenarioIds.filter((scenarioId) => completedScenarioIds.includes(scenarioId))
-    if (targetIds.length === 0 || !compare) return
+    if (targetIds.length === 0 || !compare || powerMixErrors.some(({ scenarioId }) => targetIds.includes(scenarioId))) return
 
     const executions = targetIds.flatMap((scenarioId) => {
       if (executingScenarioIds.has(scenarioId)) return []
@@ -719,9 +1015,11 @@ const ScenarioModelExecutionProposalList = ({
     try {
       const accepted = await nextGenMIModelExecutionService.submitGroupModelExecutions(scenarioGroupId, { executions })
       const running: ModelExecutionAccept[] = []
+      const completedIds: number[] = []
 
       accepted.results.forEach((result) => {
         if (!result.success || !result.execution) {
+          handleExecutionFailed(result.scenarioId)
           showSnackbar('MI 수급모델 실행에 실패했습니다.', {
             variant: 'error',
             body: result.errorMessage?.trim() || '잠시 후 다시 시도해 주세요.',
@@ -730,26 +1028,39 @@ const ScenarioModelExecutionProposalList = ({
         }
 
         const execution = result.execution
+        if (execution.status === 'FAILED') {
+          handleExecutionFailed(execution.scenarioId)
+          showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
+          return
+        }
+
         onAccepted(execution.scenarioId)
 
         if (execution.status === 'COMPLETED') {
+          completedIds.push(execution.scenarioId)
           onCompleted(execution.scenarioId)
-          return
-        }
-        if (execution.status === 'FAILED') {
-          showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
           return
         }
         running.push(execution)
       })
 
+      if (completedIds.length > 0) {
+        setAwaitingExecutionScenarioIds((current) => {
+          const next = new Set(current)
+          completedIds.forEach((scenarioId) => next.delete(scenarioId))
+          return next.size === current.size ? current : next
+        })
+        markScenariosExecuted(completedIds)
+        void refreshProposals().finally(syncParamEditBaselineAfterExecution)
+      }
+
       if (running.length > 0) {
         setRunningExecutions((current) => [...current, ...running])
+        markScenariosExecuting(running.map((execution) => execution.scenarioId))
       }
 
       if (accepted.successCount > 0) {
         showSnackbar(`선택한 시나리오 ${accepted.successCount}개로 MI 수급모델 실행을 요청했습니다.`, { variant: 'success' })
-        if (running.length === 0) onCancel()
       }
     } catch (error) {
       if (isExecutionValidationError(error)) {
@@ -757,15 +1068,22 @@ const ScenarioModelExecutionProposalList = ({
       } else {
         showSnackbar('MI 수급모델 실행에 실패했습니다.', { variant: 'error' })
       }
+      // 제출 실패 시에도 GeneratingState 언마운트 복귀 후 수정 표시가 어긋나지 않게 동기화
+      if (lastLoadedCompareRef.current) setCompare(lastLoadedCompareRef.current)
+      setParamResetToken((token) => token + 1)
     } finally {
       setIsSubmittingExecution(false)
     }
   }
 
   const handleResetParameters = () => {
+    if (isActionLocked) return
+    setIsResetting(true)
+    // 서버 재조회 전에 마지막 조회본으로 되돌려, baseline 스냅샷이 수정값을 집어가지 않게 함
+    if (lastLoadedCompareRef.current) setCompare(lastLoadedCompareRef.current)
     setParamResetToken((token) => token + 1)
     // 편집값을 서버 제안값으로 되돌리기 위해 비교 그리드를 재조회
-    void loadCompareProposals()
+    void loadCompareProposals().finally(() => setIsResetting(false))
   }
 
   const handleChangeScenarioValue = useCallback(
@@ -788,6 +1106,8 @@ const ScenarioModelExecutionProposalList = ({
       rowIndex: number
       nextValue: number
     }) => {
+      // PopupContent: Value 변경은 isSubmitting || isResetting 동안 차단
+      if (isValueInputLocked) return
       setCompare((current) => {
         if (!current) return current
 
@@ -815,7 +1135,7 @@ const ScenarioModelExecutionProposalList = ({
         )
       })
     },
-    [],
+    [isValueInputLocked],
   )
 
   const scenarioList = useMemo(
@@ -866,20 +1186,19 @@ const ScenarioModelExecutionProposalList = ({
                 direction="row"
                 alignItems="center"
                 height="48px"
-                bgcolor="gray.5"
-                borderBottom="1px solid"
-                borderColor="contentBorder.Normal"
+                bgcolor="commonColor.White"
+                borderBottom="0.5px solid"
+                borderColor="contentBorder.Active"
               >
                 <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
-                  {selectableScenarioIds.length > 0 ? (
-                    <Checkbox
-                      size="small"
-                      checked={allSelectableChecked}
-                      indeterminate={!allSelectableChecked && someSelectableChecked}
-                      onChange={(_, checked) => handleToggleAll(checked)}
-                      sx={{ padding: '4px' }}
-                    />
-                  ) : null}
+                  <AdminCheckbox
+                    size="small"
+                    checked={allSelectableChecked}
+                    indeterminate={!allSelectableChecked && someSelectableChecked}
+                    disabled={selectableScenarioIds.length === 0 || isActionLocked}
+                    onChange={(_, checked) => handleToggleAll(checked)}
+                    sx={{ padding: '4px' }}
+                  />
                 </Stack>
                 <Typography variant="body2SB14" color="contentText.Black" width="300px" flexShrink={0} padding="0 6px">
                   시나리오
@@ -888,12 +1207,14 @@ const ScenarioModelExecutionProposalList = ({
                   {dimensionColumns.map((column) => {
                     const headerTooltipTitle = column.description?.trim() || column.rationale?.trim()
                     return (
-                      <Stack key={column.key} direction="row" alignItems="center" gap="4px" flex="1 1 0" minWidth={0} padding="0 8px">
-                        <Box flex="1 1 0" minWidth={0}>
-                          <NextGenMITableBodyText value={column.label} variant="body2SB14" color="contentText.Black" tooltipWhenTruncated />
-                        </Box>
-                        {headerTooltipTitle ? <DimensionInfoIcon title={headerTooltipTitle} /> : null}
-                      </Stack>
+                      <DimensionCellContent
+                        key={column.key}
+                        value={column.label}
+                        tooltipTitle={headerTooltipTitle || undefined}
+                        variant="body2SB14"
+                        color="contentText.Black"
+                        lineClamp={2}
+                      />
                     )
                   })}
                 </Stack>
@@ -913,8 +1234,10 @@ const ScenarioModelExecutionProposalList = ({
                 const showEye = hasCompleted && canShowVisibilityToggle(scenario.status)
                 const textColor = dimmed ? 'contentText.Disabled' : 'contentText.Black'
                 const bodyColor = dimmed ? 'contentText.Disabled' : 'contentText.Normal'
-                const generateDisabled = executingScenarioIds.has(scenario.scenarioId) || isSubmittingExecution
+                const generateDisabled = executingScenarioIds.has(scenario.scenarioId) || isActionLocked
                 const hasRoleBadge = Boolean(scenario.scenarioRole || scenario.scenarioType || scenario.scenarioRoleLabel)
+                const selectionDisabled = !selectable || isActionLocked
+                const eyeInteractive = !isActionLocked && (scenario.status === 'completed' || scenario.status === 'generating')
 
                 return (
                   <Stack
@@ -926,15 +1249,15 @@ const ScenarioModelExecutionProposalList = ({
                     borderColor="contentBorder.Normal"
                     sx={{ '&:last-of-type': { borderBottom: 'none' } }}
                   >
-                    <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
-                      {selectable ? (
-                        <Checkbox
-                          size="small"
-                          checked={checked}
-                          onChange={(_, nextChecked) => handleToggleScenario(scenario.scenarioId, nextChecked)}
-                          sx={{ padding: '4px' }}
-                        />
-                      ) : null}
+                    <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
+                      {/* 생성 전/생성중/실패/재시도도 체크박스 표시 - 완료만 선택 가능, 그 외 disabled (Gray/20 fill + Gray/40 border) */}
+                      <AdminCheckbox
+                        size="small"
+                        checked={checked}
+                        disabled={selectionDisabled}
+                        onChange={(_, nextChecked) => handleToggleScenario(scenario.scenarioId, nextChecked)}
+                        sx={{ padding: '4px' }}
+                      />
                     </Stack>
                     <Stack
                       direction="row"
@@ -969,13 +1292,13 @@ const ScenarioModelExecutionProposalList = ({
                           bgcolor="transparent"
                           color={visibleScenarioIds.includes(scenario.scenarioId) ? 'contentIcon.Enabled' : 'contentIcon.Disabled'}
                           sx={{
-                            cursor: scenario.status === 'completed' || scenario.status === 'generating' ? 'pointer' : 'default',
-                            opacity: scenario.status === 'completed' || scenario.status === 'generating' ? 1 : 0.5,
+                            cursor: eyeInteractive ? 'pointer' : 'default',
+                            opacity: eyeInteractive ? 1 : 0.5,
                           }}
                           aria-label={visibleScenarioIds.includes(scenario.scenarioId) ? '파라미터 컬럼 숨기기' : '파라미터 컬럼 표시'}
                           onClick={(event) => {
                             event.stopPropagation()
-                            if (scenario.status !== 'completed' && scenario.status !== 'generating') return
+                            if (!eyeInteractive) return
                             handleToggleVisibility(scenario.scenarioId)
                           }}
                         >
@@ -989,35 +1312,32 @@ const ScenarioModelExecutionProposalList = ({
                     </Stack>
                     <Stack direction="row" flex="1 1 0" minWidth={0} sx={{ opacity: dimmed ? 0.5 : 1 }}>
                       {scenario.dimensionCells.map((cell, index) => (
-                        <Stack
+                        <DimensionCellContent
                           key={`${scenario.scenarioId}-${dimensionColumns[index]?.key ?? index}`}
-                          direction="row"
-                          alignItems="center"
-                          gap="4px"
-                          flex="1 1 0"
-                          minWidth={0}
-                          padding="0 8px"
-                        >
-                          <NextGenMITableBodyText
-                            value={cell.value}
-                            variant="body2M14"
-                            color={bodyColor}
-                            tooltipWhenTruncated
-                            sx={{ flex: '1 1 0%', minWidth: 0 }}
-                          />
-                          {cell.rationale ? <DimensionInfoIcon title={cell.rationale} /> : null}
-                        </Stack>
+                          value={cell.value}
+                          tooltipTitle={cell.rationale || undefined}
+                          variant="body2M14"
+                          color={bodyColor}
+                        />
                       ))}
                     </Stack>
                     <Stack width="100px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
                       <ScenarioPossibilityGauge probability={scenario.possibility} disabled={dimmed} hideHoverBackground />
                     </Stack>
-                    <Stack width="92px" flexShrink={0} alignItems="center" justifyContent="center" padding="0 6px">
+                    <Stack
+                      width="92px"
+                      flexShrink={0}
+                      alignItems="center"
+                      justifyContent="center"
+                      sx={{ padding: '0 6px', boxSizing: 'border-box' }}
+                    >
                       <StatusCell
                         status={scenario.status}
+                        canRerun={scenario.canRerun}
                         failureReason={scenario.failureReason}
                         disabled={generateDisabled}
                         onGenerate={() => startGeneration(scenario.scenarioId)}
+                        onRerun={() => startGeneration(scenario.scenarioId)}
                         onRetry={() => startGeneration(scenario.scenarioId)}
                       />
                     </Stack>
@@ -1040,7 +1360,7 @@ const ScenarioModelExecutionProposalList = ({
       handleToggleScenario,
       handleToggleVisibility,
       hasCompleted,
-      isSubmittingExecution,
+      isActionLocked,
       scenarios,
       selectableScenarioIds.length,
       selectedScenarioIds,
@@ -1051,9 +1371,21 @@ const ScenarioModelExecutionProposalList = ({
   )
 
   return (
-    <Stack width="100%" flex="1 1 auto" minHeight={0} overflow="hidden">
-      <Stack flex="1 1 auto" minHeight={0} overflow={isResizing ? 'hidden' : 'auto'}>
-        <Stack ref={contentRef} flexGrow={showParamPanel ? 1 : 0} flexShrink={0}>
+    <Stack width="100%" flex="1 1 auto" minWidth={0} minHeight={0} overflow="hidden">
+      <Stack
+        flex="1 1 auto"
+        minWidth={0}
+        minHeight={0}
+        sx={{ overflowX: 'hidden', overflowY: isResizing || isParamPanelVisible ? 'hidden' : 'auto' }}
+      >
+        <Stack
+          ref={contentRef}
+          minWidth={0}
+          minHeight={0}
+          flexGrow={showParamPanel ? 1 : 0}
+          flexShrink={isParamPanelVisible ? 1 : 0}
+          flexBasis={isParamPanelVisible ? 0 : 'auto'}
+        >
           <Stack flexShrink={0} padding="10px 20px 0">
             <Stack
               direction="row"
@@ -1070,90 +1402,116 @@ const ScenarioModelExecutionProposalList = ({
               </Typography>
             </Stack>
 
-            <SwitchTransition mode="out-in">
-              <Fade
-                key={groupQuery.data && groupProposals ? 'scenarios' : 'loading'}
-                timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
-              >
-                <Stack>
-                  {!groupQuery.data || !groupProposals ? (
-                    <Stack height="120px" alignItems="center" justifyContent="center" gap="8px">
-                      {groupQuery.isError || proposalsLoadFailed ? (
-                        <>
-                          <Typography variant="body3SB12" color="contentText.Subtext">
-                            시나리오 목록과 파라미터 상태를 불러오지 못했습니다.
-                          </Typography>
-                          <MIBaseButton
-                            variant="outlined"
-                            onClick={() => {
-                              void groupQuery.refetch()
-                              void refreshProposals()
-                            }}
-                          >
-                            다시 시도
-                          </MIBaseButton>
-                        </>
-                      ) : (
-                        <>
-                          <MIAgentSpinner size={24} tone="gray" />
-                          <Typography variant="body3SB12" color="contentText.Subtext">
-                            시나리오 목록과 파라미터 상태를 불러오는 중입니다.
-                          </Typography>
-                        </>
-                      )}
-                    </Stack>
-                  ) : (
-                    scenarioList
-                  )}
-                </Stack>
-              </Fade>
-            </SwitchTransition>
+            <Box display="grid" gridTemplateColumns="minmax(0, 1fr)" minWidth={0}>
+              <SwitchTransition mode="in-out">
+                <Fade
+                  key={groupQuery.data && groupProposals ? 'scenarios' : 'loading'}
+                  timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
+                  easing="cubic-bezier(0.16, 1, 0.3, 1)"
+                >
+                  <Stack minWidth={0} sx={{ gridArea: '1 / 1' }}>
+                    {!groupQuery.data || !groupProposals ? (
+                      <Stack height="120px" alignItems="center" justifyContent="center" gap="8px">
+                        {groupQuery.isError || proposalsLoadFailed ? (
+                          <>
+                            <Typography variant="body3SB12" color="contentText.Subtext">
+                              시나리오 목록과 파라미터 상태를 불러오지 못했습니다.
+                            </Typography>
+                            <MIBaseButton
+                              variant="outlined"
+                              onClick={() => {
+                                void groupQuery.refetch()
+                                void refreshProposals()
+                              }}
+                            >
+                              다시 시도
+                            </MIBaseButton>
+                          </>
+                        ) : (
+                          <>
+                            <MIAgentSpinner size={24} tone="gray" />
+                            <Typography variant="body3SB12" color="contentText.Subtext">
+                              시나리오 목록과 파라미터 상태를 불러오는 중입니다.
+                            </Typography>
+                          </>
+                        )}
+                      </Stack>
+                    ) : (
+                      scenarioList
+                    )}
+                  </Stack>
+                </Fade>
+              </SwitchTransition>
+            </Box>
           </Stack>
 
-          {(showLoadingPlaceholder || showParamPanel) && (
-            <SwitchTransition mode="out-in">
-              <Fade
-                key={showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
-                timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
-              >
-                <Stack minHeight="400px" flexGrow={showParamPanel ? 1 : 0} flexShrink={0}>
-                  {showParamPanel && compare ? (
-                    <ScenarioModelExecutionProposalParamPanel
-                      visibleScenarios={visibleScenarios}
-                      compare={compare}
-                      resetToken={paramResetToken}
-                      canDownloadInputFiles={downloadableExecutionInputFiles.length > 0}
-                      isDownloadingInputFiles={isDownloadingInputFiles}
-                      onDownloadInputFiles={handleDownloadInputFiles}
-                      onHasEditsChange={setHasParamEdits}
-                      onChangeScenarioValue={handleChangeScenarioValue}
-                    />
-                  ) : (
-                    <Stack minHeight="400px" flexGrow={1} alignItems="center" justifyContent="center" gap="10px" padding="0 20px">
-                      {showFailurePlaceholder ? (
-                        <>
-                          <ErrorOutlineIcon width={24} height={24} />
+          {(showLoadingPlaceholder || showParamPanel || isExecutionBusy) && (
+            <Stack
+              display="grid"
+              gridTemplateColumns="minmax(0, 1fr)"
+              gridTemplateRows={isParamPanelVisible ? 'minmax(0, 1fr)' : undefined}
+              minWidth={0}
+              minHeight={isParamPanelVisible ? 0 : '400px'}
+              flexGrow={showParamPanel || isExecutionBusy ? 1 : 0}
+              flexShrink={isParamPanelVisible ? 1 : 0}
+              flexBasis={isParamPanelVisible ? 0 : 'auto'}
+              overflow={isParamPanelVisible ? 'hidden' : undefined}
+            >
+              <SwitchTransition mode="in-out">
+                <Fade
+                  key={isExecutionBusy ? 'execution' : showParamPanel ? 'parameters' : showFailurePlaceholder ? 'failed' : 'generating'}
+                  timeout={reduceMotion ? 0 : { exit: 120, enter: 220 }}
+                  easing="cubic-bezier(0.16, 1, 0.3, 1)"
+                >
+                  <Stack minWidth={0} minHeight={0} sx={{ gridArea: '1 / 1' }}>
+                    {isExecutionBusy ? (
+                      // PopupContent: isSubmitting || isExecuting 이면 파라미터 UI 대신 실행 중 상태
+                      <ScenarioModelExecutionGeneratingState
+                        title={
+                          isPreparingExecutionOnly || isSubmittingExecution ? 'MI 수급모델 실행 준비 중...' : 'MI 수급모델 결과 생성 중...'
+                        }
+                      />
+                    ) : showParamPanel && compare ? (
+                      <ScenarioModelExecutionProposalParamPanel
+                        visibleScenarios={visibleScenarios}
+                        compare={compare}
+                        receivedCompare={lastLoadedCompareRef.current}
+                        powerMixErrors={powerMixErrors}
+                        resetToken={paramResetToken}
+                        disabled={isValueInputLocked}
+                        canDownloadInputFiles={canDownloadInputFiles}
+                        isDownloadingInputFiles={isDownloadingInputFiles}
+                        onDownloadInputFiles={handleDownloadInputFiles}
+                        onHasEditsChange={setHasParamEdits}
+                        onChangeScenarioValue={handleChangeScenarioValue}
+                      />
+                    ) : (
+                      <Stack minHeight="400px" flexGrow={1} alignItems="center" justifyContent="center" gap="10px" padding="0 20px">
+                        {showFailurePlaceholder ? (
+                          <>
+                            <ErrorOutlineIcon width={24} height={24} />
+                            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
+                              {generationFailureReason}
+                            </Typography>
+                          </>
+                        ) : showTableLoading && compareLoadFailed ? (
                           <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
-                            {generationFailureReason}
+                            테이블 데이터를 불러오지 못했습니다.
                           </Typography>
-                        </>
-                      ) : showTableLoading && compareLoadFailed ? (
-                        <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
-                          테이블 데이터를 불러오지 못했습니다.
-                        </Typography>
-                      ) : (
-                        <>
-                          <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
-                          <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
-                            {showTableLoading ? '테이블 데이터를 불러오는 중입니다.' : GENERATING_MESSAGE}
-                          </Typography>
-                        </>
-                      )}
-                    </Stack>
-                  )}
-                </Stack>
-              </Fade>
-            </SwitchTransition>
+                        ) : (
+                          <>
+                            <MIAgentSpinner size={24} tone="gray" sx={{ '& svg': { width: '24px', height: '24px' } }} />
+                            <Typography variant="body3SB12" color="gray.60" lineHeight={1.4} textAlign="center">
+                              {showTableLoading ? '테이블 데이터를 불러오는 중입니다.' : GENERATING_MESSAGE}
+                            </Typography>
+                          </>
+                        )}
+                      </Stack>
+                    )}
+                  </Stack>
+                </Fade>
+              </SwitchTransition>
+            </Stack>
           )}
         </Stack>
       </Stack>
@@ -1171,7 +1529,8 @@ const ScenarioModelExecutionProposalList = ({
       >
         <MIBaseButton
           variant="outlined"
-          disabled={!hasCompleted || !hasParamEdits || isSubmittingExecution}
+          disabled={!hasCompleted || !hasParamEdits || isActionLocked}
+          isLoading={isResetting}
           prefix={<ReplayIcon width={20} height={20} />}
           onClick={handleResetParameters}
           sx={{ height: '36px', borderRadius: '8px', padding: '8px 10px 8px 6px' }}
@@ -1189,9 +1548,27 @@ const ScenarioModelExecutionProposalList = ({
           </MIBaseButton>
           <MIBaseButton
             variant="contained"
-            disabled={!hasCompleted || isSubmittingExecution}
+            disabled={!hasCompleted || isActionLocked || hasPowerMixError}
+            isLoading={isSubmittingExecution}
             onClick={handleExecuteClick}
-            sx={{ height: '36px', bgcolor: 'mari.Primary', borderRadius: '8px' }}
+            labelColor="contentText.White"
+            sx={{
+              height: '36px',
+              borderRadius: '8px',
+              padding: '8px 10px',
+              backgroundColor: 'mari.Primary',
+              '&:hover:not(:disabled)': {
+                backgroundColor: 'mari.Primary',
+              },
+              // 완료 시나리오 0건이면 비활성 - 스펙 disabled 색
+              '&.Mui-disabled': {
+                backgroundColor: '#C3CAEE',
+                color: 'contentText.White',
+              },
+              '&.Mui-disabled .MuiTypography-root, &.Mui-disabled svg': {
+                color: 'contentText.White',
+              },
+            }}
           >
             {selectedCompletedCount > 0 ? `MI 수급모델 실행 (${selectedCompletedCount})` : 'MI 수급모델 실행'}
           </MIBaseButton>
@@ -1233,7 +1610,7 @@ const ScenarioModelExecutionProposalList = ({
             label: '실행',
             variant: 'filled',
             color: 'primary',
-            disabled: isSubmittingExecution,
+            disabled: isActionLocked || hasPowerMixError,
             onClick: () => {
               void handleExecutionConfirm()
             },

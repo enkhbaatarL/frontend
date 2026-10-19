@@ -112,6 +112,14 @@ const useAuthStore = create<AuthState>()(
 
 export default useAuthStore
 
+/**
+ * [운영자 서비스 접속]
+ * MI 화면에서 자기 회사(`user.companyNo`) 정보로 진입하는 사용자.
+ * 일반 사용자와 타사접속 가능 운영자(자기 회사만 진입)가 해당한다.
+ */
+export const usesOwnCompanyInMi = (user: IUserDetail | null | undefined) =>
+  user?.userRoleCd === UserRole.USER || (user?.userRoleCd === UserRole.OPERATOR && !!user.isOtherServiceAccessPossible)
+
 export const withCustomBaseUrl = (path: string) => {
   if (import.meta.env.MODE === 'development') {
     return path.startsWith('/') ? path : `/${path}`

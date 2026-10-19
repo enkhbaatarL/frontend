@@ -17,6 +17,7 @@ import ScenarioGroupGraphLegend from '@/pages/mi/nextGenMI/components/scenarioGr
 import {
   buildScenarioGroupGraphRender,
   buildScenarioGroupGraphUnit,
+  isScenarioGraphModelExecuted,
   mergeScenarioGroupGraphCmeBenchmark,
   scenarioGroupGraphCmeBenchmarkQueryKey,
   scenarioGroupGraphQueryKey,
@@ -75,7 +76,14 @@ const ScenarioGroupGraphView = ({
     placeholderData: keepPreviousData,
   })
 
-  const { executingScenarioIds, notifyExecutionAccepted, notifyExecutionCompleted } = useScenarioGroupGraphRunStatusPolling({
+  const {
+    executingScenarioIds,
+    notifyExecutionAccepted,
+    notifyExecutionCompleted,
+    notifyExecutionFailed,
+    syncRunStatusOnPopupOpen,
+    syncGraphOnPopupClose,
+  } = useScenarioGroupGraphRunStatusPolling({
     scenarioGroupId,
     enabled,
     fallbackScenarioSeries: graphQuery.data?.scenarioSeries,
@@ -152,6 +160,13 @@ const ScenarioGroupGraphView = ({
       }),
     [graphData?.scenarioSeries],
   )
+  const executedScenarioIds = useMemo(() => {
+    const ids = new Set<number>()
+    ;(graphData?.scenarioSeries ?? []).forEach((series) => {
+      if (isScenarioGraphModelExecuted(series)) ids.add(series.scenarioId)
+    })
+    return ids
+  }, [graphData?.scenarioSeries])
 
   const unitLabel = graphData ? buildScenarioGroupGraphUnit(graphData.currency, graphData.unit) : 'Unit: -'
   const hasChart = Boolean(render && render.charts.length > 0)
@@ -261,8 +276,12 @@ const ScenarioGroupGraphView = ({
           ref={executionPopupRef}
           scenarioGroupId={scenarioGroupId}
           executingScenarioIds={executingScenarioIds}
+          executedScenarioIds={executedScenarioIds}
           onAccepted={notifyExecutionAccepted}
           onCompleted={notifyExecutionCompleted}
+          onFailed={notifyExecutionFailed}
+          onOpen={syncRunStatusOnPopupOpen}
+          onClose={syncGraphOnPopupClose}
         />
       )}
     </>

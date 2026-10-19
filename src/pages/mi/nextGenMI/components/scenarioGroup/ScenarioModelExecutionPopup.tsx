@@ -13,15 +13,21 @@ export interface ScenarioModelExecutionPopupRef {
   openFor: (scenarioId: number) => void
 }
 
-interface ScenarioModelExecutionPopupProps {
+export interface ScenarioModelExecutionPopupProps {
   scenarioGroupId: number
   executingScenarioIds: Set<number>
+  executedScenarioIds: Set<number>
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
+  onFailed: (scenarioId: number) => void
+  /** 팝업 오픈 시 run-status 동기화 */
+  onOpen?: () => void | Promise<void>
+  /** 팝업 종료 시 graph/run-status 동기화 */
+  onClose?: () => void
 }
 
 const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, ScenarioModelExecutionPopupProps>(
-  ({ scenarioGroupId, executingScenarioIds, onAccepted, onCompleted }, ref) => {
+  ({ scenarioGroupId, executingScenarioIds, executedScenarioIds, onAccepted, onCompleted, onFailed, onOpen, onClose }, ref) => {
     const [open, setOpen] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
@@ -31,10 +37,20 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const [isResizing, setIsResizing] = useState(false)
     const titleRef = useRef<HTMLSpanElement>(null)
 
+    const openPopup = useCallback(() => {
+      setIsMaximized(false)
+      setCloseConfirmOpen(false)
+      setFillsViewportHeight(false)
+      setContentHeight(null)
+      setOpen(true)
+      void onOpen?.()
+    }, [onOpen])
+
     const closePopup = useCallback(() => {
       setOpen(false)
       setCloseConfirmOpen(false)
-    }, [])
+      onClose?.()
+    }, [onClose])
 
     const handleCloseRequest = useCallback(() => {
       setCloseConfirmOpen(true)
@@ -43,22 +59,10 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     useImperativeHandle(
       ref,
       () => ({
-        open: () => {
-          setIsMaximized(false)
-          setCloseConfirmOpen(false)
-          setFillsViewportHeight(false)
-          setContentHeight(null)
-          setOpen(true)
-        },
-        openFor: () => {
-          setIsMaximized(false)
-          setCloseConfirmOpen(false)
-          setFillsViewportHeight(false)
-          setContentHeight(null)
-          setOpen(true)
-        },
+        open: openPopup,
+        openFor: openPopup,
       }),
-      [],
+      [openPopup],
     )
 
     // auto 높이의 내용 교체는 CSS transition으로 보간되지 않으므로 실측 높이를 사용한다.
@@ -203,12 +207,14 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           <ScenarioModelExecutionProposalList
             scenarioGroupId={scenarioGroupId}
             executingScenarioIds={executingScenarioIds}
+            executedScenarioIds={executedScenarioIds}
             isResizing={isResizing}
             onContentHeightChange={setContentHeight}
             onFillsViewportHeightChange={setFillsViewportHeight}
             onCancel={closePopup}
             onAccepted={onAccepted}
             onCompleted={onCompleted}
+            onFailed={onFailed}
           />
         </MIConfirm>
 

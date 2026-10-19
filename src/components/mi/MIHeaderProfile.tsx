@@ -6,6 +6,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import MIProfile from '@/components/common/profile/MIProfile'
+import { UserRole } from '@/service/admin/members'
 import authService from '@/service/common/auth.ts'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -85,7 +86,8 @@ const MIHeaderProfile = () => {
                 onButtonClick={async () => {
                   if (token) {
                     await authService.getAdminAccessCheck(token)
-                    navigate('/admin')
+                    // [운영자 서비스 접속] /admin 첫 화면은 ADMIN 전용 → 운영자는 로그인 직후와 같은 운영자 첫 화면으로 복귀
+                    navigate(user?.userRoleCd === UserRole.OPERATOR ? '/admin/data-providers/providers' : '/admin')
                   }
                 }}
               />

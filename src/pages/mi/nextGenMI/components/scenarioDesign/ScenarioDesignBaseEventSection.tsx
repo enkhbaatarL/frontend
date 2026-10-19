@@ -1,5 +1,5 @@
 import StarRoundedIcon from '@mui/icons-material/StarRounded'
-import { Collapse, Skeleton, Stack, Typography } from '@mui/material'
+import { Box, Collapse, Skeleton, Stack, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useRef, useState } from 'react'
 
@@ -21,6 +21,7 @@ import EventDetailDriverTreeScoreboardSection from '@/pages/mi/nextGenMI/compone
 import EventDetailImpactAnalysisSection from '@/pages/mi/nextGenMI/components/event/EventDetailImpactAnalysisSection'
 import EventDetailInstitutionalOutlookTable from '@/pages/mi/nextGenMI/components/event/EventDetailInstitutionalOutlookTable'
 import EventDetailMiRecordsTable from '@/pages/mi/nextGenMI/components/event/EventDetailMiRecordsTable'
+import UserRegisteredEventBadge from '@/pages/mi/nextGenMI/components/event/UserRegisteredEventBadge'
 import {
   SCENARIO_DESIGN_BASE_EVENT_TABS,
   SCENARIO_DESIGN_SECTIONS,
@@ -34,6 +35,8 @@ export type ScenarioDesignBaseEventItem = {
   title: string
   /** Agent 추천 이벤트 표시용 */
   isSuggested: boolean
+  /** user면 제목 옆 사용자 등록 배지 */
+  sourceType?: EventDetail['sourceType']
   createdAtLabel: string
   typeLabel: string
   onEventClick: () => void
@@ -230,16 +233,19 @@ const ScenarioDesignBaseEventCard = ({ event, loading }: { event: ScenarioDesign
             </>
           ) : (
             <>
-              <Stack direction="row" alignItems="center" gap="4px" minWidth={0}>
+              <Stack direction="row" alignItems="center" gap="6px" minWidth={0}>
                 {event.isSuggested && (
                   <StarRoundedIcon sx={{ fontSize: '18px', color: 'mari.Primary', flexShrink: 0 }} aria-label="Agent 추천 이벤트" />
                 )}
-                <NextGenMIHoverLinkCell
-                  value={event.title}
-                  variant="body1M16"
-                  ariaLabel={`${event.title} 상세 보기`}
-                  onClick={event.onEventClick}
-                />
+                <Box minWidth={0} overflow="hidden" sx={{ flex: '0 1 auto', display: 'flex' }}>
+                  <NextGenMIHoverLinkCell
+                    value={event.title}
+                    variant="body1M16"
+                    ariaLabel={`${event.title} 상세 보기`}
+                    onClick={event.onEventClick}
+                  />
+                </Box>
+                {event.sourceType === 'user' ? <UserRegisteredEventBadge /> : null}
               </Stack>
               <Stack direction="row" alignItems="center" gap="8px" minWidth={0}>
                 <Typography variant="body2R14" color="contentText.Subtext" lineHeight={1.5} noWrap>

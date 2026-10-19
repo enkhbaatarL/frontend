@@ -1,24 +1,16 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
-import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined'
 import { Box } from '@mui/material'
 import { type SxProps, type Theme } from '@mui/material/styles'
 import { type MouseEvent } from 'react'
 
-import type { EventLinkedScenarioGroup } from '@/service/mi/nextGenMI/event'
-
 import MIBaseButton from '@/components/common/button/MIBaseButton'
-import ArrowDown from '@/components/common/icons/ArrowDown'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
-import EventConnectedScenarioGroupPopover from '@/pages/mi/nextGenMI/components/event/EventConnectedScenarioGroupPopover'
 
 export interface EventScenarioGenerateButtonProps {
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void
-  onConnectedGroupContinue?: (group: EventLinkedScenarioGroup) => void
   disabled?: boolean
   disabledTooltipTitle?: string
   recommended?: boolean
-  scenarioGroupCount?: number
-  eventId?: number
 }
 
 type ScenarioTableButtonProps = {
@@ -214,150 +206,11 @@ const RecommendedScenarioButton = ({ disabled, onClick }: ScenarioTableButtonPro
   </MIBaseButton>
 )
 
-const ConnectedGroupsButton = ({
-  disabled,
-  count,
-  open = false,
-  onClick,
-}: ScenarioTableButtonProps & { count: number; open?: boolean }) => (
-  <MIBaseButton
-    variant="outlined"
-    disabled={disabled}
-    aria-label={`연결된 시나리오 그룹 ${count}개`}
-    aria-expanded={open}
-    onClick={onClick}
-    gap="0px"
-    prefix={<LayersOutlinedIcon aria-hidden focusable="false" sx={{ fontSize: '16px', width: '16px', height: '16px', display: 'block' }} />}
-    suffix={
-      <Box
-        component="span"
-        display="inline-flex"
-        alignItems="center"
-        justifyContent="center"
-        width="14px"
-        height="14px"
-        flexShrink={0}
-        sx={{
-          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-          transition: 'transform 160ms ease',
-          '& svg path': {
-            fill: 'currentColor',
-          },
-        }}
-      >
-        <ArrowDown width="14px" height="14px" aria-hidden />
-      </Box>
-    }
-    sx={{
-      width: 'auto',
-      minWidth: 'auto',
-      height: '36px',
-      padding: '6px 4px 6px 6px',
-      borderRadius: '8px',
-      borderColor: 'contentBorder.Normal',
-      backgroundColor: 'commonColor.White',
-      color: 'contentText.Normal',
-      justifyContent: 'center',
-      flexShrink: 0,
-      '& > span': {
-        width: 'auto',
-        minWidth: 'auto',
-      },
-      '& > span > span': {
-        width: 'auto',
-        minWidth: 'auto',
-      },
-      '& .MuiStack-root': {
-        flex: '0 0 auto',
-        width: 'auto',
-        minWidth: 'auto',
-        overflow: 'visible',
-      },
-      '& .MuiTypography-root': {
-        flex: '0 0 auto',
-        width: 'auto',
-        minWidth: 'auto',
-        maxWidth: 'none',
-        overflow: 'visible',
-        textOverflow: 'clip',
-        whiteSpace: 'nowrap',
-      },
-      '&:hover:not(:disabled), &:focus-visible': {
-        borderColor: 'contentBG.Active',
-        backgroundColor: 'contentBG.Active',
-        color: 'contentText.Black',
-      },
-      '&:active:not(:disabled)': {
-        borderColor: 'contentBG.Active',
-        backgroundColor: 'gray.5',
-        color: 'contentText.Black',
-      },
-      '&.Mui-disabled': {
-        borderColor: 'contentBorder.Disabled',
-        backgroundColor: 'contentBG.Disabled',
-        color: 'contentText.Disabled',
-      },
-    }}
-  >
-    {`그룹 ${count}`}
-  </MIBaseButton>
-)
-
-/** Events - 시나리오 생성 버튼 (목록 아이콘) */
-const EventScenarioGenerateButton = ({
-  onClick,
-  onConnectedGroupContinue,
-  disabled,
-  disabledTooltipTitle,
-  recommended,
-  scenarioGroupCount = 0,
-  eventId,
-}: EventScenarioGenerateButtonProps) => {
+/** Events - 시나리오 생성 버튼 (목록 아이콘). 연결 그룹은 이벤트명 옆 인라인 펼침으로 진입 */
+const EventScenarioGenerateButton = ({ onClick, disabled, disabledTooltipTitle, recommended }: EventScenarioGenerateButtonProps) => {
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     onClick?.(e)
-  }
-
-  const connectedGroupCount = scenarioGroupCount
-  const hasConnectedGroups = connectedGroupCount > 0
-
-  const handleConnectedGroupContinue = (group: EventLinkedScenarioGroup) => {
-    if (onConnectedGroupContinue) {
-      onConnectedGroupContinue(group)
-      return
-    }
-    onClick?.({} as MouseEvent<HTMLButtonElement>)
-  }
-
-  // 연결 그룹이 있으면 이벤트 단위 락/"진행" 없이 "그룹 N" + 팝오버
-  if (hasConnectedGroups) {
-    const connectedGroupsButton = (
-      <EventConnectedScenarioGroupPopover eventId={eventId} onContinue={handleConnectedGroupContinue}>
-        {({ open, onClick: openPopover }) => (
-          <ConnectedGroupsButton
-            disabled={disabled}
-            count={connectedGroupCount}
-            open={open}
-            onClick={(e) => {
-              e.stopPropagation()
-              openPopover(e)
-            }}
-          />
-        )}
-      </EventConnectedScenarioGroupPopover>
-    )
-
-    if (disabled && disabledTooltipTitle) {
-      return (
-        <NextGenMIFollowCursorTooltip title={disabledTooltipTitle}>
-          <Box component="span" display="inline-flex" sx={{ cursor: 'not-allowed' }}>
-            {connectedGroupsButton}
-          </Box>
-        </NextGenMIFollowCursorTooltip>
-      )
-    }
-
-    return connectedGroupsButton
   }
 
   const button = recommended ? (

@@ -9,7 +9,7 @@ import type {
   ScenarioGroupModelParamCompare,
 } from '@/service/mi/nextGenMI/modelExecution'
 
-export type ModelParamProposalRowStatus = 'idle' | 'generating' | 'completed' | 'failed' | 'retryable'
+export type ModelParamProposalRowStatus = 'idle' | 'generating' | 'completed' | 'failed' | 'abstained' | 'retryable'
 
 export type ProposalParamColumnStatus = 'completed' | 'generating'
 
@@ -30,12 +30,21 @@ export const getDisplayValue = (value: unknown) => {
 
 export const getNumericDisplayValue = (value: number) => value.toFixed(2)
 
+const formatCompareDisplayValue = (value: unknown) => (typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value))
+
+const getValueColumnHeader = (column: ModelParamColumn) => (column.role || column.column || '').trim() || '-'
+
+/** 수급모델 실행 접수~잡 실행 중. 체크/실행 잠금 + 실행중 UI 대상 */
+export const isModelExecutionInProgressState = (currentState: ModelParamProposalCurrentState | undefined) =>
+  currentState === 'CONFIRMED_PENDING_EXECUTION' || currentState === 'EXECUTING'
+
 /**
  * 그룹/단건 currentState -> 팝업 상태 컬럼 5종
  * - NOT_REQUESTED -> 생성
  * - GENERATING -> 생성 중
  * - PROPOSAL_READY / CONFIRMED_PENDING_EXECUTION / EXECUTING / EXECUTED_CONFIRMED / EXECUTION_FAILED -> 완료
  * - PROPOSAL_FAILED / PROPOSAL_NO_CHANGES -> 실패
+ * - ABSTAINED -> 보류
  * - PROPOSAL_RETRYABLE -> 재시도
  */
 export const mapProposalStateToRowStatus = (
@@ -51,6 +60,8 @@ export const mapProposalStateToRowStatus = (
     case 'PROPOSAL_FAILED':
     case 'PROPOSAL_NO_CHANGES':
       return isRetryableFailureReason(failureReason ?? undefined) ? 'retryable' : 'failed'
+    case 'ABSTAINED':
+      return 'abstained'
     case 'PROPOSAL_READY':
     case 'CONFIRMED_PENDING_EXECUTION':
     case 'EXECUTING':
@@ -65,7 +76,8 @@ export const mapProposalStateToRowStatus = (
 
 export const canShowVisibilityToggle = (status: ModelParamProposalRowStatus) => status === 'completed' || status === 'generating'
 
-export const isDimmedStatus = (status: ModelParamProposalRowStatus) => status === 'failed' || status === 'retryable'
+export const isDimmedStatus = (status: ModelParamProposalRowStatus) =>
+  status === 'failed' || status === 'abstained' || status === 'retryable'
 
 export const getUniqueModelNames = (values: Array<string | undefined>) =>
   Array.from(new Set(values.filter((value): value is string => Boolean(value))))
@@ -75,6 +87,21 @@ const getAxisValue = (row: Record<string, unknown>, column: ModelParamColumn) =>
   if (!key) return undefined
   if (row[key] !== undefined) return row[key]
   if (column.column && row[column.column] !== undefined) return row[column.column]
+  return undefined
+}
+
+/** VALUE 컬럼별 원시값. 행에 role/column/valueFieldNames 키가 없으면 undefined */
+const getValueColumnRawValue = (
+  row: Record<string, unknown> | undefined,
+  valueColumn: ModelParamColumn | undefined,
+  valueFieldNames: string[],
+  valueColumnIndex: number,
+) => {
+  if (!row || !valueColumn) return undefined
+  const fromColumn = getAxisValue(row, valueColumn)
+  if (fromColumn !== undefined) return fromColumn
+  const fieldName = valueFieldNames[valueColumnIndex]
+  if (fieldName && row[fieldName] !== undefined) return row[fieldName]
   return undefined
 }
 
@@ -130,18 +157,32 @@ export const formatMatrixPeriodLabel = (
   return entries.map((entry) => getDisplayValue(entry.value)).join(' / ')
 }
 
-/** compare values.cells에서 시나리오 셀 조회 (scenarioId 없으면 scenarios 순서 매칭) */
+/**
+ * compare values.cells에서 시나리오 셀 조회 (scenarioId 없으면 scenarios 순서 매칭)
+ * - ModelParamCompareCell: 사용 가능
+ * - null: API가 해당 슬롯을 명시적으로 null로 내려줌 (입력 비활성 / execute 시 제외)
+ * - undefined: 매칭 셀 없음
+ */
 export const getCompareCellForScenario = (
   value: ModelParamCompareValue,
   scenarioId: number,
   compareScenarios: Array<{ scenarioId: number }>,
-): ModelParamCompareCell | undefined => {
+): ModelParamCompareCell | null | undefined => {
   const cells = value.cells ?? []
-  const byId = cells.find((cell) => cell.scenarioId === scenarioId)
+  const byId = cells.find((cell) => cell !== null && cell !== undefined && cell.scenarioId === scenarioId)
   if (byId) return byId
+
   const index = compareScenarios.findIndex((scenario) => scenario.scenarioId === scenarioId)
-  if (index >= 0 && cells[index] && cells[index].scenarioId === undefined) return cells[index]
-  if (cells.length === 1 && compareScenarios.length === 1 && compareScenarios[0]?.scenarioId === scenarioId) return cells[0]
+  if (index >= 0) {
+    const cellAtIndex = cells[index]
+    // 슬롯이 명시적으로 null이면 scenarioId 유무와 관계없이 비활성으로 취급
+    if (cellAtIndex === null) return null
+    if (cellAtIndex !== undefined && cellAtIndex.scenarioId === undefined) return cellAtIndex
+  }
+
+  if (cells.length === 1 && compareScenarios.length === 1 && compareScenarios[0]?.scenarioId === scenarioId) {
+    return cells[0] === null ? null : cells[0]
+  }
   return undefined
 }
 
@@ -149,7 +190,16 @@ export interface ProposalParamPeriodColumn {
   periodLabel: string
   timeKey: string
   miBaseValues: string[]
+  /** 편집·추천값 복원용 원본값. 표시할 때만 필요에 따라 반올림한다. */
   scenarioValuesById: Record<number, string[]>
+  /** PowerMix 검증용 Year + Month(있는 경우) + Country 키. */
+  powerMixGroupKeys: string[]
+  /** compare cells[i] === null 인 셀 - 입력 비활성 */
+  scenarioCellDisabledById: Record<number, boolean[]>
+  /** 반올림 전 원본 데이터와 MI Base 값의 일치 여부 */
+  scenarioMiBaseMatchedById: Record<number, boolean[]>
+  /** 셀 단위 추천 근거 (없으면 빈 문자열) */
+  scenarioRationalesById: Record<number, string[]>
   sourceRowIndexesByScenarioId: Record<number, number[]>
 }
 
@@ -157,10 +207,11 @@ export interface ProposalParamMatrixData {
   fixedHeaders: string[]
   fixedRows: string[][]
   periods: ProposalParamPeriodColumn[]
+  isPowerMix: boolean
   readMode?: ModelParamCompareShape['readMode']
 }
 
-const findCompareParameter = (
+export const findCompareParameter = (
   compare: ScenarioGroupModelParamCompare | null | undefined,
   modelFileName: string | null,
   modelSheetName: string | null,
@@ -169,11 +220,17 @@ const findCompareParameter = (
 ): { parameter: ModelParamCompareParameter; shape: ModelParamCompareShape } | null => {
   if (!compare) return null
   const shapes = compare.parameterShapes.filter(
-    (shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && shape.modelTable === modelTableName,
+    (shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && (shape.modelTable ?? null) === modelTableName,
   )
   const shape = shapes[parameterIndex]
   if (!shape) return null
-  const parameter = compare.parameters.find((item) => item.parameterName === shape.parameterName)
+  const parameter = compare.parameters.find(
+    (item) =>
+      item.parameterName === shape.parameterName &&
+      (item.modelTarget?.modelFile === undefined || item.modelTarget.modelFile === modelFileName) &&
+      (item.modelTarget?.modelSheet === undefined || item.modelTarget.modelSheet === modelSheetName) &&
+      (modelTableName === null || item.modelTarget?.tableName === undefined || item.modelTarget.tableName === modelTableName),
+  )
   if (!parameter) return null
   return { parameter, shape }
 }
@@ -198,6 +255,7 @@ export const buildCompareParamMatrixData = ({
   if (!matched) return null
 
   const { parameter, shape } = matched
+  const isPowerMix = shape.modelFile === 'Demand' && shape.modelSheet === 'PowerMixAdjustment' && shape.parameterName === 'PowerMix'
   const columns = shape.columns ?? []
   const slotColumns = columns.filter((column) => column.kind === 'SLOT')
   const timeAxisColumns = columns.filter((column) => column.kind === 'TIME_AXIS')
@@ -208,9 +266,11 @@ export const buildCompareParamMatrixData = ({
   const isMatrix = shape.readMode === 'MATRIX_TIME_COLUMNS'
   const compareScenarios = compare?.scenarios ?? []
 
+  const valueFieldNames = parameter.modelTarget?.valueFieldNames ?? []
   const fixedHeaders = slotColumns.map((column) => column.role ?? column.column ?? '-')
   const slots = new Map<string, string[]>()
   const periods = new Map<string, string>()
+  const periodValueMeta = new Map<string, { valueColumn: ModelParamColumn; valueColumnIndex: number }>()
 
   referenceRows.forEach((row) => {
     const slotKey = JSON.stringify(slotColumns.map((column) => getAxisValue(row, column)))
@@ -221,6 +281,7 @@ export const buildCompareParamMatrixData = ({
       )
     }
 
+    // MATRIX_TIME_COLUMNS: rows의 TIME_AXIS(Year/Month 등)로 피벗해 기간 그룹 헤더를 만든다
     if (isMatrix) {
       const timeKey = JSON.stringify(timeAxisColumns.map((column) => getAxisValue(row, column)))
       if (!periods.has(timeKey)) {
@@ -229,12 +290,27 @@ export const buildCompareParamMatrixData = ({
     }
   })
 
-  if (!isMatrix) periods.set('fixed', 'Value')
+  // FIXED_COLUMNS: valueFieldNames가 배열 계약이므로 kind=VALUE 컬럼 수만큼 그룹 헤더를 반복
+  if (!isMatrix) {
+    valueColumns.forEach((valueColumn, valueColumnIndex) => {
+      const timeKey = JSON.stringify({
+        mode: 'fixed',
+        valueColumnIndex,
+        column: valueColumn.column ?? null,
+        role: valueColumn.role ?? null,
+      })
+      periods.set(timeKey, getValueColumnHeader(valueColumn))
+      periodValueMeta.set(timeKey, { valueColumn, valueColumnIndex })
+    })
+  }
 
   const slotKeys = Array.from(slots.keys())
   const periodEntries = Array.from(periods.entries())
 
   const periodColumns: ProposalParamPeriodColumn[] = periodEntries.map(([timeKey, periodLabel]) => {
+    const valueMeta = periodValueMeta.get(timeKey)
+    const powerMixGroupKeys: string[] = []
+
     const miBaseValues = slotKeys.map((slotKey) => {
       const match = referenceRows.find((row) => {
         const rowSlotKey = JSON.stringify(slotColumns.map((column) => getAxisValue(row, column)))
@@ -243,15 +319,38 @@ export const buildCompareParamMatrixData = ({
         const rowTimeKey = JSON.stringify(timeAxisColumns.map((column) => getAxisValue(row, column)))
         return rowTimeKey === timeKey
       })
-      const base = match?.basecaseValue
-      return typeof base === 'number' ? getNumericDisplayValue(base) : getDisplayValue(base)
+      const fieldValue = getValueColumnRawValue(match, valueMeta?.valueColumn, valueFieldNames, valueMeta?.valueColumnIndex ?? 0)
+      const base = fieldValue !== undefined ? fieldValue : match?.basecaseValue
+      if (isPowerMix) {
+        powerMixGroupKeys.push(
+          JSON.stringify(
+            ['year', 'month', 'country'].map((axis) => {
+              const column = columns.find((item) => [item.column, item.role].some((key) => key?.trim().toLowerCase() === axis))
+              const value =
+                match && column ? getAxisValue(match, column) : (match?.[`${axis[0].toUpperCase()}${axis.slice(1)}`] ?? match?.[axis])
+              if (value === undefined || value === null || String(value).trim() === '') return null
+              return axis === 'month' && Number.isInteger(Number(value)) ? String(Number(value)).padStart(2, '0') : String(value).trim()
+            }),
+          ),
+        )
+      }
+      return isPowerMix ? getDisplayValue(base) : formatCompareDisplayValue(base)
     })
 
     const scenarioValuesById: Record<number, string[]> = {}
+    const scenarioCellDisabledById: Record<number, boolean[]> = {}
+    const scenarioMiBaseMatchedById: Record<number, boolean[]> = {}
+    const scenarioRationalesById: Record<number, string[]> = {}
     const sourceRowIndexesByScenarioId: Record<number, number[]> = {}
 
     visibleScenarioIds.forEach((scenarioId) => {
-      scenarioValuesById[scenarioId] = slotKeys.map((slotKey) => {
+      scenarioValuesById[scenarioId] = []
+      scenarioCellDisabledById[scenarioId] = []
+      scenarioMiBaseMatchedById[scenarioId] = []
+      scenarioRationalesById[scenarioId] = []
+      sourceRowIndexesByScenarioId[scenarioId] = []
+
+      slotKeys.forEach((slotKey) => {
         const matchIndex = referenceRows.findIndex((row) => {
           const rowSlotKey = JSON.stringify(slotColumns.map((column) => getAxisValue(row, column)))
           if (rowSlotKey !== slotKey) return false
@@ -259,12 +358,31 @@ export const buildCompareParamMatrixData = ({
           const rowTimeKey = JSON.stringify(timeAxisColumns.map((column) => getAxisValue(row, column)))
           return rowTimeKey === timeKey
         })
-        if (!sourceRowIndexesByScenarioId[scenarioId]) sourceRowIndexesByScenarioId[scenarioId] = []
         sourceRowIndexesByScenarioId[scenarioId].push(matchIndex)
-        if (matchIndex < 0) return ''
-        const cell = getCompareCellForScenario(referenceRows[matchIndex], scenarioId, compareScenarios)
+        if (matchIndex < 0) {
+          scenarioValuesById[scenarioId].push('')
+          scenarioCellDisabledById[scenarioId].push(false)
+          scenarioMiBaseMatchedById[scenarioId].push(false)
+          scenarioRationalesById[scenarioId].push('')
+          return
+        }
+        const matchRow = referenceRows[matchIndex]
+        const cell = getCompareCellForScenario(matchRow, scenarioId, compareScenarios)
+        // cells[i] === null: `-` 대신 빈 값 + 입력 비활성
+        if (cell === null) {
+          scenarioValuesById[scenarioId].push('')
+          scenarioCellDisabledById[scenarioId].push(true)
+          scenarioMiBaseMatchedById[scenarioId].push(false)
+          scenarioRationalesById[scenarioId].push('')
+          return
+        }
         const value = cell?.proposedValue
-        return typeof value === 'number' ? getNumericDisplayValue(value) : getDisplayValue(value)
+        const fieldValue = getValueColumnRawValue(matchRow, valueMeta?.valueColumn, valueFieldNames, valueMeta?.valueColumnIndex ?? 0)
+        const base = fieldValue !== undefined ? fieldValue : matchRow.basecaseValue
+        scenarioMiBaseMatchedById[scenarioId].push(typeof value === 'number' && Number.isFinite(value) && value === base)
+        scenarioValuesById[scenarioId].push(getDisplayValue(value))
+        scenarioCellDisabledById[scenarioId].push(false)
+        scenarioRationalesById[scenarioId].push(value === undefined || value === null ? '' : (cell?.rationale?.trim() ?? ''))
       })
     })
 
@@ -273,6 +391,10 @@ export const buildCompareParamMatrixData = ({
       timeKey,
       miBaseValues,
       scenarioValuesById,
+      powerMixGroupKeys,
+      scenarioCellDisabledById,
+      scenarioMiBaseMatchedById,
+      scenarioRationalesById,
       sourceRowIndexesByScenarioId,
     }
   })
@@ -281,6 +403,7 @@ export const buildCompareParamMatrixData = ({
     fixedHeaders,
     fixedRows: slotKeys.map((slotKey) => slots.get(slotKey) ?? []),
     periods: periodColumns,
+    isPowerMix,
     readMode: shape.readMode,
   }
 }
@@ -298,12 +421,10 @@ export const updateCompareProposedValue = (
   const matched = findCompareParameter(compare, modelFileName, modelSheetName, modelTableName, parameterIndex)
   if (!matched) return compare
 
-  const targetName = matched.parameter.parameterName
-
   return {
     ...compare,
     parameters: compare.parameters.map((parameter) => {
-      if (parameter.parameterName !== targetName) return parameter
+      if (parameter !== matched.parameter) return parameter
 
       return {
         ...parameter,
@@ -311,16 +432,19 @@ export const updateCompareProposedValue = (
           if (index !== rowIndex || !isRecord(row)) return row
           const cells = [...(row.cells ?? [])]
           const compareScenarios = compare.scenarios
-          let cellIndex = cells.findIndex((cell) => cell.scenarioId === scenarioId)
+          let cellIndex = cells.findIndex((cell) => cell?.scenarioId === scenarioId)
           if (cellIndex < 0) {
             const orderIndex = compareScenarios.findIndex((scenario) => scenario.scenarioId === scenarioId)
-            if (orderIndex >= 0 && cells[orderIndex] && cells[orderIndex].scenarioId === undefined) cellIndex = orderIndex
+            if (orderIndex >= 0 && cells[orderIndex]?.scenarioId === undefined) cellIndex = orderIndex
             else if (cells.length === 1 && compareScenarios.length === 1) cellIndex = 0
           }
           if (cellIndex < 0) {
             cells.push({ scenarioId, proposedValue: value })
+          } else if (cells[cellIndex] === null) {
+            // API null 슬롯은 편집하지 않음
+            return row
           } else {
-            cells[cellIndex] = { ...cells[cellIndex], scenarioId: cells[cellIndex].scenarioId ?? scenarioId, proposedValue: value }
+            cells[cellIndex] = { ...cells[cellIndex], scenarioId: cells[cellIndex]?.scenarioId ?? scenarioId, proposedValue: value }
           }
           return { ...row, cells }
         }),
@@ -329,7 +453,7 @@ export const updateCompareProposedValue = (
   }
 }
 
-/** compare 편집값을 시나리오별 confirmationParameters로 변환 */
+/** compare 편집값을 시나리오별 confirmationParameters로 변환 - cells null 슬롯은 values에서 제외 */
 export const buildConfirmationParametersFromCompare = (
   compare: ScenarioGroupModelParamCompare,
   scenarioId: number,
@@ -340,14 +464,18 @@ export const buildConfirmationParametersFromCompare = (
       parameterName: parameter.parameterName,
       modelTarget: parameter.modelTarget,
       rationale,
-      values: (parameter.values ?? []).map((row) => {
-        const { cells, ...rest } = row
+      values: (parameter.values ?? []).flatMap((row) => {
         const cell = getCompareCellForScenario(row, scenarioId, compare.scenarios)
-        return {
-          ...rest,
-          proposedValue: cell?.proposedValue,
-          rationale: cell?.rationale,
-        }
+        // API cells null: execute payload values에서 해당 행 제외 (예: Germany 슬롯)
+        if (cell === null) return []
+        const { cells, ...rest } = row
+        return [
+          {
+            ...rest,
+            proposedValue: cell?.proposedValue,
+            rationale: cell?.rationale,
+          },
+        ]
       }),
     }
   })
@@ -360,7 +488,9 @@ export const getCompareParameterChips = (
 ) => {
   if (!compare) return []
   return compare.parameterShapes
-    .filter((shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && shape.modelTable === modelTableName)
+    .filter(
+      (shape) => shape.modelFile === modelFileName && shape.modelSheet === modelSheetName && (shape.modelTable ?? null) === modelTableName,
+    )
     .map((shape, index) => ({
       index,
       label: shape.parameterName ?? `Parameter ${index + 1}`,

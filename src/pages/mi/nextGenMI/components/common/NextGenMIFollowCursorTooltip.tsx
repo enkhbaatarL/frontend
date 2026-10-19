@@ -48,6 +48,8 @@ export interface NextGenMIFollowCursorTooltipProps {
   children: ReactElement
   enterDelay?: number
   followCursor?: boolean
+  /** 툴팁으로 마우스를 옮겨 내용을 선택·복사할 수 있게 한다. */
+  interactive?: boolean
   placement?: ComponentProps<typeof Popper>['placement']
   tooltipSx?: SxProps<Theme>
   slotProps?: {
@@ -62,6 +64,7 @@ const NextGenMIFollowCursorTooltip = ({
   children,
   enterDelay = 100,
   followCursor = true,
+  interactive = false,
   placement,
   tooltipSx,
   slotProps,
@@ -69,8 +72,13 @@ const NextGenMIFollowCursorTooltip = ({
   const theme = useTheme()
   const [open, setOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>()
+  const triggerRef = useRef<HTMLElement | null>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const isSelectingRef = useRef(false)
   const posRef = useRef({ x: 0, y: 0 })
   const enterTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const popperJsRef = useRef<PopperJsInstance | null>(null)
 
   const clearEnterTimer = useCallback(() => {
@@ -80,11 +88,19 @@ const NextGenMIFollowCursorTooltip = ({
     }
   }, [])
 
+  const clearLeaveTimer = useCallback(() => {
+    if (leaveTimerRef.current !== undefined) {
+      clearTimeout(leaveTimerRef.current)
+      leaveTimerRef.current = undefined
+    }
+  }, [])
+
   useEffect(
     () => () => {
       clearEnterTimer()
+      clearLeaveTimer()
     },
-    [clearEnterTimer],
+    [clearEnterTimer, clearLeaveTimer],
   )
 
   const virtualAnchor = useMemo(
@@ -123,21 +139,68 @@ const NextGenMIFollowCursorTooltip = ({
 
   const handleMouseOver = useCallback(
     (e: MouseEvent) => {
+      clearLeaveTimer()
+      triggerRef.current = e.currentTarget as HTMLElement
+      if (interactive) {
+        // Dialog의 포커스 범위 안에 두되, paper의 overflow에는 잘리지 않게 한다.
+        setPortalContainer(triggerRef.current.closest<HTMLElement>('.MuiDialog-container') ?? undefined)
+      }
       if (followCursor) updateCursorPosition(e)
       else {
         setAnchorEl(e.currentTarget as HTMLElement)
       }
       scheduleOpen()
     },
-    [followCursor, scheduleOpen, updateCursorPosition],
+    [clearLeaveTimer, followCursor, interactive, scheduleOpen, updateCursorPosition],
   )
 
   const handleMouseLeave = useCallback(() => {
     clearEnterTimer()
-    setOpen(false)
-  }, [clearEnterTimer])
+    clearLeaveTimer()
+    const selection = tooltipRef.current?.ownerDocument.getSelection()
+    if (
+      interactive &&
+      (isSelectingRef.current || (selection && !selection.isCollapsed && tooltipRef.current?.contains(selection.anchorNode)))
+    )
+      return
+    if (interactive) {
+      leaveTimerRef.current = setTimeout(() => setOpen(false), 200)
+    } else {
+      setOpen(false)
+    }
+  }, [clearEnterTimer, clearLeaveTimer, interactive])
 
-  const resolvedTooltipSx: SxProps<Theme> = [TooltipSx, ...(tooltipSx ? (Array.isArray(tooltipSx) ? tooltipSx : [tooltipSx]) : [])]
+  useEffect(() => {
+    if (!interactive || !open) return undefined
+    const doc = triggerRef.current?.ownerDocument
+    if (!doc) return undefined
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !tooltipRef.current?.contains(event.target) && !triggerRef.current?.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+    const handlePointerUp = (event: PointerEvent) => {
+      if (!isSelectingRef.current) return
+      isSelectingRef.current = false
+      if (event.target instanceof Node && !tooltipRef.current?.contains(event.target)) handleMouseLeave()
+    }
+    doc.addEventListener('pointerdown', handlePointerDown)
+    doc.addEventListener('pointerup', handlePointerUp)
+    doc.addEventListener('pointercancel', handlePointerUp)
+    return () => {
+      isSelectingRef.current = false
+      doc.removeEventListener('pointerdown', handlePointerDown)
+      doc.removeEventListener('pointerup', handlePointerUp)
+      doc.removeEventListener('pointercancel', handlePointerUp)
+    }
+  }, [handleMouseLeave, interactive, open])
+
+  const resolvedTooltipSx: SxProps<Theme> = [
+    TooltipSx,
+    ...(tooltipSx ? (Array.isArray(tooltipSx) ? tooltipSx : [tooltipSx]) : []),
+    ...(interactive ? [{ userSelect: 'text', cursor: 'text' } as const] : []),
+  ]
 
   const modifiers = useMemo(() => {
     const extra = slotProps?.popper?.modifiers ?? []
@@ -160,6 +223,7 @@ const NextGenMIFollowCursorTooltip = ({
       {mergedChild}
       <Popper
         open={open}
+        container={interactive ? portalContainer : undefined}
         anchorEl={followCursor ? virtualAnchor : anchorEl}
         placement={placement ?? (followCursor ? 'top-start' : 'top')}
         transition
@@ -167,14 +231,31 @@ const NextGenMIFollowCursorTooltip = ({
         popperRef={(instance) => {
           popperJsRef.current = instance
         }}
+        onMouseEnter={interactive ? clearLeaveTimer : undefined}
+        onMouseLeave={interactive ? handleMouseLeave : undefined}
         sx={{
           zIndex: (t) => t.zIndex.tooltip,
-          pointerEvents: 'none',
+          pointerEvents: interactive ? 'auto' : 'none',
         }}
       >
         {({ TransitionProps }) => (
           <Grow {...TransitionProps} timeout={theme.transitions.duration.shorter}>
-            <Box sx={resolvedTooltipSx}>{title}</Box>
+            <Box
+              ref={tooltipRef}
+              tabIndex={interactive ? -1 : undefined}
+              onPointerDown={
+                interactive
+                  ? (event) => {
+                    if (event.button !== 0) return
+                    clearLeaveTimer()
+                    isSelectingRef.current = true
+                  }
+                  : undefined
+              }
+              sx={resolvedTooltipSx}
+            >
+              {title}
+            </Box>
           </Grow>
         )}
       </Popper>

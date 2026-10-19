@@ -13,9 +13,7 @@ import MIBaseButton from '@/components/common/button/MIBaseButton'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { useStickyHeader } from '@/contexts/StickyHeaderContext'
 import useSnackbar from '@/hooks/useSnackbar'
-import NextGenMIDetailHeader, {
-  NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX,
-} from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
+import NextGenMIDetailHeader from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
@@ -548,8 +546,8 @@ const ScenarioDesignPage = () => {
   } = useQuery({
     queryKey: ['nextGenMIScenarioDesignStatus', designEventIds],
     queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: designEventIds }),
-    enabled: routeScenarioGroupIdNumber === null && eventIdNumber !== null && designEventIds.length > 0,
-    refetchInterval: (query) => (normalizeScenarioDesignStatusCode(query.state.data?.designStatus) === 'creating' ? 5000 : false),
+    // 신규 API는 생성 분기용 designStatus를 쓰지 않음. 동일 조합 조회(2+) 및 하위호환만 유지
+    enabled: routeScenarioGroupIdNumber === null && eventIdNumber !== null && designEventIds.length > 1,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -698,6 +696,7 @@ const ScenarioDesignPage = () => {
         detail: eventDetail,
         title,
         isSuggested: eventDetail?.isScenarioSuggested === true || bundle?.isScenarioSuggested === true,
+        sourceType: bundle?.sourceType ?? eventDetail?.sourceType,
         createdAtLabel: formatNextGenMIDateTimeYmdHm(eventDetail?.createdAt ?? bundle?.latestRecordFirstCreated),
         typeLabel:
           eventDetail?.impactAnalysis?.eventTypeLv1Label ??
@@ -1121,21 +1120,43 @@ const ScenarioDesignPage = () => {
 
       try {
         while (!signal.aborted && !creationStreamTerminalRef.current) {
+          const activeScenarioGroupId = scenarioGroupIdRef.current
+          const lastSequence = creationLastSequenceRef.current ?? undefined
+
           try {
-            await nextGenMIScenarioDesignService.createScenarioGroupStream(
-              {
-                miEventIds: creationStreamEventIds,
-                operationId: creationOperationIdRef.current ?? undefined,
-                lastSequence: creationLastSequenceRef.current ?? undefined,
-              },
-              handleCreationStreamMessage,
-              signal,
-            )
+            if (isValidScenarioGroupId(activeScenarioGroupId)) {
+              // 진행 중 그룹 재연결 (끊김/새로고침/[보기]). 400이면 생성 종료 -> presentation
+              await nextGenMIScenarioDesignService.reconnectScenarioGroupCreationStream(
+                activeScenarioGroupId,
+                { lastSequence },
+                handleCreationStreamMessage,
+                signal,
+              )
+            } else {
+              // 항상 새 그룹 생성 - miEventIds만 전송
+              await nextGenMIScenarioDesignService.createScenarioGroupStream(
+                { miEventIds: creationStreamEventIds },
+                handleCreationStreamMessage,
+                signal,
+              )
+            }
+
             if (creationStreamTerminalRef.current || signal.aborted) break
-            if (!creationOperationIdRef.current) break
+            // 스트림이 조용히 끊긴 경우 groupId가 있으면 GET으로 이어 받음
+            if (!isValidScenarioGroupId(scenarioGroupIdRef.current)) break
           } catch (error) {
             if (signal.aborted || creationStreamTerminalRef.current) break
-            if (!creationOperationIdRef.current) throw error
+
+            const status = (error as Error & { status?: number })?.status
+            if (status === 400 && isValidScenarioGroupId(scenarioGroupIdRef.current)) {
+              creationStreamTerminalRef.current = true
+              setCreationReadyForRefinement(true)
+              clearScenarioGroupCreationCursor(creationStreamEventIds)
+              refreshScenarioDesignStateFromStream()
+              break
+            }
+            if (status === 403) throw error
+            if (!isValidScenarioGroupId(scenarioGroupIdRef.current)) throw error
           }
         }
       } finally {
@@ -1265,9 +1286,9 @@ const ScenarioDesignPage = () => {
       (routeScenarioGroupIdNumber === null && eventIdNumber === null) ||
       creationStreamEventIds.length === 0 ||
       scenarioDesignStartRequestedRef.current ||
-      designStatusLoading ||
+      (designEventIds.length > 1 && designStatusLoading) ||
       (routeScenarioGroupIdNumber === null &&
-        designEventIds.length > 0 &&
+        designEventIds.length > 1 &&
         designStatus === undefined &&
         !isDesignStatusError &&
         scenarioGroupId === null)
@@ -1275,7 +1296,11 @@ const ScenarioDesignPage = () => {
       return
     }
 
-    if (designStatus) {
+    // 구 designStatus 응답 하위호환. 신규 sameCombination API면 항상 새 생성/재연결 경로
+    const hasSameCombinationApi =
+      designStatus?.sameCombinationGroups !== undefined || typeof designStatus?.sameCombinationGroupCount === 'number'
+
+    if (designStatus && !hasSameCombinationApi) {
       const status = normalizeScenarioDesignStatusCode(designStatus.designStatus)
       if (
         status === 'created' &&
@@ -2013,8 +2038,8 @@ const ScenarioDesignPage = () => {
   const confirmContent = useMemo(() => (confirmType ? getScenarioDesignConfirmContent(confirmType) : null), [confirmType])
   const scenarioDesignStickyHeightsPx = useMemo(
     () => ({
-      expanded: NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.expanded + (scenarioDesignReadOnly ? 36 : 0),
-      collapsed: NEXT_GEN_MI_DETAIL_INITIAL_STICKY_HEIGHTS_PX.collapsed + (scenarioDesignReadOnly ? 36 : 0),
+      expanded: 174 + (scenarioDesignReadOnly ? 36 : 0),
+      collapsed: 122 + (scenarioDesignReadOnly ? 36 : 0),
     }),
     [scenarioDesignReadOnly],
   )

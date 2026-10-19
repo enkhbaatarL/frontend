@@ -1,6 +1,6 @@
-import { Box, Tooltip, Typography } from '@mui/material'
+import { Box, Stack, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import smImg from '@/assets/product_symbol_hover.png'
@@ -77,25 +77,31 @@ const SignalMapPage = () => {
 
   const [period, setPeriod] = useState<string>('')
   const [companyFilter, setCompanyFilter] = useState<string>('')
-  const [isRenderingComplete, setIsRenderingComplete] = useState(false)
-  const [hasInitialData, setHasInitialData] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language)
 
-  const { data: periodOptions = [], isLoading: periodOptionsIsLoading } = useQuery({
+  const {
+    data: periodOptions = [],
+    isLoading: periodOptionsIsLoading,
+    isSuccess: periodOptionsIsSuccess,
+  } = useQuery({
     queryKey: ['getPeriodsFilters', i18n.language],
     queryFn: async () => await signalMapService.getPeriodsFilters(customerCompanyNo),
-    select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
+    select: (res) => (res.data ?? []).map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
 
-  const { data: companyOptions = [], isLoading: companyOptionsIsLoading } = useQuery({
+  const {
+    data: companyOptions = [],
+    isLoading: companyOptionsIsLoading,
+    isSuccess: companyOptionsIsSuccess,
+  } = useQuery({
     queryKey: ['getCompanyFilters', i18n.language],
     queryFn: async () => await signalMapService.getCompanyFilters(customerCompanyNo),
-    select: (res) => res.data.map((m) => ({ label: m.codeNm, value: m.codeId })),
+    select: (res) => (res.data ?? []).map((m) => ({ label: m.codeNm, value: m.codeId })),
   })
 
   const normalizeTopImpact = (signalData: any) => {
-    if (!signalData?.topImpactVariables) return null
+    if (!signalData?.topImpactVariables?.length) return null
     return [
       {
         categoryName: 'Top Impact Variables',
@@ -110,10 +116,14 @@ const SignalMapPage = () => {
   }
 
   // 메인 데이터 쿼리 - 초기화가 완료된 후에만 실행
-  const { data: signalData, isLoading: signalDataIsLoading } = useQuery({
+  const {
+    data: signalData,
+    isLoading: signalDataIsLoading,
+    isSuccess: signalDataIsSuccess,
+  } = useQuery({
     queryKey: ['getSignalMapData', period, companyFilter, i18n.language],
     queryFn: async () => await signalMapService.getSignalMapData(customerCompanyNo, { period, filter: companyFilter }),
-    enabled: isInitialized && (!!period || !!companyFilter),
+    enabled: isInitialized && !!period,
     select: (res) => {
       const topImpactVariables = normalizeTopImpact(res.data)
       return {
@@ -128,36 +138,24 @@ const SignalMapPage = () => {
     if (i18n.language !== currentLanguage) {
       setPeriod('')
       setCompanyFilter('')
-      setIsRenderingComplete(false)
-      setHasInitialData(false)
       setIsInitialized(false)
       setCurrentLanguage(i18n.language)
     }
   }, [i18n.language, currentLanguage])
 
   useEffect(() => {
-    if (periodOptions.length > 0 && companyOptions.length > 0 && !isInitialized) {
+    if (periodOptionsIsSuccess && companyOptionsIsSuccess && !isInitialized) {
       setPeriod(periodOptions[0]?.value ?? '')
       setCompanyFilter(companyOptions[0]?.value ?? '')
       setIsInitialized(true)
     }
-  }, [periodOptions, companyOptions, isInitialized])
+  }, [periodOptions, companyOptions, periodOptionsIsSuccess, companyOptionsIsSuccess, isInitialized])
 
-  useEffect(() => {
-    setIsRenderingComplete(false)
-  }, [period, companyFilter])
-
-  useLayoutEffect(() => {
-    if (signalData && !signalDataIsLoading) {
-      setIsRenderingComplete(true)
-      setHasInitialData(true)
-    }
-  }, [signalData, signalDataIsLoading])
-
-  const isActuallyLoading = useMemo(
-    () => periodOptionsIsLoading || companyOptionsIsLoading || (signalDataIsLoading && !hasInitialData),
-    [periodOptionsIsLoading, companyOptionsIsLoading, signalDataIsLoading, hasInitialData],
-  )
+  const isActuallyLoading = periodOptionsIsLoading || companyOptionsIsLoading || signalDataIsLoading
+  const isRenderingComplete = signalDataIsSuccess || (periodOptionsIsSuccess && companyOptionsIsSuccess && periodOptions.length === 0)
+  const hasResults =
+    (customerCompanyNo !== 2015 && !!signalData?.topImpactVariables?.length) ||
+    !!signalData?.list?.some((root) => root.items.some((subCategory) => subCategory.items.length > 0))
 
   return (
     <MISkeleton variant={'signalMap'} loading={isActuallyLoading}>
@@ -229,6 +227,13 @@ const SignalMapPage = () => {
           </Box>
           <MIColorRange />
         </Box>
+        {isRenderingComplete && !hasResults && (
+          <Stack minHeight="460px" alignItems="center" justifyContent="center">
+            <Typography color="gray.60" variant="body6">
+              {t('signalMap.noResults')}
+            </Typography>
+          </Stack>
+        )}
         {customerCompanyNo !== 2015 &&
           groupRootsIntoRows(signalData?.topImpactVariables ?? []).map((row, rowIdx) => (
             <Box
@@ -256,7 +261,7 @@ const SignalMapPage = () => {
                       <Box key={cateIdx}>
                         <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
                         <Box height="460px" marginTop="6px">
-                          <MISignalMap mapData={subCategory.items} useAnimation />
+                          {subCategory.items.length > 0 && <MISignalMap mapData={subCategory.items} useAnimation />}
                         </Box>
                       </Box>
                     ))}
@@ -265,44 +270,45 @@ const SignalMapPage = () => {
               ))}
             </Box>
           ))}
-        {groupRootsIntoRows(signalData?.list ?? []).map((row, rowIdx) => {
-          const isSingleSubItem = row.every((root) => root.items.length === 1)
-          return (
-            <Box
-              key={rowIdx}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: isSingleSubItem ? 'repeat(2, 1fr)' : '1fr',
-                gap: '24px',
-                mb: 5,
-              }}
-            >
-              {row.map((root, colIdx) => (
-                <Box key={colIdx} mb={6}>
-                  <Box mb={5}>
-                    <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
-                  </Box>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: `repeat(${Math.min(root.items.length, 2)}, 1fr)`,
-                      gap: '24px',
-                    }}
-                  >
-                    {root.items.map((subCategory, cateIdx) => (
-                      <Box key={cateIdx}>
-                        <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
-                        <Box height="460px" marginTop="6px">
-                          <MISignalMap mapData={subCategory.items} useAnimation />
+        {hasResults &&
+          groupRootsIntoRows(signalData?.list ?? []).map((row, rowIdx) => {
+            const isSingleSubItem = row.every((root) => root.items.length === 1)
+            return (
+              <Box
+                key={rowIdx}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: isSingleSubItem ? 'repeat(2, 1fr)' : '1fr',
+                  gap: '24px',
+                  mb: 5,
+                }}
+              >
+                {row.map((root, colIdx) => (
+                  <Box key={colIdx} mb={6}>
+                    <Box mb={5}>
+                      <SectionHeader title={root.categoryName} itemCount={root.items.length} boldTitle />
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${Math.min(root.items.length, 2)}, 1fr)`,
+                        gap: '24px',
+                      }}
+                    >
+                      {root.items.map((subCategory, cateIdx) => (
+                        <Box key={cateIdx}>
+                          <SectionHeader title={subCategory.categoryName} itemCount={subCategory.items.length} />
+                          <Box height="460px" marginTop="6px">
+                            {subCategory.items.length > 0 && <MISignalMap mapData={subCategory.items} useAnimation />}
+                          </Box>
                         </Box>
-                      </Box>
-                    ))}
+                      ))}
+                    </Box>
                   </Box>
-                </Box>
-              ))}
-            </Box>
-          )
-        })}
+                ))}
+              </Box>
+            )
+          })}
         {!isRenderingComplete && (
           <Box
             minWidth={'1380px'}

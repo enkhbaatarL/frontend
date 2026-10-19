@@ -42,6 +42,7 @@ import {
   fmVolumeTradeBodyCellSx,
   mergeVolumeTableSx,
 } from '@/pages/mi/fundamentalModel/components/volumes/fundamentalModelVolumesTableLayout'
+import useFixedTableVirtualization from '@/pages/mi/fundamentalModel/components/volumes/useFixedTableVirtualization'
 
 export interface FundamentalModelTradeVolumesTableProps {
   tradeFlows: FundamentalModelTradeFlows | null
@@ -198,6 +199,21 @@ const FundamentalModelTradeVolumesTable = memo(
     const syncingHorizontalRef = useRef(false)
     const [hasScrolledX, setHasScrolledX] = useState(false)
     const [hasScrolledY, setHasScrolledY] = useState(false)
+    const { rowRange, columnRange, rowOffset, columnOffset, totalRowHeight } = useFixedTableVirtualization({
+      rowCount: toCountries.length,
+      rowHeight: FM_VOLUME_TABLE_BODY_H,
+      rowViewportHeight: FM_VOLUME_TRADE_TABLE_BODY_MAX_HEIGHT,
+      columnWidths: fromColumnWidths,
+      columnViewportWidth: Math.max(tableFrameWidth - FM_VOLUME_TRADE_TO_COL_W, 0),
+      verticalScrollRef: bodyScrollRef,
+      horizontalScrollRef: bodyMonthScrollRef,
+      enabled: !loading,
+    })
+    const visibleRows = useMemo(() => toCountries.slice(rowRange.start, rowRange.end), [rowRange.end, rowRange.start, toCountries])
+    const visibleColumns = useMemo(
+      () => fromColumns.slice(columnRange.start, columnRange.end),
+      [columnRange.end, columnRange.start, fromColumns],
+    )
 
     const updateHorizontalScrollShadow = useCallback((scrollLeft: number) => {
       const next = scrollLeft > FM_VOLUME_TABLE_SCROLL_SHADOW_EPSILON_PX
@@ -351,26 +367,29 @@ const FundamentalModelTradeVolumesTable = memo(
             From country
           </Typography>
         </Box>
-        <Stack direction="row" alignItems="flex-start">
-          {fromColumns.map((col, colIdx) => {
-            const colWidth = `${fromColumnWidths[colIdx] ?? FM_VOLUME_TRADE_FROM_COL_MIN_W}px`
-            const isRegionCol = col.kind === 'REGION_TOTAL'
-            const isTotalCol = col.kind === 'GRAND_TOTAL'
-            return (
-              <Box
-                key={col.key}
-                sx={mergeVolumeTableSx(fmVolumeTableBodyCellSx, {
-                  width: colWidth,
-                  flex: `0 0 ${colWidth}`,
-                  justifyContent: 'flex-end',
-                  bgcolor: isTotalCol ? FM_VOLUME_TOTAL_CELL_BG : isRegionCol ? FM_VOLUME_SUBTOTAL_CELL_BG : 'commonColor.White',
-                })}
-              >
-                <TradeCountryHeaderLabel header={col} textAlign="right" />
-              </Box>
-            )
-          })}
-        </Stack>
+        <Box sx={{ width: `${tradeScrollWidth}px`, height: `${FM_VOLUME_TABLE_BODY_H}px`, position: 'relative' }}>
+          <Stack direction="row" sx={{ position: 'absolute', left: `${columnOffset}px`, top: 0 }}>
+            {visibleColumns.map((col, visibleColIdx) => {
+              const colIdx = columnRange.start + visibleColIdx
+              const colWidth = `${fromColumnWidths[colIdx] ?? FM_VOLUME_TRADE_FROM_COL_MIN_W}px`
+              const isRegionCol = col.kind === 'REGION_TOTAL'
+              const isTotalCol = col.kind === 'GRAND_TOTAL'
+              return (
+                <Box
+                  key={col.key}
+                  sx={mergeVolumeTableSx(fmVolumeTableBodyCellSx, {
+                    width: colWidth,
+                    flex: `0 0 ${colWidth}`,
+                    justifyContent: 'flex-end',
+                    bgcolor: isTotalCol ? FM_VOLUME_TOTAL_CELL_BG : isRegionCol ? FM_VOLUME_SUBTOTAL_CELL_BG : 'commonColor.White',
+                  })}
+                >
+                  <TradeCountryHeaderLabel header={col} textAlign="right" />
+                </Box>
+              )
+            })}
+          </Stack>
+        </Box>
       </Stack>
     )
 
@@ -378,7 +397,9 @@ const FundamentalModelTradeVolumesTable = memo(
       <Stack
         sx={[{ width: FM_VOLUME_TRADE_TO_COL_W, flexShrink: 0, borderRight: FM_VOLUME_TABLE_BORDER, overflow: 'clip' }, rowHeaderShadowSx]}
       >
-        {toCountries.map((row, rowIdx) => {
+        <Box sx={{ height: `${rowOffset}px`, flexShrink: 0 }} aria-hidden />
+        {visibleRows.map((row, visibleRowIdx) => {
+          const rowIdx = rowRange.start + visibleRowIdx
           const nextIsTotal = toCountries[rowIdx + 1]?.kind === 'GRAND_TOTAL'
           const isTotal = row.kind === 'GRAND_TOTAL'
           const isRegionRow = row.kind === 'REGION_TOTAL'
@@ -388,46 +409,61 @@ const FundamentalModelTradeVolumesTable = memo(
             </Box>
           )
         })}
+        <Box
+          sx={{ height: `${Math.max(totalRowHeight - rowOffset - visibleRows.length * FM_VOLUME_TABLE_BODY_H, 0)}px`, flexShrink: 0 }}
+          aria-hidden
+        />
       </Stack>
     )
 
     const bodyScrollable = (
-      <Stack direction="row" alignItems="flex-start" sx={{ width: `${tradeScrollWidth}px`, minWidth: `${tradeScrollWidth}px` }}>
-        {fromColumns.map((col, colIdx) => {
-          const colWidth = `${fromColumnWidths[colIdx] ?? FM_VOLUME_TRADE_FROM_COL_MIN_W}px`
-          const isRegionCol = col.kind === 'REGION_TOTAL'
-          const isTotalCol = col.kind === 'GRAND_TOTAL'
-          return (
-            <Stack key={col.key} sx={{ width: colWidth, flex: `0 0 ${colWidth}` }}>
-              {toCountries.map((row, rowIdx) => {
-                const nextIsTotal = toCountries[rowIdx + 1]?.kind === 'GRAND_TOTAL'
-                const isTotal = row.kind === 'GRAND_TOTAL'
-                const isRegionRow = row.kind === 'REGION_TOTAL'
-                const useStrong = isTotal || isTotalCol || isRegionCol || isRegionRow
-                return (
-                  <Box
-                    key={`${row.key}-${col.key}`}
-                    sx={[
-                      fmVolumeTableBodyCellSx,
-                      fmVolumeTradeBodyCellSx(isTotal, nextIsTotal, isRegionCol || isRegionRow, isTotalCol),
-                      { justifyContent: 'flex-end' },
-                    ]}
-                  >
-                    <Typography
-                      variant={useStrong ? 'body2SB14' : 'body2R14'}
-                      color="gray.90"
-                      noWrap
-                      sx={{ width: '100%', textAlign: 'right' }}
+      <Box
+        sx={{
+          width: `${tradeScrollWidth}px`,
+          minWidth: `${tradeScrollWidth}px`,
+          height: `${totalRowHeight}px`,
+          position: 'relative',
+        }}
+      >
+        <Stack direction="row" alignItems="flex-start" sx={{ position: 'absolute', left: `${columnOffset}px`, top: `${rowOffset}px` }}>
+          {visibleColumns.map((col, visibleColIdx) => {
+            const colIdx = columnRange.start + visibleColIdx
+            const colWidth = `${fromColumnWidths[colIdx] ?? FM_VOLUME_TRADE_FROM_COL_MIN_W}px`
+            const isRegionCol = col.kind === 'REGION_TOTAL'
+            const isTotalCol = col.kind === 'GRAND_TOTAL'
+            return (
+              <Stack key={col.key} sx={{ width: colWidth, flex: `0 0 ${colWidth}` }}>
+                {visibleRows.map((row, visibleRowIdx) => {
+                  const rowIdx = rowRange.start + visibleRowIdx
+                  const nextIsTotal = toCountries[rowIdx + 1]?.kind === 'GRAND_TOTAL'
+                  const isTotal = row.kind === 'GRAND_TOTAL'
+                  const isRegionRow = row.kind === 'REGION_TOTAL'
+                  const useStrong = isTotal || isTotalCol || isRegionCol || isRegionRow
+                  return (
+                    <Box
+                      key={`${row.key}-${col.key}`}
+                      sx={[
+                        fmVolumeTableBodyCellSx,
+                        fmVolumeTradeBodyCellSx(isTotal, nextIsTotal, isRegionCol || isRegionRow, isTotalCol),
+                        { justifyContent: 'flex-end' },
+                      ]}
                     >
-                      {formatTradeFlowCell(flowValues.get(getFlowLookupKey(row.key, col.key)))}
-                    </Typography>
-                  </Box>
-                )
-              })}
-            </Stack>
-          )
-        })}
-      </Stack>
+                      <Typography
+                        variant={useStrong ? 'body2SB14' : 'body2R14'}
+                        color="gray.90"
+                        noWrap
+                        sx={{ width: '100%', textAlign: 'right' }}
+                      >
+                        {formatTradeFlowCell(flowValues.get(getFlowLookupKey(row.key, col.key)))}
+                      </Typography>
+                    </Box>
+                  )
+                })}
+              </Stack>
+            )
+          })}
+        </Stack>
+      </Box>
     )
 
     return (

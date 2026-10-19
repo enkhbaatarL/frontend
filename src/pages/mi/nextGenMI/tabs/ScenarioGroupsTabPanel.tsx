@@ -52,7 +52,6 @@ const ScenarioGroupsTabPanel = () => {
   const resetListState = useCallback(() => {
     setPagination((p) => ({ ...p, page: 1 }))
     setExpandedGroupIds(new Set())
-    setExpandAll(false)
   }, [setPagination])
 
   const listRequest = useMemo((): IGetScenarioGroupListParams => {
@@ -87,6 +86,10 @@ const ScenarioGroupsTabPanel = () => {
   })
 
   const groups = useMemo(() => groupQuery.data?.scenarioGroups.detail ?? [], [groupQuery.data?.scenarioGroups.detail])
+  const currentExpandedGroupIds = useMemo(
+    () => (expandAll ? new Set(groups.map((group) => group.scenarioGroupId)) : expandedGroupIds),
+    [expandAll, expandedGroupIds, groups],
+  )
   const individualScenarios = individualQuery.data?.scenarios.detail ?? []
 
   // Event List와 동일: 데이터 없는 fetch 구간은 스켈레톤 유지 (로딩↔빈목록 전환으로 pulse가 끊기지 않게)
@@ -158,32 +161,29 @@ const ScenarioGroupsTabPanel = () => {
     resetListState()
   }, [resetListState, setCommittedKeyword, setKeyword])
 
-  const handleExpandAllChange = useCallback(
-    (next: boolean) => {
-      setExpandAll(next)
-      setExpandedGroupIds(next ? new Set(groups.map((group) => group.scenarioGroupId)) : new Set())
-    },
-    [groups],
-  )
+  const handleExpandAllChange = useCallback((next: boolean) => {
+    setExpandAll(next)
+    setExpandedGroupIds(new Set())
+  }, [])
 
-  const handleToggleGroup = useCallback((scenarioGroupId: number) => {
-    setExpandedGroupIds((prev) => {
-      const next = new Set(prev)
+  const handleToggleGroup = useCallback(
+    (scenarioGroupId: number) => {
+      const next = new Set(currentExpandedGroupIds)
       if (next.has(scenarioGroupId)) {
         next.delete(scenarioGroupId)
       } else {
         next.add(scenarioGroupId)
       }
-      return next
-    })
-    setExpandAll(false)
-  }, [])
+      setExpandedGroupIds(next)
+      setExpandAll(false)
+    },
+    [currentExpandedGroupIds],
+  )
 
   const handlePageSizeChange = useCallback(
     (size: number) => {
       setPagination({ size, page: 1 })
       setExpandedGroupIds(new Set())
-      setExpandAll(false)
     },
     [setPagination],
   )
@@ -192,7 +192,6 @@ const ScenarioGroupsTabPanel = () => {
     (page: number) => {
       setPagination((p) => ({ ...p, page }))
       setExpandedGroupIds(new Set())
-      setExpandAll(false)
     },
     [setPagination],
   )
@@ -282,7 +281,7 @@ const ScenarioGroupsTabPanel = () => {
           {!isGroupListLoading && groups.length > 0 && (
             <ScenarioGroupAccordionList
               groups={groups}
-              expandedGroupIds={expandedGroupIds}
+              expandedGroupIds={currentExpandedGroupIds}
               onToggle={handleToggleGroup}
               emptyMessage="조건에 맞는 시나리오 그룹이 없습니다."
               chartBackgroundColor="transparent"

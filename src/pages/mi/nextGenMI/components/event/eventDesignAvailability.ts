@@ -1,5 +1,5 @@
 import type { EventDesignStep } from '@/service/mi/nextGenMI/event'
-import type { ScenarioDesignStatus, ScenarioDesignStatusCode } from '@/service/mi/nextGenMI/scenarioDesign'
+import type { SameCombinationScenarioGroup, ScenarioDesignStatus, ScenarioDesignStatusCode } from '@/service/mi/nextGenMI/scenarioDesign'
 
 /** 멀티 선택 액션바 - 동일 이벤트 조합 기준 상태 분기 */
 export type MultiEventSelectionDesignMode = 'designable' | 'creating' | 'created'
@@ -50,16 +50,51 @@ export const normalizeScenarioDesignStatusCode = (
   return undefined
 }
 
+export const getSameCombinationGroups = (status?: ScenarioDesignStatus | null): SameCombinationScenarioGroup[] => {
+  if (!status) return []
+  if (Array.isArray(status.sameCombinationGroups)) return status.sameCombinationGroups
+  return []
+}
+
+export const getSameCombinationGroupCount = (status?: ScenarioDesignStatus | null): number => {
+  if (!status) return 0
+  if (typeof status.sameCombinationGroupCount === 'number' && Number.isFinite(status.sameCombinationGroupCount)) {
+    return status.sameCombinationGroupCount
+  }
+  return getSameCombinationGroups(status).length
+}
+
+export const isSameCombinationGroupInProgress = (group: SameCombinationScenarioGroup) => {
+  const status = (group.status ?? '').toLowerCase()
+  return status === 'creating'
+}
+
+export const isSameCombinationGroupCompleted = (group: SameCombinationScenarioGroup) => {
+  const status = (group.status ?? '').toLowerCase()
+  return status === 'created' || status === 'realized'
+}
+
 export const isScenarioDesignStatusMine = (status: ScenarioDesignStatus | undefined) => status?.mine === true
 
 export const isScenarioDesignStatusOccupiedByOther = (status: ScenarioDesignStatus | undefined) => {
   if (!status) return false
   if (status.mine === true) return false
+
+  // 신규 API: 동일 조합 중 타인 진행 그룹이 있으면 점유
+  const inProgressOthers = getSameCombinationGroups(status).some((group) => isSameCombinationGroupInProgress(group) && group.mine === false)
+  if (inProgressOthers) return true
+
+  // 하위호환: 구 designStatus 분기
   const designStatus = normalizeScenarioDesignStatusCode(status.designStatus)
   if (status.mine === false) return designStatus === 'creating' || status.occupied === true
   return designStatus === 'creating' || status.occupied === true
 }
 
+/**
+ * 멀티 선택 액션바 상태.
+ * 신규 API는 동일 조합이 있어도 항상 새 그룹 생성이 가능하므로 create CTA는 designable 기준.
+ * 동일 조합 안내/목록 UI는 sameCombinationGroups를 액션바에서 별도 렌더.
+ */
 export const resolveSelectionDesignStateFromStatus = (
   status: ScenarioDesignStatus | undefined,
   selectedEvents: Array<{ eventId: number; eventName: string }>,
@@ -67,6 +102,24 @@ export const resolveSelectionDesignStateFromStatus = (
   if (selectedEvents.length === 0) return null
 
   const primary = selectedEvents[0]
+  const sameGroups = getSameCombinationGroups(status)
+  const latestGroup = sameGroups[0]
+  const hasSameCombinationApi = status?.sameCombinationGroups !== undefined || status?.sameCombinationGroupCount !== undefined
+
+  if (hasSameCombinationApi || selectedEvents.length >= 2) {
+    return {
+      mode: 'designable',
+      locked: false,
+      designStep: normalizeEventDesignStep(latestGroup?.designStep),
+      designStepLabel: latestGroup?.designStepLabel,
+      scenarioGroupId: null,
+      occupantUserName: latestGroup?.mine === false ? latestGroup.createdByName : null,
+      primaryEventId: primary.eventId,
+      primaryEventName: primary.eventName,
+    }
+  }
+
+  // 하위호환: 구 designStatus 응답
   const designStatus = normalizeScenarioDesignStatusCode(status?.designStatus)
   const mode: MultiEventSelectionDesignMode = designStatus === 'creating' || designStatus === 'created' ? designStatus : 'designable'
 
