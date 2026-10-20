@@ -72,15 +72,13 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
             ? `linear-gradient(to left, transparent 0, black ${gradientWidth}px)`
             : undefined
 
-    const getActiveScrollEdgePadding = () => ({
-      left: showScrollButtons && isScrollableRef.current ? scrollEdgePaddingLeft : 0,
-      right: showScrollButtons && isScrollableRef.current ? scrollEdgePaddingRight : 0,
-    })
-
     const getScrollLimits = (element: HTMLDivElement) => {
-      const edgePadding = getActiveScrollEdgePadding()
-      const minScrollLeft = edgePadding.left
-      const maxScrollLeft = Math.max(minScrollLeft, element.scrollWidth - element.clientWidth - edgePadding.right)
+      // 호출부의 sx가 내부 여백을 덮어쓴 경우에도 첫/마지막 콘텐츠를 자르지 않는다.
+      const style = globalThis.getComputedStyle(element)
+      const hasEdgePadding = showScrollButtons && isScrollableRef.current
+      const minScrollLeft = hasEdgePadding ? Math.min(scrollEdgePaddingLeft, Number.parseFloat(style.paddingLeft) || 0) : 0
+      const rightPadding = hasEdgePadding ? Math.min(scrollEdgePaddingRight, Number.parseFloat(style.paddingRight) || 0) : 0
+      const maxScrollLeft = Math.max(minScrollLeft, element.scrollWidth - element.clientWidth - rightPadding)
 
       return { minScrollLeft, maxScrollLeft }
     }
@@ -99,8 +97,16 @@ const HorizontalScrollContainer = forwardRef<HTMLDivElement, HorizontalScrollCon
       const element = scrollRef.current
       if (!element) return
 
-      const edgePadding = getActiveScrollEdgePadding()
-      const nextIsScrollable = element.scrollWidth - edgePadding.left - edgePadding.right > element.clientWidth + 1
+      // 상태에 따라 추가한 여백이 스크롤 가능 여부를 다시 뒤집지 않도록 실제 콘텐츠 폭을 측정한다.
+      const style = globalThis.getComputedStyle(element)
+      const contentRects = Array.from(element.children, (child) => child.getBoundingClientRect())
+      const contentWidth = Math.max(
+        element.scrollWidth - (Number.parseFloat(style.paddingLeft) || 0) - (Number.parseFloat(style.paddingRight) || 0),
+        contentRects.length > 0
+          ? Math.max(...contentRects.map((rect) => rect.right)) - Math.min(...contentRects.map((rect) => rect.left))
+          : 0,
+      )
+      const nextIsScrollable = element.clientWidth > 0 && contentWidth > element.clientWidth + 1
       if (nextIsScrollable !== isScrollableRef.current) {
         isScrollableRef.current = nextIsScrollable
         setIsScrollable(nextIsScrollable)

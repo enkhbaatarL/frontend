@@ -163,16 +163,8 @@ const ScenarioModelExecutionProposalParamPanel = ({
     [activeModelFile, activeModelSheet, activeModelTable, activeParameterIndex, receivedCompare, matrixScenarioIds],
   )
 
-  return (
-    <Stack
-      width="100%"
-      flex="1 1 auto"
-      minWidth={0}
-      minHeight={0}
-      overflow="hidden"
-      borderTop="1px solid"
-      borderColor="contentBorder.Normal"
-    >
+  const parameterNavigation = (
+    <Stack flexShrink={0} bgcolor="commonColor.White">
       <Stack
         direction="row"
         alignItems="center"
@@ -274,12 +266,17 @@ const ScenarioModelExecutionProposalParamPanel = ({
           </HorizontalScrollContainer>
         </Stack>
       )}
+    </Stack>
+  )
 
-      <Stack flex="1 1 0" minWidth={0} minHeight={0} overflow="hidden" padding="20px 24px" bgcolor="commonColor.White">
+  return (
+    <Stack width="100%" flex="1 0 auto" minWidth={0} borderTop="1px solid" borderColor="contentBorder.Normal">
+      {visibleScenarios.length === 0 ? parameterNavigation : null}
+      <Stack minWidth={0} bgcolor="commonColor.White">
         {visibleScenarios.length === 0 ? (
           <Stack
-            flex="1 1 0"
-            minHeight={0}
+            minHeight="240px"
+            margin="20px 24px"
             alignItems="center"
             justifyContent="center"
             border="1px solid"
@@ -292,14 +289,9 @@ const ScenarioModelExecutionProposalParamPanel = ({
           </Stack>
         ) : null}
         {/* 표시 시나리오가 0이어도 언마운트하지 않음 - 수정 baseline/edited 상태 유지 */}
-        <Stack
-          flex={visibleScenarios.length === 0 ? undefined : '1 1 0'}
-          minHeight={0}
-          minWidth={0}
-          width="100%"
-          display={visibleScenarios.length === 0 ? 'none' : 'flex'}
-        >
+        <Stack minWidth={0} width="100%" display={visibleScenarios.length === 0 ? 'none' : 'flex'}>
           <ScenarioModelExecutionProposalParamMatrix
+            headerBefore={parameterNavigation}
             visibleScenarios={visibleScenarios}
             proposalScenarios={compare?.scenarios ?? []}
             matrix={matrix}

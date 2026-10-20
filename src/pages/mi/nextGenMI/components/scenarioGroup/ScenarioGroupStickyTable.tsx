@@ -81,6 +81,8 @@ type ScenarioGroupStickyTableProps<T> = {
   hideHeader?: boolean
   /** 페이지 스크롤 기준으로 실제 테이블 헤더(thead)를 sticky 처리할 때 사용 */
   pageStickyHeaderTop?: number | string
+  /** 상단 높이가 매 프레임 갱신될 때 추가 top 전환 없이 즉시 따라가도록 한다. */
+  disablePageStickyHeaderTransition?: boolean
   pageStickyHeaderZIndex?: number
   /** 페이지 sticky 헤더와 함께 붙고 풀릴 상단 컨텐츠 */
   pageStickyHeaderBefore?: ReactNode
@@ -375,6 +377,7 @@ const ScenarioGroupStickyTable = <T,>({
   leftAlignedHeaderSticky = false,
   hideHeader = false,
   pageStickyHeaderTop,
+  disablePageStickyHeaderTransition = false,
   pageStickyHeaderZIndex = 24,
   pageStickyHeaderBefore,
   pageStickyHeaderGap = '0px',
@@ -1989,7 +1992,9 @@ const ScenarioGroupStickyTable = <T,>({
         zIndex: pageStickyHeaderZIndex,
         minHeight: hasPageStickyHeaderBefore ? undefined : headerHeight,
         bgcolor: 'commonColor.White',
-        transition: `top ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+        transition: disablePageStickyHeaderTransition
+          ? 'none'
+          : `top ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
         '&::before': {
           content: '""',
           position: 'absolute',
