@@ -70,7 +70,7 @@ const PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX = 100
 const PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX = 92
 
 const PROPOSAL_LIST_FIXED_LEFT_WIDTH_PX = PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX + PROPOSAL_LIST_SCENARIO_COLUMN_WIDTH_PX
-const PROPOSAL_LIST_FIXED_RIGHT_WIDTH_PX = PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX + PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX
+const PROPOSAL_LIST_FIXED_RIGHT_WIDTH_PX = PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX
 const PROPOSAL_LIST_SCROLLBAR_GUTTER_PX = 28
 
 const proposalListFixedColumnProps = (edge: 'left' | 'right', offsetPx: number, widthPx: number) => ({
@@ -1461,9 +1461,12 @@ const ScenarioModelExecutionProposalList = ({
                 )
               })}
               <Stack
-                {...proposalListFixedColumnProps('right', PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX, PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX)}
+                width={`${PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX}px`}
+                minWidth={`${PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX}px`}
+                maxWidth={`${PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX}px`}
                 alignItems="center"
                 justifyContent="center"
+                boxSizing="border-box"
               >
                 <Typography variant="body2SB14" color="contentText.Black" textAlign="center">
                   실행가능성
@@ -1584,13 +1587,12 @@ const ScenarioModelExecutionProposalList = ({
                     </Box>
                   ))}
                   <Stack
-                    {...proposalListFixedColumnProps(
-                      'right',
-                      PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX,
-                      PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX,
-                    )}
+                    width={`${PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX}px`}
+                    minWidth={`${PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX}px`}
+                    maxWidth={`${PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX}px`}
                     alignItems="center"
                     justifyContent="center"
+                    boxSizing="border-box"
                   >
                     <Box width="100%" sx={{ opacity: dimmed ? 0.5 : 1 }}>
                       <ScenarioPossibilityGauge probability={scenario.possibility} disabled={dimmed} hideHoverBackground />
