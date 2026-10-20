@@ -6,7 +6,16 @@ import { Box, CircularProgress, Collapse, Divider, Fade, Stack, Typography, useM
 import { useMutation, useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
 import { SwitchTransition } from 'react-transition-group'
 
 import type {
@@ -54,6 +63,227 @@ import { downloadFile } from '@/utils/file'
 
 const BANNER_MESSAGE = '각 시나리오의 [생성] 버튼을 눌러 추천 파라미터를 생성해 주세요.'
 const GENERATING_MESSAGE = '파라미터를 생성하고 있습니다'
+const PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX = 36
+const PROPOSAL_LIST_SCENARIO_COLUMN_WIDTH_PX = 300
+const PROPOSAL_LIST_DIMENSION_COLUMN_MIN_WIDTH_PX = 159
+const PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX = 100
+const PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX = 92
+
+const PROPOSAL_LIST_FIXED_LEFT_WIDTH_PX = PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX + PROPOSAL_LIST_SCENARIO_COLUMN_WIDTH_PX
+const PROPOSAL_LIST_FIXED_RIGHT_WIDTH_PX = PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX + PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX
+const PROPOSAL_LIST_SCROLLBAR_GUTTER_PX = 28
+
+const proposalListFixedColumnProps = (edge: 'left' | 'right', offsetPx: number, widthPx: number) => ({
+  position: 'sticky' as const,
+  [edge]: `${offsetPx}px`,
+  zIndex: 2,
+  bgcolor: 'commonColor.White',
+  width: `${widthPx}px`,
+  minWidth: `${widthPx}px`,
+  maxWidth: `${widthPx}px`,
+  boxSizing: 'border-box' as const,
+})
+
+const updateProposalListScrollVisuals = (element: HTMLDivElement, frame: HTMLElement | null) => {
+  const maxScrollLeft = Math.max(0, element.scrollWidth - element.clientWidth)
+  const horizontal = maxScrollLeft > 1
+  const thumbWidth = horizontal ? Math.max((element.clientWidth / element.scrollWidth) * 100, 8) : 0
+  const thumbLeft = horizontal ? (element.scrollLeft / maxScrollLeft) * (100 - thumbWidth) : 0
+
+  frame?.style.setProperty('--proposal-list-horizontal-thumb-width', `${thumbWidth}%`)
+  frame?.style.setProperty('--proposal-list-horizontal-thumb-left', `${thumbLeft}%`)
+
+  return {
+    left: element.scrollLeft > 1,
+    right: horizontal && element.scrollLeft < maxScrollLeft - 1,
+    horizontal,
+  }
+}
+
+const syncProposalListScrollLeft = (source: HTMLDivElement, scrollers: Set<HTMLDivElement>) => {
+  scrollers.forEach((peer) => {
+    if (peer !== source && peer.scrollLeft !== source.scrollLeft) peer.scrollLeft = source.scrollLeft
+  })
+}
+
+/** 팝업 본문 스크롤과 분리해, 시나리오 목록만 가로로 움직인다. 고정된 목록과 원래 목록의 가로 위치는 맞춘다. */
+const ProposalScenarioListScroller = ({
+  minWidthPx,
+  scrollersRef,
+  children,
+}: {
+  minWidthPx: number
+  scrollersRef: { current: Set<HTMLDivElement> }
+  children: ReactNode
+}) => {
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
+  const frameRef = useRef<HTMLDivElement | null>(null)
+  const contentRef = useRef<HTMLDivElement | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [scrollEdges, setScrollEdges] = useState({ left: false, right: false, horizontal: false })
+
+  const updateScrollEdges = useCallback((element: HTMLDivElement) => {
+    const nextEdges = updateProposalListScrollVisuals(element, frameRef.current)
+    setScrollEdges((current) =>
+      current.left === nextEdges.left && current.right === nextEdges.right && current.horizontal === nextEdges.horizontal
+        ? current
+        : nextEdges,
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!scroller) return undefined
+
+    scrollersRef.current.add(scroller)
+    const peer = [...scrollersRef.current].find((element) => element !== scroller)
+    if (peer && peer.scrollLeft !== scroller.scrollLeft) scroller.scrollLeft = peer.scrollLeft
+    updateScrollEdges(scroller)
+
+    const observer = new ResizeObserver(() => updateScrollEdges(scroller))
+    observer.observe(scroller)
+    if (contentRef.current) observer.observe(contentRef.current)
+
+    return () => {
+      scrollersRef.current.delete(scroller)
+      observer.disconnect()
+    }
+  }, [minWidthPx, scroller, scrollersRef, updateScrollEdges])
+
+  const handleThumbPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!scroller) return
+
+    event.preventDefault()
+    event.stopPropagation()
+    const thumb = event.currentTarget
+    const track = thumb.parentElement
+    if (!track) return
+
+    const startX = event.clientX
+    const startScroll = scroller.scrollLeft
+    const maxScroll = Math.max(0, scroller.scrollWidth - scroller.clientWidth)
+    const maxThumbTravel = Math.max(1, track.clientWidth - thumb.clientWidth)
+    const previousUserSelect = document.body.style.userSelect
+    document.body.style.userSelect = 'none'
+    setDragging(true)
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const nextScroll = startScroll + ((moveEvent.clientX - startX) / maxThumbTravel) * maxScroll
+      scroller.scrollLeft = Math.max(0, Math.min(maxScroll, nextScroll))
+    }
+    const handlePointerUp = () => {
+      setDragging(false)
+      document.body.style.userSelect = previousUserSelect
+      globalThis.removeEventListener('pointermove', handlePointerMove)
+      globalThis.removeEventListener('pointerup', handlePointerUp)
+      globalThis.removeEventListener('pointercancel', handlePointerUp)
+    }
+
+    globalThis.addEventListener('pointermove', handlePointerMove)
+    globalThis.addEventListener('pointerup', handlePointerUp)
+    globalThis.addEventListener('pointercancel', handlePointerUp)
+  }
+
+  const scrollbarGutter = `${PROPOSAL_LIST_SCROLLBAR_GUTTER_PX}px`
+  const showScrollbar = hovered || dragging
+
+  return (
+    <Box
+      ref={frameRef}
+      position="relative"
+      minWidth={0}
+      boxSizing="border-box"
+      paddingBottom={scrollbarGutter}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      sx={{
+        '--proposal-list-horizontal-thumb-left': '0%',
+        '--proposal-list-horizontal-thumb-width': '0%',
+      }}
+    >
+      <Box
+        ref={setScroller}
+        onScroll={(event) => {
+          syncProposalListScrollLeft(event.currentTarget, scrollersRef.current)
+          updateScrollEdges(event.currentTarget)
+        }}
+        sx={{
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          overscrollBehaviorX: 'contain',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        <Box ref={contentRef} minWidth={`${minWidthPx}px`} width="100%">
+          {children}
+        </Box>
+      </Box>
+      {scrollEdges.horizontal ? (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            left: `${PROPOSAL_LIST_FIXED_LEFT_WIDTH_PX}px`,
+            right: `${PROPOSAL_LIST_FIXED_RIGHT_WIDTH_PX}px`,
+            bottom: '12px',
+            height: '10px',
+            borderRadius: '10px',
+            zIndex: 4,
+            opacity: showScrollbar ? 1 : 0,
+            pointerEvents: showScrollbar ? 'auto' : 'none',
+            transition: 'opacity 120ms ease',
+          }}
+        >
+          <Box
+            onPointerDown={handleThumbPointerDown}
+            sx={{
+              position: 'absolute',
+              top: '2px',
+              bottom: '2px',
+              left: 'var(--proposal-list-horizontal-thumb-left)',
+              width: 'var(--proposal-list-horizontal-thumb-width)',
+              borderRadius: '10px',
+              bgcolor: dragging ? '#868E96' : '#ADB5BD',
+              cursor: dragging ? 'grabbing' : 'grab',
+              '&:hover': { bgcolor: '#868E96' },
+            }}
+          />
+        </Box>
+      ) : null}
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: '0px',
+          bottom: scrollbarGutter,
+          left: `${PROPOSAL_LIST_FIXED_LEFT_WIDTH_PX}px`,
+          width: '16px',
+          pointerEvents: 'none',
+          background: 'linear-gradient(to right, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
+          opacity: scrollEdges.left ? 1 : 0,
+          transition: 'opacity 180ms ease',
+          zIndex: 3,
+        }}
+      />
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: '0px',
+          bottom: scrollbarGutter,
+          right: `${PROPOSAL_LIST_FIXED_RIGHT_WIDTH_PX}px`,
+          width: '16px',
+          pointerEvents: 'none',
+          background: 'linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0))',
+          opacity: scrollEdges.right ? 1 : 0,
+          transition: 'opacity 180ms ease',
+          zIndex: 3,
+        }}
+      />
+    </Box>
+  )
+}
 
 interface ScenarioModelExecutionProposalListProps {
   scenarioGroupId: number
@@ -348,6 +578,7 @@ const ScenarioModelExecutionProposalList = ({
   const groupHeaderRef = useRef<HTMLDivElement>(null)
   const scenarioListContentRef = useRef<HTMLDivElement>(null)
   const pinnedScenarioListRef = useRef<HTMLDivElement>(null)
+  const scenarioListScrollersRef = useRef<Set<HTMLDivElement>>(new Set())
   const [isScenarioListPinned, setIsScenarioListPinned] = useState(false)
   const [shouldAnimatePinTransition, setShouldAnimatePinTransition] = useState(false)
   const [groupProposals, setGroupProposals] = useState<ScenarioGroupModelParamProposals | null>(null)
@@ -1170,20 +1401,33 @@ const ScenarioModelExecutionProposalList = ({
     setIsScenarioListPinned((pinned) => !pinned)
   }
 
+  const scenarioListGridColumns = `${PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX}px ${PROPOSAL_LIST_SCENARIO_COLUMN_WIDTH_PX}px repeat(${dimensionColumns.length}, minmax(${PROPOSAL_LIST_DIMENSION_COLUMN_MIN_WIDTH_PX}px, 1fr)) ${PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX}px ${PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX}px`
+  const scenarioListMinWidthPx =
+    PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX +
+    PROPOSAL_LIST_SCENARIO_COLUMN_WIDTH_PX +
+    dimensionColumns.length * PROPOSAL_LIST_DIMENSION_COLUMN_MIN_WIDTH_PX +
+    PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX +
+    PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX
+
   const scenarioList = useMemo(
     () =>
       groupQuery.data ? (
         <Stack paddingBottom="10px" margin="0 4px">
-          <Box overflow="hidden">
-            <Stack
-              direction="row"
-              alignItems="center"
+          <ProposalScenarioListScroller minWidthPx={scenarioListMinWidthPx} scrollersRef={scenarioListScrollersRef}>
+            <Box
+              display="grid"
+              gridTemplateColumns={scenarioListGridColumns}
+              alignItems="stretch"
               height="48px"
               bgcolor="commonColor.White"
               borderBottom="0.5px solid"
               borderColor="contentBorder.Active"
             >
-              <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
+              <Stack
+                {...proposalListFixedColumnProps('left', 0, PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX)}
+                alignItems="center"
+                justifyContent="center"
+              >
                 <AdminCheckbox
                   size="small"
                   checked={allSelectableChecked}
@@ -1193,31 +1437,48 @@ const ScenarioModelExecutionProposalList = ({
                   sx={{ padding: '4px' }}
                 />
               </Stack>
-              <Typography variant="body2SB14" color="contentText.Black" width="300px" flexShrink={0} padding="0 6px">
-                시나리오
-              </Typography>
-              <Stack direction="row" flex="1 1 0" minWidth={0}>
-                {dimensionColumns.map((column) => {
-                  const headerTooltipTitle = column.description?.trim() || column.rationale?.trim()
-                  return (
+              <Stack
+                {...proposalListFixedColumnProps('left', PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX, PROPOSAL_LIST_SCENARIO_COLUMN_WIDTH_PX)}
+                justifyContent="center"
+                padding="0 6px"
+              >
+                <Typography variant="body2SB14" color="contentText.Black" noWrap>
+                  시나리오
+                </Typography>
+              </Stack>
+              {dimensionColumns.map((column) => {
+                const headerTooltipTitle = column.description?.trim() || column.rationale?.trim()
+                return (
+                  <Box key={column.key} display="flex" alignItems="center" minWidth={0} overflow="hidden">
                     <DimensionCellContent
-                      key={column.key}
                       value={column.label}
                       tooltipTitle={headerTooltipTitle || undefined}
                       variant="body2SB14"
                       color="contentText.Black"
                       lineClamp={2}
                     />
-                  )
-                })}
+                  </Box>
+                )
+              })}
+              <Stack
+                {...proposalListFixedColumnProps('right', PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX, PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX)}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Typography variant="body2SB14" color="contentText.Black" textAlign="center">
+                  실행가능성
+                </Typography>
               </Stack>
-              <Typography variant="body2SB14" color="contentText.Black" width="100px" flexShrink={0} textAlign="center">
-                실행가능성
-              </Typography>
-              <Typography variant="body2SB14" color="contentText.Black" width="92px" flexShrink={0} textAlign="center">
-                상태
-              </Typography>
-            </Stack>
+              <Stack
+                {...proposalListFixedColumnProps('right', 0, PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX)}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Typography variant="body2SB14" color="contentText.Black" textAlign="center">
+                  상태
+                </Typography>
+              </Stack>
+            </Box>
 
             {scenarios.map((scenario) => {
               const selectable = scenario.status === 'completed'
@@ -1233,16 +1494,22 @@ const ScenarioModelExecutionProposalList = ({
               const eyeInteractive = !isActionLocked && (scenario.status === 'completed' || scenario.status === 'generating')
 
               return (
-                <Stack
+                <Box
                   key={scenario.scenarioId}
-                  direction="row"
-                  alignItems="center"
+                  display="grid"
+                  gridTemplateColumns={scenarioListGridColumns}
+                  alignItems="stretch"
                   height="48px"
+                  bgcolor="commonColor.White"
                   borderBottom="1px solid"
                   borderColor="contentBorder.Normal"
                   sx={{ '&:last-of-type': { borderBottom: 'none' } }}
                 >
-                  <Stack width="36px" flexShrink={0} alignItems="center" justifyContent="center">
+                  <Stack
+                    {...proposalListFixedColumnProps('left', 0, PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX)}
+                    alignItems="center"
+                    justifyContent="center"
+                  >
                     {/* 생성 전/생성중/실패/재시도도 체크박스 표시 - 완료만 선택 가능, 그 외 disabled (Gray/20 fill + Gray/40 border) */}
                     <AdminCheckbox
                       size="small"
@@ -1253,76 +1520,88 @@ const ScenarioModelExecutionProposalList = ({
                     />
                   </Stack>
                   <Stack
-                    direction="row"
-                    alignItems="center"
-                    gap="6px"
-                    width="300px"
-                    flexShrink={0}
-                    minWidth={0}
-                    padding="0 6px"
-                    sx={{ opacity: dimmed ? 0.5 : 1 }}
+                    {...proposalListFixedColumnProps('left', PROPOSAL_LIST_CHECK_COLUMN_WIDTH_PX, PROPOSAL_LIST_SCENARIO_COLUMN_WIDTH_PX)}
+                    justifyContent="center"
                   >
-                    <NextGenMIDisplayOrderBadge value={scenario.displayOrder} disabled={dimmed} />
-                    {hasRoleBadge ? (
-                      <ScenarioRoleBadge role={scenario.scenarioRole} type={scenario.scenarioType} label={scenario.scenarioRoleLabel} />
-                    ) : null}
-                    {!hasRoleBadge && scenario.baseCase ? <NextGenMIBaseCaseChip disabled={dimmed} /> : null}
-                    <Box flex="1 1 0" minWidth={0}>
-                      <NextGenMITableBodyText value={scenario.scenarioName} variant="body1SB16" color={textColor} tooltipWhenTruncated />
-                    </Box>
-                    {showEye && (
-                      <Box
-                        component="button"
-                        type="button"
-                        display="inline-flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        width="18px"
-                        height="18px"
-                        flexShrink={0}
-                        padding={0}
-                        border="none"
-                        bgcolor="transparent"
-                        color={visibleScenarioIds.includes(scenario.scenarioId) ? 'contentIcon.Enabled' : 'contentIcon.Disabled'}
-                        sx={{
-                          cursor: eyeInteractive ? 'pointer' : 'default',
-                          opacity: eyeInteractive ? 1 : 0.5,
-                        }}
-                        aria-label={visibleScenarioIds.includes(scenario.scenarioId) ? '파라미터 컬럼 숨기기' : '파라미터 컬럼 표시'}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          if (!eyeInteractive) return
-                          handleToggleVisibility(scenario.scenarioId)
-                        }}
-                      >
-                        {visibleScenarioIds.includes(scenario.scenarioId) ? (
-                          <VisibilityIcon width="16px" height="16px" />
-                        ) : (
-                          <VisibilityOffIcon width="16px" height="16px" />
-                        )}
+                    <Stack direction="row" alignItems="center" gap="6px" minWidth={0} padding="0 6px" sx={{ opacity: dimmed ? 0.5 : 1 }}>
+                      <NextGenMIDisplayOrderBadge value={scenario.displayOrder} disabled={dimmed} />
+                      {hasRoleBadge ? (
+                        <ScenarioRoleBadge role={scenario.scenarioRole} type={scenario.scenarioType} label={scenario.scenarioRoleLabel} />
+                      ) : null}
+                      {!hasRoleBadge && scenario.baseCase ? <NextGenMIBaseCaseChip disabled={dimmed} /> : null}
+                      <Box flex="1 1 0" minWidth={0}>
+                        <NextGenMITableBodyText value={scenario.scenarioName} variant="body1SB16" color={textColor} tooltipWhenTruncated />
                       </Box>
-                    )}
+                      {showEye && (
+                        <Box
+                          component="button"
+                          type="button"
+                          display="inline-flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          width="18px"
+                          height="18px"
+                          flexShrink={0}
+                          padding={0}
+                          border="none"
+                          bgcolor="transparent"
+                          color={visibleScenarioIds.includes(scenario.scenarioId) ? 'contentIcon.Enabled' : 'contentIcon.Disabled'}
+                          sx={{
+                            cursor: eyeInteractive ? 'pointer' : 'default',
+                            opacity: eyeInteractive ? 1 : 0.5,
+                          }}
+                          aria-label={visibleScenarioIds.includes(scenario.scenarioId) ? '파라미터 컬럼 숨기기' : '파라미터 컬럼 표시'}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            if (!eyeInteractive) return
+                            handleToggleVisibility(scenario.scenarioId)
+                          }}
+                        >
+                          {visibleScenarioIds.includes(scenario.scenarioId) ? (
+                            <VisibilityIcon width="16px" height="16px" />
+                          ) : (
+                            <VisibilityOffIcon width="16px" height="16px" />
+                          )}
+                        </Box>
+                      )}
+                    </Stack>
                   </Stack>
-                  <Stack direction="row" flex="1 1 0" minWidth={0} sx={{ opacity: dimmed ? 0.5 : 1 }}>
-                    {scenario.dimensionCells.map((cell, index) => (
+                  {scenario.dimensionCells.map((cell, index) => (
+                    <Box
+                      key={`${scenario.scenarioId}-${dimensionColumns[index]?.key ?? index}`}
+                      display="flex"
+                      alignItems="center"
+                      minWidth={0}
+                      overflow="hidden"
+                      sx={{ opacity: dimmed ? 0.5 : 1 }}
+                    >
                       <DimensionCellContent
-                        key={`${scenario.scenarioId}-${dimensionColumns[index]?.key ?? index}`}
                         value={cell.value}
                         tooltipTitle={cell.rationale || undefined}
                         variant="body2M14"
                         color={bodyColor}
                       />
-                    ))}
-                  </Stack>
-                  <Stack width="100px" flexShrink={0} alignItems="center" justifyContent="center" sx={{ opacity: dimmed ? 0.5 : 1 }}>
-                    <ScenarioPossibilityGauge probability={scenario.possibility} disabled={dimmed} hideHoverBackground />
-                  </Stack>
+                    </Box>
+                  ))}
                   <Stack
-                    width="92px"
-                    flexShrink={0}
+                    {...proposalListFixedColumnProps(
+                      'right',
+                      PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX,
+                      PROPOSAL_LIST_POSSIBILITY_COLUMN_WIDTH_PX,
+                    )}
                     alignItems="center"
                     justifyContent="center"
-                    sx={{ padding: '0 6px', boxSizing: 'border-box' }}
+                  >
+                    <Box width="100%" sx={{ opacity: dimmed ? 0.5 : 1 }}>
+                      <ScenarioPossibilityGauge probability={scenario.possibility} disabled={dimmed} hideHoverBackground />
+                    </Box>
+                  </Stack>
+                  <Stack
+                    {...proposalListFixedColumnProps('right', 0, PROPOSAL_LIST_STATUS_COLUMN_WIDTH_PX)}
+                    alignItems="center"
+                    justifyContent="center"
+                    padding="0 6px"
+                    boxSizing="border-box"
                   >
                     <StatusCell
                       status={scenario.status}
@@ -1334,10 +1613,10 @@ const ScenarioModelExecutionProposalList = ({
                       onRetry={() => startGeneration(scenario.scenarioId)}
                     />
                   </Stack>
-                </Stack>
+                </Box>
               )
             })}
-          </Box>
+          </ProposalScenarioListScroller>
         </Stack>
       ) : null,
     [
@@ -1350,6 +1629,8 @@ const ScenarioModelExecutionProposalList = ({
       handleToggleVisibility,
       hasCompleted,
       isActionLocked,
+      scenarioListGridColumns,
+      scenarioListMinWidthPx,
       scenarios,
       selectableScenarioIds.length,
       selectedScenarioIds,
