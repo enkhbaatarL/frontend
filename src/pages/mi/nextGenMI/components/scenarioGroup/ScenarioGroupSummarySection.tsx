@@ -51,8 +51,8 @@ const ScenarioGroupSummarySection = ({
   const hasEvidence = eventAnalysisMarkdown.length > 0 || roleSelectionMarkdown.length > 0
   const rows = eventBundles
   const evidenceSections = [
-    ...(eventAnalysisMarkdown ? [{ title: undefined, blocks: [{ markdown: eventAnalysisMarkdown }] }] : []),
     ...(roleSelectionMarkdown ? [{ title: undefined, blocks: [{ markdown: roleSelectionMarkdown }] }] : []),
+    ...(eventAnalysisMarkdown ? [{ title: undefined, blocks: [{ markdown: eventAnalysisMarkdown }] }] : []),
   ]
   const evidenceContent = <ScenarioRationalePopupContent sections={evidenceSections} />
 
