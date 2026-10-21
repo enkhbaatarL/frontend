@@ -169,12 +169,30 @@ export interface ScenarioGroupModelParamProposalScenario {
   confirmedAt?: string | null
 }
 
+/** 그룹에 묶인 MI Base 케이스. 없으면 null */
+export interface ScenarioGroupMiBase {
+  caseId: number
+  title: string
+}
+
 /** GET .../scenario-groups/{id}/model-param-proposals */
 export interface ScenarioGroupModelParamProposals {
   scenarioGroupId: number
   groupName?: string
   groupCreatedAt?: string
+  /** 그룹에 적용된 MI Base. 생성 결과가 없거나 초기화 후면 null */
+  appliedMiBase: ScenarioGroupMiBase | null
+  /** 현재 지정된 MI Base. 지정된 값이 없으면 null */
+  currentMiBase: ScenarioGroupMiBase | null
+  /** 적용된 MI Base와 현재 MI Base가 다르면 true */
+  miBaseChanged: boolean
   scenarios: ScenarioGroupModelParamProposalScenario[]
+}
+
+/** POST .../model-param-proposals/reset */
+export interface ScenarioGroupModelParamProposalReset {
+  scenarioGroupId: number
+  resetScenarioIds: number[]
 }
 
 export interface ModelParamCompareScenario {
@@ -329,6 +347,24 @@ const nextGenMIModelExecutionService = {
   async getGroupModelParamProposals(scenarioGroupId: number): Promise<ScenarioGroupModelParamProposals> {
     const response: AxiosResponse<ICommonResponse<ScenarioGroupModelParamProposals>> = await api.get(
       `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/model-param-proposals`,
+    )
+
+    return response.data.data
+  },
+
+  /**
+   * 그룹 전체 생성 결과 초기화
+   * - 모든 시나리오를 생성 전(NOT_REQUESTED)으로 되돌림
+   * - 생성 중/실행 중이면 409
+   * - 초기화는 SSE 이벤트가 없으므로 호출 후 현황 조회가 필요
+   */
+  async resetGroupModelParamProposals(scenarioGroupId: number): Promise<ScenarioGroupModelParamProposalReset> {
+    const response: AxiosResponse<ICommonResponse<ScenarioGroupModelParamProposalReset>> = await api.post(
+      `mi/next-gen/scenario-groups/${encodeURIComponent(String(scenarioGroupId))}/model-param-proposals/reset`,
+      undefined,
+      {
+        suppressGlobalErrorHandler: true,
+      } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
     )
 
     return response.data.data

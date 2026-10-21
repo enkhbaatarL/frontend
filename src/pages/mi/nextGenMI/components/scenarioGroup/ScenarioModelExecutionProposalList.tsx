@@ -1,4 +1,5 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import PushPinIcon from '@mui/icons-material/PushPin'
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
@@ -30,6 +31,7 @@ import type { ScenarioRole } from '@/service/mi/nextGenMI/scenarioGroup'
 import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
+import MIButton from '@/components/common/button/MIButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import InfoOutlineIcon from '@/components/common/icons/InfoOutlineIcon'
@@ -37,6 +39,7 @@ import ReplayIcon from '@/components/common/icons/ReplayIcon'
 import VisibilityIcon from '@/components/common/icons/VisibilityIcon'
 import VisibilityOffIcon from '@/components/common/icons/VisibilityOffIcon'
 import useSnackbar from '@/hooks/useSnackbar'
+import { buildFundamentalModelCasePath } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/ClassificationTag'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
 import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
@@ -322,7 +325,7 @@ const getDownloadableExecutionInputFiles = (executionInputFiles?: ModelExecution
   return downloadableFiles.length === executionInputFiles.files.length ? downloadableFiles : []
 }
 
-/** 생성 중인 행은 실행 상태 패치로 덮지 않음. 서버가 PROPOSAL_READY를 유지해도 이번 세션 실행 이력을 살린다. */
+/** 생성 중인 행은 실행 상태 패치로 덮지 않음. 서버가 PROPOSAL_READY를 유지해도 이번 세션 실행 이력을 살린다. NOT_REQUESTED(미생성/전체 초기화)는 그래프에 남은 실행 결과로 완료 처리하지 않는다. */
 const overlayProposalExecutionState = (
   proposals: ScenarioGroupModelParamProposals,
   executedIds: Set<number>,
@@ -332,7 +335,7 @@ const overlayProposalExecutionState = (
 
   let changed = false
   const scenarios = proposals.scenarios.map((scenario) => {
-    if (scenario.currentState === 'GENERATING') return scenario
+    if (scenario.currentState === 'GENERATING' || scenario.currentState === 'NOT_REQUESTED') return scenario
 
     let currentState: ModelParamProposalCurrentState | undefined = scenario.currentState
     if (executedIds.has(scenario.scenarioId)) currentState = 'EXECUTED_CONFIRMED'
@@ -595,6 +598,8 @@ const ScenarioModelExecutionProposalList = ({
   const [executionConfirmOpen, setExecutionConfirmOpen] = useState(false)
   const [isSubmittingExecution, setIsSubmittingExecution] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
+  const [groupResetConfirmOpen, setGroupResetConfirmOpen] = useState(false)
+  const [isResettingGroupProposals, setIsResettingGroupProposals] = useState(false)
   const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
   const [locallyExecutedIds, setLocallyExecutedIds] = useState<Set<number>>(() => new Set())
   const [awaitingExecutionScenarioIds, setAwaitingExecutionScenarioIds] = useState<Set<number>>(() => new Set())
@@ -820,10 +825,16 @@ const ScenarioModelExecutionProposalList = ({
   const isExecuting = mergedExecutingScenarioIds.size > 0 || hasProposalExecutionInProgress
   const isExecutionBusy = isSubmittingExecution || isExecuting
   // 시나리오 선택/생성/초기화/실행 등 액션 잠금 (PopupContent 넓은 가드)
-  const isActionLocked = isExecutionBusy || isResetting
+  const isActionLocked = isExecutionBusy || isResetting || isResettingGroupProposals
   // Value 입력 잠금 - PopupContent NumericParameterValueInput: isSubmitting || isResetting
   // (실행 중에는 파라미터 영역을 GeneratingState 로 대체해 인풋 자체가 안 보임)
   const isValueInputLocked = isSubmittingExecution || isResetting
+  const hasGeneratedProposal = (groupProposals?.scenarios ?? []).some(
+    (scenario) => scenario.currentState !== undefined && scenario.currentState !== 'NOT_REQUESTED',
+  )
+  const showGroupResetButton = Boolean(groupProposals?.miBaseChanged) && hasGeneratedProposal
+  const currentMiBaseCaseId = groupProposals?.currentMiBase?.caseId
+  const canOpenCurrentMiBase = typeof currentMiBaseCaseId === 'number' && currentMiBaseCaseId > 0
 
   const applyGroupProposals = useCallback(
     (nextProposals: ScenarioGroupModelParamProposals, notifyFailure = false) => {
@@ -1322,6 +1333,46 @@ const ScenarioModelExecutionProposalList = ({
     void loadCompareProposals().finally(() => setIsResetting(false))
   }
 
+  const handleOpenCurrentMiBase = () => {
+    if (typeof currentMiBaseCaseId !== 'number' || currentMiBaseCaseId <= 0) return
+    // 새 탭에서 로그인상태 따라가기
+    window.open(buildFundamentalModelCasePath(currentMiBaseCaseId), '_blank')
+  }
+
+  const handleConfirmGroupReset = async () => {
+    if (isResettingGroupProposals) return
+    setIsResettingGroupProposals(true)
+    try {
+      await nextGenMIModelExecutionService.resetGroupModelParamProposals(scenarioGroupId)
+      locallyExecutedIdsRef.current = new Set()
+      setCompare(null)
+      lastLoadedCompareRef.current = null
+      setHasParamEdits(false)
+      setSelectedScenarioIds([])
+      setPendingGenerateIds(new Set())
+      setGenerationFailureReason(null)
+      setLocallyExecutedIds(new Set())
+      setRunningExecutions([])
+      setAwaitingExecutionScenarioIds(new Set())
+      setExecutedConfirmedScenarioIds(new Set())
+      setGroupResetConfirmOpen(false)
+      showSnackbar('생성 결과가 초기화되었습니다.', { variant: 'success' })
+      await refreshProposals()
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined
+      const message = axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message?.trim() : ''
+      if (status === 409) {
+        showSnackbar(message || '생성 중이거나 실행 중인 시나리오가 있어 초기화할 수 없습니다. 끝난 뒤 다시 시도해 주세요.', {
+          variant: 'error',
+        })
+      } else {
+        showSnackbar(message || '생성 결과 초기화에 실패했습니다.', { variant: 'error' })
+      }
+    } finally {
+      setIsResettingGroupProposals(false)
+    }
+  }
+
   const handleChangeScenarioValue = useCallback(
     ({
       scenarioId,
@@ -1658,21 +1709,34 @@ const ScenarioModelExecutionProposalList = ({
           flexShrink={0}
           sx={{ '--scenario-model-execution-group-header-height': isScenarioListReady ? '48px' : '0px' }}
         >
-          <Stack flexShrink={0} padding="10px 20px 0">
+          <Stack direction="row" alignItems="stretch" gap="10px" flexShrink={0} padding="10px 20px 0" marginBottom="10px">
             <Stack
               direction="row"
               alignItems="flex-start"
               gap="8px"
+              flex="1 1 0"
+              minWidth={0}
               padding="10px 16px"
               borderRadius="8px"
               bgcolor="gray.5"
-              marginBottom="10px"
             >
               <InfoOutlineIcon width="18px" height="18px" aria-hidden />
               <Typography fontSize="13px" fontWeight={500} color="contentText.Normal" lineHeight={1.4}>
                 {BANNER_MESSAGE}
               </Typography>
             </Stack>
+            {showGroupResetButton ? (
+              <MIBaseButton
+                variant="outlined"
+                disabled={isResettingGroupProposals}
+                isLoading={isResettingGroupProposals}
+                prefix={<ReplayIcon width={20} height={20} />}
+                onClick={() => setGroupResetConfirmOpen(true)}
+                sx={{ height: '38px', alignSelf: 'center', flexShrink: 0, borderRadius: '8px', padding: '8px 10px 8px 6px' }}
+              >
+                초기화
+              </MIBaseButton>
+            ) : null}
           </Stack>
 
           {isScenarioListReady && (
@@ -1945,6 +2009,73 @@ const ScenarioModelExecutionProposalList = ({
           </MIBaseButton>
         </Stack>
       </Stack>
+
+      <MIConfirm
+        open={groupResetConfirmOpen}
+        title="시나리오의 생성 결과를 초기화할까요?"
+        handleClose={() => {
+          if (isResettingGroupProposals) return
+          setGroupResetConfirmOpen(false)
+        }}
+        disableClose={isResettingGroupProposals}
+        hideFooter
+        width="450px"
+        zIndex={1400}
+      >
+        <Typography component="p" m={0} fontSize="14px" fontWeight={400} color="commonColor.Black" lineHeight={1.4}>
+          모든 시나리오가 [생성] 전 상태로 돌아가며, 기존 결과는 복구할 수 없습니다.
+        </Typography>
+        <Typography component="p" m={0} fontSize="14px" fontWeight={400} color="commonColor.Black" lineHeight={1.4}>
+          초기화 후 각 시나리오의 [생성] 버튼을 누르면, 현재 설정된 MI Base를 기준으로 추천 파라미터를 다시 생성합니다.
+        </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" marginTop="30px" marginX="-20px" padding="0 20px 20px">
+          {canOpenCurrentMiBase ? (
+            <MIButton
+              type="ghost"
+              color="primary"
+              size="h34"
+              endIcon={<OpenInNewIcon sx={{ fontSize: '20px' }} />}
+              onClick={handleOpenCurrentMiBase}
+              sx={{
+                height: 'auto',
+                padding: '7px 0',
+                columnGap: '4px',
+                color: 'contentIcon.ActivePrimary',
+                '& svg, & svg path': {
+                  color: 'contentIcon.ActivePrimary',
+                  fill: 'currentColor',
+                },
+              }}
+            >
+              현재 MI Base 보기
+            </MIButton>
+          ) : (
+            <Box />
+          )}
+          <Stack direction="row" alignItems="center" gap="10px">
+            <MIButton
+              type="outlined"
+              color="gray"
+              size="h34"
+              disabled={isResettingGroupProposals}
+              onClick={() => setGroupResetConfirmOpen(false)}
+            >
+              취소
+            </MIButton>
+            <MIButton
+              type="filled"
+              color="red"
+              size="h34"
+              disabled={isResettingGroupProposals}
+              onClick={() => {
+                void handleConfirmGroupReset()
+              }}
+            >
+              전체 초기화
+            </MIButton>
+          </Stack>
+        </Stack>
+      </MIConfirm>
 
       <MIConfirm
         open={emptySelectionConfirmOpen}

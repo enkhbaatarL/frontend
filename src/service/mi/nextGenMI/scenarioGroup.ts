@@ -283,6 +283,8 @@ export interface IScenarioDetailViewRes {
 export interface IScenarioBaseSeries {
   seriesId: string
   seriesName: string
+  /** MI Base 케이스 타이틀. CME 기준선은 null */
+  seriesTitle?: string | null
   values: (number | null)[]
 }
 

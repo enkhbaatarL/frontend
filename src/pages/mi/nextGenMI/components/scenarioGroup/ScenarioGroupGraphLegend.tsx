@@ -7,7 +7,9 @@ import type {
 } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioGroupGraphMapping'
 
 import VisibilityOffIcon from '@/components/common/icons/VisibilityOffIcon'
+import useEllipsisDetection from '@/hooks/useEllipsisDetection'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
+import NextGenMIFollowCursorTooltip from '@/pages/mi/nextGenMI/components/common/NextGenMIFollowCursorTooltip'
 import NextGenMITableBodyText from '@/pages/mi/nextGenMI/components/common/NextGenMITableBodyText'
 import ScenarioGroupGraphFilterMenu from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioGroupGraphFilterMenu'
 
@@ -30,6 +32,47 @@ const DiscardedSwatch = () => (
     <path d="M23 0C24.6569 0 26 0.895431 26 2C26 3.10457 24.6569 4 23 4H13.3594L19.3594 0H23Z" fill="#CED4DA" />
   </Box>
 )
+
+const LegendItemLabel = ({
+  name,
+  detail,
+  color,
+  detailColor = 'contentText.Subtext',
+}: {
+  name: string
+  detail?: string
+  color: string
+  detailColor?: string
+}) => {
+  const fullText = detail ? `${name} ${detail}` : name
+  const { ref, isEllipsis } = useEllipsisDetection(fullText)
+  const text = (
+    <Typography
+      ref={ref}
+      variant="body1M16"
+      noWrap
+      color={color}
+      sx={{ flex: '1 1 0%', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+    >
+      {name}
+      {detail ? (
+        <Box component="span" sx={{ color: detailColor }}>
+          {` ${detail}`}
+        </Box>
+      ) : null}
+    </Typography>
+  )
+
+  if (!isEllipsis) return text
+
+  return (
+    <NextGenMIFollowCursorTooltip title={fullText}>
+      <Box component="span" display="flex" minWidth={0} flex="1 1 0%">
+        {text}
+      </Box>
+    </NextGenMIFollowCursorTooltip>
+  )
+}
 
 const LegendIndicator = ({ item }: { item: ScenarioGroupGraphLegendItem }) => {
   if (item.variant === 'discarded') {
@@ -210,7 +253,7 @@ const ScenarioGroupGraphLegend = ({
               <Box
                 component="button"
                 type="button"
-                aria-label={`${item.name} 표시 전환`}
+                aria-label={`${item.detail ? `${item.name} ${item.detail}` : item.name} 표시 전환`}
                 onClick={() => onToggle(item.toggleKeys)}
                 sx={{
                   display: 'flex',
@@ -232,13 +275,22 @@ const ScenarioGroupGraphLegend = ({
           </Stack>
           <Stack direction="row" alignItems="center" gap="8px" minWidth={0} sx={{ flex: '1 1 0%', userSelect: 'none' }}>
             {item.displayOrder !== undefined && <NextGenMIDisplayOrderBadge value={item.displayOrder} disabled={!itemTextEnabled} />}
-            <NextGenMITableBodyText
-              value={item.name}
-              variant="body1M16"
-              color={itemTextEnabled ? (interactive ? 'contentText.Black' : 'contentText.Normal') : 'contentText.Disabled'}
-              tooltipWhenTruncated
-              sx={{ flex: '1 1 0%' }}
-            />
+            {item.detail ? (
+              <LegendItemLabel
+                name={item.name}
+                detail={item.detail}
+                color={itemTextEnabled ? (interactive ? 'contentText.Black' : 'contentText.Normal') : 'contentText.Disabled'}
+                detailColor={itemTextEnabled ? 'contentText.Subtext' : 'contentText.Disabled'}
+              />
+            ) : (
+              <NextGenMITableBodyText
+                value={item.name}
+                variant="body1M16"
+                color={itemTextEnabled ? (interactive ? 'contentText.Black' : 'contentText.Normal') : 'contentText.Disabled'}
+                tooltipWhenTruncated
+                sx={{ flex: '1 1 0%' }}
+              />
+            )}
           </Stack>
           {executing ? (
             <ExecutingBadge />

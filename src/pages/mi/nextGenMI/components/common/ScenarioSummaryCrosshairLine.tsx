@@ -346,12 +346,19 @@ const ScenarioSummaryCrosshairLine = forwardRef<ScenarioSummaryCrosshairLineHand
                 visibilityKey?: string
                 badge?: 'BC' | 'UA'
                 displayOrder?: number
+                seriesTitle?: string | null
               }
             }
           ).metadata
 
+          const seriesTitle = datasetMetadata?.seriesTitle?.trim()
+          const rawLabel = typeof dataset.label === 'string' ? dataset.label : ''
+          const labelDetail = seriesTitle ? `(${seriesTitle})` : ''
+          const hasLabelDetail = labelDetail.length > 0 && rawLabel.endsWith(labelDetail)
+
           tooltipContent[datasetIndex] = {
-            label: dataset.label,
+            label: hasLabelDetail ? rawLabel.slice(0, -labelDetail.length).trimEnd() : rawLabel,
+            labelDetail: hasLabelDetail ? labelDetail : undefined,
             color: datasetMetadata?.chipColor,
             value: value ?? undefined,
             date: formattedDate,
