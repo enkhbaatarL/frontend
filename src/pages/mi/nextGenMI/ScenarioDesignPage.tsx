@@ -17,8 +17,7 @@ import NextGenMIDetailHeader from '@/pages/mi/nextGenMI/components/common/NextGe
 import { formatNextGenMIDateTimeYmdHm } from '@/pages/mi/nextGenMI/components/common/scenarioDisplay'
 import {
   EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE,
-  isScenarioDesignStatusMine,
-  isScenarioDesignStatusOccupiedByOther,
+  getOwnInProgressScenarioGroup,
   normalizeEventDesignStep,
   normalizeScenarioDesignStatusCode,
 } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
@@ -546,8 +545,8 @@ const ScenarioDesignPage = () => {
   } = useQuery({
     queryKey: ['nextGenMIScenarioDesignStatus', designEventIds],
     queryFn: () => nextGenMIScenarioDesignService.getScenarioDesignStatus({ miEventIds: designEventIds }),
-    // 신규 API는 생성 분기용 designStatus를 쓰지 않음. 동일 조합 조회(2+) 및 하위호환만 유지
-    enabled: routeScenarioGroupIdNumber === null && eventIdNumber !== null && designEventIds.length > 1,
+    // 생성 진입 시 이벤트 개수와 관계없이 본인의 진행 중인 그룹을 확인한다.
+    enabled: locationScenarioGroupId === null && eventIdNumber !== null && designEventIds.length > 0,
     refetchOnWindowFocus: false,
     gcTime: 0,
   })
@@ -591,10 +590,12 @@ const ScenarioDesignPage = () => {
     refetch: refetchScenarioDesignState,
   } = useQuery({
     queryKey: ['nextGenMIScenarioDesignPresentation', scenarioGroupId],
-    queryFn: () =>
-      nextGenMIScenarioDesignService.getScenarioDesignPresentation(scenarioGroupId!, {
-        operationId: creationOperationIdRef.current ?? getScenarioGroupCreationCursor(designEventIds)?.operationId,
-      }),
+    queryFn: () => {
+      const cursor = getScenarioGroupCreationCursor(designEventIds)
+      return nextGenMIScenarioDesignService.getScenarioDesignPresentation(scenarioGroupId!, {
+        operationId: creationOperationIdRef.current ?? (cursor?.scenarioGroupId === scenarioGroupId ? cursor?.operationId : undefined),
+      })
+    },
     enabled: isValidScenarioGroupId(scenarioGroupId),
     refetchInterval: (query) =>
       query.state.data?.refinementState?.occupied === true && query.state.data.refinementState.mine === false ? 5000 : false,
@@ -603,9 +604,8 @@ const ScenarioDesignPage = () => {
   })
   const scenarioDesignReadOnly =
     locationReadOnly ||
-    isScenarioDesignStatusOccupiedByOther(designStatus) ||
     (scenarioDesignPresentation?.refinementState?.occupied === true && scenarioDesignPresentation.refinementState.mine === false)
-  const scenarioDesignOccupantName = state?.occupantUserName?.trim() || designStatus?.occupantUserName?.trim() || '-'
+  const scenarioDesignOccupantName = state?.occupantUserName?.trim() || '-'
   const scenarioDesignState = useMemo(
     () => (scenarioDesignPresentation ? mapScenarioDesignPresentationToState(scenarioDesignPresentation) : undefined),
     [scenarioDesignPresentation],
@@ -628,12 +628,9 @@ const ScenarioDesignPage = () => {
 
   useEffect(() => {
     const cursor = getScenarioGroupCreationCursor(creationStreamEventIds)
-    if (!cursor) return
+    if (!cursor || cursor.scenarioGroupId !== scenarioGroupId) return
     if (cursor.operationId) creationOperationIdRef.current = cursor.operationId
     if (typeof cursor.lastSequence === 'number') creationLastSequenceRef.current = cursor.lastSequence
-    if (isValidScenarioGroupId(cursor.scenarioGroupId) && scenarioGroupId === null) {
-      setScenarioGroupId(cursor.scenarioGroupId)
-    }
   }, [creationStreamEventIds, scenarioGroupId])
 
   useEffect(() => {
@@ -1286,63 +1283,30 @@ const ScenarioDesignPage = () => {
       (routeScenarioGroupIdNumber === null && eventIdNumber === null) ||
       creationStreamEventIds.length === 0 ||
       scenarioDesignStartRequestedRef.current ||
-      (designEventIds.length > 1 && designStatusLoading) ||
-      (routeScenarioGroupIdNumber === null &&
-        designEventIds.length > 1 &&
-        designStatus === undefined &&
-        !isDesignStatusError &&
-        scenarioGroupId === null)
+      (scenarioGroupId === null && designStatusLoading) ||
+      (locationScenarioGroupId === null && designStatus === undefined && !isDesignStatusError && scenarioGroupId === null)
     ) {
       return
     }
 
-    // 구 designStatus 응답 하위호환. 신규 sameCombination API면 항상 새 생성/재연결 경로
-    const hasSameCombinationApi =
-      designStatus?.sameCombinationGroups !== undefined || typeof designStatus?.sameCombinationGroupCount === 'number'
-
-    if (designStatus && !hasSameCombinationApi) {
+    if (designStatus && scenarioGroupId === null) {
       const status = normalizeScenarioDesignStatusCode(designStatus.designStatus)
-      if (
-        status === 'created' &&
-        designStatus.scenarioGroupId !== undefined &&
-        designStatus.scenarioGroupId !== null &&
-        !locationReadOnly &&
-        (scenarioGroupId === null || scenarioGroupId === designStatus.scenarioGroupId)
-      ) {
-        confirmedScenarioDesignLeaveRef.current = true
-        navigate(getNextGenMIScenarioGroupDetailPath(designStatus.scenarioGroupId), { replace: true })
-        return
-      }
-
-      if (status === 'unavailable' && !locationReadOnly) {
+      if (status === 'unavailable') {
         confirmedScenarioDesignLeaveRef.current = true
         showSnackbar(EVENT_SCENARIO_DESIGN_UNAVAILABLE_TOOLTIP_TITLE, { variant: 'error' })
         navigate(eventDetailPath, { replace: true, state: { eventName: eventTitle } })
         return
       }
 
-      if (isScenarioDesignStatusOccupiedByOther(designStatus)) {
-        creationAbortControllerRef.current?.abort()
-        if (designStatus.scenarioGroupId !== undefined && designStatus.scenarioGroupId !== null && scenarioGroupId === null) {
-          setScenarioGroupId(designStatus.scenarioGroupId)
-        }
-        return
-      }
-
-      if (
-        status === 'creating' &&
-        designStatus.scenarioGroupId !== undefined &&
-        designStatus.scenarioGroupId !== null &&
-        isScenarioDesignStatusMine(designStatus) &&
-        scenarioGroupId === null
-      ) {
-        setScenarioGroupId(designStatus.scenarioGroupId)
+      const ownGroup = getOwnInProgressScenarioGroup(designStatus)
+      if (isValidScenarioGroupId(ownGroup?.scenarioGroupId)) {
+        setCurrentStep(normalizeEventDesignStep(ownGroup?.designStep) === 'step2' ? 'oneView' : 'criteria')
+        setScenarioGroupId(ownGroup.scenarioGroupId)
         return
       }
     }
 
-    const resolvedGroupId = scenarioGroupId ?? designStatus?.scenarioGroupId ?? null
-    if (resolvedGroupId !== null && scenarioDesignPresentation === undefined && scenarioDesignStateLoading) {
+    if (scenarioGroupId !== null && scenarioDesignPresentation === undefined && scenarioDesignStateLoading) {
       return
     }
 
@@ -1376,14 +1340,13 @@ const ScenarioDesignPage = () => {
     })
   }, [
     creationStreamEventIds,
-    designEventIds,
     designStatus,
     designStatusLoading,
     eventDetailPath,
     eventIdNumber,
     eventTitle,
     isDesignStatusError,
-    locationReadOnly,
+    locationScenarioGroupId,
     navigate,
     navigateScenarioDesignErrorPage,
     routeScenarioGroupIdNumber,

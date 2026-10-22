@@ -28,7 +28,7 @@ const FundamentalModelInputEditorActions = ({ canReset = false, canSubmit = fals
       onClick={onReset}
       sx={{ height: '36px', padding: '8px 10px', borderRadius: '8px' }}
     >
-      셀 값 초기화
+      초기화
     </MIBaseButton>
     <MIBaseButton
       variant="contained"

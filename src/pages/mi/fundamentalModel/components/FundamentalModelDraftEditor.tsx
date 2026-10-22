@@ -7,6 +7,7 @@ import type {
   ModelInputChangeRequest,
   ModelInputFinalization,
   ModelInputSection,
+  ModelInputSetControlCommand,
   ModelInputTableInfo,
   ModelInputTablePage,
 } from '@/service/mi/fundamentalModel/inputDraft'
@@ -59,10 +60,11 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       error,
       isLoading,
       isSaving,
-      isSavingStructure,
       hasPendingRequest,
       hasRevisionConflict,
-      isCellSavePending,
+      isTableChanging,
+      resettableTableIds,
+      flush,
       originalEdits,
       flushBeforeLeaving,
       finalize,
@@ -80,6 +82,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
     const [conflictAction, setConflictAction] = useState<'reload' | 'reapply' | null>(null)
     const actionRef = useRef(false)
+    const originalControlValuesRef = useRef(new Map<string, Map<string, string | number>>())
     const handledFinalizationRef = useRef<string | undefined>(undefined)
     const selectedTableId = selection?.tableId ?? initialTable?.tableData.tableId
     const section =
@@ -93,7 +96,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       section?.sheets.find((item) => item.tables.some((candidate) => candidate.id === selectedTableId)) ??
       section?.sheets[0]
     const table = sheet?.tables.find((item) => item.id === selectedTableId) ?? sheet?.tables[0]
-    const busy = isSaving || isFinalizing || isSwitching || externalBusy
+    const busy = isFinalizing || isSwitching || externalBusy
     useEffect(() => {
       if (!initialTable || initialTable.draftId !== draft?.draftId || initialTable.revision !== draft.revision) return
       for (const item of draft.sections)
@@ -104,7 +107,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
           }
         }
     }, [draft, initialTable])
-    const needsSave = edits.length > 0 || addedRows.length > 0 || hasPendingRequest || busy
+    const needsSave = edits.length > 0 || addedRows.length > 0 || hasPendingRequest || isSaving || busy
     useEffect(() => {
       if (error) showSnackbar(error, { variant: 'error' })
     }, [error, showSnackbar])
@@ -180,16 +183,10 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       }
     }, [blocker, saveBeforeLeaving])
 
-    const selectTable = async (kind: ModelInputSection['kind'], sheetName: string, next?: ModelInputTableInfo) => {
-      if (actionRef.current) return
-      actionRef.current = true
-      setIsSwitching(true)
-      try {
-        if (await saveBeforeLeaving()) setSelection({ kind, sheetName, tableId: next?.id ?? '' })
-      } finally {
-        actionRef.current = false
-        setIsSwitching(false)
-      }
+    const selectTable = (kind: ModelInputSection['kind'], sheetName: string, next?: ModelInputTableInfo) => {
+      if (actionRef.current || externalBusy) return
+      setSelection({ kind, sheetName, tableId: next?.id ?? '' })
+      void flush(false, false)
     }
 
     const submit = async () => {
@@ -205,28 +202,22 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       }
     }
 
-    const changeStructure = async (operations: ModelInputChangeRequest['operations']) => {
-      if (actionRef.current) return false
-      actionRef.current = true
-      setIsSwitching(true)
-      try {
-        return await executeCommands(operations)
-      } finally {
-        actionRef.current = false
-        setIsSwitching(false)
-      }
+    const changeStructure = (operations: ModelInputChangeRequest['operations']) => {
+      if (actionRef.current || externalBusy) return Promise.resolve(false)
+      return executeCommands(operations)
     }
 
-    const resetTable = async () => {
-      if (actionRef.current || !table) return
-      actionRef.current = true
-      setIsSwitching(true)
-      try {
-        await discard(table.id)
-      } finally {
-        actionRef.current = false
-        setIsSwitching(false)
-      }
+    const changeControl = (command: ModelInputSetControlCommand, originalValue: string | number) => {
+      if (actionRef.current) return Promise.resolve(false)
+      const originals = originalControlValuesRef.current.get(command.tableId) ?? new Map<string, string | number>()
+      if (!originals.has(command.controlId)) originals.set(command.controlId, originalValue)
+      originalControlValuesRef.current.set(command.tableId, originals)
+      return changeStructure([command])
+    }
+
+    const resetTable = () => {
+      if (actionRef.current || externalBusy || !table) return
+      void discard(table.id)
     }
 
     const recoverConflict = async () => {
@@ -235,7 +226,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       setIsSwitching(true)
       setConflictAction(null)
       try {
-        await resolveRevisionConflict(conflictAction === 'reapply')
+        if (await resolveRevisionConflict(conflictAction === 'reapply')) originalControlValuesRef.current.clear()
       } finally {
         actionRef.current = false
         setIsSwitching(false)
@@ -264,7 +255,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
             <MIAgentSpinner size={40} tone="gray" />
             <Stack gap="4px" alignItems="center">
               <Typography variant="body2SB14" color="contentText.Black">
-                MI 수급모델 결과 생성 중...
+                MI 수급모델 인풋을 생성 중입니다.
               </Typography>
               <Typography variant="body3M12" color="contentText.Subtext">
                 잠시 기다려 주세요.
@@ -382,7 +373,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                     <MIBaseButton
                       key={item.id}
                       variant="outlined"
-                      disabled={isFinalizing || isSwitching}
+                      disabled={busy}
                       onClick={() => {
                         if (draft && item === table) {
                           void queryClient.refetchQueries({
@@ -447,21 +438,16 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                     table={table}
                     edits={edits}
                     originalEdits={originalEdits}
+                    originalControlValues={originalControlValuesRef.current.get(table.id)}
                     addedRows={addedRows.filter((row) => row.tableId === table.id)}
                     onStageRow={stageRow}
                     onRemoveStagedRow={removeStagedRow}
-                    disabled={
-                      hasRevisionConflict ||
-                      isFinalizing ||
-                      isSwitching ||
-                      externalBusy ||
-                      isSavingStructure ||
-                      (hasPendingRequest && !isCellSavePending)
-                    }
-                    structureDisabled={busy || hasPendingRequest}
-                    isSavingStructure={isSavingStructure || isSwitching}
+                    disabled={hasRevisionConflict || busy || isTableChanging(table.id)}
+                    structureDisabled={busy || hasRevisionConflict || isTableChanging(table.id)}
+                    isSavingStructure={isTableChanging(table.id)}
                     onEdit={updateEdit}
                     onCommands={changeStructure}
+                    onControlChange={changeControl}
                   />
                 ) : (
                   <Stack flex={1} />
@@ -475,10 +461,10 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
             !busy &&
             !hasRevisionConflict &&
             !isLoading &&
-            !hasPendingRequest &&
             Boolean(
               table &&
-                (originalEdits.some((edit) => edit.tableId === table.id) ||
+                !isTableChanging(table.id) &&
+                (resettableTableIds.includes(table.id) ||
                   edits.some((edit) => edit.tableId === table.id && !addedRows.some((row) => row.clientRowKey === edit.rowId))),
             )
           }
@@ -500,14 +486,14 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
         />
         <MIConfirm
           open={isResetConfirmOpen}
-          title="현재 표의 셀 값 초기화"
+          title="현재 표 초기화"
           width="480px"
           zIndex={1402}
           handleClose={() => setIsResetConfirmOpen(false)}
           actions={[
             { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setIsResetConfirmOpen(false) },
             {
-              label: '셀 값 초기화',
+              label: '초기화',
               variant: 'filled',
               color: 'red',
               onClick: () => {

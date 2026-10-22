@@ -231,7 +231,7 @@ const EventsTabPanel = () => {
     if (selectedEvents.length === 0) return
 
     const primary = selectedEvents[0]
-    // 동일 조합이 있어도 항상 새 그룹 생성 (scenarioGroupId 없이 진입)
+    // 생성 화면에서 본인의 진행 중인 그룹만 확인해 이어가거나 새로 생성한다.
     navigate(getNextGenMIScenarioDesignPath({ eventIds: selectedEvents.map((item) => item.eventId) }), {
       state: {
         eventName: primary.eventName,
@@ -315,7 +315,7 @@ const EventsTabPanel = () => {
 
   const handleScenarioClick = useCallback(
     (row: EventListItem) => {
-      // 행 시나리오 버튼: 항상 신규 설계 진입. 기존 연결 그룹은 펼침 패널 [보기]로 진입
+      // 본인 작업 이어가기/신규 생성. 기존 연결 그룹은 펼침 패널 [보기]로 진입
       navigate(getNextGenMIScenarioDesignPath({ eventIds: [row.eventId] }), {
         state: {
           eventName: row.eventName,

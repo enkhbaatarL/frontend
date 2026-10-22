@@ -53,6 +53,7 @@ interface DraftRecovery {
   addedRows?: ModelInputAddRowCommand[]
   pending: PendingChange | PendingFinalization | null
   revisionConflict?: boolean
+  queuedChanges?: PendingChange[]
 }
 
 const isCellChange = (pending: DraftRecovery['pending']): pending is PendingChange & { body: ModelInputChangeRequest } =>
@@ -117,6 +118,16 @@ const readRecovery = (key: string): DraftRecovery | null => {
             Object.values(row.values).some((item) => typeof item !== 'string' && (typeof item !== 'number' || !Number.isFinite(item))),
         ))) ||
     (value.pending && !['CHANGE', 'FINALIZE'].includes(value.pending.kind)) ||
+    (value.queuedChanges !== undefined &&
+      (!Array.isArray(value.queuedChanges) ||
+        value.queuedChanges.some(
+          (change) =>
+            !change ||
+            change.kind !== 'CHANGE' ||
+            !Array.isArray(change.body?.operations) ||
+            !Array.isArray(change.editIds) ||
+            !Array.isArray(change.addedRowKeys),
+        ))) ||
     (value.revisionConflict !== undefined && typeof value.revisionConflict !== 'boolean')
   ) {
     return null
@@ -135,8 +146,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isSavingStructure, setIsSavingStructure] = useState(false)
-  const originalValuesRef = useRef(new Map<string, Array<ModelInputLocalEdit & { isSubmitted?: boolean }>>())
+  const originalValuesRef = useRef(new Map<string, Array<ModelInputLocalEdit & { isSubmitted?: boolean; isReset?: boolean }>>())
   const [hasPendingRequest, setHasPendingRequest] = useState(false)
   const [hasRevisionConflict, setHasRevisionConflict] = useState(false)
   const [finalization, setFinalization] = useState<ModelInputFinalization>()
@@ -148,13 +158,13 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
   const savePreparationRef = useRef<AbortController | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const commandRef = useRef(false)
-  const resettingTableRef = useRef<string | null>(null)
 
   const persist = useCallback(() => {
     if (getModelInputAuthScope() !== scope || !stateRef.current) return
     try {
       if (
         !stateRef.current.pending &&
+        !stateRef.current.queuedChanges?.length &&
         !stateRef.current.edits.length &&
         !stateRef.current.addedRows?.length &&
         !stateRef.current.revisionConflict
@@ -173,7 +183,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
     if (!mountedRef.current) return
     setEdits([...(stateRef.current?.edits ?? [])])
     setAddedRows([...(stateRef.current?.addedRows ?? [])])
-    setHasPendingRequest(Boolean(stateRef.current?.pending))
+    setHasPendingRequest(Boolean(stateRef.current?.pending || stateRef.current?.queuedChanges?.length))
     setHasRevisionConflict(Boolean(stateRef.current?.revisionConflict))
   }, [])
 
@@ -217,6 +227,89 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
     [queryClient, scope],
   )
 
+  const enqueueChanges = useCallback(
+    (operations: ModelInputChangeRequest['operations'] = []) => {
+      const state = stateRef.current
+      if (!state || state.revisionConflict || getModelInputAuthScope() !== scope) return false
+      const queued = [state.pending?.kind === 'CHANGE' ? state.pending : null, ...(state.queuedChanges ?? [])]
+      const editIds = new Set(queued.flatMap((change) => change?.editIds ?? []))
+      const rowKeys = new Set(queued.flatMap((change) => change?.addedRowKeys ?? []))
+      const nextEdits = state.edits.filter((edit) => !editIds.has(edit.id))
+      const nextRows = (state.addedRows ?? []).filter((row) => !rowKeys.has(row.clientRowKey))
+      if (nextEdits.some((edit) => edit.error || (edit.type !== 'CLEAR' && edit.value === null))) return false
+      const commands = [...getModelInputChangeOperations(nextEdits, nextRows), ...operations]
+      if (!commands.length) return true
+      const batches: PendingChange[] = []
+      let batch: PendingChange = {
+        kind: 'CHANGE',
+        body: { requestId: uuid(), baseRevision: state.revision, operations: [] },
+        editIds: [],
+        addedRowKeys: [],
+      }
+      const envelopeBytes = new TextEncoder().encode(
+        serializeModelInputChange({ ...batch.body!, baseRevision: Number.MAX_SAFE_INTEGER }),
+      ).length
+      let batchBytes = envelopeBytes
+      let addedRowCount = 0
+      for (const command of commands) {
+        const commandBytes =
+          new TextEncoder().encode(
+            serializeModelInputChange({ ...batch.body!, baseRevision: Number.MAX_SAFE_INTEGER, operations: [command] }),
+          ).length - envelopeBytes
+        if (envelopeBytes + commandBytes > 1_048_576) throw new Error('한 번에 저장할 수 있는 범위를 초과했습니다.')
+        if (
+          batch.body!.operations.length >= 500 ||
+          (command.type === 'ADD_ROW' && addedRowCount >= 100) ||
+          batchBytes + commandBytes + (batch.body!.operations.length ? 1 : 0) > 1_048_576
+        ) {
+          batches.push(batch)
+          batch = {
+            kind: 'CHANGE',
+            body: { requestId: uuid(), baseRevision: state.revision, operations: [] },
+            editIds: [],
+            addedRowKeys: [],
+          }
+          batchBytes = envelopeBytes
+          addedRowCount = 0
+        }
+        batchBytes += commandBytes + (batch.body!.operations.length ? 1 : 0)
+        batch.body!.operations.push(command)
+        if (command.type === 'ADD_ROW') addedRowCount++
+        if (command.type === 'ADD_ROW') {
+          batch.addedRowKeys!.push(command.clientRowKey)
+          batch.editIds.push(
+            ...nextEdits.filter((edit) => edit.tableId === command.tableId && edit.rowId === command.clientRowKey).map((edit) => edit.id),
+          )
+        } else {
+          const edit = nextEdits.find(
+            (item) => command.commandId === `${item.type === 'CLEAR' ? 'clear' : 'set'}_${item.id.replaceAll('-', '')}`,
+          )
+          if (edit) batch.editIds.push(edit.id)
+        }
+      }
+      batches.push(batch)
+      state.queuedChanges = [...(state.queuedChanges ?? []), ...batches]
+      persist()
+      publish()
+      return true
+    },
+    [persist, publish, scope],
+  )
+
+  const isTableChanging = useCallback((tableId: string) => {
+    const state = stateRef.current
+    if (state?.pending && (state.pending.kind === 'FINALIZE' || !state.pending.body)) return true
+    return [state?.pending, ...(state?.queuedChanges ?? [])].some(
+      (change) =>
+        change?.kind === 'CHANGE' &&
+        change.body?.operations.some(
+          (operation) =>
+            operation.tableId === tableId &&
+            !('rowRef' in operation && 'fieldKey' in operation && (operation.type === 'SET' || operation.type === 'CLEAR')),
+        ),
+    )
+  }, [])
+
   const flush = useCallback(
     (keepalive = false, drain = true): Promise<boolean> => {
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -227,12 +320,15 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       }
       const state = stateRef.current
       if (!state || getModelInputAuthScope() !== scope) return Promise.resolve(false)
-      if (resettingTableRef.current && !state.pending) return Promise.resolve(true)
       // 입력 중에는 메모리에만 보관하고, 저장 시도 직전에 복구용 백업을 기록한다.
       persist()
       if (state.revisionConflict && !state.pending) return Promise.resolve(false)
-      if (!state.pending && !state.edits.length && !state.addedRows?.length) return Promise.resolve(true)
-      if (!state.pending && state.edits.some((edit) => edit.error || (edit.type !== 'CLEAR' && edit.value === null))) {
+      if (!state.pending && !state.queuedChanges?.length && !state.edits.length && !state.addedRows?.length) return Promise.resolve(true)
+      if (
+        !state.pending &&
+        !state.queuedChanges?.length &&
+        state.edits.some((edit) => edit.error || (edit.type !== 'CLEAR' && edit.value === null))
+      ) {
         return Promise.resolve(false)
       }
 
@@ -243,15 +339,6 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         if (mountedRef.current) {
           setError('')
           setIsSaving(true)
-          setIsSavingStructure(
-            Boolean(state.addedRows?.length) ||
-              (state.pending?.kind === 'CHANGE' &&
-                Boolean(
-                  state.pending.body?.operations.some((operation) =>
-                    ['ADD_ROW', 'DELETE_ROW', 'ADD_COLUMN', 'DELETE_COLUMN'].includes(operation.type),
-                  ),
-                )),
-          )
         }
         try {
           if (!state.pending) {
@@ -273,19 +360,11 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
                 throw new Error(describeFailure({ reason: 'REVISION_CONFLICT', currentRevision: current.revision, issues: [] }))
               }
             }
-            // 초기화가 시작됐다면 조회 중이던 자동저장은 변경을 전송하지 않는다.
-            if (resettingTableRef.current && !state.pending) return true
             if (!state.pending) {
-              state.pending = {
-                kind: 'CHANGE',
-                editIds: state.edits.map((edit) => edit.id),
-                addedRowKeys: (state.addedRows ?? []).map((row) => row.clientRowKey),
-                body: {
-                  requestId: uuid(),
-                  baseRevision: state.revision,
-                  operations: getModelInputChangeOperations(state.edits, state.addedRows ?? []),
-                },
-              }
+              if (!state.queuedChanges?.length && !enqueueChanges()) return false
+              state.pending = state.queuedChanges?.shift() ?? null
+              // 대기 중인 요청은 직전 요청이 완료한 revision으로 처음 전송한다.
+              if (state.pending?.body) state.pending.body.baseRevision = state.revision
               publish()
             }
           }
@@ -440,7 +519,6 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           publish()
           if (mountedRef.current) {
             setIsSaving(false)
-            setIsSavingStructure(false)
           }
         }
       }
@@ -449,15 +527,15 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       })
       return saveRef.current.then((saved) => {
         if (!saved) return false
-        // 화면 전환/실행은 대기 중 추가한 변경까지 저장하고, 자동저장은 마지막 입력의 8초 대기를 유지한다.
+        // 실행과 화면 종료는 대기열을 모두 비우고, 자동저장은 현재 요청 이후 모인 변경을 다음 묶음으로 전송한다.
         if (drain) return flush(keepalive)
         if (
           mountedRef.current &&
           !commandRef.current &&
-          !timerRef.current &&
           !state.pending &&
-          (state.edits.length || state.addedRows?.length)
+          (state.queuedChanges?.length || state.edits.length || state.addedRows?.length)
         ) {
+          if (timerRef.current) clearTimeout(timerRef.current)
           timerRef.current = setTimeout(() => {
             timerRef.current = undefined
             void flush(false, false)
@@ -466,7 +544,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         return true
       })
     },
-    [loadDraft, markRevisionConflict, persist, publish, scope],
+    [enqueueChanges, loadDraft, markRevisionConflict, persist, publish, scope],
   )
 
   const flushBeforeLeaving = useCallback(async () => {
@@ -503,6 +581,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       state.edits = []
       state.addedRows = []
       state.pending = null
+      state.queuedChanges = []
       state.revisionConflict = false
       persist()
       stateRef.current = null
@@ -532,7 +611,11 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           recovery = null
         }
         const needsRecovery = Boolean(
-          recovery?.pending || recovery?.edits.length || recovery?.addedRows?.length || recovery?.revisionConflict,
+          recovery?.pending ||
+            recovery?.queuedChanges?.length ||
+            recovery?.edits.length ||
+            recovery?.addedRows?.length ||
+            recovery?.revisionConflict,
         )
         let current: ModelInputDraftStructure | undefined
         // 미확정 요청/미저장 변경만 우선 복구한다. 완료된 로컬 Draft ID를 편집 진입점으로 재사용하지 않는다.
@@ -569,7 +652,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         draftRef.current = current
         setDraft(current)
         publish()
-        if (state.pending) await flush()
+        if (state.pending || state.queuedChanges?.length) await flush()
         else if ((state.edits.length || state.addedRows?.length) && state.revision !== current.revision) {
           markRevisionConflict()
           setError(describeFailure({ reason: 'REVISION_CONFLICT', currentRevision: current.revision, issues: [] }))
@@ -596,7 +679,8 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         !state ||
         state.revisionConflict ||
         commandRef.current ||
-        (state.pending && !isCellChange(state.pending)) ||
+        state.pending?.kind === 'FINALIZE' ||
+        isTableChanging(edit.tableId) ||
         draftRef.current?.status !== 'DRAFT'
       )
         return
@@ -604,16 +688,18 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         (existing) => existing.tableId !== edit.tableId || existing.rowId !== edit.rowId || existing.fieldKey !== edit.fieldKey,
       )
       const isAddedRow = state.addedRows?.some((row) => row.tableId === edit.tableId && row.clientRowKey === edit.rowId)
-      const changesPendingCell =
-        isCellChange(state.pending) &&
-        state.pending.body.operations.some(
-          (operation) =>
-            'rowRef' in operation &&
-            'fieldKey' in operation &&
-            operation.tableId === edit.tableId &&
-            operation.rowRef.rowId === edit.rowId &&
-            operation.fieldKey === edit.fieldKey,
-        )
+      const changesPendingCell = [state.pending, ...(state.queuedChanges ?? [])].some(
+        (change) =>
+          change?.kind === 'CHANGE' &&
+          change.body?.operations.some(
+            (operation) =>
+              'rowRef' in operation &&
+              'fieldKey' in operation &&
+              operation.tableId === edit.tableId &&
+              operation.rowRef.rowId === edit.rowId &&
+              operation.fieldKey === edit.fieldKey,
+          ),
+      )
       if (
         changesPendingCell ||
         (isAddedRow && edit.error) ||
@@ -633,6 +719,10 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         }
         state.edits.push({ ...edit, id: uuid() })
       }
+      const original = originalValuesRef.current
+        .get(edit.tableId)
+        ?.find((item) => item.rowId === edit.rowId && item.fieldKey === edit.fieldKey)
+      if (original) original.isReset = !edit.error && edit.value === original.value
       setError('')
       publish()
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -641,38 +731,42 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         void flush(false, false)
       }, 8000)
     },
-    [flush, publish],
+    [flush, isTableChanging, publish],
   )
 
   const stageRow = useCallback(
     async (command: ModelInputAddRowCommand, initialEdits: Omit<ModelInputLocalEdit, 'id'>[]) => {
-      if (commandRef.current) return false
-      commandRef.current = true
-      try {
-        if (!(await flush())) return false
-        const state = stateRef.current
-        if (!mountedRef.current || !state || state.pending || draftRef.current?.status !== 'DRAFT' || getModelInputAuthScope() !== scope)
-          return false
-        state.addedRows = [...(state.addedRows ?? []), command]
-        state.edits.push(...initialEdits.map((edit) => ({ ...edit, id: uuid() })))
-        persist()
-        publish()
-        // 필수값이 비어 있는 새 행은 입력을 받도록 남기고, 유효한 행은 즉시 저장한다.
-        return state.edits.some((edit) => edit.error) ? true : await flush()
-      } catch (cause) {
-        if (mountedRef.current) setError(getModelInputErrorMessage(cause))
+      const state = stateRef.current
+      if (
+        !state ||
+        state.revisionConflict ||
+        commandRef.current ||
+        isTableChanging(command.tableId) ||
+        draftRef.current?.status !== 'DRAFT' ||
+        getModelInputAuthScope() !== scope
+      )
         return false
-      } finally {
-        commandRef.current = false
-      }
+      state.addedRows = [...(state.addedRows ?? []), command]
+      state.edits.push(...initialEdits.map((edit) => ({ ...edit, id: uuid() })))
+      persist()
+      publish()
+      if (!state.edits.some((edit) => edit.error)) void flush(false, false)
+      return true
     },
-    [flush, persist, publish, scope],
+    [flush, isTableChanging, persist, publish, scope],
   )
 
   const removeStagedRow = useCallback(
     (clientRowKey: string) => {
       const state = stateRef.current
-      if (!state || state.pending || saveRef.current || getModelInputAuthScope() !== scope) return
+      if (
+        !state ||
+        getModelInputAuthScope() !== scope ||
+        [state.pending, ...(state.queuedChanges ?? [])].some(
+          (change) => change?.kind === 'CHANGE' && change.addedRowKeys?.includes(clientRowKey),
+        )
+      )
+        return
       state.addedRows = deleteFundamentalModelRow(state.addedRows ?? [], clientRowKey, (row) => row.clientRowKey)
       state.edits = state.edits.filter((edit) => edit.rowId !== clientRowKey)
       publish()
@@ -736,39 +830,25 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
 
   const executeCommands = useCallback(
     async (operations: ModelInputChangeRequest['operations']) => {
-      if (commandRef.current || stateRef.current?.pending || !operations.length) return false
-      commandRef.current = true
+      if (commandRef.current || !operations.length || operations.some((operation) => isTableChanging(operation.tableId))) return false
       try {
-        if (!(await flush())) return false
-        const state = stateRef.current
-        if (!state || getModelInputAuthScope() !== scope) return false
-        const current = await loadDraft(state.draftId)
-        if (current.status !== 'DRAFT' || current.activeOperationId) {
-          throw new Error(
-            describeFailure({
-              reason: current.activeOperationId ? 'DRAFT_BUSY' : 'DRAFT_NOT_EDITABLE',
-              currentRevision: current.revision,
-              issues: [],
-            }),
+        if (!enqueueChanges(operations)) return false
+        // 호출한 표의 명령까지만 기다린다. 이후 다른 표의 변경은 백그라운드에서 이어간다.
+        const commandIds = new Set(operations.map((operation) => operation.commandId))
+        while (
+          [stateRef.current?.pending, ...(stateRef.current?.queuedChanges ?? [])].some(
+            (change) => change?.kind === 'CHANGE' && change.body?.operations.some((operation) => commandIds.has(operation.commandId)),
           )
+        ) {
+          if (!(await flush(false, false))) return false
         }
-        if (current.revision !== state.revision) {
-          markRevisionConflict()
-          throw new Error(describeFailure({ reason: 'REVISION_CONFLICT', currentRevision: current.revision, issues: [] }))
-        }
-        state.pending = { kind: 'CHANGE', body: { requestId: uuid(), baseRevision: state.revision, operations }, editIds: [] }
-        persist()
-        publish()
-        return await flush()
+        return true
       } catch (cause) {
         if (mountedRef.current) setError(getModelInputErrorMessage(cause))
         return false
-      } finally {
-        commandRef.current = false
-        publish()
       }
     },
-    [flush, loadDraft, markRevisionConflict, persist, publish, scope],
+    [enqueueChanges, flush, isTableChanging],
   )
 
   const resolveRevisionConflict = useCallback(
@@ -783,7 +863,10 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         if (current.status !== 'DRAFT' || current.activeOperationId) {
           throw new Error('진행 중인 작업 또는 초안 상태를 확인한 후 다시 시도해 주세요.')
         }
-        const originals = new Map<string, Array<ModelInputLocalEdit & { isSubmitted?: boolean }>>()
+        if (reapply && state.queuedChanges?.some((change) => !isCellChange(change))) {
+          throw new Error('대기 중인 행·열 또는 모드 변경은 최신값에 자동 재적용할 수 없습니다. 최신값을 불러와 다시 편집해 주세요.')
+        }
+        const originals = new Map<string, Array<ModelInputLocalEdit & { isSubmitted?: boolean; isReset?: boolean }>>()
         const nextEdits = reapply ? state.edits.map((edit) => ({ ...edit })) : []
         if (reapply) {
           const tableIds = new Set([...nextEdits.map((edit) => edit.tableId), ...(state.addedRows ?? []).map((row) => row.tableId)])
@@ -836,6 +919,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         if (!mountedRef.current || getModelInputAuthScope() !== scope) return false
         state.revision = current.revision
         state.edits = nextEdits
+        state.queuedChanges = []
         if (!reapply) state.addedRows = []
         state.revisionConflict = false
         originalValuesRef.current = originals
@@ -863,97 +947,56 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
   const discard = useCallback(
     async (tableId: string) => {
       const state = stateRef.current
-      if (!state || state.revisionConflict || commandRef.current || getModelInputAuthScope() !== scope) return false
-      commandRef.current = true
-      resettingTableRef.current = tableId
+      if (
+        !state ||
+        state.revisionConflict ||
+        commandRef.current ||
+        isTableChanging(tableId) ||
+        draftRef.current?.status !== 'DRAFT' ||
+        getModelInputAuthScope() !== scope
+      )
+        return false
       if (timerRef.current) clearTimeout(timerRef.current)
-      // 새 행과 그 입력은 유지하고, 기존 셀의 변경만 되돌린다.
+      timerRef.current = undefined
+      // 초기화 역시 최신 셀 변경으로 대기한다. 전송한 변경은 완료 후 복원하고, 미전송 변경은 합친다.
       state.edits = state.edits.filter(
         (edit) => edit.tableId !== tableId || state.addedRows?.some((row) => row.tableId === tableId && row.clientRowKey === edit.rowId),
       )
+      for (const original of originalValuesRef.current.get(tableId) ?? []) {
+        const queued = [state.pending, ...(state.queuedChanges ?? [])].some(
+          (change) =>
+            change?.kind === 'CHANGE' &&
+            change.body?.operations.some(
+              (operation) =>
+                operation.tableId === tableId &&
+                'rowRef' in operation &&
+                'fieldKey' in operation &&
+                operation.rowRef.rowId === original.rowId &&
+                operation.fieldKey === original.fieldKey,
+            ),
+        )
+        if (original.isSubmitted || queued) state.edits.push({ ...original, id: uuid(), error: null })
+        original.isReset = true
+      }
+      setError('')
       persist()
       publish()
-      savePreparationRef.current?.abort()
-      try {
-        // 이미 전송된 요청은 접수/완료 여부를 확인해야 복원 요청과 순서가 뒤섞이지 않는다.
-        if ((saveRef.current || state.pending) && !(await flush())) return false
-        if (!mountedRef.current || getModelInputAuthScope() !== scope) return false
-        const originals = (originalValuesRef.current.get(tableId) ?? []).filter((edit) => edit.isSubmitted)
-        if (!originals.length) {
-          originalValuesRef.current.delete(tableId)
-          persist()
-          setError('')
-          return true
-        }
-        const current = await loadDraft(state.draftId)
-        if (current.status !== 'DRAFT' || current.activeOperationId) {
-          throw new Error(
-            describeFailure({
-              reason: current.activeOperationId ? 'DRAFT_BUSY' : 'DRAFT_NOT_EDITABLE',
-              currentRevision: current.revision,
-              issues: [],
-            }),
-          )
-        }
-        if (current.revision !== state.revision) {
-          markRevisionConflict()
-          throw new Error(describeFailure({ reason: 'REVISION_CONFLICT', currentRevision: current.revision, issues: [] }))
-        }
-        state.revision = current.revision
-        if (originals.length) {
-          state.pending = {
-            kind: 'CHANGE',
-            editIds: [],
-            body: {
-              requestId: uuid(),
-              baseRevision: state.revision,
-              operations: originals.map((edit) =>
-                edit.value === null
-                  ? {
-                    type: 'CLEAR',
-                    commandId: `reset_${edit.id.replaceAll('-', '')}`,
-                    tableId,
-                    rowRef: { rowId: edit.rowId },
-                    fieldKey: edit.fieldKey,
-                  }
-                  : {
-                    type: 'SET',
-                    commandId: `reset_${edit.id.replaceAll('-', '')}`,
-                    tableId,
-                    rowRef: { rowId: edit.rowId },
-                    fieldKey: edit.fieldKey,
-                    value: edit.value,
-                  },
-              ),
-            },
-          }
-          persist()
-          if (!(await flush())) return false
-        }
-        originalValuesRef.current.delete(tableId)
-        persist()
-        setError('')
-        return true
-      } catch (cause) {
-        if (mountedRef.current) setError(getModelInputErrorMessage(cause))
-        return false
-      } finally {
-        resettingTableRef.current = null
-        commandRef.current = false
-        publish()
-        if (!state.pending && (state.edits.length || state.addedRows?.length)) {
-          timerRef.current = setTimeout(() => {
-            void flush()
-          }, 8000)
-        }
-      }
+      void flush(false, false)
+      return true
     },
-    [flush, loadDraft, markRevisionConflict, persist, publish, scope],
+    [flush, isTableChanging, persist, publish, scope],
   )
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!stateRef.current?.pending && !stateRef.current?.edits.length && !stateRef.current?.addedRows?.length && !saveRef.current) return
+      if (
+        !stateRef.current?.pending &&
+        !stateRef.current?.queuedChanges?.length &&
+        !stateRef.current?.edits.length &&
+        !stateRef.current?.addedRows?.length &&
+        !saveRef.current
+      )
+        return
       void flush(true)
       event.preventDefault()
       event.returnValue = ''
@@ -981,10 +1024,12 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
     error,
     isLoading,
     isSaving,
-    isSavingStructure,
     hasPendingRequest,
     hasRevisionConflict,
-    isCellSavePending: isCellChange(stateRef.current?.pending ?? null),
+    isTableChanging,
+    resettableTableIds: [...originalValuesRef.current]
+      .filter(([, originals]) => originals.some((edit) => !edit.isReset))
+      .map(([tableId]) => tableId),
     originalEdits: [...originalValuesRef.current.values()].flat(),
     finalization,
     getFinalization: () => finalizationRef.current,

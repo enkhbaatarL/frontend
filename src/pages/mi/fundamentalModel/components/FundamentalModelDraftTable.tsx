@@ -9,11 +9,12 @@ import type {
   ModelInputTableInfo,
   ModelInputTablePage,
   ModelInputAddRowCommand,
+  ModelInputSetControlCommand,
 } from '@/service/mi/fundamentalModel/inputDraft'
 
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
-import MISelectMenu from '@/components/common/menu/MISelectMenu'
 import useSnackbar from '@/hooks/useSnackbar'
+import formatFundamentalModelCellValue from '@/pages/mi/fundamentalModel/components/inputTable/formatFundamentalModelCellValue'
 import { getNextFundamentalModelColumn } from '@/pages/mi/fundamentalModel/components/inputTable/fundamentalModelColumnEditing'
 import FundamentalModelColumnMenu from '@/pages/mi/fundamentalModel/components/inputTable/FundamentalModelColumnMenu'
 import FundamentalModelEditedCellInput from '@/pages/mi/fundamentalModel/components/inputTable/FundamentalModelEditedCellInput'
@@ -45,6 +46,7 @@ interface Props {
   table: ModelInputTableInfo
   edits: ModelInputLocalEdit[]
   originalEdits: ModelInputLocalEdit[]
+  originalControlValues?: Map<string, string | number>
   addedRows: ModelInputAddRowCommand[]
   onStageRow: (command: ModelInputAddRowCommand, initialEdits: Omit<ModelInputLocalEdit, 'id'>[]) => Promise<boolean>
   onRemoveStagedRow: (clientRowKey: string) => void
@@ -53,6 +55,7 @@ interface Props {
   isSavingStructure: boolean
   onEdit: (edit: Omit<ModelInputLocalEdit, 'id'>, originalValue: unknown) => void
   onCommands: (operations: ModelInputChangeRequest['operations']) => Promise<boolean>
+  onControlChange: (command: ModelInputSetControlCommand, originalValue: string | number) => Promise<boolean>
 }
 
 const displayValue = (value: unknown) => (typeof value === 'string' || typeof value === 'number' ? value : '')
@@ -64,12 +67,14 @@ const FundamentalModelDraftTable = ({
   table,
   edits,
   originalEdits,
+  originalControlValues,
   addedRows,
   disabled,
   structureDisabled,
   isSavingStructure,
   onEdit,
   onCommands,
+  onControlChange,
   onStageRow,
   onRemoveStagedRow,
 }: Props) => {
@@ -277,6 +282,7 @@ const FundamentalModelDraftTable = ({
     const value = edit?.text ?? displayValue(row[column.field])
     const textAlign = getSheetCellTextAlign(value)
     const constraints = localRow && field ? getModelInputCreationRule(field)?.constraints : field?.setConstraints
+    const options = isModelInputObject(constraints) && Array.isArray(constraints.options) ? constraints.options : undefined
     if (
       !editableField ||
       !rowId ||
@@ -286,7 +292,7 @@ const FundamentalModelDraftTable = ({
       return (
         <Stack height="100%" minWidth={0} justifyContent="center">
           <Typography variant="body2M14" color="contentText.Normal" textAlign={textAlign} noWrap title={String(value)}>
-            {value}
+            {editableField?.dataType === 'TEXT' ? value : formatFundamentalModelCellValue(value)}
           </Typography>
         </Stack>
       )
@@ -322,25 +328,22 @@ const FundamentalModelDraftTable = ({
         {field ? (
           <FundamentalModelEditedCellInput
             value={edit?.text ?? String(original ?? '')}
+            isNumeric={field.dataType === 'DECIMAL'}
             isNew={Boolean(localRow) || binding?.origin === 'ADDED' || column.isNew}
             originalValue={typeof initialValue === 'string' || typeof initialValue === 'number' ? initialValue : ''}
             textAlign={textAlign}
             ariaLabel={`${table.name} ${rowNumber}행 ${column.headerName}`}
             errorMessage={edit?.error}
-            options={
-              isModelInputObject(constraints) && Array.isArray(constraints.options)
-                ? constraints.options
-                  .filter((option) => typeof option === 'string' || typeof option === 'number')
-                  .map((option) => ({ value: String(option), label: String(option) }))
-                : undefined
-            }
-            onChange={updateValue}
+            options={options
+              ?.filter((option) => typeof option === 'string' || typeof option === 'number')
+              .map((option) => ({ value: String(option), label: String(option) }))}
+            onChange={(nextValue) => updateValue(String(nextValue))}
             onBlur={() => undefined}
             onRestore={() => updateValue(String(initialValue ?? ''))}
           />
         ) : (
           <Typography variant="body2M14" noWrap>
-            {value}
+            {editableField.dataType === 'TEXT' ? value : formatFundamentalModelCellValue(value)}
           </Typography>
         )}
       </Stack>
@@ -348,40 +351,52 @@ const FundamentalModelDraftTable = ({
   }
 
   return (
-    <Stack position="relative" flex={1} minWidth={0} minHeight={0} gap="8px">
-      {firstPage?.tableData.controls.map((control, index) => (
-        <Stack key={typeof control.id === 'string' ? control.id : index} direction="row" alignItems="center" gap="8px">
-          <Typography variant="body3R12">{displayValue(control.label)}</Typography>
-          {Array.isArray(control.options) ? (
-            <MISelectMenu<string | number>
-              disabled={
-                !canChangeStructure ||
-                firstPage.editing.capabilities.SET !== 'READY' ||
-                control.editable !== true ||
-                typeof control.id !== 'string'
-              }
-              variant="outlined"
-              selected={typeof control.value === 'string' || typeof control.value === 'number' ? control.value : ''}
-              onSelected={(value: string | number) => {
-                if (typeof control.id !== 'string' || value === control.value) return
-                void onCommands([
-                  { type: 'SET', commandId: `mode_${uuid().replaceAll('-', '')}`, tableId: table.id, controlId: control.id, value },
-                ])
-              }}
-              zIndex={1500}
-              items={control.options
-                .filter(isModelInputObject)
-                .filter(
-                  (option): option is Record<string, unknown> & { value: string | number } =>
-                    typeof option.value === 'string' || typeof option.value === 'number',
-                )
-                .map((option) => ({ value: option.value, label: displayValue(option.label) }))}
-            />
-          ) : (
-            <Typography variant="body3R12">{displayValue(control.value)}</Typography>
-          )}
-        </Stack>
-      ))}
+    <Stack position="relative" flex={1} minWidth={0} minHeight={0} gap="12px" padding="10px 8px 10px 20px">
+      {firstPage?.tableData.controls.map((control, index) => {
+        const value = displayValue(control.value)
+        const originalValue = typeof control.id === 'string' ? (originalControlValues?.get(control.id) ?? value) : value
+        const updateControl = (nextValue: string | number) => {
+          if (typeof control.id !== 'string' || nextValue === value) return
+          void onControlChange(
+            { type: 'SET', commandId: `mode_${uuid().replaceAll('-', '')}`, tableId: table.id, controlId: control.id, value: nextValue },
+            value,
+          )
+        }
+        return (
+          <Stack key={typeof control.id === 'string' ? control.id : index} direction="row" alignItems="center" gap="12px">
+            <Typography variant="body2M14">{displayValue(control.label)}</Typography>
+            {Array.isArray(control.options) ? (
+              <Stack width="180px" minWidth={0}>
+                <FundamentalModelEditedCellInput
+                  disabled={
+                    !canChangeStructure ||
+                    isProcessingStructure ||
+                    firstPage.editing.capabilities.SET !== 'READY' ||
+                    control.editable !== true ||
+                    typeof control.id !== 'string'
+                  }
+                  value={value}
+                  originalValue={originalValue}
+                  textAlign="left"
+                  ariaLabel={String(displayValue(control.label))}
+                  onChange={updateControl}
+                  onBlur={() => undefined}
+                  onRestore={() => updateControl(originalValue)}
+                  options={control.options
+                    .filter(isModelInputObject)
+                    .filter(
+                      (option): option is Record<string, unknown> & { value: string | number } =>
+                        typeof option.value === 'string' || typeof option.value === 'number',
+                    )
+                    .map((option) => ({ value: option.value, label: displayValue(option.label) }))}
+                />
+              </Stack>
+            ) : (
+              <Typography variant="body2M14">{value}</Typography>
+            )}
+          </Stack>
+        )
+      })}
       <Stack
         flex={1}
         minWidth={0}
@@ -397,7 +412,7 @@ const FundamentalModelDraftTable = ({
           </Stack>
         )}
         {firstPage && (
-          <Stack position="relative" flex={1} minWidth={0} minHeight={0} padding="10px 8px 10px 20px" overflow="hidden">
+          <Stack position="relative" flex={1} minWidth={0} minHeight={0} overflow="hidden">
             <FundamentalModelTemplateGrid
               rows={rows}
               columns={columns}
