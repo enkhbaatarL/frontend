@@ -1,0 +1,168 @@
+import { Box, Stack, Tooltip } from '@mui/material'
+
+import ReplayIcon from '@/components/common/icons/ReplayIcon'
+import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
+import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
+
+interface FundamentalModelEditedCellInputProps {
+  value: string | number
+  originalValue?: string | number
+  isNew?: boolean
+  unit?: string
+  textAlign: 'left' | 'right'
+  options?: SelectMenuItem<string>[]
+  ariaLabel?: string
+  errorMessage?: string | null
+  onChange: (value: string) => void
+  onBlur: () => void
+  onRestore: () => void
+}
+
+const FundamentalModelEditedCellInput = ({
+  value,
+  originalValue,
+  isNew = false,
+  unit = '',
+  textAlign,
+  options,
+  ariaLabel,
+  errorMessage,
+  onChange,
+  onBlur,
+  onRestore,
+}: FundamentalModelEditedCellInputProps) => {
+  const isModified = !isNew && originalValue !== undefined && String(value) !== String(originalValue)
+  const formatTooltipValue = (cellValue: string | number) => {
+    const text = String(cellValue)
+    return unit && text.trim() && !text.trim().endsWith(unit) && Number.isFinite(Number(text.replaceAll(',', ''))) ? `${text}${unit}` : text
+  }
+  const tooltipTitle =
+    isModified && originalValue !== undefined ? `기본값: ${formatTooltipValue(originalValue)} → 변경값: ${formatTooltipValue(value)}` : ''
+
+  return (
+    <Stack direction="row" alignItems="center" gap="2px" width="100%" minWidth={0}>
+      <Tooltip
+        title={tooltipTitle}
+        placement="top-start"
+        followCursor
+        disableHoverListener={!isModified}
+        slotProps={{
+          tooltip: {
+            sx: {
+              bgcolor: 'contentBG.Tooltip',
+              color: 'commonColor.White',
+              padding: '8px 10px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              lineHeight: 1.4,
+              maxWidth: 'min(420px, calc(100vw - 32px))',
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
+            },
+          },
+        }}
+      >
+        <Stack flex={1} minWidth={0}>
+          {options ? (
+            <MISelectMenu<string>
+              variant="outlined"
+              selected={String(value)}
+              onSelected={onChange}
+              items={options}
+              aria-label={ariaLabel}
+              aria-invalid={Boolean(errorMessage)}
+              aria-description={errorMessage || undefined}
+              closeOnScroll
+              zIndex={1500}
+              paperProps={{ sx: { minWidth: '160px' } }}
+              sx={{
+                width: '100%',
+                height: '28px',
+                ...((errorMessage || isModified) && {
+                  '&, &:hover:not(:disabled)': {
+                    borderColor: errorMessage ? 'contentBorder.Error' : '#EFA460',
+                    bgcolor: errorMessage ? 'commonColor.White' : 'rgba(245, 159, 0, 0.05)',
+                  },
+                }),
+              }}
+            />
+          ) : (
+            <Box
+              component="input"
+              aria-label={ariaLabel}
+              aria-invalid={Boolean(errorMessage)}
+              aria-description={errorMessage || undefined}
+              value={value}
+              placeholder={isNew ? '-' : undefined}
+              onChange={(event) => onChange(event.target.value)}
+              onBlur={onBlur}
+              fontFamily="inherit"
+              fontSize="12px"
+              fontWeight={500}
+              color="contentText.Normal"
+              textAlign={textAlign}
+              width="100%"
+              minWidth="54px"
+              height="28px"
+              padding="8px 12px"
+              border="1px solid"
+              borderColor={errorMessage ? 'contentBorder.Error' : isModified ? '#EFA460' : 'contentBorder.Normal'}
+              borderRadius="10px"
+              bgcolor={!errorMessage && isModified ? 'rgba(245, 159, 0, 0.05)' : 'commonColor.White'}
+              boxSizing="border-box"
+              sx={{ '&:focus, &:focus-visible': { outline: 'none', boxShadow: 'none' } }}
+            />
+          )}
+        </Stack>
+      </Tooltip>
+      {errorMessage && (
+        <Tooltip
+          title={errorMessage}
+          placement="top-start"
+          slotProps={{
+            popper: { sx: { zIndex: 1500 } },
+            tooltip: {
+              sx: {
+                bgcolor: 'point.red1',
+                color: 'commonColor.White',
+                padding: '8px 10px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                lineHeight: 1.4,
+                maxWidth: 'min(420px, calc(100vw - 32px))',
+                whiteSpace: 'normal',
+                overflowWrap: 'anywhere',
+              },
+            },
+          }}
+        >
+          <Stack component="span" role="img" tabIndex={0} aria-label={errorMessage} flexShrink={0}>
+            <MIInputErrorIcon width="18px" height="18px" aria-hidden="true" />
+          </Stack>
+        </Tooltip>
+      )}
+      {isModified && (
+        <Box
+          component="button"
+          type="button"
+          aria-label="기본값으로 되돌리기"
+          onClick={onRestore}
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          width="18px"
+          minWidth="18px"
+          height="18px"
+          padding={0}
+          border={0}
+          bgcolor="transparent"
+          sx={{ cursor: 'pointer' }}
+        >
+          <ReplayIcon width="18" height="18" aria-hidden="true" />
+        </Box>
+      )}
+    </Stack>
+  )
+}
+
+export default FundamentalModelEditedCellInput

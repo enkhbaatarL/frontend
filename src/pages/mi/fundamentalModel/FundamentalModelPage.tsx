@@ -98,7 +98,6 @@ const FundamentalModelPage = () => {
     data: caseDetail,
     isLoading: detailLoading,
     isError: detailError,
-    refetch: refetchCaseDetail,
   } = useQuery({
     queryKey: ['fundamentalModel', 'caseDetail', activeCaseId],
     queryFn: () => fundamentalModelCaseService.getCaseDetail(parsedCaseId),
@@ -107,13 +106,10 @@ const FundamentalModelPage = () => {
   })
   const effectiveCaseStatus = caseDetail?.status ?? selectedCaseListStatus
 
-  const handleRunSettled = useCallback(() => {
-    void refetchCaseDetail()
-  }, [refetchCaseDetail])
-
-  const { handleRun, handleRetry, isRunPending } = useFundamentalModelRunExecution(activeCaseId, effectiveCaseStatus ?? undefined, {
-    onRunSettled: handleRunSettled,
-  })
+  const { handleRun, handleRetry, isRunPending, trackExecution } = useFundamentalModelRunExecution(
+    activeCaseId,
+    effectiveCaseStatus ?? undefined,
+  )
 
   const { data: priceData, isLoading: priceLoading } = useQuery({
     queryKey: ['fundamentalModel', 'price', activeCaseId],
@@ -282,6 +278,14 @@ const FundamentalModelPage = () => {
     setSelectedCaseId(id)
     setSelectedCaseListStatus(status ?? null)
   }, [])
+
+  const handleCreatedCase = useCallback(
+    (id: string, status: FundamentalModelCaseStatus, executionRequested: boolean) => {
+      if (executionRequested) trackExecution(id)
+      handleSelectCase(id, status)
+    },
+    [handleSelectCase, trackExecution],
+  )
 
   const invalidateCaseQueries = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
@@ -574,7 +578,7 @@ const FundamentalModelPage = () => {
         }}
       >
         <Box ref={leftStickyBoundaryRef} sx={{ minWidth: 0 }}>
-          <FundamentalModelRunList selectedId={activeCaseId} onSelect={handleSelectCase} />
+          <FundamentalModelRunList selectedId={activeCaseId} onSelect={handleSelectCase} onCreated={handleCreatedCase} />
         </Box>
         <Box sx={{ minWidth: 0, minHeight: rightBodyMinHeight, display: 'flex' }}>{rightBody}</Box>
       </Box>

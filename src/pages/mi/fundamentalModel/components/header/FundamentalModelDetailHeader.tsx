@@ -350,6 +350,7 @@ const FundamentalModelDetailHeader = ({
                 variant="contained"
                 placement="bottom-end"
                 disabled={exportDisabled}
+                closeOnItemClick={false}
                 items={[
                   ...outputFiles.map((file) => ({
                     group: 'output',
@@ -392,15 +393,6 @@ const FundamentalModelDetailHeader = ({
                         right: 0,
                         left: 0,
                         height: '12px',
-                        backgroundColor: 'commonColor.White',
-                        content: '""',
-                      },
-                      '&::after': {
-                        position: 'absolute',
-                        right: 0,
-                        bottom: '-8px',
-                        left: 0,
-                        height: '8px',
                         backgroundColor: 'commonColor.White',
                         content: '""',
                       },

@@ -215,14 +215,21 @@ export interface ModelParamCompareShape {
   modelFile?: string
   modelSheet?: string
   modelTable?: string
+  displayTableName?: string
   readMode?: 'FIXED_COLUMNS' | 'MATRIX_TIME_COLUMNS'
   columns?: ModelParamColumn[]
   semanticAxes?: string
 }
 
+export interface ModelParamCompareModelTable {
+  tableName?: string
+  displayTableName?: string
+}
+
 export interface ModelParamCompareModelSheet {
   modelSheet?: string
   tableNames?: string[]
+  tables?: ModelParamCompareModelTable[]
 }
 
 export interface ModelParamCompareModelFile {

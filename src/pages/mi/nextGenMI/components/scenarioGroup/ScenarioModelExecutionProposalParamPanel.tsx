@@ -250,7 +250,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
             {modelTables.map((tableName) => (
               <ParameterChip
                 key={tableName}
-                label={tableName}
+                label={activeModelSheetNode?.tables?.find((table) => table.tableName === tableName)?.displayTableName ?? tableName}
                 selected={tableName === activeModelTable}
                 disabled={disabled}
                 onClick={() => setModelTable(tableName)}

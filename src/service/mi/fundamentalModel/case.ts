@@ -11,6 +11,8 @@ export type FundamentalModelRunStatus = 'RUNNING' | 'COMPLETED' | 'FAILED'
 
 export interface FundamentalModelCaseListItem {
   caseId: number
+  /** 현재 회사·로그인 사용자의 미삭제 DRAFT ID. 없으면 null이며 FINALIZED/DISCARDED는 제외한다. */
+  draftId: string | null
   title: string
   status: FundamentalModelCaseStatus
   execType: FundamentalModelCaseExecType

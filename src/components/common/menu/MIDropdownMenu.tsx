@@ -32,6 +32,7 @@ interface Props extends ButtonProps {
   groupHeaderReleaseItemCount?: number
   disablePortal?: boolean
   closeOnScroll?: boolean
+  closeOnItemClick?: boolean
   maxHeight?: number | string
   enableHoverBackground?: boolean
   zIndex?: number
@@ -56,6 +57,7 @@ const MIDropdownMenu = ({
   groupHeaderReleaseItemCount = 0,
   disablePortal = false,
   closeOnScroll = false,
+  closeOnItemClick = true,
   maxHeight = 300,
   enableHoverBackground = false,
   zIndex,
@@ -78,7 +80,9 @@ const MIDropdownMenu = ({
   const handleItemClick = (item: DropdownMenuItem) => {
     if (item.disabled) return
     item.action?.()
-    setOpen(false)
+    if (closeOnItemClick) {
+      setOpen(false)
+    }
   }
 
   const groupedItems = useMemo(() => {

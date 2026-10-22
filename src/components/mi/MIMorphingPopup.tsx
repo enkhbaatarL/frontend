@@ -99,6 +99,8 @@ interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   closeOnBackdropClick?: boolean
   onOpen?: () => void
   onClose?: () => void
+  /** 사용자 닫기 동작을 처리한다. ref.close()는 직접 닫을 때 사용한다. */
+  onCloseRequest?: () => void
 }
 
 interface Props extends BoxProps {
@@ -127,6 +129,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         closeOnBackdropClick = true,
         onOpen,
         onClose,
+        onCloseRequest,
         ...popupProps
       },
       ...props
@@ -274,10 +277,10 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
     const popupContextValue = useMemo(
       () => ({
         scrollContainer: scrollContainerEl,
-        close: handleClose,
+        close: onCloseRequest ?? handleClose,
         isMorphComplete,
       }),
-      [handleClose, isMorphComplete, scrollContainerEl],
+      [handleClose, isMorphComplete, onCloseRequest, scrollContainerEl],
     )
 
     // children에서 border 관련 스타일 추출 및 제거
@@ -571,7 +574,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                 zIndex={1300}
                 sx={scrollWrapperSx}
                 onClick={(e) => {
-                  if (closeOnBackdropClick && e.target === e.currentTarget) handleClose()
+                  if (closeOnBackdropClick && e.target === e.currentTarget) (onCloseRequest ?? handleClose)()
                 }}
               >
                 <Box
@@ -646,7 +649,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                           {title}
                         </Typography>
                         <CloseRoundedIcon
-                          onClick={handleClose}
+                          onClick={onCloseRequest ?? handleClose}
                           sx={{
                             fontSize: 26,
                             color: 'contentIcon.Enabled',

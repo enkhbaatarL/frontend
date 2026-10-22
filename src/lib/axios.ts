@@ -67,6 +67,11 @@ export const apiExplicitBearer: AxiosInstance = Axios.create({
 })
 
 api.interceptors.request.use((req) => {
+  // 수급 모델 API -> 응답 대기 시간 제한 해제 (처리 느림)
+  if (/(?:^|\/)mi\/fundamental-model(?:\/|[?#]|$)/.test(req.url ?? '')) {
+    req.timeout = 0
+  }
+
   if (req.headers !== undefined) {
     const { token, user, accessCompanyInfo } = useAuthStore.getState()
     if (token) {

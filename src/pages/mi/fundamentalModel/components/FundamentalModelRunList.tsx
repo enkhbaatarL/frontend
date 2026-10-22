@@ -26,12 +26,10 @@ export const FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS = `min(${LIST_PANEL_HEI
   FUNDAMENTAL_MODEL_RUN_LIST_STICKY_TOP_PX + LIST_PANEL_STICKY_BOTTOM_GAP
 }px))`
 
-/** 목록에 RUNNING 케이스가 있을 때 배지 갱신 주기 (ms) */
-const LIST_POLL_INTERVAL_MS = 5000
-
 export interface FundamentalModelRunListProps {
   selectedId: string
   onSelect: (id: string, status?: FundamentalModelCaseListItem['status']) => void
+  onCreated: (id: string, status: FundamentalModelCaseListItem['status'], executionRequested: boolean) => void
 }
 
 /** 목록 검색 기준 */
@@ -84,7 +82,7 @@ const TruncatedLabel = ({ text, variant = 'body1SB16', color = 'gray.90', sx }: 
 }
 
 /** 좌측 시뮬레이션 목록(검색 기준 선택 - 검색 - 카드 리스트) */
-const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunListProps) => {
+const FundamentalModelRunList = ({ selectedId, onSelect, onCreated }: FundamentalModelRunListProps) => {
   const [searchField, setSearchField] = useState<RunListSearchField>('managerName')
   const [keyword, setKeyword] = useState('')
   const [committedKeyword, setCommittedKeyword] = useState('')
@@ -102,10 +100,6 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
     queryKey: ['fundamentalModel', 'cases', listRequest],
     queryFn: () => fundamentalModelCaseService.listCases(listRequest),
     refetchOnWindowFocus: false,
-    refetchInterval: (query) => {
-      const { miBase, cases } = query.state.data ?? {}
-      return miBase?.status === 'RUNNING' || cases?.some((item) => item.status === 'RUNNING') ? LIST_POLL_INTERVAL_MS : false
-    },
   })
 
   const cases = useMemo(() => caseList?.cases ?? [], [caseList?.cases])
@@ -264,10 +258,10 @@ const FundamentalModelRunList = ({ selectedId, onSelect }: FundamentalModelRunLi
               </Box>
             </Stack>
             <FundamentalModelInputEditorPopup
-              onCreated={(caseId, status) => {
+              onCreated={(caseId, status, executionRequested) => {
                 setKeyword('')
                 setCommittedKeyword('')
-                onSelect(caseId, status)
+                onCreated(caseId, status, executionRequested)
               }}
             >
               <MIBaseButton variant="contained" prefix={<AddIcon />} sx={{ height: '36px' }}>
