@@ -1,5 +1,5 @@
 import { Box, Divider, Skeleton, Stack, Typography } from '@mui/material'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 
 import type { PowerMixValidationError } from '@/pages/mi/nextGenMI/components/scenarioGroup/scenarioModelExecutionPowerMixValidation'
 import type {
@@ -33,6 +33,7 @@ export interface ProposalParamVisibleScenario {
 }
 
 interface ScenarioModelExecutionProposalParamMatrixProps {
+  headerBefore: ReactNode
   visibleScenarios: ProposalParamVisibleScenario[]
   proposalScenarios: ModelParamCompareScenario[]
   matrix: ProposalParamMatrixData | null
@@ -421,6 +422,7 @@ const ProposalParamEditableCell = ({
 }
 
 const ScenarioModelExecutionProposalParamMatrix = ({
+  headerBefore,
   visibleScenarios,
   proposalScenarios,
   matrix,
@@ -435,20 +437,16 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   const [editedValues, setEditedValues] = useState<Record<string, string>>({})
   const [baselineValues, setBaselineValues] = useState<Record<string, string>>({})
   const proposalIdsRef = useRef(new Map<number, number>())
-  const tableContainerRef = useRef<HTMLDivElement>(null)
   const tableScrollRef = useRef<HTMLDivElement>(null)
-  const [tableHeight, setTableHeight] = useState(0)
   const [tableViewportWidth, setTableViewportWidth] = useState(0)
   const hasMatrix = matrix !== null
 
   useLayoutEffect(() => {
-    const container = tableContainerRef.current
+    const container = tableScrollRef.current
     if (!container) return undefined
 
-    // 부모가 배분한 높이 안에서만 표를 스크롤한다.
     const updateSize = () => {
-      setTableHeight(container.clientHeight)
-      setTableViewportWidth(tableScrollRef.current?.clientWidth ?? 0)
+      setTableViewportWidth(container.clientWidth)
     }
     updateSize()
     const observer = new ResizeObserver(updateSize)
@@ -459,7 +457,6 @@ const ScenarioModelExecutionProposalParamMatrix = ({
   useLayoutEffect(() => {
     if (!tableScrollRef.current) return
     tableScrollRef.current.scrollLeft = 0
-    tableScrollRef.current.scrollTop = 0
   }, [scrollResetKey])
 
   // 표 구조(기간/슬롯)가 바뀔 때만 baseline 전체 재스냅샷.
@@ -842,40 +839,46 @@ const ScenarioModelExecutionProposalParamMatrix = ({
 
   if (!matrix) {
     return (
-      <Stack
-        flex="1 1 0"
-        minHeight={0}
-        alignItems="center"
-        justifyContent="center"
-        border="1px solid"
-        borderColor="contentBorder.Normal"
-        borderRadius="8px"
-      >
-        <Typography variant="body3SB12" color="gray.60">
-          파라미터 데이터가 없습니다.
-        </Typography>
-      </Stack>
+      <>
+        {headerBefore}
+        <Stack
+          minHeight="240px"
+          margin="20px 24px"
+          alignItems="center"
+          justifyContent="center"
+          border="1px solid"
+          borderColor="contentBorder.Normal"
+          borderRadius="8px"
+        >
+          <Typography variant="body3SB12" color="gray.60">
+            파라미터 데이터가 없습니다.
+          </Typography>
+        </Stack>
+      </>
     )
   }
 
   return (
-    <Box ref={tableContainerRef} width="100%" flex="1 1 0" minWidth={0} minHeight={0} overflow="visible" bgcolor="commonColor.White">
+    <Box width="100%" minWidth={0} bgcolor="commonColor.White">
+      {/* 세로 높이를 제한하지 않고, 선택 영역·헤더와 모든 행을 팝업 본문의 스크롤 하나에 연결한다. */}
       <ScenarioGroupStickyTable
         columns={fittedColumns}
         rows={rows}
         getRowKey={(row) => row.rowKey}
         scrollContainerRef={tableScrollRef}
-        overlayVerticalScrollbar
-        verticalScrollbarRight="-10px"
+        hideVerticalScrollbar
         fixedLeftColumnIndexes={fixedLeftColumnIndexes}
         headerHeight="48px"
         rowHeight="42px"
-        maxHeight={`${tableHeight}px`}
+        pageStickyHeaderTop="calc(var(--scenario-model-execution-group-header-height, 0px) + var(--scenario-model-execution-pinned-list-height, 0px))"
+        disablePageStickyHeaderTransition
+        pageStickyHeaderZIndex={8}
+        pageStickyHeaderBefore={headerBefore}
         cellPaddingX="8px"
         cellPaddingY="6px"
         headerFontSize="12px"
         bodyFontSize="12px"
-        containerShell={false}
+        containerPadding="20px 24px"
         noRowMessage="파라미터 데이터가 없습니다."
       />
     </Box>

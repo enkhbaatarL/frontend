@@ -9,6 +9,7 @@ import { formatValue } from '@/utils/number'
 
 export interface ScenarioSummaryTooltipContent {
   label?: string
+  labelDetail?: string
   value?: number
   color?: string
   date: string
@@ -264,6 +265,11 @@ const ScenarioSummaryChartTooltip = forwardRef<HTMLDivElement, Readonly<Scenario
                         }}
                       >
                         {item.label}
+                        {item.labelDetail ? (
+                          <Box component="span" sx={{ color: rowDimmed ? 'inherit' : 'contentText.Subtext' }}>
+                            {` ${item.labelDetail}`}
+                          </Box>
+                        ) : null}
                       </Typography>
                     </Stack>
                     <Typography

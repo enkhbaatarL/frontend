@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -60,12 +61,18 @@ const isTabPinnedToScrollTop = (scrollEl: HTMLElement, tabEl: HTMLElement) => {
   return tabRect.top <= scrollRect.top + RIGHT_STICKY_TOP_PX + 0.5
 }
 
-/** MI 수급 모델 — URL 고정 `/mi/fundamental-model`, 선택은 클라이언트 state */
+const readCaseIdQuery = (search: string) => {
+  const caseId = new URLSearchParams(search).get('caseId')?.trim() ?? ''
+  return /^\d+$/.test(caseId) && Number(caseId) > 0 ? caseId : ''
+}
+
+/** MI 수급 모델. 기본 선택은 클라이언트 state. `caseId` 쿼리가 있으면 해당 결과로 연다. */
 const FundamentalModelPage = () => {
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
   const userNo = useAuthStore((state) => state.user?.userNo)
-  const [selectedCaseId, setSelectedCaseId] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [selectedCaseId, setSelectedCaseId] = useState(() => readCaseIdQuery(globalThis.location.search))
   const [selectedCaseListStatus, setSelectedCaseListStatus] = useState<FundamentalModelCaseStatus | null>(null)
   const [viewTab, setViewTab] = useState<FundamentalModelViewTabKey>('volumes')
   const leftStickyBoundaryRef = useRef<HTMLDivElement>(null)
@@ -324,13 +331,18 @@ const FundamentalModelPage = () => {
       await fundamentalModelCaseService.deleteCase(parsedCaseId)
       setSelectedCaseId('')
       setSelectedCaseListStatus(null)
+      if (searchParams.get('caseId') === String(parsedCaseId)) {
+        const next = new URLSearchParams(searchParams)
+        next.delete('caseId')
+        setSearchParams(next, { replace: true })
+      }
       void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'cases'] })
       void queryClient.removeQueries({ queryKey: ['fundamentalModel', 'caseDetail', activeCaseId] })
       return true
     } catch {
       return false
     }
-  }, [activeCaseId, caseDetail?.execType, isCaseAssignee, parsedCaseId, queryClient])
+  }, [activeCaseId, caseDetail?.execType, isCaseAssignee, parsedCaseId, queryClient, searchParams, setSearchParams])
 
   const handleDesignateMiBase = useCallback(async () => {
     if (!isCaseAssignee || caseDetail?.status !== 'COMPLETED' || caseDetail.execType !== 'INDEPENDENT') return false

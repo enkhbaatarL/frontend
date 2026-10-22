@@ -18,6 +18,7 @@ export type ScenarioGroupGraphChart = ChartData & {
   visibilityKey: string
   isDashed?: boolean
   displayOrder?: number
+  seriesTitle?: string | null
 }
 
 export type ScenarioGroupGraphLegendVariant = 'line' | 'nonExecuted' | 'discarded'
@@ -27,6 +28,8 @@ export interface ScenarioGroupGraphLegendItem {
   name: string
   displayOrder?: number
   color: string
+  /** 괄호 안 제목. 있으면 이름과 다른 색으로 표시한다. */
+  detail?: string
   variant: ScenarioGroupGraphLegendVariant
   statusLabel?: string
   realized?: boolean
@@ -56,7 +59,8 @@ export const isScenarioGraphModelExecuted = (series: IScenarioGraphSeries): bool
 
 const SCENARIO_CHART_COLORS = ['#185FA5', '#0F8A72', '#E09A3A', '#C4407A', '#A32D2D', '#2B8EA6', '#7B52B8', '#B8960C', '#3D7D3F', '#6B6A65']
 
-const BASE_SERIES_COLORS = ['#2F3742', '#7E8794']
+const CME_BASE_COLOR = '#5F6775'
+const MI_BASE_COLOR = '#9AA3B1'
 
 const DISABLED_LEGEND_COLOR = '#ADB5BD'
 
@@ -120,6 +124,15 @@ const alignPeriodValues = (
 const isCmeBaseSeries = (series: IScenarioBaseSeries): boolean =>
   series.seriesId.trim().toUpperCase() === 'CME' || series.seriesName.trim().toUpperCase() === 'CME'
 
+/** 범례/툴팁 표시명. seriesTitle이 있으면 "MI Base (타이틀)", 없으면 seriesName 그대로 */
+const getBaseSeriesDisplayName = (series: IScenarioBaseSeries) => {
+  const title = series.seriesTitle?.trim()
+  if (!title) return series.seriesName
+  return `${series.seriesName} (${title})`
+}
+
+const getBaseSeriesColor = (series: IScenarioBaseSeries) => (isCmeBaseSeries(series) ? CME_BASE_COLOR : MI_BASE_COLOR)
+
 export const mergeScenarioGroupGraphCmeBenchmark = (
   graphData: IScenarioGroupGraphRes,
   cmeBenchmark?: IScenarioGroupGraphCmeBenchmark,
@@ -163,6 +176,7 @@ const buildChart = (
   startDates: string[],
   isDashed: boolean,
   displayOrder?: number,
+  seriesTitle?: string | null,
 ): ScenarioGroupGraphChart => ({
   goodsDataSourceName: name,
   goodsDataSourceNo: 0,
@@ -175,6 +189,7 @@ const buildChart = (
   visibilityKey,
   isDashed,
   displayOrder,
+  seriesTitle,
   series: [
     {
       seriesId: 'main',
@@ -195,12 +210,23 @@ export const buildScenarioGroupGraphRender = (data: IScenarioGroupGraphRes, filt
   const chartColorMap = new Map<string, string>()
   const charts: ScenarioGroupGraphChart[] = []
 
-  const baseLegend = data.baseSeries.map((series, index): ScenarioGroupGraphLegendItem => {
+  const baseLegend = data.baseSeries.map((series): ScenarioGroupGraphLegendItem => {
     const visibilityKey = baseSeriesVisibilityKey(series.seriesId)
-    const color = BASE_SERIES_COLORS[index] ?? BASE_SERIES_COLORS[BASE_SERIES_COLORS.length - 1]
-    chartColorMap.set(series.seriesName, color)
-    charts.push(buildChart(series.seriesName, visibilityKey, series.values, data.unit, timestamps, resultDates, startDates, false))
-    return { visibilityKey, name: series.seriesName, color, variant: 'line', toggleKeys: [visibilityKey] }
+    const title = series.seriesTitle?.trim()
+    const displayName = getBaseSeriesDisplayName(series)
+    const color = getBaseSeriesColor(series)
+    chartColorMap.set(displayName, color)
+    charts.push(
+      buildChart(displayName, visibilityKey, series.values, data.unit, timestamps, resultDates, startDates, false, undefined, title),
+    )
+    return {
+      visibilityKey,
+      name: series.seriesName,
+      detail: title ? `(${title})` : undefined,
+      color,
+      variant: 'line',
+      toggleKeys: [visibilityKey],
+    }
   })
 
   const filteredScenarioSeries = data.scenarioSeries
