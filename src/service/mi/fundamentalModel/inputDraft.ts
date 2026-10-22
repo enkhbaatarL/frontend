@@ -1,10 +1,13 @@
 import { AxiosError, type AxiosResponse } from 'axios'
 
 import type { ICommonResponse } from '@/types/api'
+import type { LosslessNumber } from 'lossless-json'
 
 import api from '@/lib/axios'
+import { parseModelInputJson, stringifyModelInputJson } from '@/utils/modelInputJson'
 
-// SK Gas API (5).json — 6. MI Fundamental Model Input Draft API, 2026-10-20.
+// ModelInputDraftController / ModelInputDraftResponses의 OpenAPI 계약.
+// 숫자 계약은 유지하며 JS number로 표현할 수 없는 값만 LosslessNumber로 보관한다.
 // JsonNode/map 항목은 Swagger가 상세 타입을 제공할 때까지 unknown을 유지한다.
 export interface ModelInputTableInfo {
   id: string
@@ -113,7 +116,7 @@ export type ModelInputSetCommand = {
   commandId: string
   tableId: string
   rowRef: { rowId: string; clientRowKey?: never } | { clientRowKey: string; rowId?: never }
-  value: string | number
+  value: string | number | LosslessNumber
 } & ModelInputColumnReference
 
 export type ModelInputClearCommand = {
@@ -158,7 +161,7 @@ export interface ModelInputAddRowCommand {
   commandId: string
   tableId: string
   clientRowKey: string
-  values: Record<string, string | number>
+  values: Record<string, string | number | LosslessNumber>
 }
 
 export interface ModelInputDeleteRowCommand {
@@ -183,22 +186,8 @@ export interface ModelInputChangeRequest {
   >
 }
 
-// JSON 숫자 토큰만 확장한다. 텍스트 입력에 포함된 지수 표기는 그대로 보존한다.
-export const serializeModelInputChange = (body: ModelInputChangeRequest) =>
-  JSON.stringify(body).replace(/"(?:\\.|[^"\\])*"|(-?\d+(?:\.\d+)?e[+-]?\d+)/gi, (token: string, number: string | undefined) => {
-    if (!number) return token
-    const [coefficient, exponent] = number.toLowerCase().split('e')
-    const unsigned = coefficient.replace('-', '')
-    const digits = unsigned.replace('.', '')
-    const position = (unsigned.includes('.') ? unsigned.indexOf('.') : unsigned.length) + Number(exponent)
-    const decimal =
-      position <= 0
-        ? `0.${'0'.repeat(-position)}${digits}`
-        : position >= digits.length
-          ? `${digits}${'0'.repeat(position - digits.length)}`
-          : `${digits.slice(0, position)}.${digits.slice(position)}`
-    return `${coefficient.startsWith('-') ? '-' : ''}${decimal}`
-  })
+// 텍스트와 숫자를 구분한 채 원래 숫자 토큰을 정확한 평문 십진수로 전송한다.
+export const serializeModelInputChange = (body: ModelInputChangeRequest) => stringifyModelInputJson(body)
 
 export interface ModelInputFinalizationRequest {
   requestId: string
@@ -276,6 +265,12 @@ const requestOptions = { suppressGlobalErrorHandler: true } as Parameters<typeof
   suppressGlobalErrorHandler: boolean
 }
 
+const tableResponseOptions = {
+  ...requestOptions,
+  responseType: 'text' as const,
+  transformResponse: [(data: string) => (data ? parseModelInputJson(data) : data)],
+}
+
 const readResponse = <T>(response: AxiosResponse<ICommonResponse<T>>) => {
   if (!response.data.status) {
     throw new AxiosError('입력 요청을 처리하지 못했습니다.', response.data.code, response.config, response.request, response)
@@ -291,14 +286,14 @@ const inputDraftService = {
     const response = await api.post<ICommonResponse<ModelInputUploadOperation>>(
       draftId ? `mi/fundamental-model/input-upload-drafts/${draftId}/files` : 'mi/fundamental-model/input-upload-drafts',
       form,
-      { ...requestOptions, signal },
+      { ...tableResponseOptions, signal },
     )
     return readResponse(response)
   },
   async getUpload(operationId: string, signal?: AbortSignal) {
     const response = await api.get<ICommonResponse<ModelInputUploadOperation>>(
       `mi/fundamental-model/input-upload-requests/${operationId}`,
-      { ...requestOptions, signal },
+      { ...tableResponseOptions, signal },
     )
     return readResponse(response)
   },
@@ -334,7 +329,7 @@ const inputDraftService = {
   },
   async getTable(draftId: string, revision: number, tableId: string, startRow?: number, signal?: AbortSignal) {
     const response = await api.get<ICommonResponse<ModelInputTablePage>>(`mi/fundamental-model/input-drafts/${draftId}/table-data`, {
-      ...requestOptions,
+      ...tableResponseOptions,
       params: { revision, tableId, startRow },
       signal,
     })

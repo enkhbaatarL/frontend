@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import type { ModelInputFinalization } from '@/service/mi/fundamentalModel/inputDraft'
+
 import ErrorOutlineIcon from '@/components/common/icons/ErrorOutlineIcon'
 import useSnackbar from '@/hooks/useSnackbar'
 import FundamentalModelPageSkeleton from '@/pages/mi/fundamentalModel/components/common/FundamentalModelPageSkeleton'
@@ -13,6 +15,7 @@ import FundamentalModelRunList, {
 } from '@/pages/mi/fundamentalModel/components/FundamentalModelRunList'
 import FundamentalModelRunPlaceholder from '@/pages/mi/fundamentalModel/components/FundamentalModelRunPlaceholder'
 import FundamentalModelDetailHeader from '@/pages/mi/fundamentalModel/components/header/FundamentalModelDetailHeader'
+import { getModelInputExecution } from '@/pages/mi/fundamentalModel/components/modelInputFinalization'
 import PriceTabPanel from '@/pages/mi/fundamentalModel/components/price/PriceTabPanel'
 import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/VolumesTabPanel'
 import { caseStatusToPlaceholderMode } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
@@ -113,7 +116,7 @@ const FundamentalModelPage = () => {
   })
   const effectiveCaseStatus = caseDetail?.status ?? selectedCaseListStatus
 
-  const { handleRun, handleRetry, isRunPending, trackExecution } = useFundamentalModelRunExecution(
+  const { handleRun, handleRetry, isRunPending, trackExecution, trackFinalization } = useFundamentalModelRunExecution(
     activeCaseId,
     effectiveCaseStatus ?? undefined,
   )
@@ -287,11 +290,13 @@ const FundamentalModelPage = () => {
   }, [])
 
   const handleCreatedCase = useCallback(
-    (id: string, status: FundamentalModelCaseStatus, executionRequested: boolean) => {
-      if (executionRequested) trackExecution(id)
+    (id: string, status: FundamentalModelCaseStatus, operation?: ModelInputFinalization) => {
+      const execution = operation && getModelInputExecution(operation)
+      if (operation && execution?.status === 'QUEUED') trackFinalization(operation)
+      else if (execution?.status === 'RUNNING') trackExecution(id)
       handleSelectCase(id, status)
     },
-    [handleSelectCase, trackExecution],
+    [handleSelectCase, trackExecution, trackFinalization],
   )
 
   const invalidateCaseQueries = useCallback(() => {

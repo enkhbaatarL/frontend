@@ -5,6 +5,7 @@ import ReplayIcon from '@/components/common/icons/ReplayIcon'
 import MIInputErrorIcon from '@/components/common/input/MIInputErrorIcon'
 import MISelectMenu, { type SelectMenuItem } from '@/components/common/menu/MISelectMenu'
 import formatFundamentalModelCellValue from '@/pages/mi/fundamentalModel/components/inputTable/formatFundamentalModelCellValue'
+import { compareModelInputDecimals } from '@/utils/modelInputValidation'
 
 interface FundamentalModelEditedCellInputProps {
   value: string | number
@@ -38,7 +39,11 @@ const FundamentalModelEditedCellInput = ({
   onRestore,
 }: FundamentalModelEditedCellInputProps) => {
   const [isFocused, setIsFocused] = useState(false)
-  const isModified = !isNew && originalValue !== undefined && String(value) !== String(originalValue)
+  const isModified =
+    !isNew &&
+    originalValue !== undefined &&
+    String(value) !== String(originalValue) &&
+    (!isNumeric || compareModelInputDecimals(String(value), String(originalValue)) !== 0)
   const formatTooltipValue = (cellValue: string | number) => {
     const text = String(cellValue)
     return unit && text.trim() && !text.trim().endsWith(unit) && Number.isFinite(Number(text.replaceAll(',', ''))) ? `${text}${unit}` : text

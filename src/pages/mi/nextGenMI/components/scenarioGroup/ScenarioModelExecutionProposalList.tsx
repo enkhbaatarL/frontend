@@ -295,6 +295,7 @@ interface ScenarioModelExecutionProposalListProps {
   isResizing: boolean
   onContentHeightChange: (height: number) => void
   onFillsViewportHeightChange?: (fillsViewportHeight: boolean) => void
+  onExecutionBusyChange: (isBusy: boolean) => void
   onCancel: () => void
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
@@ -569,6 +570,7 @@ const ScenarioModelExecutionProposalList = ({
   isResizing,
   onContentHeightChange,
   onFillsViewportHeightChange,
+  onExecutionBusyChange,
   onCancel,
   onAccepted,
   onCompleted,
@@ -601,6 +603,8 @@ const ScenarioModelExecutionProposalList = ({
   const [groupResetConfirmOpen, setGroupResetConfirmOpen] = useState(false)
   const [isResettingGroupProposals, setIsResettingGroupProposals] = useState(false)
   const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
+  // 이번에 요청한 시나리오가 모두 성공하면 닫는다. 실패 시 null로 바꿔 결과를 확인할 수 있게 한다.
+  const [pendingExecutionScenarioIds, setPendingExecutionScenarioIds] = useState<number[] | null>(null)
   const [locallyExecutedIds, setLocallyExecutedIds] = useState<Set<number>>(() => new Set())
   const [awaitingExecutionScenarioIds, setAwaitingExecutionScenarioIds] = useState<Set<number>>(() => new Set())
   const [executedConfirmedScenarioIds, setExecutedConfirmedScenarioIds] = useState<Set<number>>(() => new Set())
@@ -826,6 +830,7 @@ const ScenarioModelExecutionProposalList = ({
   const isExecutionBusy = isSubmittingExecution || isExecuting
   // 시나리오 선택/생성/초기화/실행 등 액션 잠금 (PopupContent 넓은 가드)
   const isActionLocked = isExecutionBusy || isResetting || isResettingGroupProposals
+  const isGroupResetDisabled = isActionLocked || isGeneratingAny
   // Value 입력 잠금 - PopupContent NumericParameterValueInput: isSubmitting || isResetting
   // (실행 중에는 파라미터 영역을 GeneratingState 로 대체해 인풋 자체가 안 보임)
   const isValueInputLocked = isSubmittingExecution || isResetting
@@ -835,6 +840,10 @@ const ScenarioModelExecutionProposalList = ({
   const showGroupResetButton = Boolean(groupProposals?.miBaseChanged) && hasGeneratedProposal
   const currentMiBaseCaseId = groupProposals?.currentMiBase?.caseId
   const canOpenCurrentMiBase = typeof currentMiBaseCaseId === 'number' && currentMiBaseCaseId > 0
+
+  useEffect(() => {
+    onExecutionBusyChange(isExecutionBusy)
+  }, [isExecutionBusy, onExecutionBusyChange])
 
   const applyGroupProposals = useCallback(
     (nextProposals: ScenarioGroupModelParamProposals, notifyFailure = false) => {
@@ -954,6 +963,12 @@ const ScenarioModelExecutionProposalList = ({
     setParamResetToken((token) => token + 1)
   }, [])
 
+  useEffect(() => {
+    if (pendingExecutionScenarioIds?.length !== 0) return
+    setPendingExecutionScenarioIds(null)
+    onCancel()
+  }, [onCancel, pendingExecutionScenarioIds])
+
   const handleExecutionSettled = useCallback(
     (scenarioId: number) => {
       setAwaitingExecutionScenarioIds((current) => {
@@ -964,6 +979,7 @@ const ScenarioModelExecutionProposalList = ({
       })
       markScenariosExecuted([scenarioId])
       onCompleted(scenarioId)
+      setPendingExecutionScenarioIds((current) => current?.filter((id) => id !== scenarioId) ?? null)
       // 실행 중 GeneratingState 로 파라미터가 언마운트되었다가 복귀할 때,
       // 서버 조회값 기준으로 baseline/수정표시를 다시 맞춰 주황 잔상을 막음
       void refreshProposals().finally(syncParamEditBaselineAfterExecution)
@@ -973,6 +989,7 @@ const ScenarioModelExecutionProposalList = ({
 
   const handleExecutionFailed = useCallback(
     (scenarioId: number) => {
+      setPendingExecutionScenarioIds(null)
       onFailed(scenarioId)
       setGroupProposals((current) => {
         if (!current) return current
@@ -1258,6 +1275,7 @@ const ScenarioModelExecutionProposalList = ({
 
     if (executions.length === 0) return
 
+    setPendingExecutionScenarioIds(executions.map((execution) => execution.scenarioId))
     setIsSubmittingExecution(true)
     try {
       const accepted = await nextGenMIModelExecutionService.submitGroupModelExecutions(scenarioGroupId, { executions })
@@ -1292,6 +1310,7 @@ const ScenarioModelExecutionProposalList = ({
       })
 
       if (completedIds.length > 0) {
+        setPendingExecutionScenarioIds((current) => current?.filter((scenarioId) => !completedIds.includes(scenarioId)) ?? null)
         setAwaitingExecutionScenarioIds((current) => {
           const next = new Set(current)
           completedIds.forEach((scenarioId) => next.delete(scenarioId))
@@ -1310,6 +1329,7 @@ const ScenarioModelExecutionProposalList = ({
         showSnackbar(`선택한 시나리오 ${accepted.successCount}개로 MI 수급모델 실행을 요청했습니다.`, { variant: 'success' })
       }
     } catch (error) {
+      setPendingExecutionScenarioIds(null)
       if (isExecutionValidationError(error)) {
         showSnackbar('유효성 검사에 실패했습니다.', { variant: 'error', body: '파라미터 내용을 확인해 주세요.' })
       } else {
@@ -1340,7 +1360,7 @@ const ScenarioModelExecutionProposalList = ({
   }
 
   const handleConfirmGroupReset = async () => {
-    if (isResettingGroupProposals) return
+    if (isGroupResetDisabled) return
     setIsResettingGroupProposals(true)
     try {
       await nextGenMIModelExecutionService.resetGroupModelParamProposals(scenarioGroupId)
@@ -1728,10 +1748,13 @@ const ScenarioModelExecutionProposalList = ({
             {showGroupResetButton ? (
               <MIBaseButton
                 variant="outlined"
-                disabled={isResettingGroupProposals}
+                disabled={isGroupResetDisabled}
                 isLoading={isResettingGroupProposals}
                 prefix={<ReplayIcon width={20} height={20} />}
-                onClick={() => setGroupResetConfirmOpen(true)}
+                onClick={() => {
+                  if (isGroupResetDisabled) return
+                  setGroupResetConfirmOpen(true)
+                }}
                 sx={{ height: '38px', alignSelf: 'center', flexShrink: 0, borderRadius: '8px', padding: '8px 10px 8px 6px' }}
               >
                 초기화
@@ -1975,7 +1998,7 @@ const ScenarioModelExecutionProposalList = ({
         <Stack direction="row" alignItems="center" gap="8px">
           <MIBaseButton
             variant="outlined"
-            disabled={isSubmittingExecution}
+            disabled={isExecutionBusy}
             onClick={onCancel}
             sx={{ height: '36px', borderRadius: '8px', padding: '0 10px' }}
           >
@@ -2066,7 +2089,7 @@ const ScenarioModelExecutionProposalList = ({
               type="filled"
               color="red"
               size="h34"
-              disabled={isResettingGroupProposals}
+              disabled={isGroupResetDisabled}
               onClick={() => {
                 void handleConfirmGroupReset()
               }}

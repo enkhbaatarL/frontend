@@ -17,9 +17,12 @@ import inputDraftService, {
   type ModelInputOperation,
   type ModelInputProblem,
   type ModelInputTablePage,
+  type ModelInputSetCommand,
   serializeModelInputChange,
 } from '@/service/mi/fundamentalModel/inputDraft'
 import useAuthStore from '@/store/useAuthStore'
+import { parseModelInputJson, stringifyModelInputJson } from '@/utils/modelInputJson'
+import { compareModelInputDecimals, isModelInputObject, isModelInputValue } from '@/utils/modelInputValidation'
 
 export interface ModelInputLocalEdit {
   id: string
@@ -27,8 +30,9 @@ export interface ModelInputLocalEdit {
   rowId: string
   fieldKey: string
   text: string
-  value: string | number | null
+  value: ModelInputSetCommand['value'] | null
   error: string | null
+  dataType?: 'DECIMAL'
   type?: 'SET' | 'CLEAR'
 }
 
@@ -47,6 +51,7 @@ interface PendingFinalization {
 }
 
 interface DraftRecovery {
+  numericEncoding?: 'lossless'
   draftId: string
   revision: number
   edits: ModelInputLocalEdit[]
@@ -88,8 +93,9 @@ const isLocalEdit = (value: unknown): value is ModelInputLocalEdit => {
   const edit = value as Record<string, unknown>
   return (
     ['id', 'tableId', 'rowId', 'fieldKey', 'text'].every((key) => typeof edit[key] === 'string') &&
-    (edit.value === null || typeof edit.value === 'string' || typeof edit.value === 'number') &&
+    (edit.value === null || isModelInputValue(edit.value)) &&
     (edit.error === null || typeof edit.error === 'string') &&
+    (edit.dataType === undefined || edit.dataType === 'DECIMAL') &&
     (edit.type === undefined || edit.type === 'SET' || edit.type === 'CLEAR')
   )
 }
@@ -97,8 +103,9 @@ const isLocalEdit = (value: unknown): value is ModelInputLocalEdit => {
 const readRecovery = (key: string): DraftRecovery | null => {
   const text = sessionStorage.getItem(key)
   if (!text) return null
-  const value = JSON.parse(text) as DraftRecovery
+  const value = parseModelInputJson(text) as DraftRecovery
   if (
+    (value.numericEncoding !== undefined && value.numericEncoding !== 'lossless') ||
     typeof value.draftId !== 'string' ||
     !Number.isSafeInteger(value.revision) ||
     !Array.isArray(value.edits) ||
@@ -115,7 +122,7 @@ const readRecovery = (key: string): DraftRecovery | null => {
             !row.values ||
             typeof row.values !== 'object' ||
             Array.isArray(row.values) ||
-            Object.values(row.values).some((item) => typeof item !== 'string' && (typeof item !== 'number' || !Number.isFinite(item))),
+            Object.values(row.values).some((item) => !isModelInputValue(item)),
         ))) ||
     (value.pending && !['CHANGE', 'FINALIZE'].includes(value.pending.kind)) ||
     (value.queuedChanges !== undefined &&
@@ -133,6 +140,58 @@ const readRecovery = (key: string): DraftRecovery | null => {
     return null
   }
   return value
+}
+
+// 이전 문자열 통신 버전의 임시저장도 필드 타입을 확인해 숫자로 복구한다. TEXT는 변환하지 않는다.
+const restoreLegacyNumericValues = async (state: DraftRecovery, revision: number, signal: AbortSignal) => {
+  if (state.numericEncoding === 'lossless') return
+  const pages = new Map<string, ModelInputTablePage>()
+  const getPage = async (tableId: string) => {
+    let page = pages.get(tableId)
+    if (!page) {
+      page = await inputDraftService.getTable(state.draftId, revision, tableId, undefined, signal)
+      pages.set(tableId, page)
+    }
+    return page
+  }
+  const numericValue = (value: ModelInputSetCommand['value'], field: Record<string, unknown> | undefined) => {
+    if (field?.dataType !== 'DECIMAL' || typeof value !== 'string') return value
+    const result = validateModelInputValue(value, { dataType: 'DECIMAL' })
+    if (result.error || result.value === null) throw new Error('임시저장된 소수 입력값을 확인해 주세요.')
+    return result.value
+  }
+  for (const edit of state.edits)
+    if (edit.dataType === 'DECIMAL' && edit.value !== null) edit.value = numericValue(edit.value, { dataType: 'DECIMAL' })
+  const restoreRow = async (row: ModelInputAddRowCommand) => {
+    if (!Object.values(row.values).some((value) => typeof value === 'string')) return
+    const page = await getPage(row.tableId)
+    for (const [key, value] of Object.entries(row.values))
+      row.values[key] = numericValue(
+        value,
+        page.editing.fields.find((field) => field.fieldKey === key),
+      )
+  }
+  for (const row of state.addedRows ?? []) await restoreRow(row)
+  for (const change of [state.pending, ...(state.queuedChanges ?? [])]) {
+    if (change?.kind !== 'CHANGE' || !change.body) continue
+    const addedColumns = new Map<string, Record<string, unknown>>()
+    for (const command of change.body.operations) {
+      if (command.type === 'ADD_ROW') await restoreRow(command)
+      else if (command.type === 'ADD_COLUMN') {
+        const creation = (await getPage(command.tableId)).editing.columnCreation
+        if (isModelInputObject(creation) && isModelInputObject(creation.body)) addedColumns.set(command.clientColumnKey, creation.body)
+      } else if (command.type === 'SET' && 'rowRef' in command && typeof command.value === 'string') {
+        const page = await getPage(command.tableId)
+        const field = command.fieldKey
+          ? page.editing.fields.find((candidate) => candidate.fieldKey === command.fieldKey)
+          : command.clientColumnKey
+            ? addedColumns.get(command.clientColumnKey)
+            : undefined
+        command.value = numericValue(command.value, field)
+      }
+    }
+  }
+  state.numericEncoding = 'lossless'
 }
 
 const useModelInputAutosave = (caseId: number | null, scope: string, initialDraftId: string | null) => {
@@ -172,7 +231,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         sessionStorage.removeItem(storageKey)
         return
       }
-      sessionStorage.setItem(storageKey, JSON.stringify(stateRef.current))
+      sessionStorage.setItem(storageKey, stringifyModelInputJson({ ...stateRef.current, numericEncoding: 'lossless' }))
     } catch {
       // 브라우저 저장소를 사용할 수 없어도 현재 화면의 요청과 변경은 메모리에 유지한다.
       return
@@ -637,6 +696,8 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           needsRecovery && recovery?.draftId === current.draftId
             ? recovery
             : { draftId: current.draftId, revision: current.revision, edits: [], pending: null }
+        await restoreLegacyNumericValues(state, current.revision, controller.signal)
+        if (controller.signal.aborted) return
         if (
           current.activeOperationId &&
           current.activeOperationEndpoint &&
@@ -703,7 +764,11 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       if (
         changesPendingCell ||
         (isAddedRow && edit.error) ||
-        (edit.text !== String(originalValue ?? '') && (edit.error || edit.value !== originalValue))
+        (edit.text !== String(originalValue ?? '') &&
+          (edit.error ||
+            (edit.dataType === 'DECIMAL' && edit.value !== null && originalValue !== null && originalValue !== undefined
+              ? compareModelInputDecimals(String(edit.value), String(originalValue)) !== 0
+              : edit.value !== originalValue)))
       ) {
         const originals = originalValuesRef.current.get(edit.tableId) ?? []
         if (!isAddedRow && !originals.some((item) => item.rowId === edit.rowId && item.fieldKey === edit.fieldKey)) {
@@ -711,7 +776,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
             ...edit,
             id: uuid(),
             text: String(originalValue ?? ''),
-            value: typeof originalValue === 'string' || typeof originalValue === 'number' ? originalValue : null,
+            value: isModelInputValue(originalValue) ? originalValue : null,
             type: originalValue === null || originalValue === undefined ? 'CLEAR' : 'SET',
             error: null,
           })
@@ -722,7 +787,12 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       const original = originalValuesRef.current
         .get(edit.tableId)
         ?.find((item) => item.rowId === edit.rowId && item.fieldKey === edit.fieldKey)
-      if (original) original.isReset = !edit.error && edit.value === original.value
+      if (original)
+        original.isReset =
+          !edit.error &&
+          (edit.dataType === 'DECIMAL' && edit.value !== null && original.value !== null
+            ? compareModelInputDecimals(String(edit.value), String(original.value)) === 0
+            : edit.value === original.value)
       setError('')
       publish()
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -900,7 +970,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
                 tableOriginals.push({
                   ...edit,
                   text: String(value ?? ''),
-                  value: typeof value === 'string' || typeof value === 'number' ? value : null,
+                  value: isModelInputValue(value) ? value : null,
                   type: value === null || value === undefined ? 'CLEAR' : 'SET',
                   error: null,
                 })

@@ -1,5 +1,31 @@
+import Decimal from 'decimal.js'
+import { isLosslessNumber, LosslessNumber } from 'lossless-json'
+
+export const isModelInputNumber = (value: unknown): value is number | LosslessNumber =>
+  (typeof value === 'number' && Number.isFinite(value)) || isLosslessNumber(value)
+
+export const isModelInputValue = (value: unknown): value is string | number | LosslessNumber =>
+  typeof value === 'string' || isModelInputNumber(value)
+
 export const isModelInputObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value && typeof value === 'object' && !Array.isArray(value))
+
+const parseDecimal = (text: string) => {
+  if (text.length > 4096 || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text)) return null
+  try {
+    const value = new Decimal(text)
+    if (!value.isFinite() || value.precision() + Math.abs(value.precision() - value.e - 1) + 2 > 1_048_576) return null
+    return value
+  } catch {
+    return null
+  }
+}
+
+export const compareModelInputDecimals = (left: string, right: string): number | null => {
+  const a = parseDecimal(left)
+  const b = parseDecimal(right)
+  return a && b ? a.comparedTo(b) : null
+}
 
 export const isSupportedModelInputField = (field: Record<string, unknown>, constraints: unknown) => {
   if (!['TEXT', 'INTEGER', 'DECIMAL'].includes(String(field.dataType)) || !isModelInputObject(constraints)) return false
@@ -9,12 +35,14 @@ export const isSupportedModelInputField = (field: Record<string, unknown>, const
     'options' in constraints &&
     (!Array.isArray(constraints.options) ||
       constraints.options.some((value) =>
-        field.dataType === 'TEXT' ? typeof value !== 'string' : typeof value !== 'number' || !Number.isFinite(value),
+        field.dataType === 'TEXT' ? typeof value !== 'string' : !isModelInputNumber(value) || !parseDecimal(String(value)),
       ))
   )
     return false
   if (
-    ['minimum', 'maximum'].some((key) => key in constraints && (typeof constraints[key] !== 'number' || !Number.isFinite(constraints[key])))
+    ['minimum', 'maximum'].some(
+      (key) => key in constraints && (!isModelInputNumber(constraints[key]) || !parseDecimal(String(constraints[key]))),
+    )
   )
     return false
   if (
@@ -36,41 +64,29 @@ export const isSupportedModelInputField = (field: Record<string, unknown>, const
   return true
 }
 
-const normalizeDecimal = (text: string) => {
-  const match = text.match(/^([+-]?)(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?$/i)
-  if (!match || !(match[2] || match[3])) return null
-  const digits = `${match[2]}${match[3] ?? ''}`.replace(/^0+/, '').replace(/0+$/, '')
-  if (!digits) return '0'
-  const original = `${match[2]}${match[3] ?? ''}`.replace(/^0+/, '')
-  const exponent = Number(match[4] ?? 0) - (match[3]?.length ?? 0) + original.length - digits.length
-  return `${match[1] === '-' ? '-' : ''}${digits}e${exponent}`
-}
-
 export const validateModelInputValue = (
   text: string,
   field: Record<string, unknown>,
   inputConstraints: unknown = field.setConstraints,
-): { value: string | number | null; error: string | null } => {
+): { value: string | number | LosslessNumber | null; error: string | null; dataType?: 'DECIMAL' } => {
   const constraints = isModelInputObject(inputConstraints) ? inputConstraints : {}
-  let value: string | number = text
+  let value: string | number | LosslessNumber = text
   if (field.dataType !== 'TEXT') {
-    value = Number(text)
-    if (!text.trim() || !Number.isFinite(value) || normalizeDecimal(text.trim()) === null)
-      return { value: null, error: '숫자를 입력하세요.' }
-    if (normalizeDecimal(text.trim()) !== normalizeDecimal(String(value)))
-      return { value: null, error: '정밀도 손실 없이 저장할 수 있는 숫자를 입력하세요.' }
-    if (field.dataType === 'INTEGER' && !Number.isSafeInteger(value))
+    const decimal = parseDecimal(text.trim())
+    if (!decimal) return { value: null, error: '숫자를 입력하세요.' }
+    if (field.dataType === 'INTEGER' && (!decimal.isInteger() || decimal.abs().greaterThan(Number.MAX_SAFE_INTEGER)))
       return { value: null, error: '안전하게 저장할 수 있는 정수를 입력하세요.' }
+    value = field.dataType === 'DECIMAL' ? new LosslessNumber(decimal.toString()) : Number(text)
     if (
-      (typeof constraints.minimum === 'number' && value < constraints.minimum) ||
-      (typeof constraints.maximum === 'number' && value > constraints.maximum)
+      (isModelInputNumber(constraints.minimum) && decimal.lessThan(String(constraints.minimum))) ||
+      (isModelInputNumber(constraints.maximum) && decimal.greaterThan(String(constraints.maximum)))
     ) {
       return {
         value: null,
         error:
-          typeof constraints.minimum === 'number' && typeof constraints.maximum === 'number'
+          constraints.minimum !== undefined && constraints.maximum !== undefined
             ? `${constraints.minimum} ~ ${constraints.maximum} 범위의 값을 입력하세요.`
-            : typeof constraints.minimum === 'number'
+            : constraints.minimum !== undefined
               ? `${constraints.minimum} 이상의 값을 입력하세요.`
               : `${constraints.maximum} 이하의 값을 입력하세요.`,
       }
@@ -88,9 +104,16 @@ export const validateModelInputValue = (
       }
     }
   }
-  if (Array.isArray(constraints.options) && !constraints.options.includes(value))
+  if (
+    Array.isArray(constraints.options) &&
+    !constraints.options.some((option) =>
+      field.dataType !== 'TEXT'
+        ? isModelInputNumber(option) && compareModelInputDecimals(String(value), String(option)) === 0
+        : option === value,
+    )
+  )
     return { value: null, error: '허용된 선택지 중 하나를 입력하세요.' }
-  return { value, error: null }
+  return { value, error: null, ...(field.dataType === 'DECIMAL' && { dataType: 'DECIMAL' as const }) }
 }
 
 // CREATE uses its own required/default/constraints metadata, independently of SET.
@@ -107,7 +130,7 @@ export const getModelInputCreationRule = (field: unknown) => {
     return undefined
   if (initial.kind === 'EMPTY') return Object.keys(initial).length === 1 ? { required, initialValue: '', constraints } : undefined
   if (Object.keys(initial).some((key) => !['kind', 'value'].includes(key))) return undefined
-  if (initial.kind !== 'VALUE' || (field.dataType === 'TEXT' ? typeof initial.value !== 'string' : typeof initial.value !== 'number'))
+  if (initial.kind !== 'VALUE' || (field.dataType === 'TEXT' ? typeof initial.value !== 'string' : !isModelInputNumber(initial.value)))
     return undefined
   if (validateModelInputValue(String(initial.value), field, constraints).error) return undefined
   return { required, initialValue: String(initial.value), constraints }

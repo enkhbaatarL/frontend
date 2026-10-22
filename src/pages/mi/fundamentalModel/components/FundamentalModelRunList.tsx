@@ -3,6 +3,8 @@ import { Box, Divider, Skeleton, Stack, Tooltip, Typography } from '@mui/materia
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import type { ModelInputFinalization } from '@/service/mi/fundamentalModel/inputDraft'
+
 import ScrollWrapper from '@/components/admin/ScrollWrapper'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import AddIcon from '@/components/common/icons/AddIcon'
@@ -29,7 +31,7 @@ export const FUNDAMENTAL_MODEL_RUN_LIST_PANEL_HEIGHT_CSS = `min(${LIST_PANEL_HEI
 export interface FundamentalModelRunListProps {
   selectedId: string
   onSelect: (id: string, status?: FundamentalModelCaseListItem['status']) => void
-  onCreated: (id: string, status: FundamentalModelCaseListItem['status'], executionRequested: boolean) => void
+  onCreated: (id: string, status: FundamentalModelCaseListItem['status'], operation?: ModelInputFinalization) => void
 }
 
 /** 목록 검색 기준 */
@@ -258,10 +260,10 @@ const FundamentalModelRunList = ({ selectedId, onSelect, onCreated }: Fundamenta
               </Box>
             </Stack>
             <FundamentalModelInputEditorPopup
-              onCreated={(caseId, status, executionRequested) => {
+              onCreated={(caseId, status, operation) => {
                 setKeyword('')
                 setCommittedKeyword('')
-                onCreated(caseId, status, executionRequested)
+                onCreated(caseId, status, operation)
               }}
             >
               <MIBaseButton variant="contained" prefix={<AddIcon />} sx={{ height: '36px' }}>

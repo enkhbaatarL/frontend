@@ -27,7 +27,7 @@ export interface FundamentalModelInputEditorPopupRef {
 
 interface Props {
   children: ReactNode
-  onCreated: (caseId: string, status: FundamentalModelCaseStatus, executionRequested: boolean) => void
+  onCreated: (caseId: string, status: FundamentalModelCaseStatus, operation?: ModelInputFinalization) => void
 }
 
 const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorPopupRef, Props>(({ children, onCreated }, ref) => {
@@ -140,20 +140,22 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
       try {
         status = (await fundamentalModelCaseService.getCaseStatus(caseId)).status
       } catch {
-        if (execution?.status === 'COMPLETED' || execution?.status === 'FAILED') status = execution.status
+        if (execution?.status === 'COMPLETED' || (execution?.status === 'FAILED' && execution.runId !== null)) status = execution.status
       }
       void queryClient.invalidateQueries({ queryKey: ['fundamentalModel'] })
-      onCreated(String(caseId), status, execution?.status === 'QUEUED' || execution?.status === 'RUNNING')
-      showSnackbar(
-        execution?.status === 'FAILED'
-          ? getModelInputExecutionFailure(execution.failureReason)
-          : execution?.status === 'COMPLETED'
-            ? '실행 완료되었습니다.'
-            : execution?.status === 'QUEUED' || execution?.status === 'RUNNING'
-              ? '실행이 접수되었습니다. 목록에서 진행 상태를 확인할 수 있습니다.'
-              : '입력값 저장이 완료되었습니다.',
-        { variant: execution?.status === 'FAILED' ? 'error' : 'success' },
-      )
+      onCreated(String(caseId), status, operation)
+      if (execution?.status !== 'FAILED' || execution.runId !== null) {
+        showSnackbar(
+          execution?.status === 'FAILED'
+            ? getModelInputExecutionFailure(execution.failureReason)
+            : execution?.status === 'COMPLETED'
+              ? '실행 완료되었습니다.'
+              : execution?.status === 'QUEUED' || execution?.status === 'RUNNING'
+                ? '실행이 접수되었습니다. 목록에서 진행 상태를 확인할 수 있습니다.'
+                : '입력값 저장이 완료되었습니다.',
+          { variant: execution?.status === 'FAILED' ? 'error' : 'success' },
+        )
+      }
       setIsCloseConfirmOpen(false)
       setPendingSource(null)
       closingRef.current = true
@@ -329,6 +331,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
         popup={{
           title: 'MI 수급모델 실행',
           hideHeaderLine: true,
+          disableClose: isDraftBusy || isClosing || isSourceSwitching,
           content: editorContent,
           measureContent: <Box height={editorHeight} />,
           showSkeleton: false,
@@ -356,7 +359,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
             setIsOpen(false)
           },
           onCloseRequest: () => {
-            if (!closingRef.current && !sourceSwitchRef.current && pendingSource === null) setIsCloseConfirmOpen(true)
+            if (!closingRef.current && !sourceSwitchRef.current && !isDraftBusy && pendingSource === null) setIsCloseConfirmOpen(true)
           },
         }}
       >

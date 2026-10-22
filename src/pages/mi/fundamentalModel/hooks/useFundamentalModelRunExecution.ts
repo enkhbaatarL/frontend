@@ -2,9 +2,12 @@ import { queryOptions, useMutation, useQueries, useQueryClient } from '@tanstack
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { FundamentalModelCaseStatus } from '@/service/mi/fundamentalModel/case'
+import type { ModelInputFinalization } from '@/service/mi/fundamentalModel/inputDraft'
 
 import useSnackbar from '@/hooks/useSnackbar'
+import { getModelInputExecution } from '@/pages/mi/fundamentalModel/components/modelInputFinalization'
 import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
+import inputDraftService from '@/service/mi/fundamentalModel/inputDraft'
 
 const isTerminalCaseStatus = (status: FundamentalModelCaseStatus) => status === 'COMPLETED' || status === 'FAILED'
 
@@ -13,14 +16,19 @@ export const useFundamentalModelRunExecution = (activeCaseId: string, caseStatus
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
   const [requestedCaseIds, setRequestedCaseIds] = useState<string[]>([])
+  const [pendingFinalizations, setPendingFinalizations] = useState<ModelInputFinalization[]>([])
+  const handledFinalizationIdsRef = useRef(new Set<string>())
   const handledTerminalKeysRef = useRef(new Map<string, string>())
   const observedStatusRef = useRef(new Map<string, string>())
 
   const parsedCaseId = Number(activeCaseId)
   const isValidCaseId = Number.isFinite(parsedCaseId) && parsedCaseId > 0
   const trackedCaseIds = useMemo(
-    () => [...new Set([...requestedCaseIds, ...(isValidCaseId && caseStatus === 'RUNNING' ? [activeCaseId] : [])])],
-    [activeCaseId, caseStatus, isValidCaseId, requestedCaseIds],
+    () =>
+      [...new Set([...requestedCaseIds, ...(isValidCaseId && caseStatus === 'RUNNING' ? [activeCaseId] : [])])].filter(
+        (caseId) => !pendingFinalizations.some((operation) => String(operation.finalizedCaseId) === caseId),
+      ),
+    [activeCaseId, caseStatus, isValidCaseId, pendingFinalizations, requestedCaseIds],
   )
 
   const invalidateCaseQueries = useCallback(
@@ -42,6 +50,61 @@ export const useFundamentalModelRunExecution = (activeCaseId: string, caseStatus
     },
     [queryClient],
   )
+
+  const trackFinalization = useCallback((operation: ModelInputFinalization) => {
+    if (getModelInputExecution(operation)?.status !== 'QUEUED' || !operation.finalizedCaseId) return
+    handledFinalizationIdsRef.current.delete(operation.operationId)
+    setPendingFinalizations((current) =>
+      current.some((item) => item.operationId === operation.operationId) ? current : [...current, operation],
+    )
+  }, [])
+
+  const finalizationQueries = useQueries({
+    queries: pendingFinalizations.map((operation) =>
+      queryOptions({
+        queryKey: ['fundamentalModel', 'finalizationExecution', operation.draftId, operation.operationId],
+        queryFn: async () => {
+          const result = await inputDraftService.getFinalization(operation.draftId, operation.operationId)
+          const execution = getModelInputExecution(result)
+          if (
+            result.draftId !== operation.draftId ||
+            result.operationId !== operation.operationId ||
+            result.finalizedCaseId !== operation.finalizedCaseId ||
+            result.status !== 'SUCCEEDED' ||
+            !execution ||
+            ((execution.status === 'RUNNING' || execution.status === 'COMPLETED') && !execution.runId)
+          ) {
+            throw new Error('자동 실행 접수 상태를 확인할 수 없습니다.')
+          }
+          return result
+        },
+        refetchInterval: (query) => (!query.state.data || getModelInputExecution(query.state.data)?.status === 'QUEUED' ? 2000 : false),
+        refetchOnWindowFocus: false,
+      }),
+    ),
+  })
+
+  useEffect(() => {
+    const settledOperationIds: string[] = []
+    for (const query of finalizationQueries) {
+      if (!query.data || query.isFetching || query.isError) continue
+      const operation = query.data
+      const execution = getModelInputExecution(operation)
+      if (!execution || execution.status === 'QUEUED' || handledFinalizationIdsRef.current.has(operation.operationId)) continue
+      handledFinalizationIdsRef.current.add(operation.operationId)
+      settledOperationIds.push(operation.operationId)
+      const caseId = String(operation.finalizedCaseId)
+      if (execution.status !== 'FAILED' || execution.runId !== null) {
+        // 실행 이력이 생성된 이후에만 케이스 상태 조회로 전환한다.
+        trackExecution(caseId)
+      }
+      // 자동 실행 접수에 실패하면 기본 실행 대기 화면으로 돌아가 수동 실행을 허용한다.
+      invalidateCaseQueries(caseId)
+    }
+    if (settledOperationIds.length) {
+      setPendingFinalizations((current) => current.filter((operation) => !settledOperationIds.includes(operation.operationId)))
+    }
+  }, [finalizationQueries, invalidateCaseQueries, trackExecution])
 
   const { mutateAsync: submitRun, isPending: isRunPending } = useMutation({
     mutationFn: async (caseId: number) => {
@@ -102,15 +165,18 @@ export const useFundamentalModelRunExecution = (activeCaseId: string, caseStatus
     if (settledCaseIds.length) setRequestedCaseIds((current) => current.filter((id) => !settledCaseIds.includes(id)))
   }, [activeCaseId, caseStatus, invalidateCaseQueries, queryClient, showSnackbar, statusQueries])
 
+  const isExecutionQueued = pendingFinalizations.some((operation) => String(operation.finalizedCaseId) === activeCaseId)
+
   const handleRun = useCallback(async () => {
-    if (!isValidCaseId || isRunPending || requestedCaseIds.includes(activeCaseId)) return
+    if (!isValidCaseId || isRunPending || isExecutionQueued || requestedCaseIds.includes(activeCaseId)) return
     await submitRun(parsedCaseId)
-  }, [activeCaseId, isRunPending, isValidCaseId, parsedCaseId, requestedCaseIds, submitRun])
+  }, [activeCaseId, isExecutionQueued, isRunPending, isValidCaseId, parsedCaseId, requestedCaseIds, submitRun])
 
   return {
     handleRun,
     handleRetry: handleRun,
-    isRunPending: isRunPending || requestedCaseIds.includes(activeCaseId),
+    isRunPending: isRunPending || isExecutionQueued || requestedCaseIds.includes(activeCaseId),
+    trackFinalization,
     trackExecution,
   }
 }

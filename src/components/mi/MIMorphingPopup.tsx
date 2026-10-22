@@ -14,6 +14,7 @@ import {
 } from 'react'
 import ReactDOM from 'react-dom'
 
+import MIButton from '@/components/common/button/MIButton'
 import { MIMorphingPopupContext } from '@/components/mi/MIMorphingPopupContext'
 
 const VERTICAL_MARGIN = 60
@@ -92,6 +93,7 @@ interface PopupProps extends Omit<BoxProps, 'title' | 'content'> {
   measureContent?: ReactNode
   hideHeaderLine?: boolean
   hideCloseButton?: boolean
+  disableClose?: boolean
   showSkeleton?: boolean
   minWidth?: number
   maxWidth?: number
@@ -122,6 +124,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
         measureContent,
         hideHeaderLine,
         hideCloseButton,
+        disableClose = false,
         showSkeleton = true,
         minWidth = 1200,
         maxWidth = 1380,
@@ -239,6 +242,12 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
       }, DURATION_MS + FADEOUT_DURATION_MS)
     }, [onClose, useInternalScroll])
 
+    const handleCloseRequest = useCallback(() => {
+      if (disableClose) return
+      if (onCloseRequest) onCloseRequest()
+      else handleClose()
+    }, [disableClose, handleClose, onCloseRequest])
+
     const open = useCallback(() => {
       const newCoords = calculateCoords()
       if (!newCoords) return
@@ -277,10 +286,10 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
     const popupContextValue = useMemo(
       () => ({
         scrollContainer: scrollContainerEl,
-        close: onCloseRequest ?? handleClose,
+        close: handleCloseRequest,
         isMorphComplete,
       }),
-      [handleClose, isMorphComplete, onCloseRequest, scrollContainerEl],
+      [handleCloseRequest, isMorphComplete, scrollContainerEl],
     )
 
     // children에서 border 관련 스타일 추출 및 제거
@@ -574,7 +583,7 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                 zIndex={1300}
                 sx={scrollWrapperSx}
                 onClick={(e) => {
-                  if (closeOnBackdropClick && e.target === e.currentTarget) (onCloseRequest ?? handleClose)()
+                  if (closeOnBackdropClick && e.target === e.currentTarget) handleCloseRequest()
                 }}
               >
                 <Box
@@ -648,15 +657,18 @@ const MIMorphingPopup = forwardRef<MIMorphingPopupRef, Props>(
                         <Typography fontSize="20px" fontWeight="500" color="contentText.Black">
                           {title}
                         </Typography>
-                        <CloseRoundedIcon
-                          onClick={onCloseRequest ?? handleClose}
-                          sx={{
-                            fontSize: 26,
-                            color: 'contentIcon.Enabled',
-                            cursor: 'pointer',
-                            display: hideCloseButton ? 'none' : 'block',
-                          }}
-                        />
+                        {!hideCloseButton && (
+                          <MIButton
+                            size="h32"
+                            type="ghost"
+                            contentType="icon"
+                            color="gray"
+                            disabled={disableClose}
+                            onClick={handleCloseRequest}
+                          >
+                            <CloseRoundedIcon titleAccess="닫기" sx={{ fontSize: 26 }} />
+                          </MIButton>
+                        )}
                       </Stack>
                       {contentBody}
                     </Stack>

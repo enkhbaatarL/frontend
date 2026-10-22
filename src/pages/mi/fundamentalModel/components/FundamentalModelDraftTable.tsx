@@ -39,6 +39,7 @@ import {
 } from '@/pages/mi/fundamentalModel/components/modelInputEditing'
 import { getModelInputTableQueryOptions } from '@/pages/mi/fundamentalModel/hooks/modelInputTableQuery'
 import { getModelInputErrorMessage, type ModelInputLocalEdit } from '@/pages/mi/fundamentalModel/hooks/useModelInputAutosave'
+import { isModelInputValue } from '@/utils/modelInputValidation'
 
 interface Props {
   scope: string
@@ -58,7 +59,8 @@ interface Props {
   onControlChange: (command: ModelInputSetControlCommand, originalValue: string | number) => Promise<boolean>
 }
 
-const displayValue = (value: unknown) => (typeof value === 'string' || typeof value === 'number' ? value : '')
+const displayValue = (value: unknown) =>
+  typeof value === 'string' || typeof value === 'number' ? value : isModelInputValue(value) ? String(value) : ''
 const getRowId = (row: Record<string, unknown>) => String(row.id ?? row.rowNumber)
 
 const FundamentalModelDraftTable = ({
@@ -172,7 +174,7 @@ const FundamentalModelDraftTable = ({
   const insertRow = async (row: Record<string, unknown>, position: 'above' | 'below') => {
     if (!canChangeStructure || !creationFields || structureRequestRef.current) return
     const clientRowKey = `row_${uuid()}`
-    const values: Record<string, string | number> = {}
+    const values: ModelInputAddRowCommand['values'] = {}
     const initialEdits: Omit<ModelInputLocalEdit, 'id'>[] = []
     for (const field of creationFields) {
       const fieldKey = String(field.fieldKey)
@@ -287,7 +289,7 @@ const FundamentalModelDraftTable = ({
       !editableField ||
       !rowId ||
       draft.status !== 'DRAFT' ||
-      (original !== undefined && original !== null && typeof original !== 'string' && typeof original !== 'number')
+      (original !== undefined && original !== null && !isModelInputValue(original))
     ) {
       return (
         <Stack height="100%" minWidth={0} justifyContent="center">
@@ -330,13 +332,11 @@ const FundamentalModelDraftTable = ({
             value={edit?.text ?? String(original ?? '')}
             isNumeric={field.dataType === 'DECIMAL'}
             isNew={Boolean(localRow) || binding?.origin === 'ADDED' || column.isNew}
-            originalValue={typeof initialValue === 'string' || typeof initialValue === 'number' ? initialValue : ''}
+            originalValue={isModelInputValue(initialValue) ? String(initialValue) : ''}
             textAlign={textAlign}
             ariaLabel={`${table.name} ${rowNumber}행 ${column.headerName}`}
             errorMessage={edit?.error}
-            options={options
-              ?.filter((option) => typeof option === 'string' || typeof option === 'number')
-              .map((option) => ({ value: String(option), label: String(option) }))}
+            options={options?.filter(isModelInputValue).map((option) => ({ value: String(option), label: String(option) }))}
             onChange={(nextValue) => updateValue(String(nextValue))}
             onBlur={() => undefined}
             onRestore={() => updateValue(String(initialValue ?? ''))}

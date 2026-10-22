@@ -1,6 +1,6 @@
 import { Stack, Typography } from '@mui/material'
 import { type Theme } from '@mui/material/styles'
-import { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
@@ -31,11 +31,17 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const [open, setOpen] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
+    const [isExecutionBusy, setIsExecutionBusy] = useState(false)
     // 파라미터 패널(03+)일 때만 팝업을 뷰포트 높이로 채움. 생성 중(02)은 피그마처럼 콘텐츠 높이(400px 로딩 포함)에 맞춤
     const [fillsViewportHeight, setFillsViewportHeight] = useState(false)
     const [contentHeight, setContentHeight] = useState<number | null>(null)
     const [isResizing, setIsResizing] = useState(false)
     const titleRef = useRef<HTMLSpanElement>(null)
+    const isCloseDisabled = isExecutionBusy || executingScenarioIds.size > 0
+
+    useEffect(() => {
+      if (isCloseDisabled) setCloseConfirmOpen(false)
+    }, [isCloseDisabled])
 
     const openPopup = useCallback(() => {
       setIsMaximized(false)
@@ -49,12 +55,14 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const closePopup = useCallback(() => {
       setOpen(false)
       setCloseConfirmOpen(false)
+      setIsExecutionBusy(false)
       onClose?.()
     }, [onClose])
 
     const handleCloseRequest = useCallback(() => {
+      if (isCloseDisabled) return
       setCloseConfirmOpen(true)
-    }, [])
+    }, [isCloseDisabled])
 
     useImperativeHandle(
       ref,
@@ -147,6 +155,8 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           handleClose={handleCloseRequest}
           width={1200}
           hideFooter
+          disableClose={isCloseDisabled}
+          disableBackdropClick={isCloseDisabled}
           paperSx={{
             border: '1px solid',
             borderColor: 'contentBorder.Normal',
@@ -211,6 +221,7 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
             isResizing={isResizing}
             onContentHeightChange={setContentHeight}
             onFillsViewportHeightChange={setFillsViewportHeight}
+            onExecutionBusyChange={setIsExecutionBusy}
             onCancel={closePopup}
             onAccepted={onAccepted}
             onCompleted={onCompleted}
@@ -219,14 +230,14 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         </MIConfirm>
 
         <MIConfirm
-          open={closeConfirmOpen}
+          open={closeConfirmOpen && !isCloseDisabled}
           title="MI 수급모델 진행을 종료하시겠습니까?"
           width={450}
           handleClose={() => setCloseConfirmOpen(false)}
           zIndex={1400}
           actions={[
             { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setCloseConfirmOpen(false) },
-            { label: '종료', color: 'red', onClick: closePopup },
+            { label: '종료', color: 'red', disabled: isCloseDisabled, onClick: closePopup },
           ]}
         >
           현재 생성된 파라미터 제안을 닫습니다.
