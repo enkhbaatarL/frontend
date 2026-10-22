@@ -271,6 +271,10 @@ const useModelInputUpload = (scope: string) => {
 
   const clearCompleted = useCallback(() => {
     stateRef.current = { draftId: null, pending: null }
+    draftRef.current = undefined
+    filesRef.current.clear()
+    setDraft(undefined)
+    setResult(null)
     try {
       persist()
     } catch (cause) {

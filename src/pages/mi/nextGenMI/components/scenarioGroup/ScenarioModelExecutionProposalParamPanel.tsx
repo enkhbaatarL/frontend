@@ -223,7 +223,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
       </Stack>
 
       <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
-        <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+        <HorizontalScrollContainer alignItems="center" gap="5px" padding="1px 0" margin="-1px 0" gradientWidth={63} scrollAmount={0.85}>
           {modelSheets.map((sheetName) => (
             <ParameterChip
               key={sheetName}
@@ -238,7 +238,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
 
       {modelTables.length > 0 && (
         <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5" gap="8px">
-          <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+          <HorizontalScrollContainer alignItems="center" gap="5px" padding="1px 0" margin="-1px 0" gradientWidth={63} scrollAmount={0.85}>
             {modelTables.map((tableName) => (
               <ParameterChip
                 key={tableName}
@@ -253,7 +253,7 @@ const ScenarioModelExecutionProposalParamPanel = ({
       )}
       {parameterChips.length > 1 && (
         <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
-          <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+          <HorizontalScrollContainer alignItems="center" gap="5px" padding="1px 0" margin="-1px 0" gradientWidth={63} scrollAmount={0.85}>
             {parameterChips.map((chip) => (
               <ParameterChip
                 key={chip.index}

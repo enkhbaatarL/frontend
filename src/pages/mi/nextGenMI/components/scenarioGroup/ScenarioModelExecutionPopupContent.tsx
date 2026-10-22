@@ -1071,6 +1071,8 @@ const ScenarioModelExecutionPopupContent = ({
           {isMaximized ? (
             <Stack flexShrink={0} padding="12px 24px">
               <HorizontalScrollContainer
+                padding="1px 0"
+                margin="-1px 0"
                 alignItems="center"
                 gradientWidth={63}
                 scrollAmount={0.85}
@@ -1177,6 +1179,8 @@ const ScenarioModelExecutionPopupContent = ({
               {modelSheetNames.length > 0 && (
                 <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
                   <HorizontalScrollContainer
+                    padding="1px 0"
+                    margin="-1px 0"
                     alignItems="center"
                     gap="5px"
                     gradientWidth={63}
@@ -1204,7 +1208,14 @@ const ScenarioModelExecutionPopupContent = ({
 
               {modelTableNames.length > 1 && (
                 <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.5">
-                  <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+                  <HorizontalScrollContainer
+                    alignItems="center"
+                    gap="5px"
+                    padding="1px 0"
+                    margin="-1px 0"
+                    gradientWidth={63}
+                    scrollAmount={0.85}
+                  >
                     {modelTableNames.map((modelTable) => (
                       <ParameterChip
                         key={modelTable}
@@ -1219,7 +1230,14 @@ const ScenarioModelExecutionPopupContent = ({
 
               {modelParameters.length > 1 && (
                 <Stack flexShrink={0} padding="12px 24px" bgcolor="gray.10">
-                  <HorizontalScrollContainer alignItems="center" gap="5px" gradientWidth={63} scrollAmount={0.85}>
+                  <HorizontalScrollContainer
+                    alignItems="center"
+                    gap="5px"
+                    padding="1px 0"
+                    margin="-1px 0"
+                    gradientWidth={63}
+                    scrollAmount={0.85}
+                  >
                     {modelParameters.map((modelParameter, index) => (
                       <ParameterChip
                         key={`${modelParameter.parameter.parameterName ?? 'parameter'}-${index}`}

@@ -39,8 +39,10 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
   const closingRef = useRef(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isCloseConfirmOpen, setIsCloseConfirmOpen] = useState(false)
+  const [pendingSource, setPendingSource] = useState<string | null>(null)
   const [isClosing, setIsClosing] = useState(false)
   const [selectedSource, setSelectedSource] = useState('')
+  const [hasUploadedFiles, setHasUploadedFiles] = useState(false)
   const [isDraftBusy, setIsDraftBusy] = useState(false)
   const [isSourceSwitching, setIsSourceSwitching] = useState(false)
   const [title, setTitle] = useState('')
@@ -64,7 +66,9 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
       : sourceCases.data?.cases.find((item) => String(item.caseId) === selectedSource)
   useImperativeHandle(ref, () => ({ open: () => popupRef.current?.open() }), [])
   const cancelClose = () => {
-    if (!closingRef.current) setIsCloseConfirmOpen(false)
+    if (closingRef.current || sourceSwitchRef.current) return
+    setIsCloseConfirmOpen(false)
+    setPendingSource(null)
   }
   const confirmClose = async () => {
     if (closingRef.current || sourceSwitchRef.current || isDraftBusy) return
@@ -72,14 +76,20 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
     setIsClosing(true)
     let closed = false
     try {
-      if (draftEditorRef.current && !(await draftEditorRef.current.flush())) {
-        throw new Error('입력값 저장을 완료하지 못했습니다.')
+      if (draftEditorRef.current) {
+        const completed = await (selectedSource === 'EXCEL_UPLOAD' ? draftEditorRef.current.discard() : draftEditorRef.current.flush())
+        if (!completed) throw new Error('입력값 처리를 완료하지 못했습니다.')
       }
       setIsCloseConfirmOpen(false)
       popupRef.current?.close()
       closed = true
     } catch {
-      showSnackbar('입력값 저장을 완료하지 못했습니다. 처리 상태를 확인한 후 다시 닫아주세요.', { variant: 'error' })
+      showSnackbar(
+        selectedSource === 'EXCEL_UPLOAD'
+          ? '작업 중인 내용을 삭제하지 못했습니다. 처리 상태를 확인한 후 다시 시도해주세요.'
+          : '입력값 저장을 완료하지 못했습니다. 처리 상태를 확인한 후 다시 닫아주세요.',
+        { variant: 'error' },
+      )
     } finally {
       if (!closed) {
         closingRef.current = false
@@ -87,21 +97,42 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
       }
     }
   }
-  const handleSourceChange = useCallback(
-    async (source: string) => {
-      if (sourceSwitchRef.current || source === selectedSource) return
-      sourceSwitchRef.current = true
-      setIsSourceSwitching(true)
-      try {
-        if (draftEditorRef.current && !(await draftEditorRef.current.flush())) return
-        setSelectedSource(source)
-      } finally {
-        sourceSwitchRef.current = false
-        setIsSourceSwitching(false)
+  const changeSource = async (source: string) => {
+    if (closingRef.current || sourceSwitchRef.current || isDraftBusy) return
+    sourceSwitchRef.current = true
+    setIsSourceSwitching(true)
+    try {
+      if (draftEditorRef.current) {
+        const completed = await (selectedSource === 'EXCEL_UPLOAD' ? draftEditorRef.current.discard() : draftEditorRef.current.flush())
+        if (!completed) throw new Error('입력값 처리를 완료하지 못했습니다.')
       }
-    },
-    [selectedSource],
-  )
+      setSelectedSource(source)
+      if (selectedSource === 'EXCEL_UPLOAD') {
+        setTitle('')
+        setDescription('')
+        setShowTitleValidationError(false)
+      }
+      setPendingSource(null)
+    } catch {
+      showSnackbar(
+        selectedSource === 'EXCEL_UPLOAD'
+          ? '작업 중인 내용을 삭제하지 못했습니다. 처리 상태를 확인한 후 다시 시도해주세요.'
+          : '입력값 저장을 완료하지 못했습니다. 처리 상태를 확인한 후 다시 시도해주세요.',
+        { variant: 'error' },
+      )
+    } finally {
+      sourceSwitchRef.current = false
+      setIsSourceSwitching(false)
+    }
+  }
+  const handleSourceChange = (source: string) => {
+    if (closingRef.current || sourceSwitchRef.current || isDraftBusy || source === selectedSource) return
+    if (selectedSource === 'EXCEL_UPLOAD' && hasUploadedFiles) {
+      setPendingSource(source)
+      return
+    }
+    void changeSource(source)
+  }
   const handleFinalized = useCallback(
     async (caseId: number, operation?: ModelInputFinalization) => {
       const execution = operation && getModelInputExecution(operation)
@@ -124,6 +155,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
         { variant: execution?.status === 'FAILED' ? 'error' : 'success' },
       )
       setIsCloseConfirmOpen(false)
+      setPendingSource(null)
       closingRef.current = true
       popupRef.current?.close()
     },
@@ -143,7 +175,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
               onSelected={(source: string) => {
                 void handleSourceChange(source)
               }}
-              disabled={isDraftBusy || isSourceSwitching}
+              disabled={isDraftBusy || isSourceSwitching || isClosing}
               sources={sourceCases.data}
               loading={sourceCases.isPending}
             />
@@ -162,7 +194,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
                   id="fundamental-model-title"
                   component="input"
                   value={title}
-                  disabled={isDraftBusy}
+                  disabled={isDraftBusy || isSourceSwitching || isClosing}
                   maxLength={FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
                   placeholder="케이스명을 입력하세요 (예: 미국-이란 긴장 고조 시나리오)"
                   aria-invalid={showTitleValidationError}
@@ -217,7 +249,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
                   id="fundamental-model-description"
                   component="input"
                   value={description}
-                  disabled={isDraftBusy}
+                  disabled={isDraftBusy || isSourceSwitching || isClosing}
                   maxLength={FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
                   placeholder="케이스에 대한 설명을 입력하세요 (선택)"
                   onChange={(event: ChangeEvent<HTMLInputElement>) => setDescription(event.target.value)}
@@ -267,7 +299,9 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
           scope={authScope}
           title={title}
           description={description}
+          externalBusy={isClosing || isSourceSwitching}
           onBusyChange={setIsDraftBusy}
+          onUploadedFilesChange={setHasUploadedFiles}
           onFinalized={handleFinalized}
         />
       ) : (
@@ -279,6 +313,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
           scope={authScope}
           title={title}
           description={description}
+          externalBusy={isClosing || isSourceSwitching}
           onBusyChange={setIsDraftBusy}
           onFinalized={handleFinalized}
         />
@@ -305,7 +340,9 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
             closingRef.current = false
             setIsClosing(false)
             setIsCloseConfirmOpen(false)
+            setPendingSource(null)
             setSelectedSource('')
+            setHasUploadedFiles(false)
             setTitle('')
             setDescription('')
             setShowTitleValidationError(false)
@@ -315,34 +352,44 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
             closingRef.current = false
             setIsClosing(false)
             setIsCloseConfirmOpen(false)
+            setPendingSource(null)
             setIsOpen(false)
           },
           onCloseRequest: () => {
-            if (!closingRef.current) setIsCloseConfirmOpen(true)
+            if (!closingRef.current && !sourceSwitchRef.current && pendingSource === null) setIsCloseConfirmOpen(true)
           },
         }}
       >
         {children}
       </MIMorphingPopup>
       <MIConfirm
-        open={isCloseConfirmOpen}
-        title="MI 수급모델 진행을 종료하시겠습니까?"
+        open={isCloseConfirmOpen || pendingSource !== null}
+        title={pendingSource !== null ? '입력값 출처를 변경하시겠습니까?' : 'MI 수급모델 진행을 종료하시겠습니까?'}
         width="450px"
         zIndex={1402}
-        disableClose={isClosing}
+        disableClose={isClosing || isSourceSwitching}
         handleClose={cancelClose}
         actions={[
-          { label: '취소', variant: 'outlined', color: 'gray', disabled: isClosing, onClick: cancelClose },
+          { label: '취소', variant: 'outlined', color: 'gray', disabled: isClosing || isSourceSwitching, onClick: cancelClose },
           {
-            label: isClosing ? '저장 중...' : '종료',
+            label:
+              isClosing || isSourceSwitching
+                ? selectedSource === 'EXCEL_UPLOAD'
+                  ? '삭제 중...'
+                  : '저장 중...'
+                : pendingSource !== null
+                  ? '변경'
+                  : '종료',
             variant: 'filled',
             color: 'red',
             disabled: isClosing || isDraftBusy || isSourceSwitching,
-            onClick: confirmClose,
+            onClick: () => (pendingSource !== null ? changeSource(pendingSource) : confirmClose()),
           },
         ]}
       >
-        입력값 변경 사항은 유지되며, 케이스명과 설명은 저장되지 않습니다.
+        {selectedSource === 'EXCEL_UPLOAD'
+          ? '업로드한 파일과 작업 중인 내용이 모두 삭제됩니다.'
+          : '입력값 변경 사항은 유지되며, 케이스명과 설명은 저장되지 않습니다.'}
       </MIConfirm>
     </>
   )

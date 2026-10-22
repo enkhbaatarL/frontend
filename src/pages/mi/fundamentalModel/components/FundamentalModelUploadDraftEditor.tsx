@@ -16,6 +16,7 @@ import {
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import FundamentalModelInputEditorActions from '@/pages/mi/fundamentalModel/components/FundamentalModelInputEditorActions'
 import useModelInputUpload from '@/pages/mi/fundamentalModel/hooks/useModelInputUpload'
+import inputDraftService from '@/service/mi/fundamentalModel/inputDraft'
 import { downloadFile } from '@/utils/file'
 
 interface FileReplacement {
@@ -27,12 +28,14 @@ interface Props {
   scope: string
   title: string
   description: string
+  externalBusy?: boolean
   onBusyChange: (busy: boolean) => void
+  onUploadedFilesChange: (hasFiles: boolean) => void
   onFinalized: (caseId: number, operation?: ModelInputFinalization) => Promise<void>
 }
 
 const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditorRef, Props>(
-  ({ scope, title, description, onBusyChange, onFinalized }, ref) => {
+  ({ scope, title, description, externalBusy = false, onBusyChange, onUploadedFilesChange, onFinalized }, ref) => {
     const upload = useModelInputUpload(scope)
     const queryClient = useQueryClient()
     const { showSnackbar } = useSnackbar()
@@ -56,9 +59,13 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
       }
     }, [])
     useEffect(() => {
-      onBusyChange(isEditorBusy)
+      onBusyChange(isEditorBusy || isProcessing || upload.isUploading || upload.isLoading)
       return () => onBusyChange(false)
-    }, [isEditorBusy, onBusyChange])
+    }, [isEditorBusy, isProcessing, onBusyChange, upload.isLoading, upload.isUploading])
+    useEffect(() => {
+      onUploadedFilesChange(Boolean(upload.draft || upload.hasPendingRequest))
+      return () => onUploadedFilesChange(false)
+    }, [onUploadedFilesChange, upload.draft, upload.hasPendingRequest])
     useEffect(() => {
       if (upload.error) showSnackbar(upload.error, { variant: 'error' })
     }, [showSnackbar, upload.error])
@@ -78,6 +85,22 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
           if (upload.hasPendingRequest && !(await upload.resume())) return false
           return editorRef.current ? editorRef.current.flush() : true
         },
+        discard: async () => {
+          if (processingRef.current || upload.isUploading || upload.isLoading) return false
+          if (upload.hasPendingRequest && !(await upload.resume())) return false
+          if (editorRef.current) {
+            if (!(await editorRef.current.discard())) return false
+          } else {
+            const draft = upload.getDraft()
+            if (draft) {
+              const current = await inputDraftService.getDraft(draft.draftId)
+              await inputDraftService.discardUpload(current.draftId, current.revision)
+            }
+          }
+          upload.clearCompleted()
+          filesRef.current.clear()
+          return true
+        },
       }),
       [upload],
     )
@@ -89,7 +112,8 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
     }
     const addFiles = async (files: FileList | File[] | null) => {
       const incoming = Array.from(files ?? [])
-      if (processingRef.current || upload.hasPendingRequest || upload.isLoading || upload.isUploading || !files?.length) return
+      if (externalBusy || processingRef.current || upload.hasPendingRequest || upload.isLoading || upload.isUploading || !files?.length)
+        return
       processingRef.current = true
       setIsProcessing(true)
       try {
@@ -159,7 +183,7 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
             initialTable={upload.result?.selection}
             title={title}
             description={description}
-            externalBusy={isProcessing || upload.isUploading || upload.hasPendingRequest}
+            externalBusy={externalBusy || isProcessing || upload.isUploading || upload.hasPendingRequest}
             uploadActions={{
               openFile,
               canDownload: (kind) => filesRef.current.has(kind),
@@ -180,7 +204,7 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
               accept=".xlsx,.xlsm"
               maxFileSizeMb={50}
               guideText="(Demand, Supply, Trade, Output이 각각 포함된 4개의 파일을 모두 업로드해주세요. 각 파일은 50MB까지 가능합니다.)"
-              disabled={busy || upload.hasPendingRequest}
+              disabled={externalBusy || busy || upload.hasPendingRequest}
               isUploading={upload.isUploading || isProcessing}
               onFilesAdd={(files) => {
                 targetRef.current = undefined

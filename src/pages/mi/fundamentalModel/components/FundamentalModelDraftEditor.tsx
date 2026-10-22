@@ -25,6 +25,7 @@ import useModelInputAutosave from '@/pages/mi/fundamentalModel/hooks/useModelInp
 
 export interface FundamentalModelDraftEditorRef {
   flush: () => Promise<boolean>
+  discard: () => Promise<boolean>
 }
 
 interface Props {
@@ -150,7 +151,10 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       () => (externalBusy ? Promise.resolve(false) : draft ? flushBeforeLeaving() : Promise.resolve(!isLoading)),
       [draft, externalBusy, flushBeforeLeaving, isLoading],
     )
-    useImperativeHandle(ref, () => ({ flush: saveBeforeLeaving }), [saveBeforeLeaving])
+    useImperativeHandle(ref, () => ({ flush: saveBeforeLeaving, discard: autosave.discardDraft }), [
+      autosave.discardDraft,
+      saveBeforeLeaving,
+    ])
     useEffect(() => {
       onBusyChange(isFinalizing || isSwitching)
       return () => onBusyChange(false)

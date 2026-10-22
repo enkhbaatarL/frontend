@@ -487,6 +487,39 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
     }
   }, [flush, persist, scope])
 
+  const discardDraft = useCallback(async () => {
+    const state = stateRef.current
+    if (!state || commandRef.current || getModelInputAuthScope() !== scope) return false
+    commandRef.current = true
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = undefined
+    savePreparationRef.current?.abort()
+    try {
+      // 이미 접수된 작업만 완료하고, 아직 전송하지 않은 편집은 저장하지 않는다.
+      if (saveRef.current) await saveRef.current
+      if (state.pending && !(await flush(false, false))) return false
+      const current = await loadDraft(state.draftId)
+      await inputDraftService.discardUpload(current.draftId, current.revision)
+      state.edits = []
+      state.addedRows = []
+      state.pending = null
+      state.revisionConflict = false
+      persist()
+      stateRef.current = null
+      draftRef.current = undefined
+      originalValuesRef.current.clear()
+      queryClient.removeQueries({ queryKey: ['fundamentalModel', 'inputDraftTable', scope, current.draftId] })
+      void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'inputSourceCases', scope] })
+      publish()
+      return true
+    } catch (cause) {
+      if (mountedRef.current) setError(getModelInputErrorMessage(cause))
+      return false
+    } finally {
+      commandRef.current = false
+    }
+  }, [flush, loadDraft, persist, publish, queryClient, scope])
+
   useEffect(() => {
     mountedRef.current = true
     const controller = new AbortController()
@@ -962,6 +995,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
     resolveRevisionConflict,
     flush,
     flushBeforeLeaving,
+    discardDraft,
     finalize,
     discard,
   }
