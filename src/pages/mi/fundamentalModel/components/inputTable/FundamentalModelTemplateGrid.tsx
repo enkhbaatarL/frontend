@@ -61,7 +61,7 @@ const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
   const handledScrollTargetRef = useRef<typeof scrollTarget>(undefined)
   const [focusedCell, setFocusedCell] = useState<{ rowId: string; columnIndex: number }>()
   const fields = useMemo(() => columns.map(({ field }) => field), [columns])
-  const showActions = Boolean(actionHeader || renderRowAction)
+  const showActions = Boolean(actionHeader || (renderRowAction && rows.some((row) => renderRowAction(row))))
   const {
     widths,
     offsets: columnOffsets,

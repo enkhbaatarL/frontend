@@ -1,10 +1,11 @@
 import { CircularProgress, Divider, Stack, Tab, Tabs, Typography } from '@mui/material'
 import { useQueryClient } from '@tanstack/react-query'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import { useBlocker } from 'react-router-dom'
 
 import type {
   ModelInputChangeRequest,
+  ModelInputDraftStructure,
   ModelInputFinalization,
   ModelInputSection,
   ModelInputSetControlCommand,
@@ -15,11 +16,11 @@ import type {
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
-import ChartDownloadIcon from '@/components/common/forecast-chart/icons/ChartDownloadIcon'
 import UploadIcon from '@/components/common/icons/UploadIcon'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
 import useSnackbar from '@/hooks/useSnackbar'
 import FundamentalModelDraftTable from '@/pages/mi/fundamentalModel/components/FundamentalModelDraftTable'
+import { FUNDAMENTAL_MODEL_FILE_KINDS } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import FundamentalModelInputEditorActions from '@/pages/mi/fundamentalModel/components/FundamentalModelInputEditorActions'
 import { getModelInputExecution } from '@/pages/mi/fundamentalModel/components/modelInputFinalization'
 import useModelInputAutosave from '@/pages/mi/fundamentalModel/hooks/useModelInputAutosave'
@@ -27,6 +28,12 @@ import useModelInputAutosave from '@/pages/mi/fundamentalModel/hooks/useModelInp
 export interface FundamentalModelDraftEditorRef {
   flush: () => Promise<boolean>
   discard: () => Promise<boolean>
+}
+
+export interface FundamentalModelUploadQueueRef {
+  prepareUpload: () => Promise<boolean>
+  completeUpload: (draft: ModelInputDraftStructure) => Promise<void>
+  resumeAfterUpload: () => void
 }
 
 interface Props {
@@ -40,9 +47,9 @@ interface Props {
   initialTable?: ModelInputTablePage | null
   externalBusy?: boolean
   uploadActions?: {
+    queueRef: Ref<FundamentalModelUploadQueueRef>
+    hasPendingRequest: boolean
     openFile: (kind?: ModelInputSection['kind']) => void
-    download: (kind: ModelInputSection['kind']) => void
-    canDownload: (kind: ModelInputSection['kind']) => boolean
   }
 }
 
@@ -52,7 +59,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     ref,
   ) => {
     const queryClient = useQueryClient()
-    const autosave = useModelInputAutosave(caseId, scope, initialDraftId)
+    const autosave = useModelInputAutosave(caseId, scope, initialDraftId, uploadActions?.hasPendingRequest)
     const {
       draft,
       edits,
@@ -61,7 +68,6 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       isLoading,
       isSaving,
       hasPendingRequest,
-      hasRevisionConflict,
       isTableChanging,
       resettableTableIds,
       flush,
@@ -69,7 +75,6 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       flushBeforeLeaving,
       finalize,
       discard,
-      resolveRevisionConflict,
       updateEdit,
       executeCommands,
       stageRow,
@@ -77,10 +82,8 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     } = autosave
     const { showSnackbar } = useSnackbar()
     const [selection, setSelection] = useState<{ kind: ModelInputSection['kind']; sheetName: string; tableId: string }>()
-    const [isSwitching, setIsSwitching] = useState(false)
     const [isFinalizing, setIsFinalizing] = useState(false)
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
-    const [conflictAction, setConflictAction] = useState<'reload' | 'reapply' | null>(null)
     const actionRef = useRef(false)
     const originalControlValuesRef = useRef(new Map<string, Map<string, string | number>>())
     const handledFinalizationRef = useRef<string | undefined>(undefined)
@@ -96,13 +99,18 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       section?.sheets.find((item) => item.tables.some((candidate) => candidate.id === selectedTableId)) ??
       section?.sheets[0]
     const table = sheet?.tables.find((item) => item.id === selectedTableId) ?? sheet?.tables[0]
-    const busy = isFinalizing || isSwitching || externalBusy
+    const busy = isFinalizing || externalBusy
+    useEffect(() => {
+      originalControlValuesRef.current.clear()
+    }, [autosave.serverResetCount])
     useEffect(() => {
       if (!initialTable || initialTable.draftId !== draft?.draftId || initialTable.revision !== draft.revision) return
       for (const item of draft.sections)
         for (const sourceSheet of item.sheets) {
           if (sourceSheet.tables.some((candidate) => candidate.id === initialTable.tableData.tableId)) {
-            setSelection({ kind: item.kind, sheetName: sourceSheet.sheetName, tableId: initialTable.tableData.tableId })
+            setSelection(
+              (current) => current ?? { kind: item.kind, sheetName: sourceSheet.sheetName, tableId: initialTable.tableData.tableId },
+            )
             return
           }
         }
@@ -158,10 +166,19 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       autosave.discardDraft,
       saveBeforeLeaving,
     ])
+    useImperativeHandle(
+      uploadActions?.queueRef,
+      () => ({
+        prepareUpload: autosave.prepareUpload,
+        completeUpload: autosave.completeUpload,
+        resumeAfterUpload: autosave.resumeAfterUpload,
+      }),
+      [autosave.completeUpload, autosave.prepareUpload, autosave.resumeAfterUpload],
+    )
     useEffect(() => {
-      onBusyChange(isFinalizing || isSwitching)
+      onBusyChange(isFinalizing)
       return () => onBusyChange(false)
-    }, [isFinalizing, isSwitching, onBusyChange])
+    }, [isFinalizing, onBusyChange])
 
     const blocker = useBlocker(
       ({ currentLocation, nextLocation }) =>
@@ -190,7 +207,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     }
 
     const submit = async () => {
-      if (actionRef.current || (!title.trim() && !hasPendingRequest) || !draft) return
+      if (actionRef.current || externalBusy || (!title.trim() && !hasPendingRequest) || !draft) return
       actionRef.current = true
       setIsFinalizing(true)
       try {
@@ -203,7 +220,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     }
 
     const changeStructure = (operations: ModelInputChangeRequest['operations']) => {
-      if (actionRef.current || externalBusy) return Promise.resolve(false)
+      if (actionRef.current || busy) return Promise.resolve(false)
       return executeCommands(operations)
     }
 
@@ -216,40 +233,12 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     }
 
     const resetTable = () => {
-      if (actionRef.current || externalBusy || !table) return
+      if (actionRef.current || busy || !table) return
       void discard(table.id)
-    }
-
-    const recoverConflict = async () => {
-      if (actionRef.current || !conflictAction) return
-      actionRef.current = true
-      setIsSwitching(true)
-      setConflictAction(null)
-      try {
-        if (await resolveRevisionConflict(conflictAction === 'reapply')) originalControlValuesRef.current.clear()
-      } finally {
-        actionRef.current = false
-        setIsSwitching(false)
-      }
     }
 
     return (
       <Stack flex={1} minHeight={0} overflow="hidden">
-        {hasRevisionConflict && (
-          <Stack gap="8px" padding="12px 20px" flexShrink={0}>
-            <Typography variant="body2SB14" color="contentText.Normal" role="alert">
-              다른 작업에서 입력값이 변경되어 저장을 멈췄습니다. 내 변경 내용은 보관되어 있습니다.
-            </Typography>
-            <Stack direction="row" gap="8px" flexWrap="wrap">
-              <MIBaseButton variant="outlined" disabled={busy} onClick={() => setConflictAction('reload')}>
-                최신값 불러오기
-              </MIBaseButton>
-              <MIBaseButton variant="contained" disabled={busy} onClick={() => setConflictAction('reapply')}>
-                내 변경 재적용
-              </MIBaseButton>
-            </Stack>
-          </Stack>
-        )}
         {isFinalizing ? (
           <Stack flex={1} minHeight={0} alignItems="center" justifyContent="center" gap="10px" role="status" aria-live="polite">
             <MIAgentSpinner size={40} tone="gray" />
@@ -281,10 +270,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                       void selectTable(kind, next?.sheetName ?? '', next?.tables[0])
                     }}
                   >
-                    {(uploadActions
-                      ? (['DEMAND', 'SUPPLY', 'TRADE', 'OUTPUT'] as const).map((kind) => ({ kind }))
-                      : (draft?.sections ?? [])
-                    ).map((item) => (
+                    {(uploadActions ? FUNDAMENTAL_MODEL_FILE_KINDS.map((kind) => ({ kind })) : (draft?.sections ?? [])).map((item) => (
                       <Tab
                         key={item.kind}
                         value={item.kind}
@@ -309,17 +295,6 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                       />
                     ))}
                   </Tabs>
-                  {uploadActions && section && (
-                    <MIBaseButton
-                      variant="outlined"
-                      prefix={<ChartDownloadIcon />}
-                      disabled={!uploadActions.canDownload(section.kind)}
-                      onClick={() => uploadActions.download(section.kind)}
-                      sx={{ height: '36px', padding: '8px 10px 8px 6px', borderRadius: '8px', flexShrink: 0 }}
-                    >
-                      인풋 파일 다운로드
-                    </MIBaseButton>
-                  )}
                 </Stack>
                 <Divider />
               </>
@@ -442,8 +417,8 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                     addedRows={addedRows.filter((row) => row.tableId === table.id)}
                     onStageRow={stageRow}
                     onRemoveStagedRow={removeStagedRow}
-                    disabled={hasRevisionConflict || busy || isTableChanging(table.id)}
-                    structureDisabled={busy || hasRevisionConflict || isTableChanging(table.id)}
+                    disabled={busy || isTableChanging(table.id)}
+                    structureDisabled={busy || isTableChanging(table.id)}
                     isSavingStructure={isTableChanging(table.id)}
                     onEdit={updateEdit}
                     onCommands={changeStructure}
@@ -459,7 +434,6 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
         <FundamentalModelInputEditorActions
           canReset={
             !busy &&
-            !hasRevisionConflict &&
             !isLoading &&
             Boolean(
               table &&
@@ -470,7 +444,6 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
           }
           canSubmit={
             !busy &&
-            !hasRevisionConflict &&
             !isLoading &&
             Boolean(draft) &&
             Boolean(title.trim()) &&
@@ -505,26 +478,6 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
         >
           현재 표에서 이번 편집 중 변경한 기존 셀 값을 되돌립니다. 추가·삭제한 행과 열, 새 행의 입력값, 모드 설정은 유지됩니다. 다른 표에는
           적용되지 않습니다. 계속하시겠습니까?
-        </MIConfirm>
-        <MIConfirm
-          open={conflictAction !== null}
-          title={conflictAction === 'reapply' ? '내 변경을 최신값에 재적용할까요?' : '최신값을 불러올까요?'}
-          width="480px"
-          zIndex={1402}
-          handleClose={() => setConflictAction(null)}
-          actions={[
-            { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setConflictAction(null) },
-            {
-              label: conflictAction === 'reapply' ? '재적용' : '불러오기',
-              variant: 'filled',
-              color: conflictAction === 'reapply' ? 'primary' : 'red',
-              onClick: recoverConflict,
-            },
-          ]}
-        >
-          {conflictAction === 'reapply'
-            ? '보관된 미저장 변경을 최신 입력값에 적용하고 저장합니다. 같은 셀의 서버 값은 내 입력값으로 바뀝니다. 삭제된 행이나 편집할 수 없는 셀은 재적용할 수 없습니다.'
-            : '보관된 미저장 셀 변경과 미저장 새 행을 버리고 서버의 최신 입력값을 불러옵니다. 계속하시겠습니까?'}
         </MIConfirm>
       </Stack>
     )

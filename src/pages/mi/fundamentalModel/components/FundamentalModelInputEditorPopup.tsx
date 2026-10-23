@@ -4,6 +4,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 
 import type { ModelInputFinalization } from '@/service/mi/fundamentalModel/inputDraft'
 
+import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import MIMorphingPopup, { type MIMorphingPopupRef } from '@/components/mi/MIMorphingPopup'
 import useSnackbar from '@/hooks/useSnackbar'
@@ -44,10 +45,12 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
   const [selectedSource, setSelectedSource] = useState('')
   const [hasUploadedFiles, setHasUploadedFiles] = useState(false)
   const [isDraftBusy, setIsDraftBusy] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const [isSourceSwitching, setIsSourceSwitching] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [showTitleValidationError, setShowTitleValidationError] = useState(false)
+  const isUploadingFiles = uploadProgress !== null
   const authScope = useAuthStore(
     ({ user, accessCompanyInfo }) =>
       `${user?.userNo ?? ''}:${user?.isOtherServiceAccessPossible ? (accessCompanyInfo?.customerCompanyNo ?? user.companyNo) : (user?.companyNo ?? '')}`,
@@ -165,160 +168,185 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
   )
   const editorHeight = 'max(447px, calc(100dvh - 188px))'
   const editorContent = (
-    <Stack flex={1} minHeight={0} height={editorHeight} width="100%">
-      <Stack padding="0 20px 20px" flexShrink={0}>
-        <Stack gap="10px" padding="20px" borderRadius="8px" bgcolor="contentBG.Primaryactive">
-          <Stack direction="row" alignItems="center" gap="12px">
-            <Typography component="span" variant="body2SB14" color="contentText.Normal" flexShrink={0}>
-              입력값 출처
-            </Typography>
-            <FundamentalModelInputSourceMenu
-              selected={selectedSource}
-              onSelected={(source: string) => {
-                void handleSourceChange(source)
-              }}
-              disabled={isDraftBusy || isSourceSwitching || isClosing}
-              sources={sourceCases.data}
-              loading={sourceCases.isPending}
-            />
-          </Stack>
+    <Stack position="relative" flex={1} minHeight={0} height={editorHeight} width="100%" aria-busy={isUploadingFiles}>
+      <Stack flex={1} minHeight={0} inert={isUploadingFiles}>
+        <Stack padding="0 20px 20px" flexShrink={0}>
+          <Stack gap="10px" padding="20px" borderRadius="8px" bgcolor="contentBG.Primaryactive">
+            <Stack direction="row" alignItems="center" gap="12px">
+              <Typography component="span" variant="body2SB14" color="contentText.Normal" flexShrink={0}>
+                입력값 출처
+              </Typography>
+              <FundamentalModelInputSourceMenu
+                selected={selectedSource}
+                onSelected={(source: string) => {
+                  void handleSourceChange(source)
+                }}
+                disabled={isDraftBusy || isSourceSwitching || isClosing}
+                sources={sourceCases.data}
+                loading={sourceCases.isPending}
+              />
+            </Stack>
 
-          <Stack direction="row" alignItems="flex-start" gap="30px" width="100%">
-            <Stack width="476px" flexShrink={0} minWidth={0}>
-              <Stack direction="row" alignItems="center" gap="12px">
-                <Stack direction="row" alignItems="center" width="64px" flexShrink={0}>
-                  <Typography component="label" htmlFor="fundamental-model-title" variant="body2SB14" color="contentText.Normal" noWrap>
-                    케이스명
-                  </Typography>
-                  <Box component="span" width="4px" height="4px" borderRadius="50%" bgcolor="point.red1" margin="0 0 8px 4px" />
+            <Stack direction="row" alignItems="flex-start" gap="30px" width="100%">
+              <Stack width="476px" flexShrink={0} minWidth={0}>
+                <Stack direction="row" alignItems="center" gap="12px">
+                  <Stack direction="row" alignItems="center" width="64px" flexShrink={0}>
+                    <Typography component="label" htmlFor="fundamental-model-title" variant="body2SB14" color="contentText.Normal" noWrap>
+                      케이스명
+                    </Typography>
+                    <Box component="span" width="4px" height="4px" borderRadius="50%" bgcolor="point.red1" margin="0 0 8px 4px" />
+                  </Stack>
+                  <Box
+                    id="fundamental-model-title"
+                    component="input"
+                    value={title}
+                    disabled={isDraftBusy || isSourceSwitching || isClosing}
+                    maxLength={FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
+                    placeholder="케이스명을 입력하세요 (예: 미국-이란 긴장 고조 시나리오)"
+                    aria-invalid={showTitleValidationError}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setTitle(event.target.value)
+                      setShowTitleValidationError(false)
+                    }}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: '36px',
+                      border: '1px solid',
+                      borderColor: showTitleValidationError ? 'point.red1' : 'contentBorder.Normal',
+                      borderRadius: '8px',
+                      bgcolor: 'commonColor.White',
+                      boxSizing: 'border-box',
+                      color: 'contentText.Black',
+                      fontFamily: 'inherit',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                      outline: 'none',
+                      padding: '8px 12px',
+                      '&::placeholder': { color: 'contentText.Placeholder', opacity: 1 },
+                    }}
+                  />
                 </Stack>
-                <Box
-                  id="fundamental-model-title"
-                  component="input"
-                  value={title}
-                  disabled={isDraftBusy || isSourceSwitching || isClosing}
-                  maxLength={FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
-                  placeholder="케이스명을 입력하세요 (예: 미국-이란 긴장 고조 시나리오)"
-                  aria-invalid={showTitleValidationError}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setTitle(event.target.value)
-                    setShowTitleValidationError(false)
-                  }}
-                  sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    height: '36px',
-                    border: '1px solid',
-                    borderColor: showTitleValidationError ? 'point.red1' : 'contentBorder.Normal',
-                    borderRadius: '8px',
-                    bgcolor: 'commonColor.White',
-                    boxSizing: 'border-box',
-                    color: 'contentText.Black',
-                    fontFamily: 'inherit',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                    outline: 'none',
-                    padding: '8px 12px',
-                    '&::placeholder': { color: 'contentText.Placeholder', opacity: 1 },
-                  }}
-                />
-              </Stack>
-              <Stack direction="row" justifyContent="space-between" minHeight="18px" paddingTop="2px">
-                {showTitleValidationError && (
-                  <Typography variant="body3R12" color="point.red1">
-                    필수 입력 항목입니다.
+                <Stack direction="row" justifyContent="space-between" minHeight="18px" paddingTop="2px">
+                  {showTitleValidationError && (
+                    <Typography variant="body3R12" color="point.red1">
+                      필수 입력 항목입니다.
+                    </Typography>
+                  )}
+                  <Typography variant="body3R12" color="contentText.Subtext" marginLeft="auto">
+                    {title.length} / {FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
                   </Typography>
-                )}
-                <Typography variant="body3R12" color="contentText.Subtext" marginLeft="auto">
-                  {title.length} / {FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
-                </Typography>
+                </Stack>
               </Stack>
-            </Stack>
 
-            <Stack flex={1} minWidth={0}>
-              <Stack direction="row" alignItems="center" gap="12px">
-                <Typography
-                  component="label"
-                  htmlFor="fundamental-model-description"
-                  variant="body2SB14"
-                  color="contentText.Normal"
-                  flexShrink={0}
-                >
-                  설명
-                </Typography>
-                <Box
-                  id="fundamental-model-description"
-                  component="input"
-                  value={description}
-                  disabled={isDraftBusy || isSourceSwitching || isClosing}
-                  maxLength={FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
-                  placeholder="케이스에 대한 설명을 입력하세요 (선택)"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setDescription(event.target.value)}
-                  sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    height: '36px',
-                    border: '1px solid',
-                    borderColor: 'contentBorder.Normal',
-                    borderRadius: '8px',
-                    bgcolor: 'commonColor.White',
-                    boxSizing: 'border-box',
-                    color: 'contentText.Black',
-                    fontFamily: 'inherit',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                    outline: 'none',
-                    padding: '8px 12px',
-                    '&::placeholder': { color: 'contentText.Placeholder', opacity: 1 },
-                  }}
-                />
-              </Stack>
-              <Stack direction="row" justifyContent="flex-end" minHeight="18px" paddingTop="2px">
-                <Typography variant="body3R12" color="contentText.Subtext">
-                  {description.length} / {FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
-                </Typography>
+              <Stack flex={1} minWidth={0}>
+                <Stack direction="row" alignItems="center" gap="12px">
+                  <Typography
+                    component="label"
+                    htmlFor="fundamental-model-description"
+                    variant="body2SB14"
+                    color="contentText.Normal"
+                    flexShrink={0}
+                  >
+                    설명
+                  </Typography>
+                  <Box
+                    id="fundamental-model-description"
+                    component="input"
+                    value={description}
+                    disabled={isDraftBusy || isSourceSwitching || isClosing}
+                    maxLength={FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
+                    placeholder="케이스에 대한 설명을 입력하세요 (선택)"
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => setDescription(event.target.value)}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: '36px',
+                      border: '1px solid',
+                      borderColor: 'contentBorder.Normal',
+                      borderRadius: '8px',
+                      bgcolor: 'commonColor.White',
+                      boxSizing: 'border-box',
+                      color: 'contentText.Black',
+                      fontFamily: 'inherit',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                      outline: 'none',
+                      padding: '8px 12px',
+                      '&::placeholder': { color: 'contentText.Placeholder', opacity: 1 },
+                    }}
+                  />
+                </Stack>
+                <Stack direction="row" justifyContent="flex-end" minHeight="18px" paddingTop="2px">
+                  <Typography variant="body3R12" color="contentText.Subtext">
+                    {description.length} / {FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
+                  </Typography>
+                </Stack>
               </Stack>
             </Stack>
           </Stack>
         </Stack>
+
+        {!selectedSource ? (
+          <Stack flex={1} minHeight={0}>
+            <Stack flex={1} alignItems="center" justifyContent="center">
+              <Typography variant="body2M14" color="contentText.Subtext">
+                입력값 출처를 선택해주세요.
+              </Typography>
+            </Stack>
+            <FundamentalModelInputEditorActions />
+          </Stack>
+        ) : selectedSource === 'EXCEL_UPLOAD' ? (
+          <FundamentalModelUploadDraftEditor
+            key={`${authScope}:upload`}
+            ref={draftEditorRef}
+            scope={authScope}
+            title={title}
+            description={description}
+            externalBusy={isClosing || isSourceSwitching}
+            onBusyChange={setIsDraftBusy}
+            onUploadProgressChange={setUploadProgress}
+            onUploadedFilesChange={setHasUploadedFiles}
+            onFinalized={handleFinalized}
+          />
+        ) : (
+          <FundamentalModelDraftEditor
+            key={`${authScope}:${selectedSource}`}
+            ref={draftEditorRef}
+            caseId={Number(selectedSource)}
+            initialDraftId={selectedSourceCase?.draftId ?? null}
+            scope={authScope}
+            title={title}
+            description={description}
+            externalBusy={isClosing || isSourceSwitching}
+            onBusyChange={setIsDraftBusy}
+            onFinalized={handleFinalized}
+          />
+        )}
       </Stack>
-
-      {!selectedSource ? (
-        <Stack flex={1} minHeight={0}>
-          <Stack flex={1} alignItems="center" justifyContent="center">
-            <Typography variant="body2M14" color="contentText.Subtext">
-              입력값 출처를 선택해주세요.
-            </Typography>
-          </Stack>
-          <FundamentalModelInputEditorActions />
+      {uploadProgress && (
+        <Stack
+          position="absolute"
+          top="0px"
+          right="0px"
+          bottom="0px"
+          left="0px"
+          zIndex={8}
+          bgcolor="rgba(255, 255, 255, 0.7)"
+          alignItems="center"
+          justifyContent="center"
+          gap="12px"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <MIAgentSpinner size={32} tone="gray" />
+          <Typography variant="body2SB14" color="contentText.Normal">
+            파일을 업로드 중입니다 {uploadProgress.current}/{uploadProgress.total}
+          </Typography>
         </Stack>
-      ) : selectedSource === 'EXCEL_UPLOAD' ? (
-        <FundamentalModelUploadDraftEditor
-          key={`${authScope}:upload`}
-          ref={draftEditorRef}
-          scope={authScope}
-          title={title}
-          description={description}
-          externalBusy={isClosing || isSourceSwitching}
-          onBusyChange={setIsDraftBusy}
-          onUploadedFilesChange={setHasUploadedFiles}
-          onFinalized={handleFinalized}
-        />
-      ) : (
-        <FundamentalModelDraftEditor
-          key={`${authScope}:${selectedSource}`}
-          ref={draftEditorRef}
-          caseId={Number(selectedSource)}
-          initialDraftId={selectedSourceCase?.draftId ?? null}
-          scope={authScope}
-          title={title}
-          description={description}
-          externalBusy={isClosing || isSourceSwitching}
-          onBusyChange={setIsDraftBusy}
-          onFinalized={handleFinalized}
-        />
       )}
     </Stack>
   )
@@ -375,14 +403,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
         actions={[
           { label: '취소', variant: 'outlined', color: 'gray', disabled: isClosing || isSourceSwitching, onClick: cancelClose },
           {
-            label:
-              isClosing || isSourceSwitching
-                ? selectedSource === 'EXCEL_UPLOAD'
-                  ? '삭제 중...'
-                  : '저장 중...'
-                : pendingSource !== null
-                  ? '변경'
-                  : '종료',
+            label: pendingSource !== null ? '변경' : '종료',
             variant: 'filled',
             color: 'red',
             disabled: isClosing || isDraftBusy || isSourceSwitching,
