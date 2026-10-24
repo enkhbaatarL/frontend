@@ -19,6 +19,7 @@ import FundamentalModelInputEditorActions from '@/pages/mi/fundamentalModel/comp
 import FundamentalModelInputSourceMenu from '@/pages/mi/fundamentalModel/components/FundamentalModelInputSourceMenu'
 import FundamentalModelUploadDraftEditor from '@/pages/mi/fundamentalModel/components/FundamentalModelUploadDraftEditor'
 import { getModelInputExecution, getModelInputExecutionFailure } from '@/pages/mi/fundamentalModel/components/modelInputFinalization'
+import { getModelInputSourceQueryOptions } from '@/pages/mi/fundamentalModel/hooks/modelInputTableQuery'
 import fundamentalModelCaseService, { type FundamentalModelCaseStatus } from '@/service/mi/fundamentalModel/case'
 import useAuthStore from '@/store/useAuthStore'
 
@@ -56,8 +57,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
       `${user?.userNo ?? ''}:${user?.isOtherServiceAccessPossible ? (accessCompanyInfo?.customerCompanyNo ?? user.companyNo) : (user?.companyNo ?? '')}`,
   )
   const sourceCases = useQuery({
-    queryKey: ['fundamentalModel', 'inputSourceCases', authScope],
-    queryFn: () => fundamentalModelCaseService.listCases(),
+    ...getModelInputSourceQueryOptions(authScope),
     enabled: isOpen,
   })
   useEffect(() => {

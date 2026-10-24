@@ -1,3 +1,4 @@
+import type { ModelInputLocalEdit } from '@/pages/mi/fundamentalModel/hooks/useModelInputAutosave'
 import type { ModelInputTablePage } from '@/service/mi/fundamentalModel/inputDraft'
 
 import { isModelInputObject, isSupportedModelInputField, getModelInputCreationRule } from '@/utils/modelInputValidation'
@@ -9,9 +10,47 @@ export {
   validateModelInputCreationValue,
 } from '@/utils/modelInputValidation'
 
-export const getModelInputField = (page: ModelInputTablePage, rowNumber: number, columnField: string, action: 'SET' | 'CLEAR' = 'SET') => {
-  const field = page.editing.fields.find((item) => item.columnField === columnField)
-  const binding = page.editing.rowBindings.find((item) => item.rowNumber === rowNumber)
+export const indexModelInputFirstMatches = <Item, Key>(items: Item[], getKey: (item: Item) => Key) => {
+  const index = new Map<Key, Item>()
+  for (const item of items) {
+    const key = getKey(item)
+    // find의 === 비교는 NaN에 일치하지 않는다. 중복 키는 첫 항목을 유지한다.
+    if ((typeof key === 'number' && Number.isNaN(key)) || index.has(key)) continue
+    index.set(key, item)
+  }
+  return index
+}
+
+export const createModelInputPageIndex = (page: ModelInputTablePage) => ({
+  fieldByColumn: indexModelInputFirstMatches(page.editing.fields, (field) => field.columnField),
+  bindingByRowNumber: indexModelInputFirstMatches(page.editing.rowBindings, (binding) => binding.rowNumber),
+  editValuesByRowId: indexModelInputFirstMatches(page.editing.editValues, (item) => item.rowId),
+  inputCells: new Set(page.tableData.inputCells),
+})
+
+export const createModelInputEditIndex = (edits: ModelInputLocalEdit[], tableId: string) => {
+  const index = new Map<string, Map<string, ModelInputLocalEdit>>()
+  for (const edit of edits) {
+    if (edit.tableId !== tableId) continue
+    let row = index.get(edit.rowId)
+    if (!row) {
+      row = new Map<string, ModelInputLocalEdit>()
+      index.set(edit.rowId, row)
+    }
+    if (!row.has(edit.fieldKey)) row.set(edit.fieldKey, edit)
+  }
+  return index
+}
+
+export const getModelInputField = (
+  page: ModelInputTablePage,
+  rowNumber: number,
+  columnField: string,
+  action: 'SET' | 'CLEAR' = 'SET',
+  index?: ReturnType<typeof createModelInputPageIndex>,
+) => {
+  const field = index ? index.fieldByColumn.get(columnField) : page.editing.fields.find((item) => item.columnField === columnField)
+  const binding = index ? index.bindingByRowNumber.get(rowNumber) : page.editing.rowBindings.find((item) => item.rowNumber === rowNumber)
   const columnIndex = Number(columnField.replace(/^column/, ''))
   if (
     page.editing.capabilities[action] !== 'READY' ||
@@ -20,7 +59,10 @@ export const getModelInputField = (page: ModelInputTablePage, rowNumber: number,
     binding.origin === 'EMPTY_SLOT' ||
     !/^column\d+$/.test(columnField) ||
     !Number.isInteger(columnIndex) ||
-    (action === 'SET' && !page.tableData.inputCells.includes(rowNumber * 16384 + columnIndex)) ||
+    (action === 'SET' &&
+      !(index
+        ? index.inputCells.has(rowNumber * 16384 + columnIndex)
+        : page.tableData.inputCells.includes(rowNumber * 16384 + columnIndex))) ||
     !isModelInputObject(field.policyStatus) ||
     field.policyStatus[action] !== 'READY' ||
     typeof field.fieldKey !== 'string' ||

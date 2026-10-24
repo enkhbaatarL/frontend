@@ -345,9 +345,10 @@ const fundamentalModelCaseService = {
     return response.data.data
   },
 
-  async listCases(params?: GetFundamentalModelCasesParams): Promise<FundamentalModelCaseList> {
+  async listCases(params?: GetFundamentalModelCasesParams, signal?: AbortSignal): Promise<FundamentalModelCaseList> {
     const trimmedKeyword = params?.keyword?.trim()
     const response: AxiosResponse<ICommonResponse<FundamentalModelCaseList>> = await api.get('mi/fundamental-model/cases', {
+      signal,
       params: {
         searchType: trimmedKeyword ? params?.searchType : undefined,
         keyword: trimmedKeyword || undefined,

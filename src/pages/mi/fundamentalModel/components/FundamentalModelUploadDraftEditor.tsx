@@ -1,10 +1,11 @@
-import { Stack } from '@mui/material'
+import { Collapse, Divider, Stack, Typography } from '@mui/material'
 import { useQueryClient } from '@tanstack/react-query'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 
 import type { ModelInputFinalization, ModelInputSection } from '@/service/mi/fundamentalModel/inputDraft'
 
 import MIConfirm from '@/components/common/confirm/MIConfirm'
+import WarningIconRed from '@/components/common/icons/WarningIconRed'
 import MIFileUploadDropzone from '@/components/mi/MIFileUploadDropzone'
 import useSnackbar from '@/hooks/useSnackbar'
 import FundamentalModelDraftEditor, {
@@ -17,6 +18,7 @@ import {
   getFundamentalModelFileKind,
 } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import FundamentalModelInputEditorActions from '@/pages/mi/fundamentalModel/components/FundamentalModelInputEditorActions'
+import { getModelInputSessionSignal, isModelInputSessionCurrent } from '@/pages/mi/fundamentalModel/hooks/modelInputSession'
 import useModelInputUpload from '@/pages/mi/fundamentalModel/hooks/useModelInputUpload'
 import inputDraftService from '@/service/mi/fundamentalModel/inputDraft'
 
@@ -46,6 +48,7 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
       onUploadSettled: () => uploadQueueRef.current?.resumeAfterUpload(),
     })
     const queryClient = useQueryClient()
+    const sessionRef = useRef(getModelInputSessionSignal())
     const { showSnackbar } = useSnackbar()
     const fileInputRef = useRef<HTMLInputElement>(null)
     const targetRef = useRef<ModelInputSection['kind'] | undefined>(undefined)
@@ -60,6 +63,13 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
     const busy = isProcessing || isEditorBusy || upload.isUploading
     const isUploading = upload.isUploading || (isProcessing && !replacement)
     const visibleDraft = isInitialUpload ? undefined : upload.draft
+    const showMissingFilesNotice =
+      visibleDraft &&
+      !isProcessing &&
+      !upload.isUploading &&
+      !upload.hasPendingRequest &&
+      visibleDraft.uploadedKinds.length > 0 &&
+      FUNDAMENTAL_MODEL_FILE_KINDS.some((kind) => !visibleDraft.uploadedKinds.includes(kind))
 
     useEffect(() => {
       mountedRef.current = true
@@ -85,7 +95,7 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
     }, [showSnackbar, upload.error])
     useEffect(() => {
       const selection = upload.result?.selection
-      if (!selection) return
+      if (!selection || !isModelInputSessionCurrent(sessionRef.current, scope)) return
       queryClient.setQueryData(
         ['fundamentalModel', 'inputDraftTable', scope, selection.draftId, selection.revision, selection.tableData.tableId],
         { pages: [selection], pageParams: [undefined] },
@@ -192,6 +202,32 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
             event.target.value = ''
           }}
         />
+        <Collapse in={Boolean(showMissingFilesNotice)} timeout={300} unmountOnExit sx={{ flexShrink: 0 }}>
+          <Stack padding="0 20px 20px" flexShrink={0}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              gap="8px"
+              padding="8px"
+              border="1px solid"
+              borderColor="contentBorder.Error"
+              borderRadius="8px"
+              bgcolor="#FFF9F9"
+              role="alert"
+            >
+              <Stack direction="row" alignItems="center" gap="4px" flexShrink={0}>
+                <WarningIconRed width="16px" height="16px" aria-hidden />
+                <Typography component="span" fontSize="13px" fontWeight={600} lineHeight={1.4} color="contentText.Error">
+                  MI Fundamental Model을 실행하려면 파일 4개가 필요합니다.
+                </Typography>
+              </Stack>
+              <Divider orientation="vertical" flexItem sx={{ height: '8px', alignSelf: 'center', borderColor: 'contentBorder.Error' }} />
+              <Typography component="span" fontSize="13px" lineHeight={1.4} color="contentText.Error">
+                Demand, Supply, Trade, Output이 각각 포함된 4개의 파일을 모두 업로드해주세요.
+              </Typography>
+            </Stack>
+          </Stack>
+        </Collapse>
         {visibleDraft ? (
           <FundamentalModelDraftEditor
             key={`${scope}:${visibleDraft.draftId}`}

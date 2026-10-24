@@ -21,6 +21,7 @@ import VolumesTabPanel from '@/pages/mi/fundamentalModel/components/volumes/Volu
 import { caseStatusToPlaceholderMode } from '@/pages/mi/fundamentalModel/fundamentalModelCaseStatus'
 import { FUNDAMENTAL_MODEL_VIEW_TABS, type FundamentalModelViewTabKey } from '@/pages/mi/fundamentalModel/fundamentalModelRoutes'
 import { useFundamentalModelRunExecution } from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelRunExecution'
+import useFundamentalModelSession from '@/pages/mi/fundamentalModel/hooks/useFundamentalModelSession'
 import fileService from '@/service/admin/file'
 import fundamentalModelCaseService, {
   type FundamentalModelCaseStatus,
@@ -71,6 +72,7 @@ const readCaseIdQuery = (search: string) => {
 
 /** MI 수급 모델. 기본 선택은 클라이언트 state. `caseId` 쿼리가 있으면 해당 결과로 연다. */
 const FundamentalModelPage = () => {
+  useFundamentalModelSession()
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
   const userNo = useAuthStore((state) => state.user?.userNo)

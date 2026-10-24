@@ -27,7 +27,28 @@ const getContentWidth = (value: unknown) => {
   return width
 }
 
-export const getFundamentalModelColumnWidth = (column: TableColumn, rows: Record<string, unknown>[]) => {
+export const getFundamentalModelColumnContentWidths = (fields: string[], rows: Record<string, unknown>[]) => {
+  const widths = new Map<string, number>()
+  for (const field of fields) {
+    let width = 0
+    for (const row of rows) width = Math.max(width, getContentWidth(row[field] ?? '') + 40)
+    widths.set(field, width)
+  }
+  return widths
+}
+
+export const createFundamentalModelColumnWidthCache = () => {
+  const cache = new WeakMap<object, Map<string, number>>()
+  return (page: object, fields: string[], getRows: () => Record<string, unknown>[]) => {
+    const previous = cache.get(page)
+    if (previous && fields.every((field) => previous.has(field))) return previous
+    const widths = getFundamentalModelColumnContentWidths(fields, getRows())
+    cache.set(page, widths)
+    return widths
+  }
+}
+
+export const getFundamentalModelColumnWidth = (column: TableColumn, rows: Record<string, unknown>[], contentWidth?: number) => {
   if (typeof document !== 'undefined') {
     if (headerMeasureContext === undefined) headerMeasureContext = document.createElement('canvas').getContext('2d')
     if (headerMeasureContext) {
@@ -41,6 +62,7 @@ export const getFundamentalModelColumnWidth = (column: TableColumn, rows: Record
       (value) => Math.ceil(Math.max(getContentWidth(value), headerMeasureContext?.measureText(value).width ?? 0)) + 64,
     ),
   )
+  if (contentWidth !== undefined) return Math.max(width, contentWidth)
   for (const row of rows) width = Math.max(width, getContentWidth(row[column.field] ?? '') + 40)
   return width
 }

@@ -2,7 +2,8 @@ import axios from 'axios'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 
-import { getModelInputAuthScope, getModelInputErrorMessage } from '@/pages/mi/fundamentalModel/hooks/useModelInputAutosave'
+import { getModelInputSessionSignal, isModelInputSessionCurrent } from '@/pages/mi/fundamentalModel/hooks/modelInputSession'
+import { getModelInputErrorMessage } from '@/pages/mi/fundamentalModel/hooks/useModelInputAutosave'
 import inputDraftService, {
   type ModelInputDraftStructure,
   type ModelInputUploadMetadata,
@@ -22,6 +23,7 @@ const useModelInputUpload = (
     onUploadSettled: () => void
   },
 ) => {
+  const session = useRef(getModelInputSessionSignal()).current
   const callbacksRef = useRef(callbacks)
   callbacksRef.current = callbacks
   const filesRef = useRef(new Map<string, File>())
@@ -38,17 +40,18 @@ const useModelInputUpload = (
   const [error, setError] = useState('')
 
   const publish = useCallback(() => {
-    if (getModelInputAuthScope() !== scope) throw new Error('사용자 또는 회사가 변경되었습니다.')
+    if (!isModelInputSessionCurrent(session, scope)) throw new Error('사용자 또는 회사가 변경되었습니다.')
     if (mountedRef.current) setHasPendingRequest(Boolean(stateRef.current.pending))
-  }, [scope])
+  }, [scope, session])
 
   const resume = useCallback((): Promise<boolean> => {
+    if (!isModelInputSessionCurrent(session, scope)) return Promise.resolve(false)
     if (runningRef.current && !controllerRef.current?.signal.aborted) return runningRef.current
     const pending = stateRef.current.pending
     if (!pending) return Promise.resolve(true)
     const controller = new AbortController()
     controllerRef.current = controller
-    const isCurrent = () => mountedRef.current && !controller.signal.aborted && getModelInputAuthScope() === scope
+    const isCurrent = () => mountedRef.current && !controller.signal.aborted && isModelInputSessionCurrent(session, scope)
     const run = async () => {
       if (isCurrent()) {
         setIsUploading(true)
@@ -59,13 +62,14 @@ const useModelInputUpload = (
         if (!(await callbacksRef.current.onBeforeUpload()) || !isCurrent()) return false
         publish()
         let operation: ModelInputUploadOperation
-        if (pending.operationId) operation = await inputDraftService.getUpload(pending.operationId, controller.signal)
+        if (pending.operationId)
+          operation = await inputDraftService.getUpload(pending.operationId, AbortSignal.any([controller.signal, session]))
         else {
           if (!pending.metadata) throw new Error('파일 업로드가 실패했습니다.')
           const file = filesRef.current.get(pending.metadata.requestId)
           if (!file) throw new Error('파일 업로드가 실패했습니다.')
           submitting = true
-          operation = await inputDraftService.upload(file, pending.metadata, pending.draftId, controller.signal)
+          operation = await inputDraftService.upload(file, pending.metadata, pending.draftId, AbortSignal.any([controller.signal, session]))
           submitting = false
         }
         if (!isCurrent()) return false
@@ -98,7 +102,7 @@ const useModelInputUpload = (
             )
           })
           if (!isCurrent()) return false
-          operation = await inputDraftService.getUpload(operation.operationId, controller.signal)
+          operation = await inputDraftService.getUpload(operation.operationId, AbortSignal.any([controller.signal, session]))
           if (operation.operationId !== pending.operationId) throw new Error('요청한 업로드 작업과 응답이 일치하지 않습니다.')
         }
         if (!isCurrent()) return false
@@ -113,7 +117,7 @@ const useModelInputUpload = (
         // 이전 작업의 성공 snapshot으로 이후 편집 revision을 덮어쓰지 않는다.
         stateRef.current.draftId = operation.result.draftId
         publish()
-        const current = await inputDraftService.getDraft(operation.result.draftId, controller.signal)
+        const current = await inputDraftService.getDraft(operation.result.draftId, AbortSignal.any([controller.signal, session]))
         if (!isCurrent()) return false
         if (current.sourceCaseId !== null || current.draftId !== operation.result.draftId)
           throw new Error('업로드 초안 정보가 일치하지 않습니다.')
@@ -160,7 +164,7 @@ const useModelInputUpload = (
     })
     runningRef.current = promise
     return promise
-  }, [publish, scope])
+  }, [publish, scope, session])
 
   useEffect(() => {
     mountedRef.current = true
@@ -194,16 +198,21 @@ const useModelInputUpload = (
 
   const upload = useCallback(
     async (file: File, sourceKey: string, replaceConfirmed: boolean) => {
-      if (preparingRef.current || runningRef.current || stateRef.current.pending || getModelInputAuthScope() !== scope) return false
+      if (!isModelInputSessionCurrent(session, scope) || preparingRef.current || runningRef.current || stateRef.current.pending)
+        return false
       preparingRef.current = true
       try {
         if (!(await callbacksRef.current.onBeforeUpload())) return false
+        if (!mountedRef.current || !isModelInputSessionCurrent(session, scope)) return false
         let current: ModelInputDraftStructure | undefined
         if (stateRef.current.draftId) {
-          current = await inputDraftService.getDraft(stateRef.current.draftId, controllerRef.current?.signal)
+          current = await inputDraftService.getDraft(
+            stateRef.current.draftId,
+            controllerRef.current ? AbortSignal.any([controllerRef.current.signal, session]) : session,
+          )
           if (current.status !== 'DRAFT' || current.activeOperationId) throw new Error('진행 중인 작업 또는 초안 상태를 확인하세요.')
         }
-        if (!mountedRef.current || getModelInputAuthScope() !== scope) return false
+        if (!mountedRef.current || !isModelInputSessionCurrent(session, scope)) return false
         const metadata: ModelInputUploadMetadata = {
           sourceKey: current?.sourceKey ?? sourceKey,
           requestId: uuid(),
@@ -223,7 +232,7 @@ const useModelInputUpload = (
         }
       }
     },
-    [publish, resume, scope],
+    [publish, resume, scope, session],
   )
 
   const clearCompleted = useCallback(() => {

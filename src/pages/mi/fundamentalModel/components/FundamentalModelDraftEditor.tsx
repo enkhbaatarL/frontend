@@ -1,6 +1,5 @@
 import { CircularProgress, Divider, Stack, Tab, Tabs, Typography } from '@mui/material'
-import { useQueryClient } from '@tanstack/react-query'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { useBlocker } from 'react-router-dom'
 
 import type {
@@ -19,7 +18,9 @@ import MIConfirm from '@/components/common/confirm/MIConfirm'
 import UploadIcon from '@/components/common/icons/UploadIcon'
 import HorizontalScrollContainer from '@/components/common/scroll/HorizontalScrollContainer'
 import useSnackbar from '@/hooks/useSnackbar'
-import FundamentalModelDraftTable from '@/pages/mi/fundamentalModel/components/FundamentalModelDraftTable'
+import FundamentalModelDraftTable, {
+  type FundamentalModelDraftTableRef,
+} from '@/pages/mi/fundamentalModel/components/FundamentalModelDraftTable'
 import { FUNDAMENTAL_MODEL_FILE_KINDS } from '@/pages/mi/fundamentalModel/components/fundamentalModelFileUploadUtils'
 import FundamentalModelInputEditorActions from '@/pages/mi/fundamentalModel/components/FundamentalModelInputEditorActions'
 import { getModelInputExecution } from '@/pages/mi/fundamentalModel/components/modelInputFinalization'
@@ -58,7 +59,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     { caseId, initialDraftId, scope, title, description, onFinalized, onBusyChange, initialTable, externalBusy = false, uploadActions },
     ref,
   ) => {
-    const queryClient = useQueryClient()
+    const tableRef = useRef<FundamentalModelDraftTableRef>(null)
     const autosave = useModelInputAutosave(caseId, scope, initialDraftId, uploadActions?.hasPendingRequest)
     const {
       draft,
@@ -99,6 +100,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       section?.sheets.find((item) => item.tables.some((candidate) => candidate.id === selectedTableId)) ??
       section?.sheets[0]
     const table = sheet?.tables.find((item) => item.id === selectedTableId) ?? sheet?.tables[0]
+    const tableAddedRows = useMemo(() => addedRows.filter((row) => row.tableId === table?.id), [addedRows, table?.id])
     const busy = isFinalizing || externalBusy
     useEffect(() => {
       originalControlValuesRef.current.clear()
@@ -351,10 +353,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                       disabled={busy}
                       onClick={() => {
                         if (draft && item === table) {
-                          void queryClient.refetchQueries({
-                            queryKey: ['fundamentalModel', 'inputDraftTable', scope, draft.draftId, draft.revision, item.id],
-                            exact: true,
-                          })
+                          tableRef.current?.refresh()
                           return
                         }
                         if (section) void selectTable(section.kind, sheet.sheetName, item)
@@ -408,13 +407,14 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                 {draft && table ? (
                   <FundamentalModelDraftTable
                     key={`${draft.draftId}:${table.id}`}
+                    refreshRef={tableRef}
                     scope={scope}
                     draft={draft}
                     table={table}
                     edits={edits}
                     originalEdits={originalEdits}
                     originalControlValues={originalControlValuesRef.current.get(table.id)}
-                    addedRows={addedRows.filter((row) => row.tableId === table.id)}
+                    addedRows={tableAddedRows}
                     onStageRow={stageRow}
                     onRemoveStagedRow={removeStagedRow}
                     disabled={busy || isTableChanging(table.id)}

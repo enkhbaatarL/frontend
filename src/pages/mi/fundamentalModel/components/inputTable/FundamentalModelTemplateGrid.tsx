@@ -61,7 +61,20 @@ const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
   const handledScrollTargetRef = useRef<typeof scrollTarget>(undefined)
   const [focusedCell, setFocusedCell] = useState<{ rowId: string; columnIndex: number }>()
   const fields = useMemo(() => columns.map(({ field }) => field), [columns])
-  const showActions = Boolean(actionHeader || (renderRowAction && rows.some((row) => renderRowAction(row))))
+  const showActions = useMemo(
+    () => Boolean(actionHeader || (renderRowAction && rows.some((row) => renderRowAction(row)))),
+    [actionHeader, renderRowAction, rows],
+  )
+  const hasFocusedCell = Boolean(focusedCell)
+  const rowIndexById = useMemo(() => {
+    if (!hasFocusedCell) return undefined
+    const index = new Map<string, number>()
+    rows.forEach((row, rowIndex) => {
+      const id = String(getRowId(row))
+      if (!index.has(id)) index.set(id, rowIndex)
+    })
+    return index
+  }, [getRowId, hasFocusedCell, rows])
   const {
     widths,
     offsets: columnOffsets,
@@ -82,7 +95,7 @@ const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
     rows.length,
     Math.ceil((viewport.scrollTop + Math.max(0, viewport.height - headerHeight)) / FUNDAMENTAL_MODEL_ROW_HEIGHT) + 4,
   )
-  const focusedRowIndex = focusedCell ? rows.findIndex((row) => String(getRowId(row)) === focusedCell.rowId) : undefined
+  const focusedRowIndex = focusedCell ? (rowIndexById?.get(focusedCell.rowId) ?? -1) : undefined
   const visibleRowIndices = getRenderedIndices(rowStart, rowEnd, focusedRowIndex)
   const columnRange = getVisibleColumnRange(columnOffsets, viewport.scrollLeft, viewport.width)
   const visibleColumns = includePinnedIndices(getRenderedIndices(columnRange.start, columnRange.end, focusedCell?.columnIndex))
