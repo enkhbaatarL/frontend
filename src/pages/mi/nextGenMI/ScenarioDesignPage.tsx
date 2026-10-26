@@ -672,8 +672,8 @@ const ScenarioDesignPage = () => {
     const sections: ScenarioRationaleSection[] = []
     const eventAnalysis = evidence?.eventAnalysisMarkdown?.trim()
     const roleSelection = evidence?.roleSelectionMarkdown?.trim()
-    if (eventAnalysis) sections.push({ title: undefined, blocks: [{ markdown: eventAnalysis }] })
     if (roleSelection) sections.push({ title: undefined, blocks: [{ markdown: roleSelection }] })
+    if (eventAnalysis) sections.push({ title: undefined, blocks: [{ markdown: eventAnalysis }] })
     return sections
   }, [scenarioDesignPresentation?.evidence])
   const showDesignRationaleButton = designRationaleSections.length > 0
