@@ -1,4 +1,4 @@
-import { Collapse, Divider, Stack, Typography } from '@mui/material'
+import { CircularProgress, Collapse, Divider, Stack, Typography } from '@mui/material'
 import { useQueryClient } from '@tanstack/react-query'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 
@@ -32,6 +32,7 @@ interface Props {
   title: string
   description: string
   externalBusy?: boolean
+  active?: boolean
   onBusyChange: (busy: boolean) => void
   onUploadProgressChange: (progress: { current: number; total: number } | null) => void
   onUploadedFilesChange: (hasFiles: boolean) => void
@@ -39,7 +40,20 @@ interface Props {
 }
 
 const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditorRef, Props>(
-  ({ scope, title, description, externalBusy = false, onBusyChange, onUploadProgressChange, onUploadedFilesChange, onFinalized }, ref) => {
+  (
+    {
+      scope,
+      title,
+      description,
+      externalBusy = false,
+      active = true,
+      onBusyChange,
+      onUploadProgressChange,
+      onUploadedFilesChange,
+      onFinalized,
+    },
+    ref,
+  ) => {
     const editorRef = useRef<FundamentalModelDraftEditorRef>(null)
     const uploadQueueRef = useRef<FundamentalModelUploadQueueRef>(null)
     const upload = useModelInputUpload(scope, {
@@ -54,6 +68,9 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
     const targetRef = useRef<ModelInputSection['kind'] | undefined>(undefined)
     const processingRef = useRef(false)
     const mountedRef = useRef(true)
+    const backgroundRef = useRef(false)
+    const discardRef = useRef<Promise<boolean> | null>(null)
+    const [isDiscarding, setIsDiscarding] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
     const [isInitialUpload, setIsInitialUpload] = useState(false)
@@ -79,20 +96,23 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
       }
     }, [])
     useEffect(() => {
+      if (!active) return undefined
       onBusyChange(isEditorBusy || isProcessing || upload.isUploading)
       return () => onBusyChange(false)
-    }, [isEditorBusy, isProcessing, onBusyChange, upload.isUploading])
+    }, [active, isEditorBusy, isProcessing, onBusyChange, upload.isUploading])
     useEffect(() => {
+      if (!active) return undefined
       onUploadedFilesChange(Boolean(upload.draft || upload.hasPendingRequest))
       return () => onUploadedFilesChange(false)
-    }, [onUploadedFilesChange, upload.draft, upload.hasPendingRequest])
+    }, [active, onUploadedFilesChange, upload.draft, upload.hasPendingRequest])
     useEffect(() => {
+      if (!active) return undefined
       onUploadProgressChange(isUploading ? uploadProgress : null)
       return () => onUploadProgressChange(null)
-    }, [isUploading, onUploadProgressChange, uploadProgress])
+    }, [active, isUploading, onUploadProgressChange, uploadProgress])
     useEffect(() => {
-      if (upload.error) showSnackbar(upload.error, { variant: 'error' })
-    }, [showSnackbar, upload.error])
+      if (active && !backgroundRef.current && upload.error) showSnackbar(upload.error, { variant: 'error' })
+    }, [active, showSnackbar, upload.error])
     useEffect(() => {
       const selection = upload.result?.selection
       if (!selection || !isModelInputSessionCurrent(sessionRef.current, scope)) return
@@ -101,32 +121,45 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
         { pages: [selection], pageParams: [undefined] },
       )
     }, [queryClient, scope, upload.result])
-    useImperativeHandle(
-      ref,
-      () => ({
-        flush: async () => {
-          if (processingRef.current || upload.isUploading) return false
-          if (upload.hasPendingRequest && !(await upload.resume())) return false
-          return editorRef.current ? editorRef.current.flush() : true
-        },
-        discard: async () => {
-          if (processingRef.current || upload.isUploading) return false
-          if (upload.hasPendingRequest && !(await upload.resume())) return false
-          if (editorRef.current) {
-            if (!(await editorRef.current.discard())) return false
-          } else {
-            const draft = upload.getDraft()
-            if (draft) {
-              const current = await inputDraftService.getDraft(draft.draftId)
-              await inputDraftService.discardUpload(current.draftId, current.revision)
-            }
+    const discard = () => {
+      if (discardRef.current) return discardRef.current
+      const run = async () => {
+        if (processingRef.current || upload.isUploading) return false
+        if (upload.hasPendingRequest && !(await upload.resume())) return false
+        if (editorRef.current) {
+          const completed = backgroundRef.current ? await editorRef.current.background(true) : await editorRef.current.discard()
+          if (!completed) return false
+        } else {
+          const draft = upload.getDraft()
+          if (draft) {
+            const current = await inputDraftService.getDraft(draft.draftId)
+            await inputDraftService.discardUpload(current.draftId, current.revision)
           }
-          upload.clearCompleted()
-          return true
-        },
-      }),
-      [upload],
-    )
+        }
+        upload.clearCompleted()
+        return true
+      }
+      setIsDiscarding(true)
+      discardRef.current = run()
+        .catch(() => false)
+        .finally(() => {
+          discardRef.current = null
+          if (mountedRef.current) setIsDiscarding(false)
+        })
+      return discardRef.current
+    }
+    useImperativeHandle(ref, () => ({
+      flush: async () => {
+        if (processingRef.current || upload.isUploading) return false
+        if (upload.hasPendingRequest && !(await upload.resume())) return false
+        return editorRef.current ? editorRef.current.flush() : true
+      },
+      discard,
+      background: () => {
+        backgroundRef.current = true
+        return discard()
+      },
+    }))
 
     const resolveReplacement = (confirmed: boolean) => {
       replacementRef.current?.resolve(confirmed)
@@ -143,6 +176,7 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
         )
       })
       if (externalBusy || processingRef.current || upload.hasPendingRequest || upload.isUploading || !files?.length) return
+      backgroundRef.current = false
       processingRef.current = true
       setIsInitialUpload(!upload.getDraft())
       setIsProcessing(true)
@@ -190,7 +224,7 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
     }, [])
 
     return (
-      <Stack flex={1} minHeight={0}>
+      <Stack flex={1} minHeight={0} display={active ? 'flex' : 'none'}>
         <input
           ref={fileInputRef}
           type="file"
@@ -202,7 +236,7 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
             event.target.value = ''
           }}
         />
-        <Collapse in={Boolean(showMissingFilesNotice)} timeout={300} unmountOnExit sx={{ flexShrink: 0 }}>
+        <Collapse in={!isDiscarding && Boolean(showMissingFilesNotice)} timeout={300} unmountOnExit sx={{ flexShrink: 0 }}>
           <Stack padding="0 20px 20px" flexShrink={0}>
             <Stack
               direction="row"
@@ -228,10 +262,16 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
             </Stack>
           </Stack>
         </Collapse>
+        {active && isDiscarding && (
+          <Stack flex={1} alignItems="center" justifyContent="center" padding="40px">
+            <CircularProgress size={24} aria-label="편집 초안 조회 중" />
+          </Stack>
+        )}
         {visibleDraft ? (
           <FundamentalModelDraftEditor
             key={`${scope}:${visibleDraft.draftId}`}
             ref={editorRef}
+            active={active && !isDiscarding}
             scope={scope}
             caseId={null}
             initialDraftId={visibleDraft.draftId}
@@ -251,21 +291,23 @@ const FundamentalModelUploadDraftEditor = forwardRef<FundamentalModelDraftEditor
             }}
           />
         ) : (
-          <Stack flex={1} minHeight={0} padding="0 20px 20px">
-            <MIFileUploadDropzone
-              accept=".xlsx,.xlsm"
-              maxFileSizeMb={50}
-              guideText="(Demand, Supply, Trade, Output이 각각 포함된 4개의 파일을 모두 업로드해주세요. 각 파일은 50MB까지 가능합니다.)"
-              disabled={externalBusy || busy || upload.hasPendingRequest}
-              onFilesAdd={(files) => {
-                targetRef.current = undefined
-                void addFiles(files)
-              }}
-              sx={{ flex: 1, minHeight: '195px', borderRadius: '10px', padding: '40px 20px' }}
-            />
-          </Stack>
+          !isDiscarding && (
+            <Stack flex={1} minHeight={0} padding="0 20px 20px">
+              <MIFileUploadDropzone
+                accept=".xlsx,.xlsm"
+                maxFileSizeMb={50}
+                guideText="(Demand, Supply, Trade, Output이 각각 포함된 4개의 파일을 모두 업로드해주세요. 각 파일은 50MB까지 가능합니다.)"
+                disabled={externalBusy || busy || upload.hasPendingRequest}
+                onFilesAdd={(files) => {
+                  targetRef.current = undefined
+                  void addFiles(files)
+                }}
+                sx={{ flex: 1, minHeight: '195px', borderRadius: '10px', padding: '40px 20px' }}
+              />
+            </Stack>
+          )
         )}
-        {!visibleDraft && <FundamentalModelInputEditorActions />}
+        {!visibleDraft && !isDiscarding && <FundamentalModelInputEditorActions />}
         <MIConfirm
           open={Boolean(replacement)}
           title="파일 교체"

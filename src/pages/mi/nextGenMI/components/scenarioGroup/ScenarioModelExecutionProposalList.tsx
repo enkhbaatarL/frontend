@@ -1189,10 +1189,12 @@ const ScenarioModelExecutionProposalList = ({
         return next
       })
       const responseData = axios.isAxiosError(error)
-        ? (error.response?.data as { data?: { failureReason?: string } | null } | undefined)
+        ? (error.response?.data as { message?: string; data?: { failureReason?: string } | null } | undefined)
         : undefined
       const failureReason =
-        responseData?.data?.failureReason?.trim() || (error instanceof Error && !axios.isAxiosError(error) ? error.message : '')
+        responseData?.data?.failureReason?.trim() ||
+        responseData?.message?.trim() ||
+        (error instanceof Error && !axios.isAxiosError(error) ? error.message : '')
       setGenerationFailureReason(failureReason || null)
       showSnackbar('파라미터 생성에 실패했습니다.', { variant: 'error', body: failureReason || undefined })
       void refreshProposals(true)

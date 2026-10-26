@@ -150,7 +150,13 @@ const readRecovery = (key: string): DraftRecovery | null => {
   }
 }
 
-const useModelInputAutosave = (caseId: number | null, scope: string, initialDraftId: string | null, uploadPending = false) => {
+const useModelInputAutosave = (
+  caseId: number | null,
+  scope: string,
+  initialDraftId: string | null,
+  uploadPending = false,
+  active = true,
+) => {
   const queryClient = useQueryClient()
   const session = useRef(getModelInputSessionSignal()).current
   const isCurrentSession = useCallback(() => isModelInputSessionCurrent(session, scope), [scope, session])
@@ -160,8 +166,15 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
   const [draft, setDraft] = useState<ModelInputDraftStructure>()
   const [edits, setEdits] = useState<ModelInputLocalEdit[]>([])
   const [addedRows, setAddedRows] = useState<ModelInputAddRowCommand[]>([])
-  const [error, setError] = useState('')
+  const [error, setErrorState] = useState('')
+  const notificationsRef = useRef({ active, epoch: 0 })
+  notificationsRef.current.active = active
+  const setError = useCallback((message: string, epoch = notificationsRef.current.epoch) => {
+    if (!message || (notificationsRef.current.active && epoch === notificationsRef.current.epoch)) setErrorState(message)
+  }, [])
   const [isLoading, setIsLoading] = useState(true)
+  const [initializationVersion, setInitializationVersion] = useState(0)
+  const previousActiveRef = useRef(active)
   const [isSaving, setIsSaving] = useState(false)
   const originalValuesRef = useRef(new Map<string, ModelInputOriginalEdit[]>())
   const [originalEdits, setOriginalEdits] = useState<ModelInputOriginalEdit[]>([])
@@ -233,7 +246,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       const next = uploadedDraft ?? (await inputDraftService.getDraft(draftId, signal ? AbortSignal.any([signal, session]) : session))
       signal?.throwIfAborted()
       if (!isCurrentSession()) throw new Error('사용자 또는 회사가 변경되었습니다.')
-      if (mountedRef.current && next.status === 'DRAFT') {
+      if (mountedRef.current && notificationsRef.current.active && next.status === 'DRAFT') {
         const visibleTables = queryClient.getQueryCache().findAll({
           queryKey: ['fundamentalModel', 'inputDraftTable', scope, draftId],
           type: 'active',
@@ -260,7 +273,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
   )
 
   const preserveOnRevisionConflict = useCallback(
-    async (draftId: string, signal?: AbortSignal, serverDraft?: ModelInputDraftStructure) => {
+    async (draftId: string, signal?: AbortSignal, serverDraft?: ModelInputDraftStructure, epoch = notificationsRef.current.epoch) => {
       const state = stateRef.current
       if (!state || state.draftId !== draftId) return
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -269,12 +282,12 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       state.blockedRevision = serverDraft?.revision ?? state.revision
       persist()
       publish()
-      if (mountedRef.current && isCurrentSession()) setError(describeFailure(null))
+      if (mountedRef.current && isCurrentSession()) setError(describeFailure(null), epoch)
       const next = await loadDraft(draftId, signal, serverDraft)
       state.blockedRevision = next.revision
       persist()
     },
-    [isCurrentSession, loadDraft, persist, publish],
+    [isCurrentSession, loadDraft, persist, publish, setError],
   )
 
   const enqueueChanges = useCallback(
@@ -361,17 +374,24 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
   }, [])
 
   const flush = useCallback(
-    (keepalive = false, drain = true, beforeUpload = false): Promise<boolean> => {
+    (
+      keepalive = false,
+      drain = true,
+      beforeUpload = false,
+      notificationEpoch = notificationsRef.current.active ? notificationsRef.current.epoch : -1,
+    ): Promise<boolean> => {
       if (!isCurrentSession()) return Promise.resolve(false)
       if (uploadRef.current && !beforeUpload) {
         persist()
-        return uploadRef.current.promise.then(() => flush(keepalive, drain))
+        return uploadRef.current.promise.then(() => flush(keepalive, drain, beforeUpload, notificationEpoch))
       }
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = undefined
       if (saveRef.current) {
         persist()
-        return drain ? saveRef.current.then((saved) => (saved ? flush(keepalive, true, beforeUpload) : false)) : saveRef.current
+        return drain
+          ? saveRef.current.then((saved) => (saved ? flush(keepalive, true, beforeUpload, notificationEpoch) : false))
+          : saveRef.current
       }
       const state = stateRef.current
       if (!state || !isCurrentSession()) return Promise.resolve(false)
@@ -388,6 +408,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       }
 
       const run = async () => {
+        const epoch = notificationEpoch
         let submitting = false
         const controller = new AbortController()
         savePreparationRef.current = state.pending ? null : controller
@@ -404,7 +425,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
               const current = await loadDraft(state.draftId, controller.signal)
               if (current.status !== 'DRAFT') throw new Error('편집이 종료되었습니다.')
               if (current.revision !== state.revision) {
-                await preserveOnRevisionConflict(state.draftId, controller.signal, current)
+                await preserveOnRevisionConflict(state.draftId, controller.signal, current, epoch)
                 return false
               }
               if (current.activeOperationId && current.activeOperationEndpoint) {
@@ -511,7 +532,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           }
           if (operation.status === 'FAILED') {
             if (operation.failure?.reason === 'REVISION_CONFLICT') {
-              await preserveOnRevisionConflict(state.draftId)
+              await preserveOnRevisionConflict(state.draftId, undefined, undefined, epoch)
               return false
             }
             if (pending.kind === 'CHANGE') {
@@ -535,7 +556,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           const next = await loadDraft(state.draftId)
           if (pending.kind === 'CHANGE' && !pending.body) {
             if (state.edits.length || state.addedRows?.length || state.queuedChanges?.length || originalValuesRef.current.size) {
-              await preserveOnRevisionConflict(state.draftId, undefined, next)
+              await preserveOnRevisionConflict(state.draftId, undefined, next, epoch)
               return false
             }
           }
@@ -581,7 +602,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
               if (mountedRef.current) setDraft(undefined)
             } else if (revisionConflict) {
               try {
-                await preserveOnRevisionConflict(state.draftId)
+                await preserveOnRevisionConflict(state.draftId, undefined, undefined, epoch)
                 return false
               } catch (reloadError) {
                 failure = reloadError
@@ -591,9 +612,9 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           try {
             persist()
           } catch (storageError) {
-            if (mountedRef.current) setError(getModelInputErrorMessage(storageError))
+            if (mountedRef.current) setError(getModelInputErrorMessage(storageError), epoch)
           }
-          if (mountedRef.current) setError(getModelInputErrorMessage(failure))
+          if (mountedRef.current) setError(getModelInputErrorMessage(failure), epoch)
           return false
         } finally {
           if (savePreparationRef.current === controller) savePreparationRef.current = null
@@ -609,7 +630,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       return saveRef.current.then((saved) => {
         if (!saved) return false
         // 실행과 화면 종료는 대기열을 모두 비우고, 자동저장은 현재 요청 이후 모인 변경을 다음 묶음으로 전송한다.
-        if (drain) return flush(keepalive, true, beforeUpload)
+        if (drain) return flush(keepalive, true, beforeUpload, notificationEpoch)
         if (
           mountedRef.current &&
           !commandRef.current &&
@@ -619,13 +640,13 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           if (timerRef.current) clearTimeout(timerRef.current)
           timerRef.current = setTimeout(() => {
             timerRef.current = undefined
-            void flush(false, false)
+            void flush(false, false, false, notificationEpoch)
           }, 0)
         }
         return true
       })
     },
-    [enqueueChanges, isCurrentSession, loadDraft, persist, publish, preserveOnRevisionConflict],
+    [enqueueChanges, isCurrentSession, loadDraft, persist, publish, preserveOnRevisionConflict, setError],
   )
 
   const resumeAfterUpload = useCallback(() => {
@@ -666,20 +687,22 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
   )
 
   const flushBeforeLeaving = useCallback(async () => {
+    const epoch = notificationsRef.current.active ? notificationsRef.current.epoch : -1
     const state = stateRef.current
     if (!state || !isCurrentSession()) return false
     if (state.blockedRevision !== undefined) return persist()
-    if ((state.pending || saveRef.current) && !(await flush(false, false))) return false
-    if (!state.edits.some((edit) => edit.error || (edit.type !== 'CLEAR' && edit.value === null))) return flush()
+    if ((state.pending || saveRef.current) && !(await flush(false, false, false, epoch))) return false
+    if (!state.edits.some((edit) => edit.error || (edit.type !== 'CLEAR' && edit.value === null))) return flush(false, true, false, epoch)
     try {
       return persist()
     } catch (cause) {
-      if (mountedRef.current) setError(getModelInputErrorMessage(cause))
+      if (mountedRef.current) setError(getModelInputErrorMessage(cause), epoch)
       return false
     }
-  }, [flush, isCurrentSession, persist])
+  }, [flush, isCurrentSession, persist, setError])
 
   const discardDraft = useCallback(async () => {
+    const epoch = notificationsRef.current.active ? notificationsRef.current.epoch : -1
     const state = stateRef.current
     if (!state || commandRef.current || !isCurrentSession()) return false
     commandRef.current = true
@@ -689,7 +712,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
     try {
       // 이미 접수된 작업만 완료하고, 아직 전송하지 않은 편집은 저장하지 않는다.
       if (saveRef.current) await saveRef.current
-      if (state.pending && !(await flush(false, false))) return false
+      if (state.pending && !(await flush(false, false, false, epoch))) return false
       const current = await loadDraft(state.draftId)
       await inputDraftService.discardUpload(current.draftId, current.revision)
       state.edits = []
@@ -701,21 +724,26 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       draftRef.current = undefined
       originalValuesRef.current.clear()
       queryClient.removeQueries({ queryKey: ['fundamentalModel', 'inputDraftTable', scope, current.draftId] })
-      void queryClient.invalidateQueries({ queryKey: ['fundamentalModel', 'inputSourceCases', scope] })
+      void queryClient.invalidateQueries({
+        queryKey: ['fundamentalModel', 'inputSourceCases', scope],
+        refetchType: epoch < 0 ? 'none' : 'active',
+      })
       publish()
       return true
     } catch (cause) {
-      if (mountedRef.current) setError(getModelInputErrorMessage(cause))
+      if (mountedRef.current) setError(getModelInputErrorMessage(cause), epoch)
       return false
     } finally {
       commandRef.current = false
     }
-  }, [flush, isCurrentSession, loadDraft, persist, publish, queryClient, scope])
+  }, [flush, isCurrentSession, loadDraft, persist, publish, queryClient, scope, setError])
 
   useEffect(() => {
     mountedRef.current = true
+    setIsLoading(true)
     const controller = new AbortController()
     const initialize = async () => {
+      const epoch = notificationsRef.current.active ? notificationsRef.current.epoch : -1
       try {
         if (!isCurrentSession()) return
         let recovery: DraftRecovery | null = null
@@ -782,13 +810,13 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
           !state.pending?.operationId &&
           (state.pending || state.queuedChanges?.length || state.edits.length || state.addedRows?.length)
         ) {
-          await preserveOnRevisionConflict(state.draftId, controller.signal, current)
-        } else if (state.pending || state.queuedChanges?.length) await flush()
+          await preserveOnRevisionConflict(state.draftId, controller.signal, current, epoch)
+        } else if (state.pending || state.queuedChanges?.length) await flush(false, true, false, epoch)
         else if ((state.edits.length || state.addedRows?.length) && state.revision !== current.revision) {
-          await preserveOnRevisionConflict(state.draftId, controller.signal, current)
+          await preserveOnRevisionConflict(state.draftId, controller.signal, current, epoch)
         }
       } catch (cause) {
-        if (!controller.signal.aborted && isCurrentSession()) setError(getModelInputErrorMessage(cause))
+        if (!controller.signal.aborted && isCurrentSession()) setError(getModelInputErrorMessage(cause), epoch)
       } finally {
         if (!controller.signal.aborted && isCurrentSession()) setIsLoading(false)
       }
@@ -800,7 +828,21 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       if (timerRef.current) clearTimeout(timerRef.current)
       void flush(true)
     }
-  }, [caseId, flush, isCurrentSession, persist, publish, preserveOnRevisionConflict, session, storageKey])
+  }, [caseId, flush, initializationVersion, isCurrentSession, persist, publish, preserveOnRevisionConflict, session, storageKey, setError])
+
+  useEffect(() => {
+    const wasActive = previousActiveRef.current
+    previousActiveRef.current = active
+    if (!active || wasActive) return
+    const state = stateRef.current
+    if (!state) {
+      if (!isLoading) setInitializationVersion((current) => current + 1)
+      return
+    }
+    // 재진입 시 미확정 요청을 같은 requestId로 이어간다. 과거 요청의 오류는 알리지 않는다.
+    if (!saveRef.current && !commandRef.current && state.blockedRevision === undefined && (state.pending || state.queuedChanges?.length))
+      void flush(false, false, false, -1)
+  }, [active, flush, isLoading])
 
   const updateEdit = useCallback(
     (edit: Omit<ModelInputLocalEdit, 'id'>, originalValue: unknown) => {
@@ -874,7 +916,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
         void flush(false, false)
       }, 8000)
     },
-    [flush, isCurrentSession, isTableChanging, persist, publish],
+    [flush, isCurrentSession, isTableChanging, persist, publish, setError],
   )
 
   const stageRow = useCallback(
@@ -960,12 +1002,13 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       if (!(await flush())) return null
       return draftRef.current?.finalizedCaseId ?? null
     },
-    [flush, isCurrentSession, loadDraft, persist, publish, preserveOnRevisionConflict],
+    [flush, isCurrentSession, loadDraft, persist, publish, preserveOnRevisionConflict, setError],
   )
 
   const executeCommands = useCallback(
     async (operations: ModelInputChangeRequest['operations']) => {
       if (commandRef.current || !operations.length || operations.some((operation) => isTableChanging(operation.tableId))) return false
+      const epoch = notificationsRef.current.epoch
       try {
         if (!enqueueChanges(operations)) return false
         // 호출한 표의 명령까지만 기다린다. 이후 다른 표의 변경은 백그라운드에서 이어간다.
@@ -975,15 +1018,15 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
             (change) => change?.kind === 'CHANGE' && change.body?.operations.some((operation) => commandIds.has(operation.commandId)),
           )
         ) {
-          if (!(await flush(false, false))) return false
+          if (!(await flush(false, false, false, epoch))) return false
         }
         return true
       } catch (cause) {
-        if (mountedRef.current) setError(getModelInputErrorMessage(cause))
+        if (mountedRef.current) setError(getModelInputErrorMessage(cause), epoch)
         return false
       }
     },
-    [enqueueChanges, flush, isTableChanging],
+    [enqueueChanges, flush, isTableChanging, setError],
   )
 
   const discard = useCallback(
@@ -1019,7 +1062,7 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
       void flush(false, false)
       return true
     },
-    [flush, isCurrentSession, isTableChanging, persist, publish],
+    [flush, isCurrentSession, isTableChanging, persist, publish, setError],
   )
 
   useEffect(() => {
@@ -1052,7 +1095,19 @@ const useModelInputAutosave = (caseId: number | null, scope: string, initialDraf
     }
   }, [flush])
 
+  const background = useCallback(
+    (discardUpload = false) => {
+      // 전환 직후부터 알림을 막고, 재진입해도 이전 요청의 오류를 뒤늦게 알리지 않는다.
+      notificationsRef.current.active = false
+      notificationsRef.current.epoch++
+      setErrorState('')
+      return discardUpload ? discardDraft() : flushBeforeLeaving()
+    },
+    [discardDraft, flushBeforeLeaving],
+  )
+
   return {
+    background,
     draft,
     edits,
     addedRows,

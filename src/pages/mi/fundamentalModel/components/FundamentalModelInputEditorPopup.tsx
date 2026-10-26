@@ -1,6 +1,17 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
+import {
+  createRef,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 
 import type { ModelInputFinalization } from '@/service/mi/fundamentalModel/inputDraft'
 
@@ -36,7 +47,14 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
   const queryClient = useQueryClient()
   const { showSnackbar } = useSnackbar()
   const popupRef = useRef<MIMorphingPopupRef>(null)
-  const draftEditorRef = useRef<FundamentalModelDraftEditorRef>(null)
+  const [sourceSessions, setSourceSessions] = useState<
+    Array<{
+      source: string
+      scope: string
+      draftId: string | null
+      ref: RefObject<FundamentalModelDraftEditorRef | null>
+    }>
+  >([])
   const sourceSwitchRef = useRef(false)
   const closingRef = useRef(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -47,7 +65,6 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
   const [hasUploadedFiles, setHasUploadedFiles] = useState(false)
   const [isDraftBusy, setIsDraftBusy] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
-  const [isSourceSwitching, setIsSourceSwitching] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [showTitleValidationError, setShowTitleValidationError] = useState(false)
@@ -63,10 +80,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
   useEffect(() => {
     if (sourceCases.isError) showSnackbar('입력값 출처 목록을 불러오지 못했습니다.', { variant: 'error' })
   }, [sourceCases.isError, showSnackbar])
-  const selectedSourceCase =
-    sourceCases.data?.miBase?.caseId === Number(selectedSource)
-      ? sourceCases.data.miBase
-      : sourceCases.data?.cases.find((item) => String(item.caseId) === selectedSource)
+  const getDraftEditor = () => sourceSessions.find((item) => item.scope === authScope && item.source === selectedSource)?.ref.current
   useImperativeHandle(ref, () => ({ open: () => popupRef.current?.open() }), [])
   const cancelClose = () => {
     if (closingRef.current || sourceSwitchRef.current) return
@@ -79,8 +93,9 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
     setIsClosing(true)
     let closed = false
     try {
-      if (draftEditorRef.current) {
-        const completed = await (selectedSource === 'EXCEL_UPLOAD' ? draftEditorRef.current.discard() : draftEditorRef.current.flush())
+      const draftEditor = getDraftEditor()
+      if (draftEditor) {
+        const completed = await (selectedSource === 'EXCEL_UPLOAD' ? draftEditor.discard() : draftEditor.flush())
         if (!completed) throw new Error('입력값 처리를 완료하지 못했습니다.')
       }
       setIsCloseConfirmOpen(false)
@@ -100,33 +115,32 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
       }
     }
   }
-  const changeSource = async (source: string) => {
+  const changeSource = (source: string) => {
     if (closingRef.current || sourceSwitchRef.current || isDraftBusy) return
     sourceSwitchRef.current = true
-    setIsSourceSwitching(true)
-    try {
-      if (draftEditorRef.current) {
-        const completed = await (selectedSource === 'EXCEL_UPLOAD' ? draftEditorRef.current.discard() : draftEditorRef.current.flush())
-        if (!completed) throw new Error('입력값 처리를 완료하지 못했습니다.')
-      }
-      setSelectedSource(source)
-      if (selectedSource === 'EXCEL_UPLOAD') {
-        setTitle('')
-        setDescription('')
-        setShowTitleValidationError(false)
-      }
-      setPendingSource(null)
-    } catch {
-      showSnackbar(
-        selectedSource === 'EXCEL_UPLOAD'
-          ? '작업 중인 내용을 삭제하지 못했습니다. 처리 상태를 확인한 후 다시 시도해주세요.'
-          : '입력값 저장을 완료하지 못했습니다. 처리 상태를 확인한 후 다시 시도해주세요.',
-        { variant: 'error' },
-      )
-    } finally {
-      sourceSwitchRef.current = false
-      setIsSourceSwitching(false)
+    // 세션은 유지하고 화면만 바꾼다. 기존 출처의 저장/폐기는 알림 없이 이어간다.
+    void getDraftEditor()
+      ?.background(selectedSource === 'EXCEL_UPLOAD')
+      .catch(() => false)
+    setSourceSessions((current) => {
+      if (current.some((item) => item.scope === authScope && item.source === source)) return current
+      const sourceCase =
+        sourceCases.data?.miBase?.caseId === Number(source)
+          ? sourceCases.data.miBase
+          : sourceCases.data?.cases.find((item) => String(item.caseId) === source)
+      return [
+        ...current,
+        { source, scope: authScope, draftId: sourceCase?.draftId ?? null, ref: createRef<FundamentalModelDraftEditorRef>() },
+      ]
+    })
+    setSelectedSource(source)
+    if (selectedSource === 'EXCEL_UPLOAD') {
+      setTitle('')
+      setDescription('')
+      setShowTitleValidationError(false)
     }
+    setPendingSource(null)
+    sourceSwitchRef.current = false
   }
   const handleSourceChange = (source: string) => {
     if (closingRef.current || sourceSwitchRef.current || isDraftBusy || source === selectedSource) return
@@ -181,7 +195,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
                 onSelected={(source: string) => {
                   void handleSourceChange(source)
                 }}
-                disabled={isDraftBusy || isSourceSwitching || isClosing}
+                disabled={isDraftBusy || isClosing}
                 sources={sourceCases.data}
                 loading={sourceCases.isPending}
               />
@@ -200,7 +214,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
                     id="fundamental-model-title"
                     component="input"
                     value={title}
-                    disabled={isDraftBusy || isSourceSwitching || isClosing}
+                    disabled={isDraftBusy || isClosing}
                     maxLength={FUNDAMENTAL_UPLOAD_TITLE_MAX_LENGTH}
                     placeholder="케이스명을 입력하세요 (예: 미국-이란 긴장 고조 시나리오)"
                     aria-invalid={showTitleValidationError}
@@ -255,7 +269,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
                     id="fundamental-model-description"
                     component="input"
                     value={description}
-                    disabled={isDraftBusy || isSourceSwitching || isClosing}
+                    disabled={isDraftBusy || isClosing}
                     maxLength={FUNDAMENTAL_UPLOAD_DESCRIPTION_MAX_LENGTH}
                     placeholder="케이스에 대한 설명을 입력하세요 (선택)"
                     onChange={(event: ChangeEvent<HTMLInputElement>) => setDescription(event.target.value)}
@@ -289,7 +303,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
           </Stack>
         </Stack>
 
-        {!selectedSource ? (
+        {!selectedSource && (
           <Stack flex={1} minHeight={0}>
             <Stack flex={1} alignItems="center" justifyContent="center">
               <Typography variant="body2M14" color="contentText.Subtext">
@@ -298,33 +312,40 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
             </Stack>
             <FundamentalModelInputEditorActions />
           </Stack>
-        ) : selectedSource === 'EXCEL_UPLOAD' ? (
-          <FundamentalModelUploadDraftEditor
-            key={`${authScope}:upload`}
-            ref={draftEditorRef}
-            scope={authScope}
-            title={title}
-            description={description}
-            externalBusy={isClosing || isSourceSwitching}
-            onBusyChange={setIsDraftBusy}
-            onUploadProgressChange={setUploadProgress}
-            onUploadedFilesChange={setHasUploadedFiles}
-            onFinalized={handleFinalized}
-          />
-        ) : (
-          <FundamentalModelDraftEditor
-            key={`${authScope}:${selectedSource}`}
-            ref={draftEditorRef}
-            caseId={Number(selectedSource)}
-            initialDraftId={selectedSourceCase?.draftId ?? null}
-            scope={authScope}
-            title={title}
-            description={description}
-            externalBusy={isClosing || isSourceSwitching}
-            onBusyChange={setIsDraftBusy}
-            onFinalized={handleFinalized}
-          />
         )}
+        {sourceSessions
+          .filter((item) => item.scope === authScope)
+          .map((item) =>
+            item.source === 'EXCEL_UPLOAD' ? (
+              <FundamentalModelUploadDraftEditor
+                key={`${item.scope}:upload`}
+                ref={item.ref}
+                active={isOpen && selectedSource === item.source}
+                scope={authScope}
+                title={title}
+                description={description}
+                externalBusy={isClosing}
+                onBusyChange={setIsDraftBusy}
+                onUploadProgressChange={setUploadProgress}
+                onUploadedFilesChange={setHasUploadedFiles}
+                onFinalized={handleFinalized}
+              />
+            ) : (
+              <FundamentalModelDraftEditor
+                key={`${item.scope}:${item.source}`}
+                ref={item.ref}
+                active={isOpen && selectedSource === item.source}
+                caseId={Number(item.source)}
+                initialDraftId={item.draftId}
+                scope={authScope}
+                title={title}
+                description={description}
+                externalBusy={isClosing}
+                onBusyChange={setIsDraftBusy}
+                onFinalized={handleFinalized}
+              />
+            ),
+          )}
       </Stack>
       {uploadProgress && (
         <Stack
@@ -359,7 +380,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
         popup={{
           title: 'MI 수급모델 실행',
           hideHeaderLine: true,
-          disableClose: isDraftBusy || isClosing || isSourceSwitching,
+          disableClose: isDraftBusy || isClosing,
           content: editorContent,
           measureContent: <Box height={editorHeight} />,
           showSkeleton: false,
@@ -373,6 +394,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
             setIsCloseConfirmOpen(false)
             setPendingSource(null)
             setSelectedSource('')
+            setSourceSessions([])
             setHasUploadedFiles(false)
             setTitle('')
             setDescription('')
@@ -398,15 +420,15 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
         title={pendingSource !== null ? '입력값 출처를 변경하시겠습니까?' : 'MI 수급모델 진행을 종료하시겠습니까?'}
         width="450px"
         zIndex={1402}
-        disableClose={isClosing || isSourceSwitching}
+        disableClose={isClosing}
         handleClose={cancelClose}
         actions={[
-          { label: '취소', variant: 'outlined', color: 'gray', disabled: isClosing || isSourceSwitching, onClick: cancelClose },
+          { label: '취소', variant: 'outlined', color: 'gray', disabled: isClosing, onClick: cancelClose },
           {
             label: pendingSource !== null ? '변경' : '종료',
             variant: 'filled',
             color: 'red',
-            disabled: isClosing || isDraftBusy || isSourceSwitching,
+            disabled: isClosing || isDraftBusy,
             onClick: () => (pendingSource !== null ? changeSource(pendingSource) : confirmClose()),
           },
         ]}

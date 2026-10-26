@@ -29,6 +29,7 @@ import useModelInputAutosave from '@/pages/mi/fundamentalModel/hooks/useModelInp
 export interface FundamentalModelDraftEditorRef {
   flush: () => Promise<boolean>
   discard: () => Promise<boolean>
+  background: (discard?: boolean) => Promise<boolean>
 }
 
 export interface FundamentalModelUploadQueueRef {
@@ -47,6 +48,7 @@ interface Props {
   onBusyChange: (busy: boolean) => void
   initialTable?: ModelInputTablePage | null
   externalBusy?: boolean
+  active?: boolean
   uploadActions?: {
     queueRef: Ref<FundamentalModelUploadQueueRef>
     hasPendingRequest: boolean
@@ -54,13 +56,56 @@ interface Props {
   }
 }
 
+// 비활성 출처는 저장 큐만 유지하고 화면 이동 차단기는 현재 편집기에만 연결한다.
+const FundamentalModelDraftNavigationGuard = ({
+  needsSave,
+  saveBeforeLeaving,
+}: {
+  needsSave: boolean
+  saveBeforeLeaving: () => Promise<boolean>
+}) => {
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      needsSave &&
+      (currentLocation.pathname !== nextLocation.pathname ||
+        currentLocation.search !== nextLocation.search ||
+        currentLocation.hash !== nextLocation.hash),
+  )
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return undefined
+    let current = true
+    void saveBeforeLeaving().then((saved) => {
+      if (!current) return
+      if (saved) blocker.proceed()
+      else blocker.reset()
+    })
+    return () => {
+      current = false
+    }
+  }, [blocker, saveBeforeLeaving])
+
+  return null
+}
+
 const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, Props>(
   (
-    { caseId, initialDraftId, scope, title, description, onFinalized, onBusyChange, initialTable, externalBusy = false, uploadActions },
+    {
+      caseId,
+      initialDraftId,
+      scope,
+      title,
+      description,
+      onFinalized,
+      onBusyChange,
+      initialTable,
+      externalBusy = false,
+      active = true,
+      uploadActions,
+    },
     ref,
   ) => {
     const tableRef = useRef<FundamentalModelDraftTableRef>(null)
-    const autosave = useModelInputAutosave(caseId, scope, initialDraftId, uploadActions?.hasPendingRequest)
+    const autosave = useModelInputAutosave(caseId, scope, initialDraftId, uploadActions?.hasPendingRequest, active)
     const {
       draft,
       edits,
@@ -118,12 +163,16 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
         }
     }, [draft, initialTable])
     const needsSave = edits.length > 0 || addedRows.length > 0 || hasPendingRequest || isSaving || busy
+    const previousErrorRef = useRef(error)
     useEffect(() => {
-      if (error) showSnackbar(error, { variant: 'error' })
-    }, [error, showSnackbar])
+      const previous = previousErrorRef.current
+      previousErrorRef.current = error
+      if (active && error && error !== previous) showSnackbar(error, { variant: 'error' })
+    }, [active, error, showSnackbar])
     useEffect(() => {
       const operation = autosave.finalization
       if (
+        !active ||
         !operation ||
         operation.status !== 'SUCCEEDED' ||
         !operation.finalizedCaseId ||
@@ -143,10 +192,11 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
         actionRef.current = false
         setIsFinalizing(false)
       })
-    }, [autosave.finalization, busy, draft?.status, hasPendingRequest, onFinalized])
+    }, [active, autosave.finalization, busy, draft?.status, hasPendingRequest, onFinalized])
 
     useEffect(() => {
       if (
+        !active ||
         isLoading ||
         busy ||
         hasPendingRequest ||
@@ -158,14 +208,15 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
         return
       handledFinalizationRef.current = draft.draftId
       void onFinalized(draft.finalizedCaseId)
-    }, [autosave.finalization, busy, draft, hasPendingRequest, isLoading, onFinalized])
+    }, [active, autosave.finalization, busy, draft, hasPendingRequest, isLoading, onFinalized])
 
     const saveBeforeLeaving = useCallback(
       () => (externalBusy ? Promise.resolve(false) : draft ? flushBeforeLeaving() : Promise.resolve(!isLoading)),
       [draft, externalBusy, flushBeforeLeaving, isLoading],
     )
-    useImperativeHandle(ref, () => ({ flush: saveBeforeLeaving, discard: autosave.discardDraft }), [
+    useImperativeHandle(ref, () => ({ flush: saveBeforeLeaving, discard: autosave.discardDraft, background: autosave.background }), [
       autosave.discardDraft,
+      autosave.background,
       saveBeforeLeaving,
     ])
     useImperativeHandle(
@@ -178,29 +229,10 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       [autosave.completeUpload, autosave.prepareUpload, autosave.resumeAfterUpload],
     )
     useEffect(() => {
+      if (!active) return undefined
       onBusyChange(isFinalizing)
       return () => onBusyChange(false)
-    }, [isFinalizing, onBusyChange])
-
-    const blocker = useBlocker(
-      ({ currentLocation, nextLocation }) =>
-        needsSave &&
-        (currentLocation.pathname !== nextLocation.pathname ||
-          currentLocation.search !== nextLocation.search ||
-          currentLocation.hash !== nextLocation.hash),
-    )
-    useEffect(() => {
-      if (blocker.state !== 'blocked') return undefined
-      let current = true
-      void saveBeforeLeaving().then((saved) => {
-        if (!current) return
-        if (saved) blocker.proceed()
-        else blocker.reset()
-      })
-      return () => {
-        current = false
-      }
-    }, [blocker, saveBeforeLeaving])
+    }, [active, isFinalizing, onBusyChange])
 
     const selectTable = (kind: ModelInputSection['kind'], sheetName: string, next?: ModelInputTableInfo) => {
       if (actionRef.current || externalBusy) return
@@ -239,8 +271,11 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       void discard(table.id)
     }
 
+    if (!active) return null
+
     return (
       <Stack flex={1} minHeight={0} overflow="hidden">
+        <FundamentalModelDraftNavigationGuard needsSave={needsSave} saveBeforeLeaving={saveBeforeLeaving} />
         {isFinalizing ? (
           <Stack flex={1} minHeight={0} alignItems="center" justifyContent="center" gap="10px" role="status" aria-live="polite">
             <MIAgentSpinner size={40} tone="gray" />
