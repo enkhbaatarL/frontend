@@ -52,6 +52,7 @@ interface ScrollWrapperProps {
   overflowX?: CSSProperties['overflowX']
   showHorizontalScrollbar?: boolean
   horizontalScrollbarInset?: number
+  horizontalThumbMinWidth?: number
   scrollbarOutside?: boolean
   scrollbarOutsideGutter?: number
   scrollbarOutsideRightGutter?: number
@@ -91,6 +92,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       overflowX = 'hidden',
       showHorizontalScrollbar = false,
       horizontalScrollbarInset = 0,
+      horizontalThumbMinWidth = 0,
       scrollbarOutside = false,
       scrollbarOutsideGutter = SCROLL_TRACK_WIDTH_PX,
       scrollbarOutsideRightGutter,
@@ -180,8 +182,14 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         if (!horizontallyScrollable) {
           setHorizontalThumbWidth(0)
         } else {
-          const availableWidth = clientWidth - (scrollbarOutside || !scrollable ? 0 : SCROLL_TRACK_WIDTH_PX) - horizontalScrollbarInset * 2
-          const nextHorizontalThumbWidth = (clientWidth / scrollWidth) * availableWidth
+          const availableWidth = Math.max(
+            0,
+            clientWidth - (scrollbarOutside || !scrollable ? 0 : SCROLL_TRACK_WIDTH_PX) - horizontalScrollbarInset * 2,
+          )
+          const nextHorizontalThumbWidth = Math.min(
+            Math.max((clientWidth / scrollWidth) * availableWidth, horizontalThumbMinWidth),
+            availableWidth,
+          )
           setHorizontalThumbWidth(nextHorizontalThumbWidth)
 
           const horizontalThumb = horizontalThumbRef.current
@@ -202,7 +210,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         return
       }
 
-      const availableHeight = clientHeight - thumbTopInset - thumbBottomInset
+      const availableHeight = Math.max(0, clientHeight - thumbTopInset - thumbBottomInset)
       const rawThumbHeight = (clientHeight / scrollHeight) * availableHeight
       const nextThumbHeight = Math.min(Math.max(rawThumbHeight, thumbMinHeight ?? 0), thumbMaxHeight ?? availableHeight, availableHeight)
 
@@ -218,6 +226,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
       }
     }, [
       horizontalScrollbarInset,
+      horizontalThumbMinWidth,
       scrollbarOutside,
       thumbTopInset,
       thumbBottomInset,
@@ -273,11 +282,9 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
         const deltaY = e.clientY - startY
         const scrollHeight = container.scrollHeight
         const clientHeight = container.clientHeight
-        const availableHeight = clientHeight - thumbTopInset - thumbBottomInset
-        const rawThumbHeight = (clientHeight / scrollHeight) * availableHeight
-        const currentThumbHeight = Math.min(rawThumbHeight, thumbMaxHeight ?? rawThumbHeight, availableHeight)
+        const availableHeight = Math.max(0, clientHeight - thumbTopInset - thumbBottomInset)
         const maxScrollTop = scrollHeight - clientHeight
-        const maxThumbTravel = Math.max(0, availableHeight - currentThumbHeight)
+        const maxThumbTravel = Math.max(0, availableHeight - thumbHeight)
 
         if (maxThumbTravel <= 0) return
 
@@ -285,7 +292,7 @@ const ScrollWrapper = forwardRef<HTMLDivElement, ScrollWrapperProps>(
 
         container.scrollTop = Math.max(0, Math.min(newScrollTop, maxScrollTop))
       },
-      [isDragging, startY, startScrollTop, thumbTopInset, thumbBottomInset, thumbMaxHeight],
+      [isDragging, startY, startScrollTop, thumbTopInset, thumbBottomInset, thumbHeight],
     )
 
     // Handle mouse up to stop dragging

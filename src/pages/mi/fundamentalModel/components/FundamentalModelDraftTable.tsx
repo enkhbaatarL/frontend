@@ -523,6 +523,7 @@ const FundamentalModelDraftTable = ({
           <Stack position="relative" flex={1} minWidth={0} minHeight={0} overflow="hidden">
             <FundamentalModelTemplateGrid
               rows={rows}
+              totalRowCount={Math.max(rows.length, firstPage.page.totalBodyRows + addedRows.length)}
               columns={columns}
               columnWidths={columnWidths}
               headerHeight={headerHeight}

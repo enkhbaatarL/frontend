@@ -24,6 +24,7 @@ interface TemplateGridColumn {
 
 interface Props<Row, Column extends TemplateGridColumn> {
   rows: Row[]
+  totalRowCount: number
   columns: Column[]
   columnWidths: number[]
   headerHeight: number
@@ -42,6 +43,7 @@ interface Props<Row, Column extends TemplateGridColumn> {
 
 const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
   rows,
+  totalRowCount,
   columns,
   columnWidths,
   headerHeight,
@@ -130,15 +132,16 @@ const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
         ref={scrollRef}
         height="100%"
         maxHeight="100%"
-        contentKey={rows.length}
+        contentKey={`${rows.length}:${totalRowCount}`}
         thumbInsetTop={headerHeight + 6}
         thumbInsetBottom={6}
         thumbWidth={8}
-        thumbMinHeight={120}
+        thumbMinHeight={32}
         showScrollbarOnHover
         showScrollEdgeShadow
         overflowX="auto"
         showHorizontalScrollbar
+        horizontalThumbMinWidth={32}
         scrollbarOutside
         scrollbarOutsideRightGutter={12}
         scrollbarOutsideBottomGutter={12}
@@ -171,7 +174,7 @@ const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
               '& [role="columnheader"]': { minWidth: 0, boxSizing: 'border-box', overflow: 'hidden', bgcolor: 'commonColor.White' },
               '& [role="columnheader"][data-new="true"]': { bgcolor: '#FEF5E6' },
               '& [data-row-action="true"]': {
-                borderBottom: '1px solid',
+                borderBottom: '0.5px solid',
                 borderColor: 'contentBorder.Active',
                 position: 'sticky',
                 right: 0,
@@ -218,7 +221,7 @@ const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
           </Box>
           <Box
             role="rowgroup"
-            style={{ height: rows.length * FUNDAMENTAL_MODEL_ROW_HEIGHT }}
+            style={{ height: totalRowCount * FUNDAMENTAL_MODEL_ROW_HEIGHT }}
             sx={{
               position: 'relative',
               overscrollBehavior: 'contain',
