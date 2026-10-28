@@ -2,11 +2,15 @@ import { Stack, Typography } from '@mui/material'
 import { type Theme } from '@mui/material/styles'
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 
+import type { ModelExecutionAccept } from '@/service/mi/nextGenMI/modelExecution'
+
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import MIConfirm from '@/components/common/confirm/MIConfirm'
 import CollapseIcon from '@/components/common/icons/agent/CollapseIcon'
 import ExpandIcon from '@/components/common/icons/agent/ExpandIcon'
+import useSnackbar from '@/hooks/useSnackbar'
 import ScenarioModelExecutionProposalList from '@/pages/mi/nextGenMI/components/scenarioGroup/ScenarioModelExecutionProposalList'
+import nextGenMIModelExecutionService from '@/service/mi/nextGenMI/modelExecution'
 
 export interface ScenarioModelExecutionPopupRef {
   open: () => void
@@ -28,20 +32,63 @@ export interface ScenarioModelExecutionPopupProps {
 
 const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, ScenarioModelExecutionPopupProps>(
   ({ scenarioGroupId, executingScenarioIds, executedScenarioIds, onAccepted, onCompleted, onFailed, onOpen, onClose }, ref) => {
+    const { showSnackbar } = useSnackbar()
     const [open, setOpen] = useState(false)
+    const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
+    const [isSubmittingExecution, setIsSubmittingExecution] = useState(false)
+    const [pendingExecutionScenarioIds, setPendingExecutionScenarioIds] = useState<number[] | null>(null)
     const [isMaximized, setIsMaximized] = useState(false)
     const [closeConfirmOpen, setCloseConfirmOpen] = useState(false)
-    const [isExecutionBusy, setIsExecutionBusy] = useState(false)
     // 파라미터 패널(03+)일 때만 팝업을 뷰포트 높이로 채움. 생성 중(02)은 피그마처럼 콘텐츠 높이(400px 로딩 포함)에 맞춤
     const [fillsViewportHeight, setFillsViewportHeight] = useState(false)
     const [contentHeight, setContentHeight] = useState<number | null>(null)
     const [isResizing, setIsResizing] = useState(false)
     const titleRef = useRef<HTMLSpanElement>(null)
-    const isCloseDisabled = isExecutionBusy || executingScenarioIds.size > 0
 
     useEffect(() => {
-      if (isCloseDisabled) setCloseConfirmOpen(false)
-    }, [isCloseDisabled])
+      if (open || runningExecutions.length === 0) return undefined
+
+      let active = true
+      const timers = new Map<string, ReturnType<typeof globalThis.setTimeout>>()
+      const poll = async (execution: ModelExecutionAccept) => {
+        try {
+          const status = await nextGenMIModelExecutionService.getModelExecutionStatus(execution.scenarioId, execution.runId)
+          if (!active) return
+          if (status.status === 'RUNNING') {
+            timers.set(
+              execution.runId,
+              globalThis.setTimeout(() => void poll(execution), 5000),
+            )
+            return
+          }
+          setRunningExecutions((current) => current.filter((item) => item.runId !== execution.runId))
+          setPendingExecutionScenarioIds((current) => {
+            const remaining = current?.filter((id) => id !== execution.scenarioId)
+            return remaining?.length ? remaining : null
+          })
+          if (status.status === 'COMPLETED') {
+            onCompleted(execution.scenarioId)
+          } else {
+            onFailed(execution.scenarioId)
+            showSnackbar('MI 수급모델 실행에 실패했습니다.', {
+              variant: 'error',
+              body: status.errorMessage || status.failureReason || '잠시 후 다시 시도해 주세요.',
+            })
+          }
+        } catch {
+          if (active)
+            timers.set(
+              execution.runId,
+              globalThis.setTimeout(() => void poll(execution), 5000),
+            )
+        }
+      }
+      runningExecutions.forEach((execution) => void poll(execution))
+      return () => {
+        active = false
+        timers.forEach((timer) => globalThis.clearTimeout(timer))
+      }
+    }, [open, runningExecutions, onCompleted, onFailed, showSnackbar])
 
     const openPopup = useCallback(() => {
       setIsMaximized(false)
@@ -55,14 +102,12 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
     const closePopup = useCallback(() => {
       setOpen(false)
       setCloseConfirmOpen(false)
-      setIsExecutionBusy(false)
       onClose?.()
     }, [onClose])
 
     const handleCloseRequest = useCallback(() => {
-      if (isCloseDisabled) return
       setCloseConfirmOpen(true)
-    }, [isCloseDisabled])
+    }, [])
 
     useImperativeHandle(
       ref,
@@ -155,8 +200,6 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
           handleClose={handleCloseRequest}
           width={1200}
           hideFooter
-          disableClose={isCloseDisabled}
-          disableBackdropClick={isCloseDisabled}
           paperSx={{
             border: '1px solid',
             borderColor: 'contentBorder.Normal',
@@ -216,12 +259,18 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         >
           <ScenarioModelExecutionProposalList
             scenarioGroupId={scenarioGroupId}
+            isOpen={open}
+            isSubmittingExecution={isSubmittingExecution}
+            setIsSubmittingExecution={setIsSubmittingExecution}
+            pendingExecutionScenarioIds={pendingExecutionScenarioIds}
+            setPendingExecutionScenarioIds={setPendingExecutionScenarioIds}
             executingScenarioIds={executingScenarioIds}
+            runningExecutions={runningExecutions}
+            setRunningExecutions={setRunningExecutions}
             executedScenarioIds={executedScenarioIds}
             isResizing={isResizing}
             onContentHeightChange={setContentHeight}
             onFillsViewportHeightChange={setFillsViewportHeight}
-            onExecutionBusyChange={setIsExecutionBusy}
             onCancel={closePopup}
             onAccepted={onAccepted}
             onCompleted={onCompleted}
@@ -230,14 +279,14 @@ const ScenarioModelExecutionPopup = forwardRef<ScenarioModelExecutionPopupRef, S
         </MIConfirm>
 
         <MIConfirm
-          open={closeConfirmOpen && !isCloseDisabled}
+          open={closeConfirmOpen}
           title="MI 수급모델 진행을 종료하시겠습니까?"
           width={450}
           handleClose={() => setCloseConfirmOpen(false)}
           zIndex={1400}
           actions={[
             { label: '취소', variant: 'outlined', color: 'gray', onClick: () => setCloseConfirmOpen(false) },
-            { label: '종료', color: 'red', disabled: isCloseDisabled, onClick: closePopup },
+            { label: '종료', color: 'red', onClick: closePopup },
           ]}
         >
           현재 생성된 파라미터 제안을 닫습니다.

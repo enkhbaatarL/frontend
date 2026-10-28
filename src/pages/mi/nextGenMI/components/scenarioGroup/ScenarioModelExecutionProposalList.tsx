@@ -14,6 +14,8 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
@@ -290,12 +292,18 @@ const ProposalScenarioListScroller = ({
 
 interface ScenarioModelExecutionProposalListProps {
   scenarioGroupId: number
+  isOpen: boolean
+  isSubmittingExecution: boolean
+  setIsSubmittingExecution: Dispatch<SetStateAction<boolean>>
+  pendingExecutionScenarioIds: number[] | null
+  setPendingExecutionScenarioIds: Dispatch<SetStateAction<number[] | null>>
   executingScenarioIds: Set<number>
+  runningExecutions: ModelExecutionAccept[]
+  setRunningExecutions: Dispatch<SetStateAction<ModelExecutionAccept[]>>
   executedScenarioIds: Set<number>
   isResizing: boolean
   onContentHeightChange: (height: number) => void
   onFillsViewportHeightChange?: (fillsViewportHeight: boolean) => void
-  onExecutionBusyChange: (isBusy: boolean) => void
   onCancel: () => void
   onAccepted: (scenarioId: number) => void
   onCompleted: (scenarioId: number) => void
@@ -565,12 +573,18 @@ const StatusCell = ({
 
 const ScenarioModelExecutionProposalList = ({
   scenarioGroupId,
+  isOpen,
+  isSubmittingExecution,
+  setIsSubmittingExecution,
+  pendingExecutionScenarioIds,
+  setPendingExecutionScenarioIds,
   executingScenarioIds,
+  runningExecutions,
+  setRunningExecutions,
   executedScenarioIds,
   isResizing,
   onContentHeightChange,
   onFillsViewportHeightChange,
-  onExecutionBusyChange,
   onCancel,
   onAccepted,
   onCompleted,
@@ -598,13 +612,10 @@ const ScenarioModelExecutionProposalList = ({
   const [hasParamEdits, setHasParamEdits] = useState(false)
   const [emptySelectionConfirmOpen, setEmptySelectionConfirmOpen] = useState(false)
   const [executionConfirmOpen, setExecutionConfirmOpen] = useState(false)
-  const [isSubmittingExecution, setIsSubmittingExecution] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [groupResetConfirmOpen, setGroupResetConfirmOpen] = useState(false)
   const [isResettingGroupProposals, setIsResettingGroupProposals] = useState(false)
-  const [runningExecutions, setRunningExecutions] = useState<ModelExecutionAccept[]>([])
   // 이번에 요청한 시나리오가 모두 성공하면 닫는다. 실패 시 null로 바꿔 결과를 확인할 수 있게 한다.
-  const [pendingExecutionScenarioIds, setPendingExecutionScenarioIds] = useState<number[] | null>(null)
   const [locallyExecutedIds, setLocallyExecutedIds] = useState<Set<number>>(() => new Set())
   const [awaitingExecutionScenarioIds, setAwaitingExecutionScenarioIds] = useState<Set<number>>(() => new Set())
   const [executedConfirmedScenarioIds, setExecutedConfirmedScenarioIds] = useState<Set<number>>(() => new Set())
@@ -828,6 +839,13 @@ const ScenarioModelExecutionProposalList = ({
   // 이번 세션 runningExecutions + run-status modelRunning + proposals CONFIRMED_PENDING/EXECUTING
   const isExecuting = mergedExecutingScenarioIds.size > 0 || hasProposalExecutionInProgress
   const isExecutionBusy = isSubmittingExecution || isExecuting
+  const executionCount = new Set([
+    ...mergedExecutingScenarioIds,
+    ...(groupProposals?.scenarios ?? [])
+      .filter((scenario) => isModelExecutionInProgressState(scenario.currentState))
+      .map((scenario) => scenario.scenarioId),
+    ...(isSubmittingExecution ? (pendingExecutionScenarioIds ?? []) : []),
+  ]).size
   // 시나리오 선택/생성/초기화/실행 등 액션 잠금 (PopupContent 넓은 가드)
   const isActionLocked = isExecutionBusy || isResetting || isResettingGroupProposals
   const isGroupResetDisabled = isActionLocked || isGeneratingAny
@@ -840,10 +858,6 @@ const ScenarioModelExecutionProposalList = ({
   const showGroupResetButton = Boolean(groupProposals?.miBaseChanged) && hasGeneratedProposal
   const currentMiBaseCaseId = groupProposals?.currentMiBase?.caseId
   const canOpenCurrentMiBase = typeof currentMiBaseCaseId === 'number' && currentMiBaseCaseId > 0
-
-  useEffect(() => {
-    onExecutionBusyChange(isExecutionBusy)
-  }, [isExecutionBusy, onExecutionBusyChange])
 
   const applyGroupProposals = useCallback(
     (nextProposals: ScenarioGroupModelParamProposals, notifyFailure = false) => {
@@ -967,7 +981,7 @@ const ScenarioModelExecutionProposalList = ({
     if (pendingExecutionScenarioIds?.length !== 0) return
     setPendingExecutionScenarioIds(null)
     onCancel()
-  }, [onCancel, pendingExecutionScenarioIds])
+  }, [onCancel, pendingExecutionScenarioIds, setPendingExecutionScenarioIds])
 
   const handleExecutionSettled = useCallback(
     (scenarioId: number) => {
@@ -984,7 +998,7 @@ const ScenarioModelExecutionProposalList = ({
       // 서버 조회값 기준으로 baseline/수정표시를 다시 맞춰 주황 잔상을 막음
       void refreshProposals().finally(syncParamEditBaselineAfterExecution)
     },
-    [markScenariosExecuted, onCompleted, refreshProposals, syncParamEditBaselineAfterExecution],
+    [markScenariosExecuted, onCompleted, refreshProposals, setPendingExecutionScenarioIds, syncParamEditBaselineAfterExecution],
   )
 
   const handleExecutionFailed = useCallback(
@@ -1004,7 +1018,7 @@ const ScenarioModelExecutionProposalList = ({
       })
       void refreshProposals().finally(syncParamEditBaselineAfterExecution)
     },
-    [onFailed, refreshProposals, syncParamEditBaselineAfterExecution],
+    [onFailed, refreshProposals, setPendingExecutionScenarioIds, syncParamEditBaselineAfterExecution],
   )
 
   // run-status 로만 아는 실행(재진입/다른 사용자)이 끝나면 제안 상태를 맞춘다.
@@ -1107,7 +1121,7 @@ const ScenarioModelExecutionProposalList = ({
   }, [refreshProposals, scenarioGroupId])
 
   useEffect(() => {
-    if (runningExecutions.length === 0) return undefined
+    if (!isOpen || runningExecutions.length === 0) return undefined
 
     let isActive = true
     const timers = new Map<string, ReturnType<typeof globalThis.setTimeout>>()
@@ -1156,7 +1170,7 @@ const ScenarioModelExecutionProposalList = ({
       isActive = false
       timers.forEach((timerId) => globalThis.clearTimeout(timerId))
     }
-  }, [handleExecutionFailed, handleExecutionSettled, runningExecutions, showSnackbar])
+  }, [handleExecutionFailed, handleExecutionSettled, isOpen, runningExecutions, setRunningExecutions, showSnackbar])
 
   const { mutate: createModelParamProposal } = useMutation({
     mutationFn: (scenarioId: number) => nextGenMIModelExecutionService.createModelParamProposal(scenarioId),
@@ -2009,7 +2023,7 @@ const ScenarioModelExecutionProposalList = ({
           <MIBaseButton
             variant="contained"
             disabled={!hasCompleted || isActionLocked || hasPowerMixError}
-            isLoading={isSubmittingExecution}
+            prefix={isExecutionBusy ? <CircularProgress size={16} sx={{ color: 'contentText.Disabled' }} /> : undefined}
             onClick={handleExecuteClick}
             labelColor="contentText.White"
             sx={{
@@ -2030,7 +2044,11 @@ const ScenarioModelExecutionProposalList = ({
               },
             }}
           >
-            {selectedCompletedCount > 0 ? `MI 수급모델 실행 (${selectedCompletedCount})` : 'MI 수급모델 실행'}
+            {isExecutionBusy
+              ? `${executionCount}건의 MI 수급모델 실행 중`
+              : selectedCompletedCount > 0
+                ? `MI 수급모델 실행 (${selectedCompletedCount})`
+                : 'MI 수급모델 실행'}
           </MIBaseButton>
         </Stack>
       </Stack>
