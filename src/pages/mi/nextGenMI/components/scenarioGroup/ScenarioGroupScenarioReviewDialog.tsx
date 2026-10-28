@@ -151,19 +151,19 @@ const getScenarioReviewResizedCardWidths = (
   return nextWidths
 }
 
-const ScenarioReviewInfoCard = ({ label, value, fullWidth = false }: { label: string; value: string; fullWidth?: boolean }) => (
+const ScenarioReviewInfoCard = ({ label, value }: { label: string; value: string }) => (
   <Stack
-    gridColumn={fullWidth ? '1 / -1' : undefined}
     minWidth={0}
     bgcolor="gray.5"
     borderRadius="10px"
     padding="8px 12px"
     boxSizing="border-box"
+    sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
   >
-    <Typography variant="body2SB14" color="contentText.Subtext" lineHeight={1.5} noWrap>
+    <Typography variant="body2SB14" color="contentText.Subtext" lineHeight={1.5}>
       {label}
     </Typography>
-    <Typography variant="body2SB14" color="contentText.Normal" lineHeight={1.5} noWrap>
+    <Typography variant="body2SB14" color="contentText.Normal" lineHeight={1.5}>
       {value}
     </Typography>
   </Stack>
@@ -497,14 +497,9 @@ const ScenarioReviewCard = ({
 
         <Stack gap="6px" padding="24px 0">
           <ScenarioReviewSectionHeader title="시나리오 특화 분기" />
-          <Stack display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap="8px" width="100%" minWidth={0}>
-            {scenario.dimensions.map((dimension, index) => (
-              <ScenarioReviewInfoCard
-                key={dimension.key}
-                label={dimension.label}
-                value={dimension.valueLabel ?? dimension.value}
-                fullWidth={scenario.dimensions.length % 2 === 1 && index === scenario.dimensions.length - 1}
-              />
+          <Stack gap="8px" width="100%" minWidth={0}>
+            {scenario.dimensions.map((dimension) => (
+              <ScenarioReviewInfoCard key={dimension.key} label={dimension.label} value={dimension.valueLabel ?? dimension.value} />
             ))}
           </Stack>
         </Stack>

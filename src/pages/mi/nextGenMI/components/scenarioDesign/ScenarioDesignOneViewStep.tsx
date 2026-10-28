@@ -534,19 +534,21 @@ const ScenarioDesignReviewEllipsisText = ({ value, tooltipTitle, sx, ...typograp
   return <NextGenMIFollowCursorTooltip title={tooltipTitle ?? value}>{typography}</NextGenMIFollowCursorTooltip>
 }
 
-const ScenarioDesignReviewCriteriaCard = ({ label, value, fullWidth }: { label: string; value: string; fullWidth?: boolean }) => (
+const ScenarioDesignReviewCriteriaCard = ({ label, value }: { label: string; value: string }) => (
   <Stack
-    gridColumn={fullWidth ? '1 / -1' : undefined}
-    height="100%"
     minWidth={0}
-    overflow="hidden"
     bgcolor="gray.5"
     borderRadius="10px"
     padding="8px 12px"
     boxSizing="border-box"
+    sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
   >
-    <ScenarioDesignReviewEllipsisText value={label} variant="body2SB14" color="contentText.Subtext" lineHeight={1.5} />
-    <ScenarioDesignReviewEllipsisText value={value} variant="body2SB14" color="contentText.Normal" lineHeight={1.5} />
+    <Typography variant="body2SB14" color="contentText.Subtext" lineHeight={1.5}>
+      {label}
+    </Typography>
+    <Typography variant="body2SB14" color="contentText.Normal" lineHeight={1.5}>
+      {value}
+    </Typography>
   </Stack>
 )
 
@@ -1344,13 +1346,12 @@ const ScenarioDesignReviewScenarioCard = ({
 
       <Stack gap="6px" padding="24px 0">
         <ScenarioDesignReviewSectionHeader title="시나리오 특화 분기" showReset={false} />
-        <Stack display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" alignItems="stretch" gap="8px" width="100%" minWidth={0}>
-          {columns.map((column, index) => (
+        <Stack gap="8px" width="100%" minWidth={0}>
+          {columns.map((column) => (
             <ScenarioDesignReviewCriteriaCard
               key={column.key}
               label={column.label}
               value={getScenarioDesignColumnDisplayValue(column, row)}
-              fullWidth={columns.length % 2 === 1 && index === columns.length - 1}
             />
           ))}
         </Stack>
