@@ -32,7 +32,6 @@ import { NextGenMIBaseCaseChip } from '@/pages/mi/nextGenMI/components/common/Cl
 import {
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING,
   NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS,
-  NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
   NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
 } from '@/pages/mi/nextGenMI/components/common/NextGenMIDetailHeader'
 import NextGenMIDisplayOrderBadge from '@/pages/mi/nextGenMI/components/common/NextGenMIDisplayOrderBadge'
@@ -1672,13 +1671,16 @@ const ScenarioDesignOneViewStep = ({
       const thumbWidth = horizontal ? getScenarioDesignReviewScrollThumbSizePercent(clientWidth, scrollWidth) : 0
       const next = { horizontal, scrollWidth, clientWidth }
 
-      root.style.setProperty('--scenario-design-review-scroll-left-edge-opacity', left ? '1' : '0')
-      root.style.setProperty('--scenario-design-review-scroll-right-edge-opacity', right ? '1' : '0')
-      root.style.setProperty('--scenario-design-review-horizontal-thumb-width', `${thumbWidth}%`)
-      root.style.setProperty(
-        '--scenario-design-review-horizontal-thumb-left',
-        `${getScenarioDesignReviewScrollThumbPositionPercent(scrollLeft, clientWidth, scrollWidth, thumbWidth)}%`,
-      )
+      ;[root, scenarioReviewActionBarRef.current].forEach((target) => {
+        if (!target) return
+        target.style.setProperty('--scenario-design-review-scroll-left-edge-opacity', left ? '1' : '0')
+        target.style.setProperty('--scenario-design-review-scroll-right-edge-opacity', right ? '1' : '0')
+        target.style.setProperty('--scenario-design-review-horizontal-thumb-width', `${thumbWidth}%`)
+        target.style.setProperty(
+          '--scenario-design-review-horizontal-thumb-left',
+          `${getScenarioDesignReviewScrollThumbPositionPercent(scrollLeft, clientWidth, scrollWidth, thumbWidth)}%`,
+        )
+      })
 
       const prev = scenarioReviewScrollLayoutStateRef.current
       if (prev.horizontal === next.horizontal && prev.scrollWidth === next.scrollWidth && prev.clientWidth === next.clientWidth) return
@@ -1714,6 +1716,7 @@ const ScenarioDesignOneViewStep = ({
 
   useLayoutEffect(() => {
     const actionBar = scenarioReviewActionBarRef.current
+    const reviewRoot = scenarioReviewRootRef.current
     if (!actionBar) return undefined
 
     const scrollContainer = document.getElementById('main-scroll-wrapper')
@@ -1739,6 +1742,15 @@ const ScenarioDesignOneViewStep = ({
 
       actionBar.style.setProperty('--scenario-design-review-action-bar-y', `${offsetY}px`)
       actionBar.toggleAttribute('data-scenario-design-action-bar-sticky', actionBarNaturalTop > actionBarStickyTop + offsetY + 0.5)
+
+      if (reviewRoot) {
+        const reviewRect = reviewRoot.getBoundingClientRect()
+        const visibleBottom = Math.min(scrollBottom, actionBar.getBoundingClientRect().top)
+        actionBar.style.setProperty(
+          '--scenario-design-review-scrollbar-visibility',
+          visibleBottom - 14 >= Math.max(reviewRect.top, scrollContainerRect?.top ?? 0) ? 'visible' : 'hidden',
+        )
+      }
     }
 
     const scheduleActionBarStickyStateUpdate = () => {
@@ -1750,7 +1762,7 @@ const ScenarioDesignOneViewStep = ({
     const resizeObserver = new ResizeObserver(scheduleActionBarStickyStateUpdate)
     resizeObserver.observe(actionBar)
     if (actionBar.parentElement) resizeObserver.observe(actionBar.parentElement)
-    if (scenarioReviewRootRef.current) resizeObserver.observe(scenarioReviewRootRef.current)
+    if (reviewRoot) resizeObserver.observe(reviewRoot)
     if (scrollContainer) resizeObserver.observe(scrollContainer)
 
     const scrollTarget: HTMLElement | Window = scrollContainer ?? window
@@ -1765,6 +1777,7 @@ const ScenarioDesignOneViewStep = ({
       window.removeEventListener('resize', scheduleActionBarStickyStateUpdate)
       actionBar.style.removeProperty('--scenario-design-review-action-bar-y')
       actionBar.removeAttribute('data-scenario-design-action-bar-sticky')
+      actionBar.style.removeProperty('--scenario-design-review-scrollbar-visibility')
     }
   }, [loading, rows.length])
 
@@ -2205,17 +2218,74 @@ const ScenarioDesignOneViewStep = ({
                       zIndex: 5,
                     }}
                   />
+                </Stack>
+
+                <Stack
+                  ref={scenarioReviewActionBarRef}
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  minHeight="60px"
+                  position="sticky"
+                  bottom="0px"
+                  zIndex={8}
+                  bgcolor="commonColor.White"
+                  sx={{
+                    transform: 'translateY(var(--scenario-design-review-action-bar-y, 0px))',
+                    boxShadow: 'none',
+                    clipPath: 'inset(-26px 0 0 0)',
+                    transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: '1px',
+                      bgcolor: '#DEE2E6',
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      zIndex: 1,
+                      transition: `opacity ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
+                    },
+                    '&[data-scenario-design-action-bar-sticky]': {
+                      boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
+                      clipPath: 'inset(-80px 0 0 0)',
+                    },
+                    '&[data-scenario-design-action-bar-sticky]::after': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: '-80px',
+                      height: '80px',
+                      pointerEvents: 'none',
+                      background: 'linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0) 100%)',
+                    },
+                    '&[data-scenario-design-action-bar-sticky]::before': {
+                      opacity: 1,
+                    },
+                  }}
+                >
                   {scenarioReviewScrollLayoutState.horizontal && (
                     <Stack
                       aria-hidden
                       position="absolute"
                       left={0}
                       right={0}
-                      bottom="4px"
+                      top="-26px"
+                      onMouseEnter={() => setIsScenarioReviewScrollHovered(true)}
+                      onMouseLeave={() => setIsScenarioReviewScrollHovered(false)}
                       height="10px"
                       borderRadius="10px"
                       bgcolor="transparent"
                       sx={{
+                        visibility: 'var(--scenario-design-review-scrollbar-visibility, visible)',
+                        '[data-scenario-design-action-bar-sticky] > &': {
+                          top: '-14px',
+                          opacity: 1,
+                          pointerEvents: 'auto',
+                        },
                         opacity: showScenarioReviewScrollbars ? 1 : 0,
                         pointerEvents: showScenarioReviewScrollbars ? 'auto' : 'none',
                         transition: 'opacity 120ms ease',
@@ -2238,44 +2308,6 @@ const ScenarioDesignOneViewStep = ({
                       />
                     </Stack>
                   )}
-                </Stack>
-
-                <Stack
-                  ref={scenarioReviewActionBarRef}
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  minHeight="60px"
-                  position="sticky"
-                  bottom="0px"
-                  zIndex={8}
-                  bgcolor="commonColor.White"
-                  sx={{
-                    transform: 'translateY(var(--scenario-design-review-action-bar-y, 0px))',
-                    boxShadow: 'none',
-                    clipPath: NEXT_GEN_MI_SCROLL_EDGE_CLIP_PATH_BOTTOM,
-                    transition: `box-shadow ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      height: '1px',
-                      bgcolor: '#DEE2E6',
-                      opacity: 0,
-                      pointerEvents: 'none',
-                      zIndex: 1,
-                      transition: `opacity ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_MS}ms ${NEXT_GEN_MI_EDGE_SHADOW_TRANSITION_EASING}`,
-                    },
-                    '&[data-scenario-design-action-bar-sticky]': {
-                      boxShadow: NEXT_GEN_MI_SCROLL_EDGE_SHADOW_BOTTOM,
-                    },
-                    '&[data-scenario-design-action-bar-sticky]::before': {
-                      opacity: 1,
-                    },
-                  }}
-                >
                   <Stack direction="row" alignItems="center" gap="12px" minWidth={0}>
                     <MIBaseButton
                       variant="outlined"
