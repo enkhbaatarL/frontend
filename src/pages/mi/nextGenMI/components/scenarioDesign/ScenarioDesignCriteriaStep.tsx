@@ -450,6 +450,7 @@ const ScenarioDesignSelectCell = ({
   items,
   defaultValue,
   valueRationale,
+  menuWidth,
   disabled = false,
   showAgentOption,
   onSelected,
@@ -458,6 +459,7 @@ const ScenarioDesignSelectCell = ({
   items: SelectMenuItem<string>[]
   defaultValue: string
   valueRationale?: string
+  menuWidth?: string
   disabled?: boolean
   showAgentOption: boolean
   onSelected: (value: string) => void
@@ -617,7 +619,7 @@ const ScenarioDesignSelectCell = ({
         paperProps={{
           elevation: 0,
           sx: {
-            width: '260px',
+            width: menuWidth ?? '260px',
             borderRadius: '10px',
             border: '1px solid',
             borderColor: 'contentBorder.Normal',
@@ -1029,6 +1031,106 @@ const ScenarioDesignCriteriaStep = ({
         .join('\u001e'),
     [reviewErrorItems],
   )
+  const [criteriaColumnWidths, setCriteriaColumnWidths] = useState<Record<string, string>>({})
+  const initialScenarioNameWidthRef = useRef<number | null>(null)
+  const [scenarioNameColumnSize, setScenarioNameColumnSize] = useState({ width: '300px', maxWidth: '300px' })
+
+  useLayoutEffect(() => {
+    const container = criteriaTableContainerRef.current
+    if (!container || isLoading || initialRows.length === 0) return undefined
+
+    let disposed = false
+    const measureInitialTitles = () => {
+      if (disposed || initialScenarioNameWidthRef.current !== null) return
+      const context = document.createElement('canvas').getContext('2d')
+      if (!context) return
+      const cells = container.querySelectorAll('tbody tr > td:first-child')
+      let width = 0
+      initialRows.forEach((row, index) => {
+        const cell = cells[index]
+        const text = cell?.querySelector<HTMLElement>('[data-next-gen-mi-inline-editable-input-display-text]')
+        if (!cell || !text) return
+        const style = getComputedStyle(text)
+        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+        const title = row.scenarioName ?? ''
+        const textWidth = context.measureText(title).width + title.length * (Number.parseFloat(style.letterSpacing) || 0)
+        width = Math.max(width, textWidth + cell.getBoundingClientRect().width - text.getBoundingClientRect().width)
+      })
+      // Reserve extra space for the BC badge and its gap, including on the longest title.
+      if (width > 0) initialScenarioNameWidthRef.current = Math.ceil(width) + 32
+    }
+    const updateWidth = () => {
+      if (disposed) return
+      const maxWidth = Math.floor(container.clientWidth * 0.4)
+      if (maxWidth <= 0 || initialScenarioNameWidthRef.current === null) return
+      const width = `${Math.min(initialScenarioNameWidthRef.current, maxWidth)}px`
+      setScenarioNameColumnSize((current) =>
+        current.width === width && current.maxWidth === `${maxWidth}px` ? current : { width, maxWidth: `${maxWidth}px` },
+      )
+    }
+
+    void document.fonts.ready.then(() => {
+      measureInitialTitles()
+      updateWidth()
+    })
+    const observer = new ResizeObserver(updateWidth)
+    observer.observe(container)
+    return () => {
+      disposed = true
+      observer.disconnect()
+    }
+  }, [initialRows, isLoading])
+
+  useLayoutEffect(() => {
+    let disposed = false
+    const measureColumnWidths = () => {
+      if (disposed) return
+      const context = document.createElement('canvas').getContext('2d')
+      if (!context) return
+
+      const labelElement = criteriaTableContainerRef.current?.querySelector('.MuiTypography-root')
+      if (!labelElement) return
+      const typography = getComputedStyle(labelElement)
+      context.font = `${typography.fontWeight} ${typography.fontSize} ${typography.fontFamily}`
+      const letterSpacing = Number.parseFloat(typography.letterSpacing) || 0
+      const measureText = (label: string) => context.measureText(label).width + label.length * letterSpacing
+
+      setCriteriaColumnWidths(
+        Object.fromEntries(
+          visibleScenarioDesignColumns.map((column) => {
+            const items = getScenarioDesignColumnItems(column)
+            const labels = [
+              '선택하세요',
+              ...items.map((item) => String(item.label)),
+              SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.agent.label,
+              SCENARIO_DESIGN_SELECT_COMMON_ACTIONS.manual.label,
+              ...initialRows.map((row) => {
+                const value = getScenarioDesignDimensionSelectedValue(row, column.key, column)
+                return String(items.find((item) => item.value === value)?.label ?? value)
+              }),
+            ]
+            // Cell padding, button padding/border, info icon, chevron and their gaps.
+            const itemWidth = Math.max(...labels.map(measureText)) + 16 + 24 + 2 + 18 + 24 + 6 + 6
+            // Header padding, info icon and the existing hover action.
+            const headerWidth =
+              measureText(column.label) +
+              16 +
+              20 +
+              (column.description?.trim() ? 22 : 0) +
+              (isScenarioDesignRequiredColumn(column) ? 54 : 40)
+            return [column.key, `${Math.ceil(Math.max(itemWidth, headerWidth))}px`]
+          }),
+        ),
+      )
+    }
+
+    measureColumnWidths()
+    void document.fonts.ready.then(measureColumnWidths)
+    return () => {
+      disposed = true
+    }
+  }, [initialRows, visibleScenarioDesignColumns])
+
   const tableScenarioDesignColumns = useMemo((): ScenarioDesignColumn[] => {
     if (!isLoading || visibleScenarioDesignColumns.length > 0) return visibleScenarioDesignColumns
 
@@ -1350,7 +1452,8 @@ const ScenarioDesignCriteriaStep = ({
             <ScenarioDesignOutlineStatusBadge label="3개 이상 구성 권장" />
           </Stack>
         ),
-        width: '300px',
+        width: scenarioNameColumnSize.width,
+        maxWidth: scenarioNameColumnSize.maxWidth,
         headerCellSx: {
           padding: '0 12px',
         },
@@ -1447,8 +1550,8 @@ const ScenarioDesignCriteriaStep = ({
               onDelete={required || criteriaEditingDisabled ? undefined : () => handleDeleteCriteriaColumnRequest(column.key)}
             />
           ),
-          width: column.width,
-          minWidth: column.width,
+          width: criteriaColumnWidths[column.key] ?? column.width,
+          minWidth: criteriaColumnWidths[column.key] ?? column.width,
           headerCellSx: {
             padding: '10px 8px',
           },
@@ -1483,6 +1586,7 @@ const ScenarioDesignCriteriaStep = ({
                     : getInitialScenarioDesignColumnValue(initialRows, row, column)
                 }
                 valueRationale={valueRationale}
+                menuWidth={criteriaColumnWidths[column.key]}
                 disabled={rowEditingDisabled}
                 showAgentOption={agentScenarioDesignColumnKeys.has(column.key)}
                 onSelected={(value) => onRowValueChange(rowId, column.key, value)}
@@ -1516,6 +1620,8 @@ const ScenarioDesignCriteriaStep = ({
       onRowValueChange,
       rows.length,
       tableScenarioDesignColumns,
+      criteriaColumnWidths,
+      scenarioNameColumnSize,
     ],
   )
 
