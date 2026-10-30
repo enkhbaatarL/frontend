@@ -425,7 +425,7 @@ const FundamentalModelInputEditorPopup = forwardRef<FundamentalModelInputEditorP
         actions={[
           { label: '취소', variant: 'outlined', color: 'gray', disabled: isClosing, onClick: cancelClose },
           {
-            label: pendingSource !== null ? '변경' : '종료',
+            label: pendingSource !== null ? '변경' : isClosing && selectedSource !== 'EXCEL_UPLOAD' ? '변경 사항을 저장하는 중...' : '종료',
             variant: 'filled',
             color: 'red',
             disabled: isClosing || isDraftBusy,

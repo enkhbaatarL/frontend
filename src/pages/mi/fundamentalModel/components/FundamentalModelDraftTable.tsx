@@ -1,5 +1,5 @@
 import { CircularProgress, Stack, Typography } from '@mui/material'
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { v4 as uuid } from 'uuid'
 
@@ -42,22 +42,21 @@ import {
   validateModelInputValue,
   validateModelInputCreationValue,
 } from '@/pages/mi/fundamentalModel/components/modelInputEditing'
-import { getModelInputTableQueryOptions } from '@/pages/mi/fundamentalModel/hooks/modelInputTableQuery'
+import { getModelInputChangesQueryOptions, getModelInputTableQueryOptions } from '@/pages/mi/fundamentalModel/hooks/modelInputTableQuery'
 import { getModelInputErrorMessage, type ModelInputLocalEdit } from '@/pages/mi/fundamentalModel/hooks/useModelInputAutosave'
-import { isModelInputValue } from '@/utils/modelInputValidation'
+import { isModelInputValue, areModelInputValuesEqual } from '@/utils/modelInputValidation'
 
 export interface FundamentalModelDraftTableRef {
   refresh: () => void
 }
 
 interface Props {
+  onRestoresChange: (state: { draftId: string; revision: number; tableId: string; canRestore: boolean }) => void
   refreshRef: Ref<FundamentalModelDraftTableRef>
   scope: string
   draft: ModelInputDraftStructure
   table: ModelInputTableInfo
   edits: ModelInputLocalEdit[]
-  originalEdits: ModelInputLocalEdit[]
-  originalControlValues?: Map<string, string | number>
   addedRows: ModelInputAddRowCommand[]
   onStageRow: (command: ModelInputAddRowCommand, initialEdits: Omit<ModelInputLocalEdit, 'id'>[]) => Promise<boolean>
   onRemoveStagedRow: (clientRowKey: string) => void
@@ -74,13 +73,12 @@ const displayValue = (value: unknown) =>
 const getRowId = (row: Record<string, unknown>) => String(row.id ?? row.rowNumber)
 
 const FundamentalModelDraftTable = ({
+  onRestoresChange,
   refreshRef,
   scope,
   draft,
   table,
   edits,
-  originalEdits,
-  originalControlValues,
   addedRows,
   disabled,
   structureDisabled,
@@ -94,6 +92,13 @@ const FundamentalModelDraftTable = ({
   const { showSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
   const query = useInfiniteQuery(getModelInputTableQueryOptions(scope, draft.draftId, draft.revision, table.id))
+  // 부속 컨트롤은 기존 changes 흐름을 유지한다. 셀 정보는 각 table-data 페이지에서 읽는다.
+  const hasControls = Boolean(query.data?.pages[0]?.tableData.controls.length)
+  const changesQuery = useQuery({
+    ...getModelInputChangesQueryOptions(scope, draft.draftId, draft.revision, table.id),
+    enabled: hasControls,
+  })
+  const { refetch: refetchChanges } = changesQuery
   const queryKey = useMemo(
     () => getModelInputTableQueryOptions(scope, draft.draftId, draft.revision, table.id).queryKey,
     [scope, draft.draftId, draft.revision, table.id],
@@ -121,7 +126,8 @@ const FundamentalModelDraftTable = ({
     if (isFetching || fetchStatus !== 'idle' || queryClient.getQueryState(queryKey)?.fetchStatus !== 'idle') return
     pendingRefreshRef.current = undefined
     void refetch({ cancelRefetch: false })
-  }, [fetchStatus, isFetching, queryClient, queryIdentity, queryKey, refetch, refreshRequest])
+    if (hasControls) void refetchChanges({ cancelRefetch: false })
+  }, [fetchStatus, hasControls, isFetching, queryClient, queryIdentity, queryKey, refetch, refetchChanges, refreshRequest])
   const pages = query.data?.pages
   const firstPage = pages?.[0]
   const canEdit = draft.status === 'DRAFT' && !disabled && !query.isError && !query.isPending
@@ -146,7 +152,13 @@ const FundamentalModelDraftTable = ({
     return indexes
   }, [pageIndexCache, pages])
   const editsByRow = useMemo(() => createModelInputEditIndex(edits, table.id), [edits, table.id])
-  const originalEditsByRow = useMemo(() => createModelInputEditIndex(originalEdits, table.id), [originalEdits, table.id])
+  const canRestoreCells =
+    pages?.some((page) =>
+      page.editing.cellRestores?.some((cell) => cell.restoreStatus === 'READY' || editsByRow.get(cell.rowId)?.has(cell.fieldKey)),
+    ) ?? false
+  useEffect(() => {
+    onRestoresChange({ draftId: draft.draftId, revision: draft.revision, tableId: table.id, canRestore: canRestoreCells })
+  }, [canRestoreCells, draft.draftId, draft.revision, onRestoresChange, table.id])
   const addedRowsByKey = useMemo(() => indexModelInputFirstMatches(addedRows, (row) => row.clientRowKey), [addedRows])
   const creationFieldsByColumn = useMemo(
     () => indexModelInputFirstMatches(creationFields ?? [], (field) => field.columnField),
@@ -387,8 +399,15 @@ const FundamentalModelDraftTable = ({
           ? localRow.values[editableField.fieldKey]
           : pageIndex?.editValuesByRowId.get(rowId)?.values[editableField.fieldKey]
         : undefined
-    const initialEdit = typeof rowId === 'string' && typeof fieldKey === 'string' ? originalEditsByRow.get(rowId)?.get(fieldKey) : undefined
-    const initialValue = initialEdit ? initialEdit.value : original
+    const restore = rowId && typeof fieldKey === 'string' ? pageIndex?.cellRestoresByRowId.get(rowId)?.get(fieldKey) : undefined
+    const baseline = restore?.baseline
+    const initialValue = baseline?.kind === 'EMPTY' ? null : baseline?.value
+    const current = restore?.current
+    const currentValue = current?.kind === 'EMPTY' ? null : current?.value
+    const isModified = restore
+      ? Boolean(edit?.error) || !areModelInputValuesEqual(edit ? edit.value : currentValue, initialValue)
+      : undefined
+    const canRestore = restore?.restoreStatus === 'READY'
     const value = edit?.text ?? displayValue(row[column.field])
     const textAlign = getSheetCellTextAlign(value)
     const constraints = localRow && field ? getModelInputCreationRule(field)?.constraints : field?.setConstraints
@@ -440,14 +459,31 @@ const FundamentalModelDraftTable = ({
             value={edit?.text ?? String(original ?? '')}
             isNumeric={field.dataType === 'DECIMAL'}
             isNew={Boolean(localRow) || binding?.origin === 'ADDED' || column.isNew}
-            originalValue={isModelInputValue(initialValue) ? String(initialValue) : ''}
+            originalValue={initialValue === null ? '' : isModelInputValue(initialValue) ? String(initialValue) : undefined}
+            modified={isModified}
+            restoreAllowed={canRestore}
             textAlign={textAlign}
             ariaLabel={`${table.name} ${rowNumber}행 ${column.headerName}`}
             errorMessage={edit?.error}
             options={options?.filter(isModelInputValue).map((option) => ({ value: String(option), label: String(option) }))}
             onChange={(nextValue) => updateValue(String(nextValue))}
             onBlur={() => undefined}
-            onRestore={() => updateValue(String(initialValue ?? ''))}
+            onRestore={() => {
+              if (!canRestore || !baseline || !restore) return
+              onEdit(
+                {
+                  type: baseline.kind === 'EMPTY' ? 'CLEAR' : 'SET',
+                  tableId: table.id,
+                  rowId: restore.rowId,
+                  fieldKey: restore.fieldKey,
+                  text: baseline.kind === 'EMPTY' ? '' : String(baseline.value),
+                  value: baseline.kind === 'EMPTY' ? null : baseline.value,
+                  error: null,
+                  ...(field.dataType === 'DECIMAL' ? { dataType: 'DECIMAL' as const } : {}),
+                },
+                original,
+              )
+            }}
           />
         ) : (
           <Typography variant="body2M14" noWrap>
@@ -462,7 +498,17 @@ const FundamentalModelDraftTable = ({
     <Stack position="relative" flex={1} minWidth={0} minHeight={0} gap="12px" padding="10px 8px 10px 20px">
       {firstPage?.tableData.controls.map((control, index) => {
         const value = displayValue(control.value)
-        const originalValue = typeof control.id === 'string' ? (originalControlValues?.get(control.id) ?? value) : value
+        const savedChange = changesQuery.data?.find((change) => change.kind === 'CONTROL' && change.controlId === control.id)
+        const baseline =
+          savedChange && 'baseline' in savedChange
+            ? savedChange.baseline.kind === 'VALUE'
+              ? savedChange.baseline.value
+              : undefined
+            : undefined
+        const originalValue =
+          savedChange && savedChange.restoreStatus === 'READY' && (typeof baseline === 'string' || typeof baseline === 'number')
+            ? baseline
+            : undefined
         const updateControl = (nextValue: string | number) => {
           if (typeof control.id !== 'string' || nextValue === value) return
           void onControlChange(
@@ -489,7 +535,9 @@ const FundamentalModelDraftTable = ({
                   ariaLabel={String(displayValue(control.label))}
                   onChange={updateControl}
                   onBlur={() => undefined}
-                  onRestore={() => updateControl(originalValue)}
+                  onRestore={() => {
+                    if (originalValue !== undefined) updateControl(originalValue)
+                  }}
                   options={control.options
                     .filter(isModelInputObject)
                     .filter(

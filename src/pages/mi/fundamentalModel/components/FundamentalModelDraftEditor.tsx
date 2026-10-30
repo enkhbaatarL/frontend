@@ -115,9 +115,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       isSaving,
       hasPendingRequest,
       isTableChanging,
-      resettableTableIds,
       flush,
-      originalEdits,
       flushBeforeLeaving,
       finalize,
       discard,
@@ -129,6 +127,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
     const { showSnackbar } = useSnackbar()
     const [selection, setSelection] = useState<{ kind: ModelInputSection['kind']; sheetName: string; tableId: string }>()
     const [isFinalizing, setIsFinalizing] = useState(false)
+    const [restorableTable, setRestorableTable] = useState<{ draftId: string; revision: number; tableId: string; canRestore: boolean }>()
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
     const actionRef = useRef(false)
     const originalControlValuesRef = useRef(new Map<string, Map<string, string | number>>())
@@ -442,13 +441,12 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                 {draft && table ? (
                   <FundamentalModelDraftTable
                     key={`${draft.draftId}:${table.id}`}
+                    onRestoresChange={setRestorableTable}
                     refreshRef={tableRef}
                     scope={scope}
                     draft={draft}
                     table={table}
                     edits={edits}
-                    originalEdits={originalEdits}
-                    originalControlValues={originalControlValuesRef.current.get(table.id)}
                     addedRows={tableAddedRows}
                     onStageRow={stageRow}
                     onRemoveStagedRow={removeStagedRow}
@@ -473,8 +471,10 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
             Boolean(
               table &&
                 !isTableChanging(table.id) &&
-                (resettableTableIds.includes(table.id) ||
-                  edits.some((edit) => edit.tableId === table.id && !addedRows.some((row) => row.clientRowKey === edit.rowId))),
+                restorableTable?.draftId === draft?.draftId &&
+                restorableTable?.revision === draft?.revision &&
+                restorableTable?.tableId === table.id &&
+                restorableTable.canRestore,
             )
           }
           canSubmit={
@@ -511,8 +511,8 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
             },
           ]}
         >
-          현재 표에서 이번 편집 중 변경한 기존 셀 값을 되돌립니다. 추가·삭제한 행과 열, 새 행의 입력값, 모드 설정은 유지됩니다. 다른 표에는
-          적용되지 않습니다. 계속하시겠습니까?
+          현재 표에서 복원 가능한 기존 셀 값을 원본 파일 값으로 되돌립니다. 추가·삭제한 행과 열, 새 행의 입력값, 모드 설정은 유지됩니다.
+          다른 표에는 적용되지 않습니다. 계속하시겠습니까?
         </MIConfirm>
       </Stack>
     )

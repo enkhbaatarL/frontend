@@ -10,6 +10,8 @@ import { compareModelInputDecimals } from '@/utils/modelInputValidation'
 interface FundamentalModelEditedCellInputProps {
   value: string | number
   originalValue?: string | number
+  modified?: boolean
+  restoreAllowed?: boolean
   isNew?: boolean
   disabled?: boolean
   isNumeric?: boolean
@@ -26,6 +28,8 @@ interface FundamentalModelEditedCellInputProps {
 const FundamentalModelEditedCellInput = ({
   value,
   originalValue,
+  modified,
+  restoreAllowed = true,
   isNew = false,
   disabled = false,
   isNumeric = false,
@@ -40,10 +44,11 @@ const FundamentalModelEditedCellInput = ({
 }: FundamentalModelEditedCellInputProps) => {
   const [isFocused, setIsFocused] = useState(false)
   const isModified =
-    !isNew &&
-    originalValue !== undefined &&
-    String(value) !== String(originalValue) &&
-    (!isNumeric || compareModelInputDecimals(String(value), String(originalValue)) !== 0)
+    modified ??
+    (!isNew &&
+      originalValue !== undefined &&
+      String(value) !== String(originalValue) &&
+      (!isNumeric || compareModelInputDecimals(String(value), String(originalValue)) !== 0))
   const formatTooltipValue = (cellValue: string | number) => {
     const text = String(cellValue)
     return unit && text.trim() && !text.trim().endsWith(unit) && Number.isFinite(Number(text.replaceAll(',', ''))) ? `${text}${unit}` : text
@@ -159,7 +164,7 @@ const FundamentalModelEditedCellInput = ({
           </Stack>
         </Tooltip>
       )}
-      {isModified && (
+      {isModified && restoreAllowed && (
         <Box
           component="button"
           type="button"

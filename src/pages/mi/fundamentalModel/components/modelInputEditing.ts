@@ -1,5 +1,5 @@
 import type { ModelInputLocalEdit } from '@/pages/mi/fundamentalModel/hooks/useModelInputAutosave'
-import type { ModelInputTablePage } from '@/service/mi/fundamentalModel/inputDraft'
+import type { ModelInputTablePage, ModelInputCellRestore } from '@/service/mi/fundamentalModel/inputDraft'
 
 import { isModelInputObject, isSupportedModelInputField, getModelInputCreationRule } from '@/utils/modelInputValidation'
 
@@ -21,11 +21,22 @@ export const indexModelInputFirstMatches = <Item, Key>(items: Item[], getKey: (i
   return index
 }
 
+const indexModelInputCellRestores = (items: ModelInputCellRestore[]) => {
+  const rows = new Map<string, Map<string, ModelInputCellRestore>>()
+  for (const item of items) {
+    const cells = rows.get(item.rowId) ?? new Map<string, ModelInputCellRestore>()
+    cells.set(item.fieldKey, item)
+    rows.set(item.rowId, cells)
+  }
+  return rows
+}
+
 export const createModelInputPageIndex = (page: ModelInputTablePage) => ({
   fieldByColumn: indexModelInputFirstMatches(page.editing.fields, (field) => field.columnField),
   bindingByRowNumber: indexModelInputFirstMatches(page.editing.rowBindings, (binding) => binding.rowNumber),
   editValuesByRowId: indexModelInputFirstMatches(page.editing.editValues, (item) => item.rowId),
   inputCells: new Set(page.tableData.inputCells),
+  cellRestoresByRowId: indexModelInputCellRestores(page.editing.cellRestores ?? []),
 })
 
 export const createModelInputEditIndex = (edits: ModelInputLocalEdit[], tableId: string) => {

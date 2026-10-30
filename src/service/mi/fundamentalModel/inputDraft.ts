@@ -171,10 +171,92 @@ export interface ModelInputDeleteRowCommand {
   rowRef: ModelInputSetCommand['rowRef']
 }
 
+export interface ModelInputRestoreRowCommand {
+  type: 'RESTORE_ROW'
+  commandId: string
+  tableId: string
+  rowId: string
+}
+
+export interface ModelInputRestoreColumnCommand {
+  type: 'RESTORE_COLUMN'
+  commandId: string
+  tableId: string
+  fieldKey: string
+}
+
+interface ModelInputChangeStatus {
+  restoreStatus: 'READY' | 'INCOMPLETE' | 'NOT_ALLOWED' | 'UNSUPPORTED'
+  restoreReason: string | null
+}
+
+// table-data / changes의 EMPTY와 VALUE 계약. 숫자 토큰의 정밀도는 그대로 보존한다.
+export type ModelInputComparisonValue = { kind: 'EMPTY' } | { kind: 'VALUE'; value: string | number | LosslessNumber }
+
+export interface ModelInputCellRestore extends ModelInputChangeStatus {
+  rowId: string
+  fieldKey: string
+  baseline: ModelInputComparisonValue
+  current: ModelInputComparisonValue
+}
+
+export type ModelInputChange = ModelInputChangeStatus &
+  (
+    | {
+        kind: 'CELL'
+        change: 'MODIFIED'
+        rowId: string
+        fieldKey: string
+        baseline: ModelInputComparisonValue
+        current: ModelInputComparisonValue
+      }
+    | { kind: 'ROW'; change: 'ADDED' | 'DELETED'; rowId: string; origin: string; originalRowNumber: number | null }
+    | { kind: 'COLUMN'; change: 'ADDED' | 'DELETED'; fieldKey: string; origin: string; originalColumnNumber: number | null }
+    | {
+        kind: 'HEADER'
+        change: 'MODIFIED'
+        fieldKey: string
+        headerKey: string
+        baseline: ModelInputComparisonValue
+        current: ModelInputComparisonValue
+      }
+    | {
+        kind: 'CONTROL'
+        change: 'MODIFIED'
+        controlId: string
+        sourceTableId: string
+        sourceControlId: string
+        baseline: ModelInputComparisonValue
+        current: ModelInputComparisonValue
+      }
+  )
+
+export interface ModelInputChanges {
+  draftId: string
+  tableId: string
+  revision: number
+  items: ModelInputChange[]
+  nextCursor: string | null
+}
+
+export interface ModelInputRestorePreview {
+  draftId: string
+  tableId: string
+  revision: number
+  kind: 'ROW' | 'COLUMN'
+  targetId: string
+  preview: true
+  tableData: ModelInputTablePage['tableData']
+  page: ModelInputTablePage['page']
+  editing: ModelInputTablePage['editing']
+}
+
 export interface ModelInputChangeRequest {
   requestId: string
   baseRevision: number
   operations: Array<
+    | ModelInputRestoreRowCommand
+    | ModelInputRestoreColumnCommand
     | ModelInputSetCommand
     | ModelInputClearCommand
     | ModelInputAddRowCommand
@@ -224,6 +306,7 @@ export interface ModelInputTablePage {
     fields: Record<string, unknown>[]
     rowBindings: Array<{ rowNumber: number; rowId: string | null; origin: 'SOURCE' | 'ADDED' | 'EMPTY_SLOT' }>
     editValues: Array<{ rowId: string; values: Record<string, unknown> }>
+    cellRestores: ModelInputCellRestore[]
   }
 }
 
@@ -335,6 +418,29 @@ const inputDraftService = {
     })
     return readResponse(response)
   },
+  async getChanges(draftId: string, revision: number, tableId: string, cursor?: string, signal?: AbortSignal) {
+    const response = await api.get<ICommonResponse<ModelInputChanges>>(`mi/fundamental-model/input-drafts/${draftId}/changes`, {
+      ...tableResponseOptions,
+      params: { revision, tableId, cursor },
+      signal,
+    })
+    return readResponse(response)
+  },
+  async getRestorePreview(
+    draftId: string,
+    revision: number,
+    tableId: string,
+    kind: ModelInputRestorePreview['kind'],
+    targetId: string,
+    startRow?: number,
+    signal?: AbortSignal,
+  ) {
+    const response = await api.get<ICommonResponse<ModelInputRestorePreview>>(
+      `mi/fundamental-model/input-drafts/${draftId}/restore-preview`,
+      { ...tableResponseOptions, params: { revision, tableId, kind, targetId, startRow }, signal },
+    )
+    return readResponse(response)
+  },
   async change(draftId: string, body: ModelInputChangeRequest, keepalive = false) {
     const response = await api.post<ICommonResponse<ModelInputOperation>>(
       `mi/fundamental-model/input-drafts/${draftId}/change-requests`,
@@ -347,9 +453,9 @@ const inputDraftService = {
     )
     return readResponse(response)
   },
-  async getChange(draftId: string, operationId: string) {
+  async getChange(draftId: string, operationId: string, statusEndpoint?: string) {
     const response = await api.get<ICommonResponse<ModelInputOperation>>(
-      `mi/fundamental-model/input-drafts/${draftId}/change-requests/${operationId}`,
+      statusEndpoint?.replace(/^\/api\/v1\//, '') ?? `mi/fundamental-model/input-drafts/${draftId}/change-requests/${operationId}`,
       requestOptions,
     )
     return readResponse(response)

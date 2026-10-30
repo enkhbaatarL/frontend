@@ -2,7 +2,7 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 
 import { getModelInputSessionSignal, isModelInputSessionCurrent } from '@/pages/mi/fundamentalModel/hooks/modelInputSession'
 import fundamentalModelCaseService from '@/service/mi/fundamentalModel/case'
-import inputDraftService from '@/service/mi/fundamentalModel/inputDraft'
+import inputDraftService, { type ModelInputChange } from '@/service/mi/fundamentalModel/inputDraft'
 
 export const getModelInputTableQueryOptions = (scope: string, draftId: string, revision: number, tableId: string) => {
   const session = getModelInputSessionSignal()
@@ -47,6 +47,39 @@ export const getModelInputSourceQueryOptions = (scope: string) => {
       signal.throwIfAborted()
       if (!isModelInputSessionCurrent(session, scope)) throw new Error('사용자 또는 회사가 변경되었습니다.')
       return sources
+    },
+  })
+}
+
+export const getModelInputChangesQueryOptions = (scope: string, draftId: string, revision: number, tableId: string) => {
+  const session = getModelInputSessionSignal()
+  return queryOptions({
+    queryKey: ['fundamentalModel', 'inputDraftChanges', scope, draftId, revision, tableId],
+    staleTime: Infinity,
+    gcTime: 60_000,
+    queryFn: async ({ signal }) => {
+      const items: ModelInputChange[] = []
+      const cursors = new Set<string>()
+      let cursor: string | undefined
+      do {
+        session.throwIfAborted()
+        if (!isModelInputSessionCurrent(session, scope)) throw new Error('사용자 또는 회사가 변경되었습니다.')
+        const page = await inputDraftService.getChanges(draftId, revision, tableId, cursor, AbortSignal.any([signal, session]))
+        signal.throwIfAborted()
+        session.throwIfAborted()
+        if (!isModelInputSessionCurrent(session, scope)) throw new Error('사용자 또는 회사가 변경되었습니다.')
+        if (
+          page.draftId !== draftId ||
+          page.revision !== revision ||
+          page.tableId !== tableId ||
+          (page.nextCursor !== null && cursors.has(page.nextCursor))
+        )
+          throw new Error('표 데이터를 불러오지 못했습니다.')
+        items.push(...page.items)
+        cursor = page.nextCursor ?? undefined
+        if (cursor !== undefined) cursors.add(cursor)
+      } while (cursor !== undefined)
+      return items
     },
   })
 }

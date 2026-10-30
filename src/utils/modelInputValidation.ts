@@ -27,6 +27,14 @@ export const compareModelInputDecimals = (left: string, right: string): number |
   return a && b ? a.comparedTo(b) : null
 }
 
+export const areModelInputValuesEqual = (left: unknown, right: unknown) => {
+  if (left === null || left === undefined || right === null || right === undefined) {
+    return (left === null || left === undefined) && (right === null || right === undefined)
+  }
+  if (isModelInputNumber(left) && isModelInputNumber(right)) return compareModelInputDecimals(String(left), String(right)) === 0
+  return left === right
+}
+
 export const isSupportedModelInputField = (field: Record<string, unknown>, constraints: unknown) => {
   if (!['TEXT', 'INTEGER', 'DECIMAL'].includes(String(field.dataType)) || !isModelInputObject(constraints)) return false
   if (Object.keys(constraints).some((key) => !['minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'options'].includes(key)))

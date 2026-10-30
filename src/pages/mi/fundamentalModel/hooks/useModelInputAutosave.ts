@@ -10,6 +10,7 @@ import { getModelInputSessionSignal, isModelInputSessionCurrent } from '@/pages/
 import { getModelInputTableQueryOptions } from '@/pages/mi/fundamentalModel/hooks/modelInputTableQuery'
 import inputDraftService, {
   type ModelInputChangeRequest,
+  type ModelInputCellRestore,
   type ModelInputAddRowCommand,
   type ModelInputDraftStructure,
   type ModelInputFinalization,
@@ -21,7 +22,7 @@ import inputDraftService, {
   serializeModelInputChange,
 } from '@/service/mi/fundamentalModel/inputDraft'
 import { parseModelInputJson, stringifyModelInputJson } from '@/utils/modelInputJson'
-import { compareModelInputDecimals, isModelInputValue } from '@/utils/modelInputValidation'
+import { areModelInputValuesEqual, isModelInputValue } from '@/utils/modelInputValidation'
 
 export interface ModelInputLocalEdit {
   id: string
@@ -37,6 +38,7 @@ export interface ModelInputLocalEdit {
 
 interface PendingChange {
   kind: 'CHANGE'
+  statusEndpoint?: string
   body?: ModelInputChangeRequest
   operationId?: string
   editIds: string[]
@@ -187,6 +189,7 @@ const useModelInputAutosave = (
   const saveRef = useRef<Promise<boolean> | null>(null)
   const savePreparationRef = useRef<AbortController | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const resettingTablesRef = useRef(new Map<string, Promise<boolean>>())
   const commandRef = useRef(false)
   const serverResetCountRef = useRef(0)
   const uploadRef = useRef<{ promise: Promise<void>; resolve(): void } | undefined>(undefined)
@@ -237,7 +240,7 @@ const useModelInputAutosave = (
       const next = [...originalValuesRef.current.values()].flat()
       return current.length === next.length && current.every((edit, index) => edit === next[index]) ? current : next
     })
-    setHasPendingRequest(Boolean(stateRef.current?.pending || stateRef.current?.queuedChanges?.length))
+    setHasPendingRequest(Boolean(stateRef.current?.pending || stateRef.current?.queuedChanges?.length || resettingTablesRef.current.size))
   }, [isCurrentSession])
 
   const loadDraft = useCallback(
@@ -297,8 +300,10 @@ const useModelInputAutosave = (
       const queued = [state.pending?.kind === 'CHANGE' ? state.pending : null, ...(state.queuedChanges ?? [])]
       const editIds = new Set(queued.flatMap((change) => change?.editIds ?? []))
       const rowKeys = new Set(queued.flatMap((change) => change?.addedRowKeys ?? []))
-      const nextEdits = state.edits.filter((edit) => !editIds.has(edit.id))
-      const nextRows = (state.addedRows ?? []).filter((row) => !rowKeys.has(row.clientRowKey))
+      const nextEdits = state.edits.filter((edit) => !editIds.has(edit.id) && !resettingTablesRef.current.has(edit.tableId))
+      const nextRows = (state.addedRows ?? []).filter(
+        (row) => !rowKeys.has(row.clientRowKey) && !resettingTablesRef.current.has(row.tableId),
+      )
       if (nextEdits.some((edit) => edit.error || (edit.type !== 'CLEAR' && edit.value === null))) return false
       const commands = [...getModelInputChangeOperations(nextEdits, nextRows), ...operations]
       if (!commands.length) return true
@@ -360,6 +365,7 @@ const useModelInputAutosave = (
   )
 
   const isTableChanging = useCallback((tableId: string) => {
+    if (resettingTablesRef.current.has(tableId)) return true
     const state = stateRef.current
     if (state?.pending && (state.pending.kind === 'FINALIZE' || !state.pending.body)) return true
     return [state?.pending, ...(state?.queuedChanges ?? [])].some(
@@ -381,6 +387,11 @@ const useModelInputAutosave = (
       notificationEpoch = notificationsRef.current.active ? notificationsRef.current.epoch : -1,
     ): Promise<boolean> => {
       if (!isCurrentSession()) return Promise.resolve(false)
+      if (drain && resettingTablesRef.current.size) {
+        return Promise.all([...resettingTablesRef.current.values()]).then((results) =>
+          results.every(Boolean) ? flush(keepalive, drain, beforeUpload, notificationEpoch) : false,
+        )
+      }
       if (uploadRef.current && !beforeUpload) {
         persist()
         return uploadRef.current.promise.then(() => flush(keepalive, drain, beforeUpload, notificationEpoch))
@@ -398,11 +409,19 @@ const useModelInputAutosave = (
       if (state.blockedRevision !== undefined) return Promise.resolve(false)
       // 입력 중에는 메모리에만 보관하고, 저장 시도 직전에 복구용 백업을 기록한다.
       persist()
-      if (!state.pending && !state.queuedChanges?.length && !state.edits.length && !state.addedRows?.length) return Promise.resolve(true)
       if (
         !state.pending &&
         !state.queuedChanges?.length &&
-        state.edits.some((edit) => edit.error || (edit.type !== 'CLEAR' && edit.value === null))
+        !state.edits.some((edit) => !resettingTablesRef.current.has(edit.tableId)) &&
+        !state.addedRows?.some((row) => !resettingTablesRef.current.has(row.tableId))
+      )
+        return Promise.resolve(true)
+      if (
+        !state.pending &&
+        !state.queuedChanges?.length &&
+        state.edits.some(
+          (edit) => !resettingTablesRef.current.has(edit.tableId) && (edit.error || (edit.type !== 'CLEAR' && edit.value === null)),
+        )
       ) {
         return Promise.resolve(false)
       }
@@ -463,7 +482,8 @@ const useModelInputAutosave = (
           submitting = !pending.operationId
           let operation: ModelInputOperation | ModelInputFinalization | null = null
           if (pending.kind === 'CHANGE') {
-            if (pending.operationId) operation = await inputDraftService.getChange(state.draftId, pending.operationId)
+            if (pending.operationId)
+              operation = await inputDraftService.getChange(state.draftId, pending.operationId, pending.statusEndpoint)
             else if (pending.body) {
               for (const [tableId, originals] of originalValuesRef.current) {
                 for (const original of originals) {
@@ -518,6 +538,7 @@ const useModelInputAutosave = (
             return result.status === 'QUEUED' || result.status === 'RUNNING'
           }
           let processing = isProcessing(operation)
+          if (pending.kind === 'CHANGE') pending.statusEndpoint = operation.statusEndpoint
           pending.operationId = operation.operationId
           persist()
           while (processing) {
@@ -526,7 +547,7 @@ const useModelInputAutosave = (
             if (!mountedRef.current || !isCurrentSession()) return false
             operation =
               pending.kind === 'CHANGE'
-                ? await inputDraftService.getChange(state.draftId, operation.operationId)
+                ? await inputDraftService.getChange(state.draftId, operation.operationId, operation.statusEndpoint)
                 : await inputDraftService.getFinalization(state.draftId, operation.operationId)
             processing = isProcessing(operation)
           }
@@ -635,7 +656,9 @@ const useModelInputAutosave = (
           mountedRef.current &&
           !commandRef.current &&
           !state.pending &&
-          (state.queuedChanges?.length || state.edits.length || state.addedRows?.length)
+          (state.queuedChanges?.length ||
+            state.edits.some((edit) => !resettingTablesRef.current.has(edit.tableId)) ||
+            state.addedRows?.some((row) => !resettingTablesRef.current.has(row.tableId)))
         ) {
           if (timerRef.current) clearTimeout(timerRef.current)
           timerRef.current = setTimeout(() => {
@@ -872,15 +895,7 @@ const useModelInputAutosave = (
               operation.fieldKey === edit.fieldKey,
           ),
       )
-      if (
-        changesPendingCell ||
-        (isAddedRow && edit.error) ||
-        (edit.text !== String(originalValue ?? '') &&
-          (edit.error ||
-            (edit.dataType === 'DECIMAL' && edit.value !== null && originalValue !== null && originalValue !== undefined
-              ? compareModelInputDecimals(String(edit.value), String(originalValue)) !== 0
-              : edit.value !== originalValue)))
-      ) {
+      if (changesPendingCell || edit.error || !areModelInputValuesEqual(edit.value, originalValue)) {
         const originals = originalValuesRef.current.get(edit.tableId) ?? []
         if (!isAddedRow && !originals.some((item) => item.rowId === edit.rowId && item.fieldKey === edit.fieldKey)) {
           originals.push({
@@ -898,12 +913,7 @@ const useModelInputAutosave = (
       const original = originalValuesRef.current
         .get(edit.tableId)
         ?.find((item) => item.rowId === edit.rowId && item.fieldKey === edit.fieldKey)
-      if (original)
-        original.isReset =
-          !edit.error &&
-          (edit.dataType === 'DECIMAL' && edit.value !== null && original.value !== null
-            ? compareModelInputDecimals(String(edit.value), String(original.value)) === 0
-            : edit.value === original.value)
+      if (original) original.isReset = !edit.error && areModelInputValuesEqual(edit.value, original.value)
       if (state.blockedRevision === undefined) setError('')
       publish()
       if (state.blockedRevision !== undefined) {
@@ -1032,37 +1042,131 @@ const useModelInputAutosave = (
   const discard = useCallback(
     async (tableId: string) => {
       const state = stateRef.current
-      if (!state || commandRef.current || isTableChanging(tableId) || draftRef.current?.status !== 'DRAFT' || !isCurrentSession())
+      if (
+        !state ||
+        commandRef.current ||
+        uploadRef.current ||
+        isTableChanging(tableId) ||
+        draftRef.current?.status !== 'DRAFT' ||
+        state.blockedRevision !== undefined ||
+        !isCurrentSession()
+      )
         return false
+      const epoch = notificationsRef.current.epoch
+      let resolve!: (saved: boolean) => void
+      const promise = new Promise<boolean>((done) => {
+        resolve = done
+      })
+      resettingTablesRef.current.set(tableId, promise)
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = undefined
-      // 초기화 역시 최신 셀 변경으로 대기한다. 전송한 변경은 완료 후 복원하고, 미전송 변경은 합친다.
-      state.edits = state.edits.filter(
-        (edit) => edit.tableId !== tableId || state.addedRows?.some((row) => row.tableId === tableId && row.clientRowKey === edit.rowId),
-      )
-      for (const original of originalValuesRef.current.get(tableId) ?? []) {
-        const queued = [state.pending, ...(state.queuedChanges ?? [])].some(
-          (change) =>
-            change?.kind === 'CHANGE' &&
-            change.body?.operations.some(
-              (operation) =>
-                operation.tableId === tableId &&
-                'rowRef' in operation &&
-                'fieldKey' in operation &&
-                operation.rowRef.rowId === original.rowId &&
-                operation.fieldKey === original.fieldKey,
-            ),
-        )
-        if (original.isSubmitted || queued) state.edits.push({ ...original, id: uuid(), error: null })
-        original.isReset = true
-      }
-      setError('')
-      persist()
       publish()
-      void flush(false, false)
-      return true
+      let completed = false
+      try {
+        // 이미 접수되거나 큐에 들어간 요청의 본문은 바꾸지 않고, 성공한 revision의 원본 정보를 조회한다.
+        while (
+          [state.pending, ...(state.queuedChanges ?? [])].some(
+            (change) => change?.kind === 'CHANGE' && change.body?.operations.some((operation) => operation.tableId === tableId),
+          )
+        ) {
+          if (!(await flush(false, false, true, epoch))) return false
+        }
+        let restores: ModelInputCellRestore[]
+        while (true) {
+          if (
+            !mountedRef.current ||
+            !isCurrentSession() ||
+            stateRef.current !== state ||
+            commandRef.current ||
+            state.blockedRevision !== undefined
+          )
+            return false
+          const revision = state.revision
+          restores = []
+          const options = getModelInputTableQueryOptions(scope, state.draftId, revision, tableId)
+          const cached = queryClient.getQueryData<InfiniteData<ModelInputTablePage, number | undefined>>(options.queryKey)
+          let startRow: number | undefined
+          try {
+            do {
+              const cachedIndex = cached?.pageParams.findIndex((parameter) => parameter === startRow) ?? -1
+              const page =
+                cachedIndex >= 0
+                  ? cached!.pages[cachedIndex]
+                  : await inputDraftService.getTable(state.draftId, revision, tableId, startRow, session)
+              if (!mountedRef.current || !isCurrentSession() || stateRef.current !== state) return false
+              if (
+                page.draftId !== state.draftId ||
+                page.revision !== revision ||
+                page.tableData.tableId !== tableId ||
+                (page.page.hasNext &&
+                  (page.page.returnedBodyRows === 0 ||
+                    page.page.nextStartRow === null ||
+                    page.page.nextStartRow <= (page.page.endRow ?? startRow ?? 0)))
+              )
+                throw new Error('표 데이터를 불러오지 못했습니다.')
+              restores.push(...(page.editing.cellRestores ?? []))
+              startRow = page.page.hasNext ? page.page.nextStartRow! : undefined
+            } while (startRow !== undefined && state.revision === revision)
+          } catch (cause) {
+            if (state.revision !== revision) continue
+            if (axios.isAxiosError<{ data?: ModelInputProblem }>(cause) && cause.response?.data.data?.reason === 'REVISION_CONFLICT') {
+              await preserveOnRevisionConflict(state.draftId, undefined, undefined, epoch)
+              return false
+            }
+            throw cause
+          }
+          // 다른 표의 저장이 끝났으면 새 revision으로 다시 모은다. 이전 revision의 원본으로 저장하지 않는다.
+          if (state.revision === revision) break
+        }
+        if (
+          !mountedRef.current ||
+          !isCurrentSession() ||
+          stateRef.current !== state ||
+          commandRef.current ||
+          state.blockedRevision !== undefined ||
+          draftRef.current?.status !== 'DRAFT'
+        )
+          return false
+        const sourceCells = new Map<string, Set<string>>()
+        for (const cell of restores) {
+          const fields = sourceCells.get(cell.rowId) ?? new Set<string>()
+          fields.add(cell.fieldKey)
+          sourceCells.set(cell.rowId, fields)
+        }
+        // 미전송 원본 셀 입력만 취소한다. 추가 행·열의 입력과 다른 표의 작업은 유지한다.
+        state.edits = state.edits.filter((edit) => edit.tableId !== tableId || !sourceCells.get(edit.rowId)?.has(edit.fieldKey))
+        for (const cell of restores) {
+          if (cell.restoreStatus !== 'READY') continue
+          state.edits.push({
+            id: uuid(),
+            tableId,
+            rowId: cell.rowId,
+            fieldKey: cell.fieldKey,
+            type: cell.baseline.kind === 'EMPTY' ? 'CLEAR' : 'SET',
+            text: cell.baseline.kind === 'EMPTY' ? '' : String(cell.baseline.value),
+            value: cell.baseline.kind === 'EMPTY' ? null : cell.baseline.value,
+            error: null,
+          })
+        }
+        for (const original of originalValuesRef.current.get(tableId) ?? []) {
+          if (sourceCells.get(original.rowId)?.has(original.fieldKey)) original.isReset = true
+        }
+        setError('')
+        persist()
+        completed = true
+        return true
+      } catch (cause) {
+        if (mountedRef.current && isCurrentSession()) setError(getModelInputErrorMessage(cause), epoch)
+        return false
+      } finally {
+        resettingTablesRef.current.delete(tableId)
+        resolve(completed)
+        publish()
+        // 생성한 복원 입력과 다른 표의 대기 변경은 기존 저장 큐로 처리한다.
+        if (completed && !commandRef.current && mountedRef.current && isCurrentSession()) void flush(false, false, false, epoch)
+      }
     },
-    [flush, isCurrentSession, isTableChanging, persist, publish, setError],
+    [flush, isCurrentSession, isTableChanging, persist, publish, preserveOnRevisionConflict, queryClient, scope, session, setError],
   )
 
   useEffect(() => {
