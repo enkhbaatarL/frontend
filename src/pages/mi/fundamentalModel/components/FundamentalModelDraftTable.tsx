@@ -407,7 +407,16 @@ const FundamentalModelDraftTable = ({
     const isModified = restore
       ? Boolean(edit?.error) || !areModelInputValuesEqual(edit ? edit.value : currentValue, initialValue)
       : undefined
-    const canRestore = restore?.restoreStatus === 'READY'
+    // NO_CHANGE는 저장된 값의 상태일 뿐, 이후 로컬 입력의 취소를 막는 정책이 아니다.
+    // updateEdit가 미전송 입력을 제거하거나 진행 중 요청 뒤에 원본 복원을 이어 붙인다.
+    const canRestore =
+      restore?.restoreStatus === 'READY' ||
+      Boolean(
+        edit &&
+          restore?.restoreStatus === 'NOT_ALLOWED' &&
+          restore.restoreReason === 'NO_CHANGE' &&
+          areModelInputValuesEqual(currentValue, initialValue),
+      )
     const value = edit?.text ?? displayValue(row[column.field])
     const textAlign = getSheetCellTextAlign(value)
     const constraints = localRow && field ? getModelInputCreationRule(field)?.constraints : field?.setConstraints
