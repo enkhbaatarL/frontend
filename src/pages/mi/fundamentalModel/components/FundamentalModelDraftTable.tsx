@@ -9,6 +9,7 @@ import type {
   ModelInputTableInfo,
   ModelInputTablePage,
   ModelInputAddRowCommand,
+  ModelInputAddColumnCommand,
   ModelInputSetControlCommand,
 } from '@/service/mi/fundamentalModel/inputDraft'
 
@@ -58,6 +59,8 @@ interface Props {
   table: ModelInputTableInfo
   edits: ModelInputLocalEdit[]
   addedRows: ModelInputAddRowCommand[]
+  addedColumns: ModelInputAddColumnCommand[]
+  onStageColumn: (command: ModelInputAddColumnCommand) => Promise<boolean>
   onStageRow: (command: ModelInputAddRowCommand, initialEdits: Omit<ModelInputLocalEdit, 'id'>[]) => Promise<boolean>
   onRemoveStagedRow: (clientRowKey: string) => void
   disabled: boolean
@@ -80,6 +83,8 @@ const FundamentalModelDraftTable = ({
   table,
   edits,
   addedRows,
+  addedColumns,
+  onStageColumn,
   disabled,
   structureDisabled,
   isSavingStructure,
@@ -131,9 +136,11 @@ const FundamentalModelDraftTable = ({
   const pages = query.data?.pages
   const firstPage = pages?.[0]
   const canEdit = draft.status === 'DRAFT' && !disabled && !query.isError && !query.isPending
-  const canChangeStructure = canEdit && !structureDisabled
+  const canChangeStructure = canEdit && !structureDisabled && !query.isFetching
   const [isChangingStructure, setIsChangingStructure] = useState(false)
   const isProcessingStructure = isChangingStructure || isSavingStructure
+  // 조회 → 구조 변경 → 추가 페이지 조회 순으로 한 가지 로딩만 표시한다.
+  const loadingState = query.isPending ? 'table' : isProcessingStructure ? 'structure' : query.isFetchingNextPage ? 'rows' : null
   const [scrollTarget, setScrollTarget] = useState<{ rowIndex?: number; columnIndex?: number }>()
   const structureRequestRef = useRef(false)
   const creationFields = useMemo(() => firstPage && getModelInputRowCreationFields(firstPage), [firstPage])
@@ -190,14 +197,36 @@ const FundamentalModelDraftTable = ({
     }
   }, [pageIndexes, pages])
   const columns = useMemo(
-    () =>
-      (firstPage?.tableData.columns ?? []).map((column) => ({
+    () => [
+      ...(firstPage?.tableData.columns ?? []).map((column) => ({
         ...column,
         isNew: Boolean(firstPage && getModelInputDeletableColumn(firstPage, column.field)),
         label: column.headerName,
         headerValues: headerRows.length ? headerRows.map((row) => String(displayValue(row[column.field]))) : [column.headerName],
       })),
-    [firstPage, headerRows],
+      ...addedColumns.map((command, columnIndex) => {
+        const last = firstPage?.tableData.columns.at(-1)
+        const previousHeaders = headerRows.length
+          ? headerRows.map((row) => String(displayValue(last ? row[last.field] : '')))
+          : [last?.headerName ?? '']
+        const yearIndex = previousHeaders.findIndex((value) => /^\d{4}$/.test(value.trim()))
+        const headerValues = previousHeaders.map((value, index) => {
+          if (index === yearIndex || (yearIndex < 0 && index === 0)) return String(command.headerValues.year ?? '')
+          if (index === yearIndex + 1 && command.headerValues.month !== undefined) return String(command.headerValues.month)
+          if (index === yearIndex + 2 && command.headerValues.month !== undefined && /^\d+$/.test(value.trim()))
+            return String(Number(value) + columnIndex + 1)
+          return value
+        })
+        return {
+          field: command.clientColumnKey,
+          headerName: headerValues[0] ?? '',
+          label: headerValues[0] ?? '',
+          headerValues,
+          isNew: true,
+        }
+      }),
+    ],
+    [addedColumns, firstPage, headerRows],
   )
   const rows = useMemo(() => {
     if (!firstPage || query.hasNextPage) return bodyRows
@@ -243,7 +272,7 @@ const FundamentalModelDraftTable = ({
       .get(Number(row.rowNumber))
       ?.editing.rowBindings.some((binding) => binding.rowNumber === Number(row.rowNumber) && binding.origin === 'ADDED') === true
   const headerHeight = Math.max(1, headerRows.length) * 24
-  const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = query
+  const { hasNextPage, isError, fetchNextPage } = query
   useEffect(() => {
     if (!query.error) return
     const message = getModelInputErrorMessage(query.error)
@@ -253,6 +282,7 @@ const FundamentalModelDraftTable = ({
     (viewport: { height: number; scrollTop: number }) => {
       if (
         !disabled &&
+        !isProcessingStructure &&
         hasNextPage &&
         !isFetching &&
         fetchStatus === 'idle' &&
@@ -273,6 +303,7 @@ const FundamentalModelDraftTable = ({
       headerHeight,
       isError,
       isFetching,
+      isProcessingStructure,
       queryClient,
       queryIdentity,
       queryKey,
@@ -291,8 +322,9 @@ const FundamentalModelDraftTable = ({
       setIsChangingStructure(false)
     }
   }
-  const insertRow = async (row: Record<string, unknown>, position: 'above' | 'below') => {
-    if (!canChangeStructure || !creationFields || structureRequestRef.current) return
+  const canInsertBelow = (row: Record<string, unknown>) => !hasNextPage && row === rows.at(-1)
+  const insertRow = async (row: Record<string, unknown>) => {
+    if (!canChangeStructure || !creationFields || structureRequestRef.current || !canInsertBelow(row)) return
     const clientRowKey = `row_${uuid()}`
     const values: ModelInputAddRowCommand['values'] = {}
     const initialEdits: Omit<ModelInputLocalEdit, 'id'>[] = []
@@ -310,7 +342,7 @@ const FundamentalModelDraftTable = ({
         { type: 'ADD_ROW', commandId: `add_row_${uuid()}`, tableId: table.id, clientRowKey, values },
         initialEdits,
       )
-      if (added && (row.id === 'empty-row' || (position === 'below' && row === rows.at(-1)))) {
+      if (added) {
         setScrollTarget({ rowIndex: bodyRows.length + addedRows.length })
       }
     } finally {
@@ -319,7 +351,7 @@ const FundamentalModelDraftTable = ({
     }
   }
   const addColumn = () => {
-    if (!creationHeaders) return
+    if (!creationHeaders || !canChangeStructure || structureRequestRef.current) return
     const last = columns.at(-1)
     const yearIndex = last?.headerValues.findIndex((value) => /^\d{4}$/.test(value.trim())) ?? -1
     const next = getNextFundamentalModelColumn({
@@ -343,11 +375,20 @@ const FundamentalModelDraftTable = ({
       }
       if (typeof result.value === 'number') headerValues[key as 'year' | 'month'] = result.value
     }
-    void changeStructure([
-      { type: 'ADD_COLUMN', commandId: `add_column_${uuid()}`, tableId: table.id, clientColumnKey: `column_${uuid()}`, headerValues },
-    ]).then((success) => {
-      if (success) setScrollTarget({ columnIndex: columns.length })
+    structureRequestRef.current = true
+    void onStageColumn({
+      type: 'ADD_COLUMN',
+      commandId: `add_column_${uuid()}`,
+      tableId: table.id,
+      clientColumnKey: `column_${uuid()}`,
+      headerValues,
     })
+      .then((success) => {
+        if (success) setScrollTarget({ columnIndex: columns.length })
+      })
+      .finally(() => {
+        structureRequestRef.current = false
+      })
   }
   const canDeleteRow = (row: Record<string, unknown>) => {
     if (hasNextPage || row !== rows.at(-1)) return false
@@ -360,11 +401,8 @@ const FundamentalModelDraftTable = ({
     getRowId,
     getRowNumber: (row) => Number(row.rowNumber),
     onAddColumn: creationHeaders ? addColumn : undefined,
-    onInsertAbove: creationFields ? (row) => insertRow(row, 'above') : undefined,
-    onInsertBelow: creationFields ? (row) => insertRow(row, 'below') : undefined,
-    canInsertAbove: (row) => addedRows.some((command) => command.clientRowKey === row.id),
-    canInsertBelow: (row) =>
-      addedRows.some((command) => command.clientRowKey === row.id) || (!hasNextPage && row === bodyRows.at(-1)) || row.id === 'empty-row',
+    onInsertBelow: creationFields ? insertRow : undefined,
+    canInsertBelow,
     canDeleteRow,
     onDeleteRow: (row) => {
       if (!canChangeStructure || isChangingStructure || !canDeleteRow(row)) return
@@ -384,9 +422,18 @@ const FundamentalModelDraftTable = ({
     const page = pageByRow.get(rowNumber)
     const pageIndex = page && pageIndexes.get(page)
     const localRow = typeof row.id === 'string' ? addedRowsByKey.get(row.id) : undefined
-    const field = localRow
-      ? creationFieldsByColumn.get(column.field)
-      : page && getModelInputField(page, rowNumber, column.field, 'SET', pageIndex)
+    const localColumn = addedColumns.find((command) => command.clientColumnKey === column.field)
+    const creationBody =
+      isModelInputObject(firstPage?.editing.columnCreation) && isModelInputObject(firstPage.editing.columnCreation.body)
+        ? firstPage.editing.columnCreation.body
+        : undefined
+    const field = localColumn
+      ? !localRow && creationBody
+        ? { ...creationBody, fieldKey: localColumn.clientColumnKey }
+        : undefined
+      : localRow
+        ? creationFieldsByColumn.get(column.field)
+        : page && getModelInputField(page, rowNumber, column.field, 'SET', pageIndex)
     const clearField = page && getModelInputField(page, rowNumber, column.field, 'CLEAR', pageIndex)
     const editableField = field ?? clearField
     const binding = pageIndex?.bindingByRowNumber.get(rowNumber)
@@ -394,11 +441,13 @@ const FundamentalModelDraftTable = ({
     const fieldKey = editableField?.fieldKey
     const edit = typeof rowId === 'string' && typeof fieldKey === 'string' ? editsByRow.get(rowId)?.get(fieldKey) : undefined
     const original =
-      rowId && typeof editableField?.fieldKey === 'string'
-        ? localRow
-          ? localRow.values[editableField.fieldKey]
-          : pageIndex?.editValuesByRowId.get(rowId)?.values[editableField.fieldKey]
-        : undefined
+      localColumn && field
+        ? validateModelInputCreationValue(getModelInputCreationRule(field)?.initialValue ?? '', field).value
+        : rowId && typeof editableField?.fieldKey === 'string'
+          ? localRow
+            ? localRow.values[editableField.fieldKey]
+            : pageIndex?.editValuesByRowId.get(rowId)?.values[editableField.fieldKey]
+          : undefined
     const restore = rowId && typeof fieldKey === 'string' ? pageIndex?.cellRestoresByRowId.get(rowId)?.get(fieldKey) : undefined
     const baseline = restore?.baseline
     const initialValue = baseline?.kind === 'EMPTY' ? null : baseline?.value
@@ -417,9 +466,10 @@ const FundamentalModelDraftTable = ({
           restore.restoreReason === 'NO_CHANGE' &&
           areModelInputValuesEqual(currentValue, initialValue),
       )
-    const value = edit?.text ?? displayValue(row[column.field])
+    const value =
+      edit?.text ?? (localColumn && field ? (getModelInputCreationRule(field)?.initialValue ?? '') : displayValue(row[column.field]))
     const textAlign = getSheetCellTextAlign(value)
-    const constraints = localRow && field ? getModelInputCreationRule(field)?.constraints : field?.setConstraints
+    const constraints = (localRow || localColumn) && field ? getModelInputCreationRule(field)?.constraints : field?.setConstraints
     const options = isModelInputObject(constraints) && Array.isArray(constraints.options) ? constraints.options : undefined
     if (
       !editableField ||
@@ -436,7 +486,7 @@ const FundamentalModelDraftTable = ({
       )
     }
     const updateValue = (text: string) => {
-      if (localRow && field) {
+      if ((localRow || localColumn) && field) {
         const result = validateModelInputCreationValue(text, field)
         onEdit(
           {
@@ -571,7 +621,7 @@ const FundamentalModelDraftTable = ({
         aria-busy={isProcessingStructure}
         inert={isProcessingStructure}
       >
-        {query.isPending && (
+        {loadingState === 'table' && (
           <Stack flex={1} alignItems="center" justifyContent="center" padding="40px">
             <CircularProgress size={24} aria-label="표 조회 중" />
           </Stack>
@@ -633,13 +683,13 @@ const FundamentalModelDraftTable = ({
             )}
           </Stack>
         )}
-        {isFetchingNextPage && (
+        {loadingState === 'rows' && (
           <Stack alignItems="center" padding="12px">
             <CircularProgress size={20} aria-label="추가 행 조회 중" />
           </Stack>
         )}
       </Stack>
-      {isProcessingStructure && (
+      {loadingState === 'structure' && (
         <Stack
           position="absolute"
           top="0px"

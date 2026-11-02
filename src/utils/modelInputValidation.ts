@@ -37,8 +37,13 @@ export const areModelInputValuesEqual = (left: unknown, right: unknown) => {
 
 export const isSupportedModelInputField = (field: Record<string, unknown>, constraints: unknown) => {
   if (!['TEXT', 'INTEGER', 'DECIMAL'].includes(String(field.dataType)) || !isModelInputObject(constraints)) return false
-  if (Object.keys(constraints).some((key) => !['minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'options'].includes(key)))
+  if (
+    Object.keys(constraints).some(
+      (key) => !['minimum', 'maximum', 'minLength', 'maxLength', 'pattern', 'options', 'required'].includes(key),
+    )
+  )
     return false
+  if ('required' in constraints && typeof constraints.required !== 'boolean') return false
   if (
     'options' in constraints &&
     (!Array.isArray(constraints.options) ||
@@ -100,6 +105,7 @@ export const validateModelInputValue = (
       }
     }
   } else {
+    if (constraints.required === true && !text.trim()) return { value: null, error: '필수 항목을 입력하세요.' }
     if (text.length > 4096 || (typeof constraints.maxLength === 'number' && text.length > constraints.maxLength))
       return { value: null, error: '입력 가능한 글자 수를 초과했습니다.' }
     if (typeof constraints.minLength === 'number' && text.length < constraints.minLength)
@@ -147,6 +153,7 @@ export const getModelInputCreationRule = (field: unknown) => {
 export const validateModelInputCreationValue = (text: string, field: Record<string, unknown>) => {
   const rule = getModelInputCreationRule(field)
   if (!rule) return { value: null, error: '생성 정책을 확인할 수 없습니다.' }
-  if (!text) return { value: null, error: rule.required ? '필수 항목을 입력하세요.' : null }
+  if (!text || (field.dataType === 'TEXT' && rule.required && !text.trim()))
+    return { value: null, error: rule.required || rule.constraints.required === true ? '필수 항목을 입력하세요.' : null }
   return validateModelInputValue(text, field, rule.constraints)
 }

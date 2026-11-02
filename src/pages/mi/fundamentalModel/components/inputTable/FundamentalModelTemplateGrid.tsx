@@ -242,6 +242,10 @@ const FundamentalModelTemplateGrid = <Row, Column extends TemplateGridColumn>({
               '& [role="cell"][data-new="true"], & [role="row"]:hover [role="cell"][data-new="true"]': {
                 bgcolor: 'rgba(245, 159, 0, 0.1)',
               },
+              '& [role="cell"][data-row-action="true"][data-new="true"], & [role="row"]:hover [role="cell"][data-row-action="true"][data-new="true"]':
+                {
+                  bgcolor: '#FEF5E6',
+                },
               '& [data-row-action="true"]': {
                 width: `${FUNDAMENTAL_MODEL_ACTION_WIDTH}px`,
                 minWidth: `${FUNDAMENTAL_MODEL_ACTION_WIDTH}px`,

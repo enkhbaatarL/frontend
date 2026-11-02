@@ -110,10 +110,12 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       draft,
       edits,
       addedRows,
+      addedColumns,
       error,
       isLoading,
       isSaving,
       hasPendingRequest,
+      isRevisionBlocked,
       isTableChanging,
       flush,
       flushBeforeLeaving,
@@ -122,6 +124,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       updateEdit,
       executeCommands,
       stageRow,
+      stageColumn,
       removeStagedRow,
     } = autosave
     const { showSnackbar } = useSnackbar()
@@ -145,6 +148,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
       section?.sheets[0]
     const table = sheet?.tables.find((item) => item.id === selectedTableId) ?? sheet?.tables[0]
     const tableAddedRows = useMemo(() => addedRows.filter((row) => row.tableId === table?.id), [addedRows, table?.id])
+    const tableAddedColumns = useMemo(() => addedColumns.filter((column) => column.tableId === table?.id), [addedColumns, table?.id])
     const busy = isFinalizing || externalBusy
     useEffect(() => {
       originalControlValuesRef.current.clear()
@@ -161,7 +165,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
           }
         }
     }, [draft, initialTable])
-    const needsSave = edits.length > 0 || addedRows.length > 0 || hasPendingRequest || isSaving || busy
+    const needsSave = edits.length > 0 || addedRows.length > 0 || addedColumns.length > 0 || hasPendingRequest || isSaving || busy
     const previousErrorRef = useRef(error)
     useEffect(() => {
       const previous = previousErrorRef.current
@@ -448,10 +452,12 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
                     table={table}
                     edits={edits}
                     addedRows={tableAddedRows}
+                    addedColumns={tableAddedColumns}
+                    onStageColumn={stageColumn}
                     onStageRow={stageRow}
                     onRemoveStagedRow={removeStagedRow}
-                    disabled={busy || isTableChanging(table.id)}
-                    structureDisabled={busy || isTableChanging(table.id)}
+                    disabled={busy || isRevisionBlocked || isTableChanging(table.id)}
+                    structureDisabled={busy || isRevisionBlocked || isTableChanging(table.id)}
                     isSavingStructure={isTableChanging(table.id)}
                     onEdit={updateEdit}
                     onCommands={changeStructure}
@@ -470,6 +476,7 @@ const FundamentalModelDraftEditor = forwardRef<FundamentalModelDraftEditorRef, P
             !isLoading &&
             Boolean(
               table &&
+                !isRevisionBlocked &&
                 !isTableChanging(table.id) &&
                 restorableTable?.draftId === draft?.draftId &&
                 restorableTable?.revision === draft?.revision &&
