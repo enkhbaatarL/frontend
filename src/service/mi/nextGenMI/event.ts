@@ -13,6 +13,21 @@ import { ICommonResponse, IPaginationResponse } from '@/types/api'
 
 export type EventSort = 'latest' | 'oldest'
 
+export interface EventRecommendationRequest {
+  miEventIds: number[]
+}
+
+export interface EventRecommendation {
+  miEventId: number
+  title: string
+  reason: string
+}
+
+export interface EventRecommendations {
+  items: EventRecommendation[]
+  selectionReason: string
+}
+
 export type EventStatus = 'all' | 'new' | 'updated'
 
 export type EventSignalType = 'signal' | 'noise'
@@ -323,6 +338,30 @@ const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string
 }
 
 const nextGenMIEventService = {
+  async getEventRecommendations(params: EventRecommendationRequest, signal?: AbortSignal): Promise<EventRecommendations> {
+    const { miEventIds } = params
+    if (
+      miEventIds.length < 1 ||
+      miEventIds.length > 5 ||
+      new Set(miEventIds).size !== miEventIds.length ||
+      miEventIds.some((id) => !Number.isSafeInteger(id) || id <= 0)
+    ) {
+      throw new Error('선택한 Event를 확인해 주세요.')
+    }
+
+    const response = await api.post<ICommonResponse<EventRecommendations | null>>('mi/next-gen/events/recommendations', params, {
+      timeout: 130_000,
+      signal,
+      suppressGlobalErrorHandler: true,
+    } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean })
+
+    if (!response.data.status || !response.data.data) {
+      throw new Error('추천에 실패했습니다')
+    }
+
+    return response.data.data
+  },
+
   async getEventTypesL1(): Promise<EventTypeL1[]> {
     const response: AxiosResponse<ICommonResponse<EventTypeL1[]>> = await api.get('mi/next-gen/events/event-types/lv1')
 

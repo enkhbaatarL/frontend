@@ -201,7 +201,7 @@ const EventsTabPanel = () => {
   const isSelectionLimitReached = selectedEvents.length >= EVENT_SELECTION_MAX_COUNT
 
   const handleToggleEventSelection = useCallback(
-    (row: EventListItem, checked: boolean) => {
+    (row: EventSelectionItem, checked: boolean) => {
       setSelectedEvents((prev) => {
         if (!checked) return prev.filter((item) => item.eventId !== row.eventId)
         if (prev.some((item) => item.eventId === row.eventId)) return prev
@@ -980,6 +980,7 @@ const EventsTabPanel = () => {
         sameCombinationGroups={sameCombinationGroups}
         sameCombinationGroupCount={sameCombinationGroupCount}
         sameCombinationLoading={isSelectionDesignStatusFetching}
+        onSelectRecommendation={(event) => handleToggleEventSelection({ eventId: event.miEventId, eventName: event.title }, true)}
         onRemove={handleRemoveSelectedEvent}
         onDesignClick={handleSelectedEventsDesignClick}
         onSameCombinationGroupView={handleSameCombinationGroupView}

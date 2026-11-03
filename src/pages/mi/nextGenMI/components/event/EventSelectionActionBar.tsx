@@ -1,12 +1,13 @@
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import { Box, Collapse, type CollapseProps, Divider, Fade, IconButton, Slide, Stack, Typography, useMediaQuery } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { TransitionGroup } from 'react-transition-group'
 
-import type { EventDesignStep } from '@/service/mi/nextGenMI/event'
+import type { EventDesignStep, EventRecommendation } from '@/service/mi/nextGenMI/event'
 import type { SameCombinationScenarioGroup } from '@/service/mi/nextGenMI/scenarioDesign'
 
+import AdminCheckbox from '@/components/admin/AdminCheckbox'
 import MIAgentSpinner from '@/components/common/agent/MIAgentSpinner'
 import MIBaseButton from '@/components/common/button/MIBaseButton'
 import CloseIcon from '@/components/common/icons/CloseIcon'
@@ -15,6 +16,7 @@ import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { type MultiEventSelectionDesignMode, normalizeEventDesignStep } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventSameCombinationGroupsTable from '@/pages/mi/nextGenMI/components/event/EventSameCombinationGroupsTable'
+import { useEventRecommendations } from '@/pages/mi/nextGenMI/hooks/useEventRecommendations'
 
 export type EventSelectionItem = {
   eventId: number
@@ -30,6 +32,7 @@ export type EventSelectionActionBarProps = {
   sameCombinationGroups?: SameCombinationScenarioGroup[]
   sameCombinationGroupCount?: number
   sameCombinationLoading?: boolean
+  onSelectRecommendation: (event: EventRecommendation) => void
   onRemove: (eventId: number) => void
   onDesignClick: () => void
   onSameCombinationGroupView?: (group: SameCombinationScenarioGroup) => void
@@ -218,10 +221,13 @@ const EventSelectionActionBar = ({
   sameCombinationGroups = [],
   sameCombinationGroupCount,
   sameCombinationLoading = false,
+  onSelectRecommendation,
   onRemove,
   onDesignClick,
   onSameCombinationGroupView,
 }: EventSelectionActionBarProps) => {
+  const selectedEventIds = useMemo(() => selectedEvents.map((event) => event.eventId), [selectedEvents])
+  const recommendations = useEventRecommendations(selectedEventIds)
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [sameCombinationExpanded, setSameCombinationExpanded] = useState(false)
   const [sameCombinationRevealed, setSameCombinationRevealed] = useState(false)
@@ -298,7 +304,18 @@ const EventSelectionActionBar = ({
                 <Box display="flex" justifyContent="flex-end" minWidth="116px" flexShrink={0}>
                   {showDesignCta && (
                     <Fade in timeout={160}>
-                      <Box display="flex">{resolvedDesignCta}</Box>
+                      <Stack direction="row" alignItems="center" gap="8px">
+                        <MIBaseButton
+                          variant="outlined"
+                          onClick={recommendations.recommend}
+                          disabled={recommendations.isLoading}
+                          aria-busy={recommendations.isLoading}
+                          prefix={recommendations.isLoading ? <MIAgentSpinner size={16} /> : undefined}
+                        >
+                          Event 추천
+                        </MIBaseButton>
+                        {resolvedDesignCta}
+                      </Stack>
                     </Fade>
                   )}
                 </Box>
@@ -359,6 +376,65 @@ const EventSelectionActionBar = ({
                 </TransitionGroup>
               </Stack>
             </Stack>
+
+            {(recommendations.data || recommendations.errorMessage || recommendations.isLoading) && (
+              <Stack gap="10px" paddingTop="14px">
+                <Divider />
+                <Stack gap="4px">
+                  <Typography variant="body2SB14">AI 추천 Event</Typography>
+                  <Typography variant="body2R14" color="contentText.Subtext">
+                    Event는 최대 2개까지 추천됩니다.
+                  </Typography>
+                </Stack>
+                {recommendations.errorMessage ? (
+                  <Typography variant="body2R14" color="contentText.Error" role="alert">
+                    {recommendations.errorMessage}
+                  </Typography>
+                ) : recommendations.data ? (
+                  <Stack gap="10px" maxHeight="240px" overflow="auto">
+                    {recommendations.data.items.length === 0 ? (
+                      <Typography variant="body2R14">추천할 Event가 없습니다</Typography>
+                    ) : (
+                      <>
+                        {recommendations.data.selectionReason && (
+                          <Stack gap="4px">
+                            <Typography variant="body2SB14">추천 사유</Typography>
+                            <Typography variant="body2R14" color="contentText.Subtext">
+                              {recommendations.data.selectionReason}
+                            </Typography>
+                          </Stack>
+                        )}
+                        {recommendations.data.items.map((event) => {
+                          const checked = selectedEventIds.includes(event.miEventId)
+                          return (
+                            <Stack key={event.miEventId} direction="row" alignItems="flex-start" gap="8px">
+                              <AdminCheckbox
+                                checked={checked}
+                                disabled={!checked && selectedCount >= maxCount}
+                                inputProps={{ 'aria-label': event.title }}
+                                onChange={(_, selected) => {
+                                  if (selected) onSelectRecommendation(event)
+                                  else onRemove(event.miEventId)
+                                }}
+                              />
+                              <Stack gap="4px" minWidth={0}>
+                                <Typography variant="body2SB14">{event.title}</Typography>
+                                <Typography variant="body3SB12" color="contentText.Subtext">
+                                  추천 사유
+                                </Typography>
+                                <Typography variant="body2R14" color="contentText.Subtext">
+                                  {event.reason}
+                                </Typography>
+                              </Stack>
+                            </Stack>
+                          )
+                        })}
+                      </>
+                    )}
+                  </Stack>
+                ) : null}
+              </Stack>
+            )}
 
             <Collapse
               in={showSameCombinationNotice}

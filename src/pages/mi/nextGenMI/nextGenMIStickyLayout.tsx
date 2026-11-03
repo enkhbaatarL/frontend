@@ -14,6 +14,8 @@ const NextGenMIStickyLayoutContext = createContext<NextGenMIStickyLayoutContextV
   activeTabKey: null,
 })
 
+export const useNextGenMIActiveTab = () => useContext(NextGenMIStickyLayoutContext).activeTabKey
+
 interface NextGenMIStickyLayoutProviderProps {
   slotEl: HTMLElement | null
   activeTabKey: NextGenMITabKey | null
