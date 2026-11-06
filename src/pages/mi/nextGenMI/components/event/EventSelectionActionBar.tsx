@@ -398,11 +398,11 @@ const EventSelectionActionBar = ({
                 <Divider />
                 <Stack direction="row" alignItems="center" justifyContent="space-between" gap="8px">
                   <Typography variant="body2SB14">Event 검증 결과</Typography>
-                  {verificationUpdates.canUpdate && (
+                  {verificationUpdates.showUpdate && (
                     <MIBaseButton
                       variant="outlined"
                       onClick={verificationUpdates.update}
-                      disabled={verificationUpdates.isUpdating}
+                      disabled={!verificationUpdates.canUpdate || verificationUpdates.isUpdating}
                       aria-busy={verificationUpdates.isUpdating}
                       prefix={verificationUpdates.isUpdating ? <MIAgentSpinner size={16} /> : undefined}
                     >
@@ -417,8 +417,8 @@ const EventSelectionActionBar = ({
                 ) : verifications.data ? (
                   <EventVerificationResults
                     result={verifications.data}
-                    getUpdateResult={verificationUpdates.getResult}
-                    getUpdateErrorMessage={verificationUpdates.getErrorMessage}
+                    getUpdateState={verificationUpdates.getUpdateState}
+                    onRetryRefresh={verificationUpdates.retryRefresh}
                   />
                 ) : null}
               </Stack>

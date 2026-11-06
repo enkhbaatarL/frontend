@@ -3,6 +3,8 @@ import { isAxiosError } from 'axios'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
+import type { EventVerificationUpdateAttempt } from '@/pages/mi/nextGenMI/hooks/useEventVerificationUpdates'
+
 import { useNextGenMIActiveTab } from '@/pages/mi/nextGenMI/nextGenMIStickyLayout'
 import nextGenMIEventService, { type EventVerificationResult } from '@/service/mi/nextGenMI/event'
 
@@ -47,6 +49,13 @@ export const useEventVerifications = (miEventIds: number[]) => {
 
   const verify = async () => {
     if (!available || requestRef.current) return
+    if (
+      queryClient.isMutating({
+        mutationKey: ['nextGenMIEventVerificationUpdate'],
+        predicate: (mutation) => miEventIds.includes((mutation.state.variables as EventVerificationUpdateAttempt).miEventId),
+      }) > 0
+    )
+      return
 
     const controller = new AbortController()
     requestRef.current = controller

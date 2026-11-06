@@ -32,6 +32,7 @@ export type VerificationStatus = 'pass' | 'warning' | 'fail'
 
 export type VerificationReason =
   | 'verified'
+  | 'no_contradiction'
   | 'review_required'
   | 'no_evidence'
   | 'search_error'
@@ -49,10 +50,14 @@ export interface VerificationCheck {
   eventClaim: string
   finding: string
   sourceUrls: string[]
+  cautionReason: 'as_of_limitation' | 'source_conflict' | 'insufficient_evidence' | 'other' | null
+  qualificationQuote: string | null
 }
 
 export interface EventVerificationItem {
   miEventId: number
+  verificationId: string | null
+  expiresAt: string | null
   title: string
   sourceUpdatedAt: string | null
   status: VerificationStatus
@@ -62,9 +67,14 @@ export interface EventVerificationItem {
   checks: VerificationCheck[]
 }
 
+export interface StoredEventVerification extends EventVerificationItem {
+  verificationId: string
+  expiresAt: string
+}
+
 export interface EventVerificationResult {
   checkedAt: string
-  items: EventVerificationItem[]
+  items: StoredEventVerification[]
 }
 
 export interface EventVerificationRequest {
@@ -72,7 +82,15 @@ export interface EventVerificationRequest {
 }
 
 export interface EventVerificationUpdateRequest {
+  verificationId: string
   expectedUpdatedAt?: string | null
+}
+
+export interface EventVerificationConflict {
+  error_code: number
+  error_name: 'EVENT_UPDATE_STALE' | 'EVENT_VERIFICATION_EXPIRED' | 'EVENT_VERIFICATION_ALREADY_APPLIED'
+  verification_id: string
+  mi_event_snapshot_id: number | null
 }
 
 export interface EventContentChange {
@@ -85,6 +103,7 @@ export interface EventContentChange {
 
 export interface EventVerificationUpdate {
   miEventId: number
+  verificationId: string
   checkedAt: string
   updateStatus: 'updated' | 'unchanged' | 'skipped'
   message: string
@@ -97,6 +116,9 @@ export interface EventVerificationUpdate {
   changedFields: string[]
   changes: EventContentChange[]
 }
+
+export const isEventVerificationId = (value: unknown): value is string =>
+  typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
 
 export type EventStatus = 'all' | 'new' | 'updated'
 
@@ -409,25 +431,34 @@ const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string
 
 const nextGenMIEventService = {
   async updateEventFromVerification(miEventId: number, params: EventVerificationUpdateRequest): Promise<EventVerificationUpdate> {
-    if (!Number.isSafeInteger(miEventId) || miEventId <= 0) {
+    if (!Number.isSafeInteger(miEventId) || miEventId <= 0 || !isEventVerificationId(params.verificationId)) {
       throw new Error('선택한 Event와 요청 조건을 확인해 주세요.')
     }
 
     // 인증된 백엔드가 actorUsrLognId를 설정하고 Agent의 JSON 응답을 공통 응답으로 감싼다.
     const response = await api.post<ICommonResponse<EventVerificationUpdate | null>>(
       `mi/next-gen/events/${miEventId}/verification-updates`,
-      params,
+      { verificationId: params.verificationId, expectedUpdatedAt: params.expectedUpdatedAt },
       {
         timeout: 480_000,
         suppressGlobalErrorHandler: true,
       } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
     )
 
-    if (response.data.status !== true || !response.data.data || response.data.data.miEventId !== miEventId) {
-      throw new Error(response.data.message)
+    const result = response.data.data
+    if (
+      response.data.status !== true ||
+      !result ||
+      result.miEventId !== miEventId ||
+      result.verificationId !== params.verificationId ||
+      result.verification?.miEventId !== miEventId ||
+      result.verification?.verificationId !== params.verificationId ||
+      !['updated', 'unchanged', 'skipped'].includes(result.updateStatus)
+    ) {
+      throw new Error('업데이트 결과 확인이 필요합니다.')
     }
 
-    return response.data.data
+    return result
   },
 
   async verifyEvents({ miEventIds }: EventVerificationRequest, signal?: AbortSignal): Promise<EventVerificationResult> {
@@ -446,11 +477,25 @@ const nextGenMIEventService = {
       suppressGlobalErrorHandler: true,
     } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean })
 
-    if (response.data.status !== true || !response.data.data || !response.data.data.items.length) {
+    const result = response.data.data
+    if (
+      response.data.status !== true ||
+      !result ||
+      !Array.isArray(result.items) ||
+      result.items.length !== miEventIds.length ||
+      new Set(result.items.map((item) => item.verificationId)).size !== result.items.length ||
+      result.items.some(
+        (item, index) =>
+          item.miEventId !== miEventIds[index] ||
+          !isEventVerificationId(item.verificationId) ||
+          !item.expiresAt ||
+          !Number.isFinite(Date.parse(item.expiresAt)),
+      )
+    ) {
       throw new Error('검증에 실패했습니다. Event 검증 버튼으로 다시 시도해 주세요.')
     }
 
-    return response.data.data
+    return result
   },
 
   async getEventRecommendations(params: EventRecommendationRequest, signal?: AbortSignal): Promise<EventRecommendations> {
