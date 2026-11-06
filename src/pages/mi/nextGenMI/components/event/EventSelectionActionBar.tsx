@@ -16,7 +16,10 @@ import KeyboardArrowUpIcon from '@/components/common/icons/KeyboardArrowUpIcon'
 import LockOutlinedIcon from '@/components/common/icons/LockOutlinedIcon'
 import { type MultiEventSelectionDesignMode, normalizeEventDesignStep } from '@/pages/mi/nextGenMI/components/event/eventDesignAvailability'
 import EventSameCombinationGroupsTable from '@/pages/mi/nextGenMI/components/event/EventSameCombinationGroupsTable'
+import EventVerificationResults from '@/pages/mi/nextGenMI/components/event/EventVerificationResults'
 import { useEventRecommendations } from '@/pages/mi/nextGenMI/hooks/useEventRecommendations'
+import { useEventVerifications } from '@/pages/mi/nextGenMI/hooks/useEventVerifications'
+import { useEventVerificationUpdates } from '@/pages/mi/nextGenMI/hooks/useEventVerificationUpdates'
 
 export type EventSelectionItem = {
   eventId: number
@@ -33,6 +36,7 @@ export type EventSelectionActionBarProps = {
   sameCombinationGroupCount?: number
   sameCombinationLoading?: boolean
   onSelectRecommendation: (event: EventRecommendation) => void
+  onEventUpdated: (event: EventSelectionItem) => void
   onRemove: (eventId: number) => void
   onDesignClick: () => void
   onSameCombinationGroupView?: (group: SameCombinationScenarioGroup) => void
@@ -222,12 +226,15 @@ const EventSelectionActionBar = ({
   sameCombinationGroupCount,
   sameCombinationLoading = false,
   onSelectRecommendation,
+  onEventUpdated,
   onRemove,
   onDesignClick,
   onSameCombinationGroupView,
 }: EventSelectionActionBarProps) => {
   const selectedEventIds = useMemo(() => selectedEvents.map((event) => event.eventId), [selectedEvents])
   const recommendations = useEventRecommendations(selectedEventIds)
+  const verifications = useEventVerifications(selectedEventIds)
+  const verificationUpdates = useEventVerificationUpdates(verifications.data, selectedEventIds, onEventUpdated)
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [sameCombinationExpanded, setSameCombinationExpanded] = useState(false)
   const [sameCombinationRevealed, setSameCombinationRevealed] = useState(false)
@@ -314,6 +321,15 @@ const EventSelectionActionBar = ({
                         >
                           Event 추천
                         </MIBaseButton>
+                        <MIBaseButton
+                          variant="outlined"
+                          onClick={verifications.verify}
+                          disabled={verifications.isLoading || verificationUpdates.isUpdating}
+                          aria-busy={verifications.isLoading}
+                          prefix={verifications.isLoading ? <MIAgentSpinner size={16} /> : undefined}
+                        >
+                          Event 검증
+                        </MIBaseButton>
                         {resolvedDesignCta}
                       </Stack>
                     </Fade>
@@ -376,6 +392,37 @@ const EventSelectionActionBar = ({
                 </TransitionGroup>
               </Stack>
             </Stack>
+
+            {(verifications.data || verifications.errorMessage) && (
+              <Stack gap="10px" paddingTop="14px">
+                <Divider />
+                <Stack direction="row" alignItems="center" justifyContent="space-between" gap="8px">
+                  <Typography variant="body2SB14">Event 검증 결과</Typography>
+                  {verificationUpdates.canUpdate && (
+                    <MIBaseButton
+                      variant="outlined"
+                      onClick={verificationUpdates.update}
+                      disabled={verificationUpdates.isUpdating}
+                      aria-busy={verificationUpdates.isUpdating}
+                      prefix={verificationUpdates.isUpdating ? <MIAgentSpinner size={16} /> : undefined}
+                    >
+                      현행화
+                    </MIBaseButton>
+                  )}
+                </Stack>
+                {verifications.errorMessage ? (
+                  <Typography variant="body2R14" color="contentText.Error" role="alert">
+                    {verifications.errorMessage}
+                  </Typography>
+                ) : verifications.data ? (
+                  <EventVerificationResults
+                    result={verifications.data}
+                    getUpdateResult={verificationUpdates.getResult}
+                    getUpdateErrorMessage={verificationUpdates.getErrorMessage}
+                  />
+                ) : null}
+              </Stack>
+            )}
 
             {(recommendations.data || recommendations.errorMessage || recommendations.isLoading) && (
               <Stack gap="10px" paddingTop="14px">

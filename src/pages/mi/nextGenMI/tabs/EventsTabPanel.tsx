@@ -981,6 +981,9 @@ const EventsTabPanel = () => {
         sameCombinationGroupCount={sameCombinationGroupCount}
         sameCombinationLoading={isSelectionDesignStatusFetching}
         onSelectRecommendation={(event) => handleToggleEventSelection({ eventId: event.miEventId, eventName: event.title }, true)}
+        onEventUpdated={(event) =>
+          setSelectedEvents((prev) => prev.map((item) => (item.eventId === event.eventId ? { ...item, eventName: event.eventName } : item)))
+        }
         onRemove={handleRemoveSelectedEvent}
         onDesignClick={handleSelectedEventsDesignClick}
         onSameCombinationGroupView={handleSameCombinationGroupView}

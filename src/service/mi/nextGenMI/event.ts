@@ -28,6 +28,76 @@ export interface EventRecommendations {
   selectionReason: string
 }
 
+export type VerificationStatus = 'pass' | 'warning' | 'fail'
+
+export type VerificationReason =
+  | 'verified'
+  | 'review_required'
+  | 'no_evidence'
+  | 'search_error'
+  | 'verification_error'
+  | 'contradicted'
+  | 'outdated'
+
+export type VerificationAspect = 'entity' | 'location' | 'time' | 'quantity' | 'freshness' | 'attribution'
+
+export type VerificationVerdict = 'matched' | 'caution' | 'contradicted' | 'outdated' | 'unverified' | 'not_applicable'
+
+export interface VerificationCheck {
+  aspect: VerificationAspect
+  verdict: VerificationVerdict
+  eventClaim: string
+  finding: string
+  sourceUrls: string[]
+}
+
+export interface EventVerificationItem {
+  miEventId: number
+  title: string
+  sourceUpdatedAt: string | null
+  status: VerificationStatus
+  reasonCode: VerificationReason
+  review: string
+  links: string[]
+  checks: VerificationCheck[]
+}
+
+export interface EventVerificationResult {
+  checkedAt: string
+  items: EventVerificationItem[]
+}
+
+export interface EventVerificationRequest {
+  miEventIds: number[]
+}
+
+export interface EventVerificationUpdateRequest {
+  expectedUpdatedAt?: string | null
+}
+
+export interface EventContentChange {
+  field: string
+  before: unknown
+  after: unknown
+  reason: string
+  sourceUrls: string[]
+}
+
+export interface EventVerificationUpdate {
+  miEventId: number
+  checkedAt: string
+  updateStatus: 'updated' | 'unchanged' | 'skipped'
+  message: string
+  verification: EventVerificationItem
+  postVerification: EventVerificationItem | null
+  miEventSnapshotId: number | null
+  snapshotVersionNo: number | null
+  previousMiEventSnapshotId: number | null
+  updatedAt: string | null
+  changedFields: string[]
+  changes: EventContentChange[]
+}
+
 export type EventStatus = 'all' | 'new' | 'updated'
 
 export type EventSignalType = 'signal' | 'noise'
@@ -338,6 +408,51 @@ const serializeNextGenMIEventsParams = (params: Record<string, unknown>): string
 }
 
 const nextGenMIEventService = {
+  async updateEventFromVerification(miEventId: number, params: EventVerificationUpdateRequest): Promise<EventVerificationUpdate> {
+    if (!Number.isSafeInteger(miEventId) || miEventId <= 0) {
+      throw new Error('선택한 Event와 요청 조건을 확인해 주세요.')
+    }
+
+    // 인증된 백엔드가 actorUsrLognId를 설정하고 Agent의 JSON 응답을 공통 응답으로 감싼다.
+    const response = await api.post<ICommonResponse<EventVerificationUpdate | null>>(
+      `mi/next-gen/events/${miEventId}/verification-updates`,
+      params,
+      {
+        timeout: 480_000,
+        suppressGlobalErrorHandler: true,
+      } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean },
+    )
+
+    if (response.data.status !== true || !response.data.data || response.data.data.miEventId !== miEventId) {
+      throw new Error(response.data.message)
+    }
+
+    return response.data.data
+  },
+
+  async verifyEvents({ miEventIds }: EventVerificationRequest, signal?: AbortSignal): Promise<EventVerificationResult> {
+    if (
+      miEventIds.length < 1 ||
+      miEventIds.length > 5 ||
+      new Set(miEventIds).size !== miEventIds.length ||
+      miEventIds.some((id) => !Number.isSafeInteger(id) || id <= 0)
+    ) {
+      throw new Error('선택한 Event와 요청 조건을 확인해 주세요.')
+    }
+
+    const response = await api.post<ICommonResponse<EventVerificationResult | null>>('mi/next-gen/events/verifications', { miEventIds }, {
+      timeout: 240_000,
+      signal,
+      suppressGlobalErrorHandler: true,
+    } as Parameters<typeof api.post>[2] & { suppressGlobalErrorHandler: boolean })
+
+    if (response.data.status !== true || !response.data.data || !response.data.data.items.length) {
+      throw new Error('검증에 실패했습니다. Event 검증 버튼으로 다시 시도해 주세요.')
+    }
+
+    return response.data.data
+  },
+
   async getEventRecommendations(params: EventRecommendationRequest, signal?: AbortSignal): Promise<EventRecommendations> {
     const { miEventIds } = params
     if (
